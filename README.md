@@ -1,10 +1,10 @@
 # Trueno Pro Club Services (TPCS)
 
-[Español 🇪🇸](#es) | [English 🇬🇧](#en)
+[Español <img src="https://flagcdn.com/16x12/es.png" width="16" height="12" alt="ES">](#es) | [English <img src="https://flagcdn.com/16x12/gb.png" width="16" height="12" alt="GB">](#en)
 
 ---
 
-## <a id="es"></a> 🇪🇸 Español
+## <a id="es"></a> <img src="https://flagcdn.com/16x12/es.png" width="24" height="18" alt="ES"> Español
 
 Un sistema integral de gestión para clubes de Pro Clubs.
 
@@ -268,7 +268,7 @@ Las contribuciones son bienvenidas. Por favor:
 
 ---
 
-## <a id="en"></a> 🇬🇧 English
+## <a id="en"></a> <img src="https://flagcdn.com/16x12/gb.png" width="24" height="18" alt="GB"> English
 
 A comprehensive management system for Pro Clubs.
 
