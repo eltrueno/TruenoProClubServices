@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /404
+Disallow: /404.html
+Disallow: /imagegenerator
+Disallow: /partido/
+Disallow: /logrosdef
+
+Allow: /partidos
+
+Sitemap: https://www.casemurocity.org/sitemap.xml

@@ -1,0 +1,25 @@
+---
+export const prerender = false;
+
+import MatchSumaryImage from "@components/imagegenerator/MatchSumaryImage.vue";
+
+const {matchid} = Astro.params
+
+if(matchid==undefined){
+	return Astro.redirect('/illustrations/serverdown.svg');
+}
+---
+<!doctype html>
+<html lang="es" class="dark">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image" href="/escudo2024.png" />
+		<meta name="generator" content={Astro.generator} />
+	</head>
+	<body>
+		<main>
+			<MatchSumaryImage matchId={Number(matchid)} client:only></MatchSumaryImage>
+		</main>
+	</body>
+</html>

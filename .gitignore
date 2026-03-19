@@ -1,0 +1,29 @@
+# Node
+node_modules/
+
+# Logs
+logs
+*.log
+
+# Env
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+build/
+
+# pnpm
+.pnpm-store/
+
+# Docker (opcional)
+docker-data/
+
+# IDE
+.vscode/
+.idea/
+node_modules

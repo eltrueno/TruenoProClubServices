@@ -1,0 +1,31 @@
+---
+export const prerender = false;
+
+import PlayerAchievementImage from "@components/imagegenerator/PlayerAchievementImage.vue";
+
+const {playername} = Astro.params
+let finalplayername:string = "" 
+
+if(playername!=undefined){
+	finalplayername = playername?.toString()
+}else return Astro.redirect('/illustrations/serverdown.svg');
+
+const type = Astro.url.searchParams.get("type") || "";
+const reached = Astro.url.searchParams.get("reached") || 0;
+
+---
+
+<!doctype html>
+<html lang="es" class="dark">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image" href="/escudo2024.png" />
+		<meta name="generator" content={Astro.generator} />
+	</head>
+	<body>
+		<main>
+			<PlayerAchievementImage playerName={finalplayername} type={type.toString()} reached={Number(reached)} client:only></MatchSumaryImage>
+		</main>
+	</body>
+</html>

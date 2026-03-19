@@ -1,0 +1,17 @@
+---
+export const prerender = true;
+
+import Layout from '@layouts/404.astro';
+---
+
+<Layout>
+    <div class="p-6 min-w-screen min-h-screen">
+        <div class="flex flex-col justify-center items-center min-w-screen max-w-screen p-6 space-y-6">
+            <h1 class="text-error text-center font-bold text-8xl">404</h1>
+            <h2 class="text-center text-4xl">¡Fuera de juego!</h2>
+            <img src="/var.gif" class="rounded-xl"/>
+            <p class="text-xl text-center text-pretty">Tras revisarlo en el VAR, no se pudo encontrar la página solicitada. Prueba de nuevo otra vez, comprueba que esté bien escrito o vuelve atrás</p>
+            <a href="/" class="btn btn-primary">Vovler a inicio</a>
+        </div>
+    </div>
+</Layout>

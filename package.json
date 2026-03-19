@@ -1,0 +1,8 @@
+{
+  "name": "trueno-proclub-services",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "pnpm -r build"
+  }
+}

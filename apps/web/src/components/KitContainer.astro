@@ -1,0 +1,48 @@
+---
+import KitViewer from './KitViewer.vue';
+
+interface Props {
+    kit: string;
+}
+
+const {kit} = Astro.props;
+---
+<container class="flex flex-wrap dark:bg-base-200 rounded-lg dark:shadow min-w-full justify-center p-3 md:p-6">
+    <section class="flex basis-3/3 md:basis-1/3 w-full justify-center p-3 md:p-6 ">
+        <KitViewer kit={kit} client:load />
+    </section>
+    <section class="flex flex-col basis-3/3 md:basis-2/3 w-full p-2 md:p-4 justify-center items-center">
+        <container class="flex flex-col container dark:bg-base-200 dark:border-base-300 dark:border-2 dark:shadow rounded-md shadow-md p-3 justify-center w-fit">
+                <div class="carousel w-fit md:max-w-md">
+                    <div id=`${kit}kitslide1` class="carousel-item relative w-fit">
+                    <img src=`/${kit}kit/${kit}0.png` class="w-full md:max-w-md" />
+                        <div class="absolute flex justify-between transform -translate-y-1/2 left-5 right-5 top-1/2">
+                            <a href=`#${kit}kitslide4` class="btn btn-circle">❮</a> 
+                            <a href=`#${kit}kitslide2` class="btn btn-circle">❯</a>
+                        </div>
+                    </div>
+                    <div id=`${kit}kitslide2` class="carousel-item relative w-fit">
+                        <img src=`/${kit}kit/${kit}1.png` class="w-full md:max-w-md" />
+                            <div class="absolute flex justify-between transform -translate-y-1/2 left-5 right-5 top-1/2">
+                                <a href=`#${kit}kitslide1` class="btn btn-circle">❮</a> 
+                                <a href=`#${kit}kitslide3` class="btn btn-circle">❯</a>
+                            </div>
+                    </div> 
+                    <div id=`${kit}kitslide3` class="carousel-item relative w-fit">
+                        <img src=`/${kit}kit/${kit}2.png` class="w-full md:max-w-md" />
+                            <div class="absolute flex justify-between transform -translate-y-1/2 left-5 right-5 top-1/2">
+                                <a href=`#${kit}kitslide2` class="btn btn-circle">❮</a> 
+                                <a href=`#${kit}kitslide4` class="btn btn-circle">❯</a>
+                            </div>
+                    </div>
+                    <div id=`${kit}kitslide4` class="carousel-item relative w-fit">
+                        <img src=`/${kit}kit/${kit}3.png` class="w-full md:max-w-md" />
+                            <div class="absolute flex justify-between transform -translate-y-1/2 left-5 right-5 top-1/2">
+                                <a href=`#${kit}kitslide3` class="btn btn-circle">❮</a> 
+                                <a href=`#${kit}kitslide1` class="btn btn-circle">❯</a>
+                            </div>
+                    </div>     
+                </div>
+        </container>
+    </section>
+</container>

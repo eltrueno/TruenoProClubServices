@@ -1,0 +1,101 @@
+---
+export const prerender = false;
+
+import Mainheader from "../components/Mainheader.astro";
+import Navbar from "../components/Navbar.astro";
+import { ViewTransitions } from "astro:transitions";
+
+interface Props {
+	title: string;
+	description: string;
+	keywords?: string;
+	isindex: boolean;
+}
+
+const { title, isindex, description, keywords } = Astro.props;
+
+import { Icon } from "astro-icon/components";
+---
+
+<!doctype html>
+<html lang="es" class="dark:bg-base-300">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image" href="/logo.webp" />
+		<meta name="generator" content={Astro.generator} />
+		<meta name="author" content="Raúl Jiménez 'el_trueno'" />
+		<meta name="description" content={description} />
+		{keywords && <meta name="keywords" content={keywords} />}
+		{!keywords && <meta name="keywords" content={title} />}
+		<title>{title}</title>
+		<ViewTransitions />
+
+		<meta name="theme-color" content="#C80D0D" />
+		<meta name="color-scheme" content="dark light" />
+
+		<!-- Facebook Meta Tags -->
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<!-- Twitter Meta Tags -->
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:domain" content="www.casemurocity.org" />
+		<meta name="twitter:site" content="@elh_trueno" />
+		<meta name="twitter:creator" content="@elh_trueno" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+
+		<slot name="metadata" />
+	</head>
+	<body>
+		{isindex && <Mainheader />}
+		<Navbar isindex={isindex} />
+		<main>
+			<slot />
+		</main>
+	</body><footer class="footer sm:footer-horizontal footer-center bg-primary text-primary-content p-4 text-base">
+		<aside class="w-full">
+			<span class="inline w-full"
+				>Hecho con mucho
+				<svg
+					class="w-6 h-6 absolute inline animate-ping"
+					aria-hidden="true"
+					xmlns="http://www.w3.org/2000/svg"
+					width="24"
+					height="24"
+					fill="currentColor"
+					viewBox="0 0 24 24"
+				>
+					<path
+						d="m12.75 20.66 6.184-7.098c2.677-2.884 2.559-6.506.754-8.705-.898-1.095-2.206-1.816-3.72-1.855-1.293-.034-2.652.43-3.963 1.442-1.315-1.012-2.678-1.476-3.973-1.442-1.515.04-2.825.76-3.724 1.855-1.806 2.201-1.915 5.823.772 8.706l6.183 7.097c.19.216.46.34.743.34a.985.985 0 0 0 .743-.34Z"
+					></path>
+				</svg>
+				<svg
+					class="w-6 h-6 relative inline"
+					aria-hidden="true"
+					xmlns="http://www.w3.org/2000/svg"
+					width="24"
+					height="24"
+					fill="currentColor"
+					viewBox="0 0 24 24"
+				>
+					<path
+						d="m12.75 20.66 6.184-7.098c2.677-2.884 2.559-6.506.754-8.705-.898-1.095-2.206-1.816-3.72-1.855-1.293-.034-2.652.43-3.963 1.442-1.315-1.012-2.678-1.476-3.973-1.442-1.515.04-2.825.76-3.724 1.855-1.806 2.201-1.915 5.823.772 8.706l6.183 7.097c.19.216.46.34.743.34a.985.985 0 0 0 .743-.34Z"
+					></path>
+				</svg>
+				por <a href="https://github.com/eltrueno" class="hover:text-secondary"
+					>R. Jiménez (el_trueno)</a
+				>
+			</span>
+			<p></p>
+			<div class="w-full flex justify-evenly flex-wrap">
+				<a href="https://www.twitch.tv/mr_casemuro" class="hover:text-secondary w-full basis-3/3 md:basis-1/3"><p><Icon name="twitch" class="w-6 h-6 inline" />Mr_Casemuro</p></a>
+				<a href="https://www.tiktok.com/@mr.casemuro" class="hover:text-secondary w-full basis-3/3 md:basis-1/3"><p><Icon name="tiktok" class="w-6 h-6 inline" />mr.casemuro</p></a>
+				<a href="https://www.instagram.com/mr.casemuro" class="hover:text-secondary w-full basis-3/3 md:basis-1/3"><p><Icon name="instagram" class="w-6 h-6 inline" />mr.casemuro</p></a>
+			</div>
+			<p></p>
+			<span class="text-xxs w-full text-center"><i>Esta web no esta afiliada con el Wrexham AFC ni con EA Sports</i></span>
+		</aside>
+	</footer>
+</html>

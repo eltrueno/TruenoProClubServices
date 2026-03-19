@@ -1,0 +1,91 @@
+---
+export const prerender = false;
+
+import Indexarticle from "@components/Indexarticle.astro";
+import KitContainer from "@components/KitContainer.astro";
+import Layout from "@layouts/Layout.astro";
+import ClubStats from "@components/ClubStats.vue";
+---
+
+<Layout
+	title="Casemuro City"
+	isindex
+	description="Casemuro City Web oficial: Inicio. Nuestros números y nuestros valores"
+	keywords="casemuro, casemuro city,fifa, eafc, fifa23, fifa24, eafc24, eafc25, eafc26, ea fc, club, pro, clubespro, proclubs, eltrueno, el_trueno, inicio, valores, casemuro, mrcasemuro, mr_casemuro"
+>
+	<meta
+		slot="metadata"
+		property="og:url"
+		content="https://www.casemurocity.org/"
+	/>
+	<meta
+		slot="metadata"
+		property="og:image"
+		content="https://www.casemurocity.org/escudo_banner_fondo.webp"
+	/>
+	<meta
+		slot="metadata"
+		name="twitter:url"
+		content="https://www.casemurocity.org/"
+	/>
+	<meta
+		slot="metadata"
+		name="twitter:image"
+		content="https://www.casemurocity.org/escudo_banner_fondo.webp"
+	/>
+
+	<header class="container mx-auto mb-10">
+		<h2 class="font-bold text-2xl text-center my-8 p-8">
+			PÁGINA WEB OFICIAL ✅
+			<br>
+			Toda la información sobre el Casemuro City. 
+		</h2>
+		<h3 class="font-bold text-xl text-center my-8 p-8">
+			Si te gusta Clubes Pro, has llegado al lugar indicado.
+			<br>
+			Bienvenido al equipo donde todo puede pasar✨
+		</h3>
+	</header>
+
+	<section>
+		<header>
+			<h3
+				class="mt-8 py-8 px-8 md:px-16 ml-8 text-primary font-bold text-4xl text-center"
+				id="equipaciones"
+			>
+				DATOS, NO OPINIONES 😳⬇️
+			</h3>
+		</header>
+		<content>
+			<ClubStats client:visible class="overflow-clip" />
+		</content>
+	</section>
+
+	<section class="overflow-x-clip">
+		<Indexarticle
+			id="origen"
+			reverse={false}
+			,
+			gradientText="bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500"
+			imageUrl="/origin.png"
+		>
+			<p slot="title">Origen</p>
+			El Casemuro City nació en FIFA 22 y nuestra identidad quedó marcada desde el principio. 
+			Elegimos al Wrexham AFC para representarnos, usando aquella mítica camiseta azul con el patrocinio de TikTok, que nos acompaña en cada directo.
+
+			Desde entonces, el equipo no ha parado de crecer y el resto ya es historia. 
+			Si buscas un sitio donde disfrutar de Clubes Pro de verdad, con buen ambiente y nivel, has llegado al lugar indicado.
+		</Indexarticle>
+		<Indexarticle
+			id="objetivo"
+			reverse
+			gradientText="bg-gradient-to-r from-rose-400 via-fuchsia-500 to-indigo-500"
+			imageUrl="/stadium.png"
+		>
+			<p slot="title">Objetivo</p>
+			Tenemos un objetivo claro: visitar el estadio del Wrexham. Queremos estar allí, en las gradas, y vivir desde dentro toda la magia de este equipo que nos dio nuestra identidad en el Casemuro City. Lo mejor de todo es que este viaje no sería posible sin vosotros, sois los que hacéis que el club siga vivo y que este sueño tenga sentido.
+
+			¿Lo conseguiremos? Estoy convencido de que sí.
+		</Indexarticle>
+	</section>
+</Layout>

@@ -1,0 +1,41 @@
+<header class="p-6 bg-primary">
+	<div class="flex flex-col justify-center items-center px-6">
+		<img
+			src="/logo.webp"
+			class="w-1/4 md:w-1/12 escudo"
+			alt="Escudo"
+		/>
+	</div>
+	<p class="text-3xl mt-4 font-bold text-center text-[#eeeeee]">
+		CASEMURO CITY
+	</p>
+</header>
+
+<style>
+	@media only screen and (min-width: 1024px) {
+		.escudo {
+			--logoheader-anim-start: 0px;
+			--logoheader-anim-end: 18vh;
+		}
+	}
+
+	@keyframes hide-escudo {
+		to {
+			opacity: 0;
+			translate: -50vw 200px;
+			scale: 0.5;
+		}
+	}
+
+	:root {
+		--logoheader-anim-start: 0px;
+		--logoheader-anim-end: 16vh;
+	}
+
+	.escudo {
+		animation: hide-escudo linear both;
+		animation-timeline: scroll(nearest);
+		/*animation-range: 0px 230px;*/
+		animation-range: var(--logoheader-anim-start) var(--logoheader-anim-end);
+	}
+</style>

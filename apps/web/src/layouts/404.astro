@@ -1,0 +1,19 @@
+---
+export const prerender = true;
+---
+<!doctype html>
+<html lang="es" class="dark:bg-base-300">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="description" content="Página no encontrada" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image" href="/logo.webp" />
+		<meta name="generator" content={Astro.generator} />
+		<title>404</title>
+	</head>
+	<body>	
+		<main>
+			<slot />
+		</main>
+	</body>
+</html>

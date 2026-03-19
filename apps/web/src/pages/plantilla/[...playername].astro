@@ -1,0 +1,35 @@
+---
+export const prerender = false;
+
+import Layout from '@layouts/Layout.astro';
+import PlayersContainer from '@components/player/PlayersContainer.vue'
+
+const {playername} = Astro.params
+let finalplayername:string = "" 
+
+if(playername!=undefined){
+	finalplayername = playername?.toString()
+}
+---
+
+<Layout title="Casemuro City: Plantilla" isindex={false} description='Esta es nuestra plantilla, no intentes entenderlo, solo disfruta' 
+	keywords='fifa, eafc, fifa23, fifa24, eafc24, club, pro, clubespro, proclubs, casemurocity, eltrueno, el_trueno, inicio, plantilla, jugadores, casemuro, mrcasemuro, mr_casemuro'>
+	<meta slot="metadata" property="og:url" content="https://www.casemurocity.org/plantilla"/>
+	<meta slot="metadata" property="og:image" content="https://www.casemurocity.org/escudo_banner_fondo.webp"/>
+	<meta slot="metadata" name="twitter:url" content="https://www.casemurocity.org/plantilla"/>
+	<meta slot="metadata" name="twitter:image" content="https://www.casemurocity.org/escudo_banner_fondo.webp"/>
+
+	<link slot="metadata" rel="canonical"  href="https://www.casemurocity.org/plantilla" />
+
+	<header class="container mx-auto mb-10">
+		<h1 class="text-primary font-bold text-3xl text-center mt-8 p-8">LEYENDAS DEL CLUB🌟</h1>
+		<h2 class="font-bold text-2xl text-center">Esta es nuestra plantilla, no intentes entenderlo, solo disfruta</h2>
+	</header>
+	<section >
+		<container class="flex p-6 lg:p-16 justify-center items-center">
+			<PlayersContainer client:visible detailPlayerName={finalplayername}/>
+			</container>
+	</section>
+
+</Layout>
+

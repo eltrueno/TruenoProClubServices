@@ -1,0 +1,65 @@
+---
+import Indexarticle from './Indexarticle.astro';
+
+interface Props {
+	isindex: boolean;
+}
+
+const {isindex} = Astro.props;
+---
+
+<nav class="navbar bg-primary min-w-full sticky top-0 rounded-b-md shadow-md z-50">
+	<div class="flex-1 flex-grow-0">
+		<a href="/" class="btn btn-ghost text-xl"><img src="/logo.webp" class="max-h-12" class:list={[{ 'logo-anim': isindex }]} alt="Escudo"></img> </a>
+	</div>
+	<div class="space-x-4 absolute text-[#eeeeee]" class:list={[{ 'links-anim': isindex },{'right-0': !isindex}]}>
+		<a href="/" class="btn btn-ghost "><span>INICIO</span></a>
+		<a href="/plantilla" class="btn btn-ghost "><span>PLANTILLA</span></a>
+		<a href="/partidos" class="btn btn-ghost "><span>PARTIDOS</span></a>
+	</div>
+</nav>
+
+
+
+<style>
+
+@media only screen and (min-width: 1024px){
+	:root {
+		--navbar-anim-start: 15vh;
+		--navbar-anim-end: 20vh;
+	}
+}
+
+@keyframes fade-logo {
+	from {opacity: 0;}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes links {
+	from{
+		right: 50%;
+		translate: 50%;
+	}
+	to{
+		right: 0px;
+	}
+}
+:root{
+	--navbar-anim-start: 13vh;
+	--navbar-anim-end: 25vh;
+}
+.logo-anim {
+	animation: fade-logo linear both;
+	animation-timeline: scroll();
+	animation-range: var(--navbar-anim-start) var(--navbar-anim-end);
+}
+
+.links-anim{
+	animation: links linear both;
+	animation-timeline: scroll();
+	animation-range: var(--navbar-anim-start) var(--navbar-anim-end);
+}
+</style>
+  

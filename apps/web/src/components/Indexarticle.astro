@@ -1,0 +1,84 @@
+---
+import { imageConfig } from 'astro:assets';
+
+interface Props {
+	reverse: boolean;
+    id: string;
+    gradientText: String;
+    imageUrl: string;
+}
+
+const {reverse,id, gradientText, imageUrl} = Astro.props;
+
+---
+<div id={id} class="flex flex-wrap  p-6 md:p-10 lg:p-12 justify-center items-center"  class:list={[{ 'flex-row-reverse': reverse },{'flex-row': !reverse}]}>
+    <div class="p-8 basis-3/3 md:basis-2/3 dark:bg-base-200 dark:shadow rounded-xl shadow-lg h-fit" class:list={[{'ltr-articlediv':!reverse},{'rtl-articlediv':reverse}]}>
+        <article>
+            <header>
+                <h1 class="text-5xl font-bold text-transparent bg-clip-text inline-block py-2"
+                class:list={gradientText}>
+                    <slot name="title"></slot>
+                </h1>
+            </header>
+            <content>
+                <p class="text-xl mt-6">
+                    <slot></slot>
+                </p>
+            </content>
+        </article>
+    </div>
+    <container class="flex basis-3/3 md:basis-1/3 mt-6 md:mt-0 justify-center">
+        <img src={imageUrl} class="w-11/12 select-none pointer-events-none" alt="background decoration">
+    </container>
+</div>
+
+<style>
+    @keyframes ltr-article-anim {
+        from{
+            opacity: 0.5;
+            transform: translateX(-100%);
+        }
+		to {
+			opacity: 1;
+		}
+	}
+
+    @keyframes rtl-article-anim {
+        from{
+            opacity: 0.5;
+            transform: translateX(100%);
+        }
+		to {
+			opacity: 1;
+		}
+	}
+
+    @keyframes article-img-zoom{
+        from{
+            scale: 0;
+        }
+        to{
+            scale: 1;
+        }
+    }
+	
+    img{
+		animation: article-img-zoom linear both;
+		animation-timeline: view(y);
+        animation-range: 5% entry;
+    }
+
+	.ltr-articlediv {
+		animation: ltr-article-anim linear both;
+		animation-timeline: view(y);
+        animation-range: -5% entry;
+        animation-delay: 600ms;
+	}
+
+    .rtl-articlediv {
+		animation: rtl-article-anim linear both;
+		animation-timeline: view(y);
+        animation-range: entry;
+        animation-delay: 600ms;
+	}
+</style>

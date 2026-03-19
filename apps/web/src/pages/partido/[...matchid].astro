@@ -1,0 +1,26 @@
+---
+export const prerender = false;
+import Layout from "@/layouts/Layout.astro"
+import MatchDetail from "@/components/match/detail/MatchDetail.vue";
+
+const {matchid} = Astro.params
+//let finalMatchID:string = "" 
+
+if(matchid==undefined){
+	return Astro.redirect('/partidos');
+}
+---
+
+<Layout title="Casemuro City: Detalles de Partido" isindex={false} description='Detalles del partido' 
+	keywords='fifa, eafc, fifa23, fifa24, eafc24, club, pro, clubespro, proclubs, casemurocity, eltrueno, el_trueno, inicio, partido, stats, detalles, detail, casemuro, mrcasemuro, mr_casemuro'>
+	<meta slot="metadata" property="og:url" content=`https://www.casemurocity.org/partido/${matchid}`/>
+	<meta slot="metadata" property="og:image" content="https://www.casemurocity.org/escudo_banner_fondo.webp"/>
+	<meta slot="metadata" name="twitter:url" content=`https://www.casemurocity.org/partido/${matchid}`/>
+	<meta slot="metadata" name="twitter:image" content="https://www.casemurocity.org/escudo_banner_fondo.webp"/>
+
+	<section >
+		<container class="flex p-6 lg:p-16 justify-center items-center">           
+			<MatchDetail client:visible matchId={Number(matchid)}/>
+		</container>
+	</section>
+</Layout>

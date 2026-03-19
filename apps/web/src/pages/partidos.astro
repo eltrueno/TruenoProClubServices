@@ -1,0 +1,36 @@
+---
+export const prerender = false;
+
+import MatchesContainer from '@/components/match/MatchesContainer.vue';
+import Layout from '@layouts/Layout.astro';
+
+const matchId = Astro.url.searchParams.get("id") || "";
+const dateFrom = Astro.url.searchParams.get("desde") || "";
+const dateTo = Astro.url.searchParams.get("hasta") || "";
+const matchTypeLeague = Astro.url.searchParams.has("liga");
+const matchTypePlayoff = Astro.url.searchParams.has("playoff");
+const matchTypeFriendly = Astro.url.searchParams.has("amistoso") || Astro.url.searchParams.has("draft");
+const forceBothTypes = !matchTypeLeague && !matchTypePlayoff && !matchTypeFriendly
+
+---
+
+<Layout title="Casemuro City: Partidos" isindex={false} description='Historial y estadísticas de nuestros últimos partidos' 
+	keywords='fifa, eafc, fifa23, fifa24, eafc24, club, pro, clubespro, proclubs, casemurocity, eltrueno, el_trueno, inicio, partidos, estadísticas, stats, casemuro, mrcasemuro, mr_casemuro'>
+	<meta slot="metadata" property="og:url" content="https://www.casemurocity.org/partidos"/>
+	<meta slot="metadata" property="og:image" content="https://www.casemurocity.org/escudo_banner_fondo.webp"/>
+	<meta slot="metadata" name="twitter:url" content="https://www.casemurocity.org/partidos"/>
+	<meta slot="metadata" name="twitter:image" content="https://www.casemurocity.org/escudo_banner_fondo.webp"/>
+
+	<header class="container mx-auto mb-10">
+		<h1 class="text-primary font-bold text-3xl text-center mt-8 p-8">Partidos</h1>
+		<h2 class="font-bold text-2xl text-center">Aquí se muestra el historial de nuestros últimos partidos</h2>
+	</header>
+	<section >
+		<container class="flex p-6 lg:p-10 justify-center items-center">
+            <MatchesContainer matchId={matchId.toString()} dateFrom={dateFrom.toString()} dateTo={dateTo.toString()} 
+			matchTypeLeague={!forceBothTypes ? matchTypeLeague : true} matchTypePlayoff={!forceBothTypes ? matchTypePlayoff : true} 
+			matchTypeFriendly={!forceBothTypes ? matchTypeFriendly : true} client:only/>
+		</container>
+	</section>
+
+</Layout>
