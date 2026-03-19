@@ -12,6 +12,8 @@ Un sistema integral de gestión para clubes de Pro Clubs.
 
 Trueno Pro Club Services es una plataforma completa que permite gestionar todos los aspectos de un club de Pro Clubs, incluyendo miembros, logros, partidos, estadísticas de jugadores y más.
 
+Este proyecto es una **evolución** de [Caracantosmeaos](https://github.com/Caracantosmeaos).
+
 ### 🌐 Vista Previa (Live Demo)
 
 Puedes ver el sistema en funcionamiento en el despliegue oficial de **Casemuro City**:
@@ -275,6 +277,8 @@ A comprehensive management system for Pro Clubs.
 ### 📋 Overview
 
 Trueno Pro Club Services is a complete platform that allows you to manage all aspects of a Pro Club, including members, achievements, matches, player statistics, and more.
+
+This project is an **evolution** of [Caracantosmeaos](https://github.com/Caracantosmeaos).
 
 ### 🌐 Live Demo
 
