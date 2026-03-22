@@ -29,7 +29,7 @@
 		"start": "node --optimize_for_size --max_semi_space_size=8 --max_old_space_size=512 dist/index.js",
 		"test": "npx jest --watchAll=false --coverage --verbose --passWithNoTests --forceExit --detectOpenHandles --maxWorkers=1 --no-cache",
 		"dcheck": "npx depcheck",
-		"build": "npx tsc",
+		"build": "npx tsc -p tsconfig.json",
 		"s:loop": "bash ./endlessRUNNER.sh",
 		"debug": "node --inspect=5858 -r ts-node/register src/index.ts",
 		"l": "npx eslint . --ext .ts,.js,.dt.s,.html --fix || true",

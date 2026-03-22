@@ -78,9 +78,9 @@ export default class MatchDTO implements IMatch {
         const scoreOpponent = Number(rawdata.clubs[opponentClubID].score)
 
         const aggregateGoalsOwn = Number(rawdata.aggregate[ownClubID].goals)
-        const aggregateScoreOwn = Math.floor(rawdata.aggregate[ownClubID].SCORE / 10)
+        const aggregateScoreOwn = Math.floor(rawdata.aggregate[ownClubID].SCORE)
         const aggregateGoalsOpponent = Number(rawdata.aggregate[opponentClubID].goals)
-        const aggregateScoreOpponent = Math.floor(rawdata.aggregate[opponentClubID].SCORE / 10)
+        const aggregateScoreOpponent = Math.floor(rawdata.aggregate[opponentClubID].SCORE)
 
         if (scoreOwn > scoreOpponent) {
             this.result = "win"
@@ -90,20 +90,63 @@ export default class MatchDTO implements IMatch {
             this.result = "tie"
         }
 
-        if (scoreOwn > goalsOwn || goalsOpponent > scoreOpponent) {
+        /*if (scoreOwn > goalsOwn || goalsOpponent > scoreOpponent) {
             this.winnerByPen = true
+        }*/
+
+
+        // DNF en amistosos
+        if (this.matchType === "friendly" || this.matchType === "playoff") {
+            const MIN_SECONDS = 2400
+            const EXTRA_TIME_SECONDS = 7000
+
+            const ownPlayers = rawdata.players[ownClubID] || {}
+            const opponentPlayers = rawdata.players[opponentClubID] || {}
+
+            const isDNF = (players: any, minSecs: number) => {
+                const list = Object.values(players)
+                if (list.length === 0) return false
+                const below = list.filter((p: any) => Number(p.secondsPlayed) < minSecs).length
+                return (below / list.length) > 0.6
+            }
+
+            // DNF por jugadores con pocos segundos
+            if (isDNF(ownPlayers, MIN_SECONDS) || isDNF(opponentPlayers, MIN_SECONDS)) {
+                if (this.matchType === "friendly") this.winnerByDnf = true
+                console.log("DNF")
+            }
+
+            const playedExtraTime = (players: any) => {
+                const list = Object.values(players)
+                if (list.length === 0) return false
+                const above = list.filter((p: any) => Number(p.secondsPlayed) >= EXTRA_TIME_SECONDS).length
+                return (above / list.length) > 0.5
+            }
+
+            // DNF por aggregate diferente a goles (lógica original)
+            const reachedThreeGoals = goalsOwn === 3 || goalsOpponent === 3
+            const aggregateDifferent = Number(rawdata.aggregate[ownClubID].goals) !== goalsOwn
+                || Number(rawdata.aggregate[opponentClubID].goals) !== goalsOpponent
+
+            if (!this.winnerByDnf && reachedThreeGoals && aggregateDifferent) {
+                if (this.matchType == "friendly" && (isDNF(ownPlayers, 2880) || isDNF(opponentPlayers, 2880))) {
+                    this.winnerByDnf = true
+                }
+
+            }
+
+
+            if (playedExtraTime(ownPlayers) || playedExtraTime(opponentPlayers)) {
+                this.winnerByPen = true
+            }
         }
 
-        const reachedThreeGoals = goalsOwn === 3 || goalsOpponent === 3
-        const aggregateDifferent =
-            aggregateScoreOwn !== goalsOwn || aggregateScoreOpponent !== goalsOpponent
-
-        let dnfRes = false
-
-        if (this.matchType === "friendly" && !this.winnerByDnf && reachedThreeGoals && aggregateDifferent) {
-            this.winnerByDnf = true
-            dnfRes = true
-        }
+        const realGoalsOwn = this.winnerByPen
+            ? Number(rawdata.aggregate[ownClubID].goals)
+            : goalsOwn
+        const realGoalsOpponent = this.winnerByPen
+            ? Number(rawdata.aggregate[opponentClubID].goals)
+            : goalsOpponent
 
         const rawdataLocalPlayers = rawdata.players[this.localTeam ? ownClubID : opponentClubID]
         let localClubPlayers: Array<IMatchPlayer> = []
@@ -115,7 +158,7 @@ export default class MatchDTO implements IMatch {
             id: Number(rawdataLocalClub.details.clubId),
             name: rawdataLocalClub.details.name,
             matchStats: {
-                goals: dnfRes ? aggregateScoreOwn : rawdataLocalClub.goals,
+                goals: rawdataAggregateLocal.goals,
                 shots: rawdataAggregateLocal.shots,
                 passesMade: rawdataAggregateLocal.passattempts,
                 passesSuccess: rawdataAggregateLocal.passesmade,
@@ -136,7 +179,7 @@ export default class MatchDTO implements IMatch {
             id: Number(rawdataAwayClub.details.clubId),
             name: rawdataAwayClub.details.name,
             matchStats: {
-                goals: dnfRes ? aggregateScoreOpponent : rawdataAwayClub.goals,
+                goals: rawdataAggregateAway.goals,
                 shots: rawdataAggregateAway.shots,
                 passesMade: rawdataAggregateAway.passattempts,
                 passesSuccess: rawdataAggregateAway.passesmade,
