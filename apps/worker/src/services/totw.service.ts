@@ -1,6 +1,12 @@
 import { TOTWModel, MemberTotwAppearancesModel } from "@models/totw.model"
 import MatchModel from "@models/match.model"
 import { processTOTWAchievements } from "@services/achievement.service"
+import { startOfISOWeek, endOfISOWeek } from "date-fns"
+import { toZonedTime } from "date-fns-tz"
+import dotenv from "dotenv"
+dotenv.config()
+
+const TIMEZONE = process.env.TZ || "Europe/Madrid"
 
 const TOTW_SLOTS = {
     goalkeeper: 1,
@@ -15,17 +21,12 @@ const getWeekRangeFromKey = (weekKey: string) => {
     const week = Number(weekStr)
 
     const simple = new Date(Date.UTC(year, 0, 1 + (week - 1) * 7))
-    const day = simple.getUTCDay() || 7
+    const madridDate = toZonedTime(simple, TIMEZONE)
 
-    const monday = new Date(simple)
-    monday.setUTCDate(simple.getUTCDate() - day + 1)
-    monday.setUTCHours(0, 0, 0, 0)
+    const start = startOfISOWeek(madridDate)
+    const end = endOfISOWeek(madridDate)
 
-    const sunday = new Date(monday)
-    sunday.setUTCDate(monday.getUTCDate() + 6)
-    sunday.setUTCHours(23, 59, 59, 999)
-
-    return { start: monday, end: sunday }
+    return { start, end }
 }
 
 const getTopPlayersByPosition = async (weekStartTimestamp: number, weekEndTimestamp: number, position: string, limit: number, excludedPlayers: string[], descOrder: boolean) => {

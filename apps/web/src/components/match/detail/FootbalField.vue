@@ -102,12 +102,12 @@
                     <div class="w-full max-h-20 overflow-hidden">
                       <img
                         :src="topImage(pl.playername)"
-                        class="h-full w-full object-contain select-none pointer-events-none scale-[1.70] origin-top"
+                        class="h-full w-full object-contain select-none pointer-events-none scale-[2.3] origin-top"
                         alt="Player ingame top image"
                         @error="defaultTopImage"/>
                     </div>
                     <span
-                      class="text-sm truncate w-full max-w-full text-center"
+                      class="text-[12px] leading-tight truncate w-full max-w-full text-center"
                       :class="{
                         'text-primary-content ': props.selectedplayer == players.indexOf(pl)
                       }">
@@ -128,12 +128,12 @@
                     <div class="w-full max-h-20 overflow-hidden">
                       <img
                         :src="topImage(pl.playername)"
-                        class="h-full w-full object-contain select-none pointer-events-none scale-[1.70] origin-top"
+                        class="h-full w-full object-contain select-none pointer-events-none scale-[2.3] origin-top"
                         alt="Player ingame top image"
                         @error="defaultTopImage"/>
                     </div>
                     <span
-                      class="text-sm truncate w-full max-w-full text-center"
+                      class="text-[12px] leading-tight truncate w-full max-w-full text-center"
                       :class="{
                         'text-primary-content ': props.selectedplayer == players.indexOf(pl)
                       }">
@@ -153,12 +153,12 @@
                       <div class="w-full max-h-20 overflow-hidden">
                         <img
                           :src="topImage(pl.playername)"
-                          class="h-full w-full object-contain select-none pointer-events-none scale-[1.70] origin-top"
+                          class="h-full w-full object-contain select-none pointer-events-none scale-[2.3] origin-top"
                           alt="Player ingame top image"
                           @error="defaultTopImage"/>
                       </div>
                       <span
-                        class="text-sm truncate w-full max-w-full text-center"
+                        class="text-[12px] leading-tight truncate w-full max-w-full text-center"
                         :class="{
                           'text-primary-content ': props.selectedplayer == players.indexOf(pl)
                         }">
@@ -178,12 +178,12 @@
                       <div class="w-full max-h-20 overflow-hidden">
                         <img
                           :src="topImage(pl.playername)"
-                          class="h-full w-full object-contain select-none pointer-events-none scale-[1.70] origin-top"
+                          class="h-full w-full object-contain select-none pointer-events-none scale-[2.3] origin-top"
                           alt="Player ingame top image"
                           @error="defaultTopImage"/>
                       </div>
                       <span
-                        class="text-sm truncate w-full max-w-full text-center"
+                        class="text-[12px] leading-tight truncate w-full max-w-full text-center"
                         :class="{
                           'text-primary-content ': props.selectedplayer == players.indexOf(pl)
                         }">

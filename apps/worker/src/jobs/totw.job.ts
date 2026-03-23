@@ -1,11 +1,13 @@
 import cron from "node-cron"
 import { calculateAndSaveTOTW } from "@services/totw.service"
 import { TOTWModel } from "@models/totw.model"
-
+import { getISOWeek, getISOWeekYear, subWeeks } from "date-fns"
+import { toZonedTime } from "date-fns-tz"
 import dotenv from "dotenv"
 dotenv.config()
 
 const FORCE_RECALCULATE = process.env.FORCE_RECALCULATE === "true"
+const TIMEZONE = process.env.TZ || "Europe/Madrid"
 
 const getISOWeekKey = (date = new Date()) => {
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
@@ -23,9 +25,11 @@ const getISOWeekKey = (date = new Date()) => {
 
 const getPreviousWeekKey = () => {
     const now = new Date()
-    const lastWeek = new Date(now)
-    lastWeek.setDate(now.getDate() - 7)
-    return getISOWeekKey(lastWeek)
+    const tzNow = toZonedTime(now, TIMEZONE)
+    const lastWeek = subWeeks(tzNow, 1)
+    const week = getISOWeek(lastWeek)
+    const year = getISOWeekYear(lastWeek)
+    return `${year}-${String(week).padStart(2, "0")}`
 }
 
 export const checkMissedTOTW = async () => {
@@ -50,5 +54,7 @@ export const scheduleTOTWJob = () => {
         const week = getPreviousWeekKey()
         await calculateAndSaveTOTW(week)
         console.info("[TOTW] Done")
+    }, {
+        timezone: "Europe/Madrid"
     })
 }
