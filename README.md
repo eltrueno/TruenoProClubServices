@@ -42,7 +42,7 @@ Este es un **monorepo** estructurado con [pnpm workspaces](https://pnpm.io/works
   - Diseño moderno con DaisyUI
 
 ##### **worker** - Background Jobs
-- **Propósito**: Procesamiento asincrónico de webhooks y tareas programadas
+- **Propósito**: Procesamiento asincrónico de events y tareas programadas
 - **Características**: Sistema de eventos y manejo de trabajos en segundo plano
 
 #### `/packages`
@@ -201,8 +201,7 @@ apps/
         ├── controllers/
         ├── services/
         ├── jobs/
-        ├── events/
-        └── webhooks.json
+        └── events/
 ```
 
 ### 🔌 Endpoints API
@@ -310,7 +309,7 @@ This is a **monorepo** structured with [pnpm workspaces](https://pnpm.io/workspa
   - Modern design with DaisyUI
 
 ##### **worker** - Background Jobs
-- **Purpose**: Asynchronous processing of webhooks and scheduled tasks
+- **Purpose**: Asynchronous processing of events and scheduled tasks
 - **Features**: Event system and background job handling
 
 #### `/packages`
@@ -467,8 +466,7 @@ apps/
         ├── controllers/
         ├── services/
         ├── jobs/
-        ├── events/
-        └── webhooks.json
+        └── events/
 ```
 
 ### 🔌 API Endpoints
