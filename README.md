@@ -144,6 +144,7 @@ CLUB_CACHE_MS=3600000
 | `WORKER_INTERVAL` | `number` | Intervalo de sincronización en segundos | `300` (5 minutos) |
 | `FORCE_RECALCULATE` | `boolean` | Fuerza recálculo de estadísticas en startup | `false` |
 | `RABBITMQ_URL` | `string` | URL de conexión a RabbitMQ | `amqp://localhost` |
+| `TZ` | `string` | Zona horaria para cálculos de fechas | `Europe/Madrid` |
 
 **Ejemplo `.env`:**
 ```env
@@ -153,6 +154,7 @@ PLATFORM=common-gen5
 WORKER_INTERVAL=300
 FORCE_RECALCULATE=false
 RABBITMQ_URL=amqp://localhost
+TZ=Europe/Madrid
 ```
 
 #### Servicios Externos
