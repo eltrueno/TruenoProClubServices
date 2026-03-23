@@ -1,8 +1,8 @@
 <template>
     <div class="w-full flex flex-col">
         <header class="flex flex-col justify-center align-middle">
-            <GoldHeader v-if="selectedType=='best'" :title="'MEJORES DE LA SEMANA'" :subtitle="weekRangeString" />
-            <GoldHeader v-else :title="'COJOS DE LA SEMANA'" :subtitle="weekRangeString" />
+            <TotwTitle v-if="selectedType=='best'" :title="'ONCE DE LA SEMANA'" :subtitle="weekRangeString" :variant="'best'" />
+            <TotwTitle v-else :title="'ONCE DE LA VERGÜENZA'" :subtitle="weekRangeString" :variant="'worst'" />
             <div class="w-fit mx-auto flex flex-col justify-center align-middle">
                 <span class="text-center text-2xl">Próximo equipo:</span>
                 <div class="grid auto-cols-max grid-flow-col gap-5 text-center">
@@ -33,9 +33,9 @@
                 </div>
             </div>
             <div class="join w-fit mx-auto" v-if="!isloading && !hasError">
-                <button class="join-item btn" :class="{ 'btn-disabled': selectedIndex==0 }" @click="selectedIndex--">«</button>
+                <button class="join-item btn" :class="{ 'btn-disabled': selectedIndex==0 }" @click="selectedIndex--"><</button>
                 <button class="join-item btn">Semana {{selectedTotw?.weekNumber}}</button>
-                <button class="join-item btn" :class="{ 'btn-disabled': selectedIndex==totwSorted.length-1 }" @click="selectedIndex++">»</button>
+                <button class="join-item btn" :class="{ 'btn-disabled': selectedIndex==totwSorted.length-1 }" @click="selectedIndex++">></button>
             </div>
         </header>
         <div v-if="isloading" role="container" class="w-full">loading</div>
@@ -45,8 +45,8 @@
                 <img src="/illustrations/bugfixingsvg.svg" class="lg:w-2/3 w-full select-none pointer-events-none" alt="Image representing error">
             </div>
         </div>
-        <div v-else role="container" class="w-full dark:bg-base-200 bg-base-300 rounded-lg shadow-md p-4">
-            {{totwSorted.at(selectedIndex)?.weekIso}}
+        <div v-else role="container" class="w-full p-4">
+            <TotwItem :totw="selectedTotw" v-model:isBest="isBestValue" />
         </div>
     </div>
 </template>
@@ -55,7 +55,8 @@
     import { onBeforeMount, computed, watch, reactive, ref, type Ref, type ComputedRef, onUnmounted, onMounted } from 'vue';
     import TotwAllService from "@/services/TotwAllService";
     import type TotwEntity from "@/model/totw/TotwEntity";
-    import GoldHeader from './GoldHeader.vue';
+    import TotwTitle from './TotwTitle.vue';
+    import TotwItem from './TotwItem.vue';
 
 
     const totwAllService = new TotwAllService()
@@ -64,7 +65,7 @@
     const errorText:Ref<String> = totwAllService.getError()
     const hasError:Ref<Boolean> = totwAllService.getHasError()
 
-    const selectedType:Ref<String> = ref('best')
+    const selectedType:Ref<String> = ref('worst')
     const selectedIndex:Ref<number> = ref(0)
 
     const totwSorted: ComputedRef<TotwEntity[]> = computed(() => {
@@ -98,15 +99,14 @@
 
     function getNextMonday(): Date {
         const today = new Date()
-        const day = today.getDay() // domingo=0, lunes=1, ..., sábado=6
-        const daysUntilNextMonday = (8 - day) % 7 || 7 // siempre >=1
+        const day = today.getDay()
+        const daysUntilNextMonday = (8 - day) % 7 || 7
         const nextMonday = new Date(today)
         nextMonday.setDate(today.getDate() + daysUntilNextMonday)
-        nextMonday.setHours(0, 0, 0, 0) // inicio del día
+        nextMonday.setHours(0, 0, 0, 0)
         return nextMonday
     }
 
-    // Función que calcula el tiempo restante hasta una fecha
     function getTimeLeft(targetDate: Date) {
         const now = new Date()
         const diff = targetDate.getTime() - now.getTime()
@@ -126,7 +126,11 @@
         return `${range.monday.toLocaleDateString()} - ${range.sunday.toLocaleDateString()}`
     })
 
-    // Reactive
+    const isBestValue = computed({
+        get: () => selectedType.value === 'best',
+        set: (val) => selectedType.value = val ? 'best' : 'worst'
+    })
+
     const timeLeft = ref(getTimeLeft(getNextMonday()))
 
     let timer: number

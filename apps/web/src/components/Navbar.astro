@@ -12,7 +12,7 @@ const {isindex} = Astro.props;
 	<div class="flex-1 flex-grow-0">
 		<a href="/" class="btn btn-ghost text-xl"><img src="/logo.webp" class="max-h-12" class:list={[{ 'logo-anim': isindex }]} alt="Escudo"></img> </a>
 	</div>
-	<div class="space-x-4 absolute text-[#eeeeee]" class:list={[{ 'links-anim': isindex },{'right-0': !isindex}]}>
+	<div class="space-x-1 absolute text-[#eeeeee]" class:list={[{ 'links-anim': isindex },{'right-0': !isindex}]}>
 		<a href="/" class="btn btn-ghost "><span>INICIO</span></a>
 		<a href="/plantilla" class="btn btn-ghost "><span>PLANTILLA</span></a>
 		<a href="/partidos" class="btn btn-ghost "><span>PARTIDOS</span></a>
