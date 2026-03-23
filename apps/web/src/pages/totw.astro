@@ -1,0 +1,40 @@
+---
+export const prerender = false;
+
+import TotwContainer from "@components/totw/TotwContainer.vue";
+import Layout from "@layouts/Layout.astro";
+---
+
+<Layout
+    title="Casemuro City: Equipo de la semana"
+    isindex={false}
+    description="Mejores y peores jugadores de la semana"
+    keywords="fifa, eafc, fifa23, fifa24, eafc24, club, pro, clubespro, proclubs, casemurocity, eltrueno, el_trueno, inicio, plantilla, jugadores, casemuro, mrcasemuro, mr_casemuro, totw, mejores, peores, jugadores, semana"
+>
+    <meta
+        slot="metadata"
+        property="og:url"
+        content="https://www.casemurocity.org/totw"
+    />
+    <meta
+        slot="metadata"
+        property="og:image"
+        content="https://www.casemurocity.org/escudo_banner_fondo.webp"
+    />
+    <meta
+        slot="metadata"
+        name="twitter:url"
+        content="https://www.casemurocity.org/totw"
+    />
+    <meta
+        slot="metadata"
+        name="twitter:image"
+        content="https://www.casemurocity.org/escudo_banner_fondo.webp"
+    />
+
+    <section>
+        <container class="flex p-4 lg:p-10 justify-center items-center">
+            <TotwContainer client:only="vue" />
+        </container>
+    </section>
+</Layout>

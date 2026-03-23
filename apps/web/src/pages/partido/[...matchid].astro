@@ -40,7 +40,7 @@ if (matchid == undefined) {
 
 	<section>
 		<container class="flex p-6 lg:p-16 justify-center items-center">
-			<MatchDetail client:only matchId={Number(matchid)} />
+			<MatchDetail client:only="vue" matchId={Number(matchid)} />
 		</container>
 	</section>
 </Layout>

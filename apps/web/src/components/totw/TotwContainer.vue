@@ -1,0 +1,143 @@
+<template>
+    <div class="w-full flex flex-col">
+        <header class="flex flex-col justify-center align-middle">
+            <GoldHeader v-if="selectedType=='best'" :title="'MEJORES DE LA SEMANA'" :subtitle="weekRangeString" />
+            <GoldHeader v-else :title="'COJOS DE LA SEMANA'" :subtitle="weekRangeString" />
+            <div class="w-fit mx-auto flex flex-col justify-center align-middle">
+                <span class="text-center text-2xl">Próximo equipo:</span>
+                <div class="grid auto-cols-max grid-flow-col gap-5 text-center">
+                    <div class="flex flex-col">
+                        <span class="countdown font-mono text-2xl">
+                            <span :style="`--value: ${timeLeft.days}`"></span>
+                        </span>
+                        días
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="countdown font-mono text-2xl">
+                            <span :style="`--value: ${timeLeft.hours}`"></span>
+                        </span>
+                        horas
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="countdown font-mono text-2xl">
+                            <span :style="`--value: ${timeLeft.minutes}`"></span>
+                        </span>
+                        min
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="countdown font-mono text-2xl">
+                            <span :style="`--value: ${timeLeft.seconds}`"></span>
+                        </span>
+                        seg
+                    </div>
+                </div>
+            </div>
+            <div class="join w-fit mx-auto" v-if="!isloading && !hasError">
+                <button class="join-item btn" :class="{ 'btn-disabled': selectedIndex==0 }" @click="selectedIndex--">«</button>
+                <button class="join-item btn">Semana {{selectedTotw?.weekNumber}}</button>
+                <button class="join-item btn" :class="{ 'btn-disabled': selectedIndex==totwSorted.length-1 }" @click="selectedIndex++">»</button>
+            </div>
+        </header>
+        <div v-if="isloading" role="container" class="w-full">loading</div>
+        <div v-else-if="hasError" role="container" class="flex flex-col h-full overflow-hidden">
+            <h3 class="text-center text-2xl p-3">Ha ocurrido un error al obtener los datos del equipo de la semana :/ {{ errorText }}</h3>
+            <div class="flex place-content-center p-6">
+                <img src="/illustrations/bugfixingsvg.svg" class="lg:w-2/3 w-full select-none pointer-events-none" alt="Image representing error">
+            </div>
+        </div>
+        <div v-else role="container" class="w-full dark:bg-base-200 bg-base-300 rounded-lg shadow-md p-4">
+            {{totwSorted.at(selectedIndex)?.weekIso}}
+        </div>
+    </div>
+</template>
+
+<script setup lang="ts">
+    import { onBeforeMount, computed, watch, reactive, ref, type Ref, type ComputedRef, onUnmounted, onMounted } from 'vue';
+    import TotwAllService from "@/services/TotwAllService";
+    import type TotwEntity from "@/model/totw/TotwEntity";
+    import GoldHeader from './GoldHeader.vue';
+
+
+    const totwAllService = new TotwAllService()
+    const totwList: Ref<Array<TotwEntity>> = totwAllService.getData()
+    const isloading:Ref<Boolean> = totwAllService.isloading
+    const errorText:Ref<String> = totwAllService.getError()
+    const hasError:Ref<Boolean> = totwAllService.getHasError()
+
+    const selectedType:Ref<String> = ref('best')
+    const selectedIndex:Ref<number> = ref(0)
+
+    const totwSorted: ComputedRef<TotwEntity[]> = computed(() => {
+        return totwList.value.slice().reverse()
+    })
+    const selectedTotw:Ref<TotwEntity> = computed(() => totwSorted.value.at(selectedIndex.value))
+
+    onBeforeMount(async () => {
+        await totwAllService.fetch()
+        selectedIndex.value = totwSorted.value.length-1
+    })
+
+    function getIsoWeekRange(weekKey: string) {
+        const [yearStr, weekStr] = weekKey.split('-')
+        const year = parseInt(yearStr)
+        const week = parseInt(weekStr)
+
+        const jan4 = new Date(year, 0, 4)
+        const dayOfWeek = jan4.getDay() || 7
+        const mondayOfWeek1 = new Date(jan4)
+        mondayOfWeek1.setDate(jan4.getDate() - dayOfWeek + 1)
+
+        const monday = new Date(mondayOfWeek1)
+        monday.setDate(monday.getDate() + (week - 1) * 7)
+
+        const sunday = new Date(monday)
+        sunday.setDate(monday.getDate() + 6)
+
+        return { monday, sunday }
+    }
+
+    function getNextMonday(): Date {
+        const today = new Date()
+        const day = today.getDay() // domingo=0, lunes=1, ..., sábado=6
+        const daysUntilNextMonday = (8 - day) % 7 || 7 // siempre >=1
+        const nextMonday = new Date(today)
+        nextMonday.setDate(today.getDate() + daysUntilNextMonday)
+        nextMonday.setHours(0, 0, 0, 0) // inicio del día
+        return nextMonday
+    }
+
+    // Función que calcula el tiempo restante hasta una fecha
+    function getTimeLeft(targetDate: Date) {
+        const now = new Date()
+        const diff = targetDate.getTime() - now.getTime()
+
+        if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24)
+        const minutes = Math.floor((diff / (1000 * 60)) % 60)
+        const seconds = Math.floor((diff / 1000) % 60)
+
+        return { days, hours, minutes, seconds }
+    }
+
+    const weekRangeString: ComputedRef<string> = computed(() => {
+        const range = getIsoWeekRange(selectedTotw.value.weekIso)
+        return `${range.monday.toLocaleDateString()} - ${range.sunday.toLocaleDateString()}`
+    })
+
+    // Reactive
+    const timeLeft = ref(getTimeLeft(getNextMonday()))
+
+    let timer: number
+    onMounted(() => {
+        timer = window.setInterval(() => {
+            timeLeft.value = getTimeLeft(getNextMonday())
+        }, 1000)
+    })
+
+    onUnmounted(() => {
+        clearInterval(timer)
+    })
+
+</script>
