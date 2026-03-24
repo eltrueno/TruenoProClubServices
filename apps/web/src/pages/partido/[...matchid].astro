@@ -2,9 +2,9 @@
 export const prerender = false;
 import Layout from "@/layouts/Layout.astro";
 import MatchDetail from "@/components/match/detail/MatchDetail.vue";
+import MatchDetailSkeleton from "@/components/match/detail/MatchDetailSkeleton.vue";
 
 const { matchid } = Astro.params;
-//let finalMatchID:string = ""
 
 if (matchid == undefined) {
 	return Astro.redirect("/partidos");
@@ -20,7 +20,7 @@ if (matchid == undefined) {
 	<meta
 		slot="metadata"
 		property="og:url"
-		content=`https://www.casemurocity.org/partido/${matchid}`
+		content={`https://www.casemurocity.org/partido/${matchid}`}
 	/>
 	<meta
 		slot="metadata"
@@ -30,7 +30,7 @@ if (matchid == undefined) {
 	<meta
 		slot="metadata"
 		name="twitter:url"
-		content=`https://www.casemurocity.org/partido/${matchid}`
+		content={`https://www.casemurocity.org/partido/${matchid}`}
 	/>
 	<meta
 		slot="metadata"
@@ -39,8 +39,10 @@ if (matchid == undefined) {
 	/>
 
 	<section>
-		<container class="flex p-6 lg:p-16 justify-center items-center">
-			<MatchDetail client:only="vue" matchId={Number(matchid)} />
+		<container class="flex p-6 lg:p-16 justify-center items-center text-center">
+			<MatchDetail client:only="vue" matchId={Number(matchid)}>
+                <MatchDetailSkeleton slot="fallback" />
+            </MatchDetail>
 		</container>
 	</section>
 </Layout>

@@ -8,11 +8,11 @@
         </header>
         <div class="w-full mx-auto flex flex-col justify-center align-middle text-center dark:bg-base-200 bg-base-200 rounded-lg p-2 shadow-md mt-2">
             <div v-for="([position,players]) in totwPlayersByPosition" :key="position">
-                <div v-if="position!='goalkeeper'" class="divider w-2/3 mx-auto font-bold text-lg text-primary"></div>
-                <div class="flex flex-wrap justify-center align-middle text-center gap-6">
+                <div v-if="position!='goalkeeper'" class="divider w-full md:w-2/3 mx-auto font-bold text-lg text-primary"></div>
+                <TransitionGroup name="pop" tag="div" class="flex flex-wrap justify-center align-middle text-center gap-6">
                     <TotwPlayerCard v-for="player in players" :key="player.playerName" :player="player" :variant="isBest ? 'best' : 'worst'"
                     :imagePath="`/players/${player.playerName}_top_transp.png`" :placeholderPath="`/players/placeholder_top_transp.png`" />
-                </div>
+                </TransitionGroup>
             </div>
         </div>
     </div>
@@ -22,7 +22,6 @@
     import type { ITOTWPlayer } from '@/interfaces/totw.interface';
     import type TotwEntity from '@/model/totw/TotwEntity';
     import { computed, type ComputedRef } from 'vue';
-    import { translatePosition } from '@/i18n/translations';
     import TotwPlayerCard from './TotwPlayerCard.vue';
     const props = defineProps<{
         totw: TotwEntity
@@ -50,3 +49,21 @@
         return map
     })
 </script>
+
+<style scoped>
+.pop-move,
+.pop-enter-active,
+.pop-leave-active {
+  transition: all 0.5s cubic-bezier(0.55, 0, 0.1, 1);
+}
+
+.pop-enter-from,
+.pop-leave-to {
+  opacity: 0;
+  transform: scale(0.5) translateY(30px);
+}
+
+.pop-leave-active {
+  position: absolute;
+}
+</style>

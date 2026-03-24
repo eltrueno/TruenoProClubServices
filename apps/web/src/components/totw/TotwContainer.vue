@@ -38,7 +38,28 @@
                 <button class="join-item btn" :class="{ 'btn-disabled': selectedIndex==totwSorted.length-1 }" @click="selectedIndex++">></button>
             </div>
         </header>
-        <div v-if="isloading" role="container" class="w-full">loading</div>
+
+        <div v-if="isloading" role="container" class="w-full flex flex-col gap-8">
+            <!-- Header Skeleton -->
+            <div class="flex flex-col items-center py-6 gap-6">                
+                <div class="join mt-2">
+                    <div class="skeleton dark:bg-base-100 skeletondark h-12 w-12 join-item rounded-r-none"></div>
+                    <div class="skeleton dark:bg-base-100 skeletondark h-12 w-32 join-item rounded-none"></div>
+                    <div class="skeleton dark:bg-base-100 skeletondark h-12 w-12 join-item rounded-l-none"></div>
+                </div>
+                <div class="join mt-2">
+                    <div class="skeleton dark:bg-base-100 skeletondark h-12 w-24 join-item rounded-r-none"></div>
+                    <div class="skeleton dark:bg-base-100 skeletondark h-12 w-24 join-item rounded-l-none"></div>
+                </div>
+            </div>
+            <!-- Cards Skeleton -->
+            <div class="w-full px-4 pb-8">
+                <div class="flex flex-wrap justify-center gap-6">
+                    <div v-for="i in 11" :key="i" class="skeleton dark:bg-base-100 skeletondark w-[188px] rounded-xl shrink-0" style="aspect-ratio: 8/9;"></div>
+                </div>
+            </div>
+        </div>
+
         <div v-else-if="hasError" role="container" class="flex flex-col h-full overflow-hidden">
             <h3 class="text-center text-2xl p-3">Ha ocurrido un error al obtener los datos del equipo de la semana :/ {{ errorText }}</h3>
             <div class="flex place-content-center p-6">
@@ -52,26 +73,25 @@
 </template>
 
 <script setup lang="ts">
-    import { onBeforeMount, computed, watch, reactive, ref, type Ref, type ComputedRef, onUnmounted, onMounted } from 'vue';
+    import { onBeforeMount, computed, ref, type Ref, type ComputedRef, onUnmounted, onMounted } from 'vue';
     import TotwAllService from "@/services/TotwAllService";
     import type TotwEntity from "@/model/totw/TotwEntity";
     import TotwTitle from './TotwTitle.vue';
     import TotwItem from './TotwItem.vue';
 
-
     const totwAllService = new TotwAllService()
     const totwList: Ref<Array<TotwEntity>> = totwAllService.getData()
-    const isloading:Ref<Boolean> = totwAllService.isloading
-    const errorText:Ref<String> = totwAllService.getError()
-    const hasError:Ref<Boolean> = totwAllService.getHasError()
+    const isloading:Ref<boolean> = totwAllService.isloading as Ref<boolean>
+    const errorText:Ref<string> = totwAllService.getError() as Ref<string>
+    const hasError:Ref<boolean> = totwAllService.getHasError() as Ref<boolean>
 
-    const selectedType:Ref<String> = ref('best')
+    const selectedType:Ref<string> = ref('best')
     const selectedIndex:Ref<number> = ref(0)
 
     const totwSorted: ComputedRef<TotwEntity[]> = computed(() => {
         return totwList.value.slice().reverse()
     })
-    const selectedTotw:Ref<TotwEntity> = computed(() => totwSorted.value.at(selectedIndex.value))
+    const selectedTotw:Ref<TotwEntity | undefined> = computed(() => totwSorted.value.at(selectedIndex.value))
 
     onBeforeMount(async () => {
         await totwAllService.fetch()
@@ -146,3 +166,9 @@
     })
 
 </script>
+
+<style scoped>
+.skeletondark {
+    background-image: linear-gradient( 105deg, transparent 0%, transparent 35%, rgba(108, 108, 108, 0.2) 50%, transparent 65%, transparent 100% );
+}
+</style>

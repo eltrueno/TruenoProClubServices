@@ -53,15 +53,14 @@ const forceBothTypes =
 	</header>
 	<section>
 		<container class="flex p-6 lg:p-10 justify-center items-center">
-			<MatchesContainer
+			<MatchesContainer client:load
 				matchId={matchId.toString()}
 				dateFrom={dateFrom.toString()}
 				dateTo={dateTo.toString()}
 				matchTypeLeague={!forceBothTypes ? matchTypeLeague : true}
 				matchTypePlayoff={!forceBothTypes ? matchTypePlayoff : true}
-				matchTypeFriendly={!forceBothTypes ? matchTypeFriendly : true}
-				client:only="vue"
-			/>
+				matchTypeFriendly={!forceBothTypes ? matchTypeFriendly : true}>
+            </MatchesContainer>
 		</container>
 	</section>
 </Layout>

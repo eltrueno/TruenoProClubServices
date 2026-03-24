@@ -55,7 +55,7 @@ if (playername != undefined) {
 	</header>
 	<section>
 		<container class="flex p-6 lg:p-16 justify-center items-center">
-			<PlayersContainer client:only detailPlayerName={finalplayername} />
+			<PlayersContainer client:load detailPlayerName={finalplayername} />
 		</container>
 	</section>
 </Layout>
