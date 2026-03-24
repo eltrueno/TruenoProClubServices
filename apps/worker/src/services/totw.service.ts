@@ -7,6 +7,7 @@ import dotenv from "dotenv"
 dotenv.config()
 
 const TIMEZONE = process.env.TZ || "Europe/Madrid"
+const MIN_GAMES_PLAYED = Number(process.env.TOTW_MIN_GAMES_PLAYED) || 5
 
 const TOTW_SLOTS = {
     goalkeeper: 1,
@@ -72,7 +73,7 @@ const getTopPlayersByPosition = async (weekStartTimestamp: number, weekEndTimest
         },
         {
             $match: {
-                gamesPlayed: { $gte: 2 },
+                gamesPlayed: { $gte: MIN_GAMES_PLAYED },
                 _id: { $nin: excludedPlayers }
             }
         },

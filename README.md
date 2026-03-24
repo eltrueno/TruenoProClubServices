@@ -145,6 +145,7 @@ CLUB_CACHE_MS=3600000
 | `FORCE_RECALCULATE` | `boolean` | Fuerza recálculo de estadísticas en startup | `false` |
 | `RABBITMQ_URL` | `string` | URL de conexión a RabbitMQ | `amqp://localhost` |
 | `TZ` | `string` | Zona horaria para cálculos de fechas | `Europe/Madrid` |
+| `TOTW_MIN_GAMES_PLAYED` | `number` | Mínimo de partidos jugados para ser considerado en el TOTW | `5` |
 
 **Ejemplo `.env`:**
 ```env
@@ -155,6 +156,7 @@ WORKER_INTERVAL=300
 FORCE_RECALCULATE=false
 RABBITMQ_URL=amqp://localhost
 TZ=Europe/Madrid
+TOTW_MIN_GAMES_PLAYED=5
 ```
 
 #### Servicios Externos
@@ -411,6 +413,8 @@ CLUB_CACHE_MS=3600000
 | `WORKER_INTERVAL` | `number` | Synchronization interval in seconds | `300` (5 minutes) |
 | `FORCE_RECALCULATE` | `boolean` | Force statistics recalculation on startup | `false` |
 | `RABBITMQ_URL` | `string` | RabbitMQ connection URL | `amqp://localhost` |
+| `TZ` | `string` | Timezone for date calculations | `Europe/Madrid` |
+| `TOTW_MIN_GAMES_PLAYED` | `number` | Minimum games played to be considered for TOTW | `5` |
 
 **Example `.env`:**
 ```env
@@ -420,6 +424,8 @@ PLATFORM=common-gen5
 WORKER_INTERVAL=300
 FORCE_RECALCULATE=false
 RABBITMQ_URL=amqp://localhost
+TZ=Europe/Madrid
+TOTW_MIN_GAMES_PLAYED=5
 ```
 
 #### External Services
