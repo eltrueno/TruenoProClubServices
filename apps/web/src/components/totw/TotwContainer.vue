@@ -65,7 +65,7 @@
     const errorText:Ref<String> = totwAllService.getError()
     const hasError:Ref<Boolean> = totwAllService.getHasError()
 
-    const selectedType:Ref<String> = ref('worst')
+    const selectedType:Ref<String> = ref('best')
     const selectedIndex:Ref<number> = ref(0)
 
     const totwSorted: ComputedRef<TotwEntity[]> = computed(() => {
@@ -122,6 +122,7 @@
     }
 
     const weekRangeString: ComputedRef<string> = computed(() => {
+        if (!selectedTotw.value) return ""
         const range = getIsoWeekRange(selectedTotw.value.weekIso)
         return `${range.monday.toLocaleDateString()} - ${range.sunday.toLocaleDateString()}`
     })

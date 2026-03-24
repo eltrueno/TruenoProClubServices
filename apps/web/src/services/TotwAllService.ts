@@ -5,7 +5,7 @@ export default class TotwAllService extends FetchService {
 
     constructor() {
         super()
-        this.data = ref<Array<TotwEntity>>(undefined)
+        this.data = ref<Array<TotwEntity>>([])
     }
 
     getData(): Ref<Array<TotwEntity>> {
