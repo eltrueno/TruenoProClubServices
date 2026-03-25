@@ -6,5 +6,7 @@ Disallow: /partido/
 Disallow: /logrosdef
 
 Allow: /partidos
+Allow: /totw
+Allow: /plantilla
 
 Sitemap: https://www.casemurocity.org/sitemap.xml

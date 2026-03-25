@@ -3,6 +3,11 @@ export const prerender = false;
 
 import TotwContainer from "@components/totw/TotwContainer.vue";
 import Layout from "@layouts/Layout.astro";
+
+const week = Astro.url.searchParams.get("semana") || "";
+const type = Astro.url.searchParams.get("tipo") || "best";
+
+
 ---
 
 <Layout
@@ -34,7 +39,7 @@ import Layout from "@layouts/Layout.astro";
 
     <section>
         <container class="flex p-4 lg:p-10 justify-center items-center">
-            <TotwContainer client:load />
+            <TotwContainer client:load week={week} type={type} />
         </container>
     </section>
 </Layout>

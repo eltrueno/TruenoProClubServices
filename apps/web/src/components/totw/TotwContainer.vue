@@ -79,13 +79,26 @@
     import TotwTitle from './TotwTitle.vue';
     import TotwItem from './TotwItem.vue';
 
+    const props = defineProps({
+        week: {
+            type: String,
+            required: false,
+            default: ""
+        },
+        type: {
+            type: String,
+            required: false,
+            default: "best"
+        }
+    })
+
     const totwAllService = new TotwAllService()
     const totwList: Ref<Array<TotwEntity>> = totwAllService.getData()
     const isloading:Ref<boolean> = totwAllService.isloading as Ref<boolean>
     const errorText:Ref<string> = totwAllService.getError() as Ref<string>
     const hasError:Ref<boolean> = totwAllService.getHasError() as Ref<boolean>
 
-    const selectedType:Ref<string> = ref('best')
+    const selectedType:Ref<string> = ref(props.type)
     const selectedIndex:Ref<number> = ref(0)
 
     const totwSorted: ComputedRef<TotwEntity[]> = computed(() => {
@@ -93,9 +106,19 @@
     })
     const selectedTotw:Ref<TotwEntity | undefined> = computed(() => totwSorted.value.at(selectedIndex.value))
 
+
     onBeforeMount(async () => {
         await totwAllService.fetch()
-        selectedIndex.value = totwSorted.value.length-1
+
+        const isIsoWeek = isNaN(Number(props.week))
+        const paramsTotw:TotwEntity | undefined = totwSorted.value.find((totw) => {
+            if (isIsoWeek) {
+                return totw.weekIso === props.week
+            } else {
+                return totw.weekNumber === Number(props.week)
+            }
+        })
+        selectedIndex.value = paramsTotw ? totwSorted.value.indexOf(paramsTotw) : totwSorted.value.length-1
     })
 
     function getIsoWeekRange(weekKey: string) {

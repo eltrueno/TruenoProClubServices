@@ -1,0 +1,23 @@
+---
+export const prerender = false;
+import TotwImage from "@components/imagegenerator/TotwImage.vue";
+
+
+const {week} = Astro.params
+
+const type = Astro.url.searchParams.get("type") || "best";
+---
+<!doctype html>
+<html lang="es" class="dark">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image" href="/logo.webp" />
+		<meta name="generator" content={Astro.generator} />
+	</head>
+	<body>
+		<main>
+			<TotwImage week={week} type={type} client:only></TotwImage>
+		</main>
+	</body>
+</html>
