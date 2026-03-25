@@ -11,6 +11,7 @@ export interface ITOTWPlayer {
     redCards: number,
     manOfTheMatch: number,
     cleanSheets: number,
+    goalsConceded: number,
     saves: number,
     passesMade: number,
     passesSuccess: number,

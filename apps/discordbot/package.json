@@ -1,0 +1,28 @@
+{
+  "name": "@trueno-proclub-services/discordbot",
+  "version": "1.0.0",
+  "description": "Discord bot for Trueno Pro Club Services. Template: Discord.js v14 Example Bot by @Buddier",
+  "main": "index.js",
+  "author": "el_trueno & Buddier",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "license": "ISC",
+  "dependencies": {
+    "amqplib": "^0.10.8",
+    "body-parser": "^1.20.2",
+    "chalk": "^4.1.2",
+    "discord.js": "^14.25.1",
+    "dotenv": "^16.3.1",
+    "express": "^4.19.2",
+    "fs": "^0.0.1-security",
+    "glob": "^10.3.10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Buddier/Discord.js-v14-Example.git"
+  },
+  "bugs": "https://github.com/Buddier/Discord.js-v14-Example/issues",
+  "homepage": "https://github.com/Buddier/Discord.js-v14-Example#readme"
+}
