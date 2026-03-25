@@ -6,24 +6,24 @@ FROM node:20-bookworm AS builder
 # Instala pnpm global
 RUN npm install -g pnpm
 
-# Definimos un ARG que indica la raíz del repo relativa al Dockerfile
-ARG ROOT=../.. 
 
 # WORKDIR en la raíz del repo dentro de la imagen
 WORKDIR /workspace
 
 # Copia archivos de lock y package.json para cache de deps
-COPY $ROOT/package.json $ROOT/pnpm-lock.yaml $ROOT/pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Copia package.json de la app y los packages compartidos
-COPY ./package.json ./apps/api/
-COPY $ROOT/packages/eafcapi/package.json $ROOT/packages/eafcapi/
+COPY apps/api/package.json ./apps/api/
+COPY apps/api/tsconfig.json ./apps/api/
+COPY apps/api/src ./apps/api/src
+COPY packages/eafcapi/package.json ./packages/eafcapi/
+COPY packages/eafcapi/tsconfig.json ./packages/eafcapi/
+COPY packages/eafcapi/src ./packages/eafcapi/src
 
 # Instala dependencias desde la raíz (pnpm detecta workspaces)
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
-# Copia todo el código desde la raíz
-COPY $ROOT ./
 
 # Build de los packages compartidos y la app
 RUN pnpm --filter @trueno-proclub-services/eafcapi build
@@ -52,15 +52,17 @@ RUN apt-get update \
     && groupadd -r pptruser \
     && useradd -rm -g pptruser -G audio,video pptruser
 
-USER pptruser
+
 WORKDIR /app
 
-# Copia node_modules y código desde builder
+# Copiar el workspace (symlinks de pnpm incluidos)
 COPY --from=builder /workspace ./
+
+USER pptruser
 
 # Puppeteer config
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
-# Ejecuta TS con ts-node + tsconfig-paths
-CMD ["node", "-r", "ts-node/register/transpile-only", "-r", "tsconfig-paths/register", "src/app.ts"]
+# Ejecuta TS directamente con ts-node + tsconfig-paths
+CMD ["node", "apps/api/dist/app.js"]

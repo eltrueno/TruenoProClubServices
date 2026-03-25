@@ -28,6 +28,9 @@ importers:
       mongoose:
         specifier: ^8.5.1
         version: 8.23.0(socks@2.8.7)
+      tsc-alias:
+        specifier: ^1.8.16
+        version: 1.8.16
     devDependencies:
       '@types/body-parser':
         specifier: ^1.19.6
