@@ -4,10 +4,12 @@ import { processTOTWAchievements } from "@services/achievement.service"
 import { startOfISOWeek, endOfISOWeek } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 import dotenv from "dotenv"
+import { ITOTWPlayer } from "srcinterfaces/totw.interface"
 dotenv.config()
 
 const TIMEZONE = process.env.TZ || "Europe/Madrid"
 const MIN_GAMES_PLAYED = Number(process.env.TOTW_MIN_GAMES_PLAYED) || 5
+const MIN_GAMES_FLOOR = Number(process.env.TOTW_MIN_GAMES_FLOOR) || 2
 
 const TOTW_SLOTS = {
     goalkeeper: 1,
@@ -15,6 +17,8 @@ const TOTW_SLOTS = {
     midfielder: 5,
     forward: 2
 }
+
+const POSITION_ORDER = ['goalkeeper', 'defender', 'forward', 'midfielder'] as const
 
 const getWeekRangeFromKey = (weekKey: string) => {
     const [yearStr, weekStr] = weekKey.split("-")
@@ -30,60 +34,63 @@ const getWeekRangeFromKey = (weekKey: string) => {
     return { start, end }
 }
 
-const getTopPlayersByPosition = async (weekStartTimestamp: number, weekEndTimestamp: number, position: string, limit: number, excludedPlayers: string[], descOrder: boolean) => {
-    const result = await MatchModel.aggregate([
+const getTopPlayersByPosition = async (
+    weekStart: number,
+    weekEnd: number,
+    position: string,
+    limit: number,
+    excludedPlayers: string[],
+    descOrder: boolean,
+    minGames: number = MIN_GAMES_PLAYED,
+    fetchExtra: number = 3,
+): Promise<ITOTWPlayer[]> => {
+    return MatchModel.aggregate([
         {
-            $match: {
-                timestamp: { $gte: weekStartTimestamp, $lte: weekEndTimestamp }
-            }
+            $match: { timestamp: { $gte: weekStart, $lte: weekEnd } }
         },
         {
             $addFields: {
                 clubPlayers: {
-                    $cond: [
-                        { $eq: ["$localTeam", true] },
-                        "$localClub.players",
-                        "$awayClub.players"
-                    ]
+                    $cond: [{ $eq: ['$localTeam', true] }, '$localClub.players', '$awayClub.players']
                 }
             }
         },
-        { $unwind: "$clubPlayers" },
-        { $match: { "clubPlayers.position": position } },
+        { $unwind: '$clubPlayers' },
+        { $match: { 'clubPlayers.position': position } },
         {
             $group: {
-                _id: "$clubPlayers.playername",
-                avgRating: { $avg: "$clubPlayers.rating" },
+                _id: '$clubPlayers.playername',
+                avgRating: { $avg: '$clubPlayers.rating' },
                 gamesPlayed: { $sum: 1 },
-                position: { $last: "$clubPlayers.position" },
-                secondsPlayed: { $sum: "$clubPlayers.secondsPlayed" },
-                shots: { $sum: "$clubPlayers.shots" },
-                goals: { $sum: "$clubPlayers.goals" },
-                assists: { $sum: "$clubPlayers.assists" },
-                redCards: { $sum: "$clubPlayers.redCards" },
-                goalsConceded: { $sum: "$clubPlayers.goalsConceded" },
-                cleanSheets: { $sum: { $cond: ["$clubPlayers.cleanSheet", 1, 0] } },
-                manOfTheMatch: { $sum: { $cond: ["$clubPlayers.manOfTheMatch", 1, 0] } },
-                saves: { $sum: "$clubPlayers.saves" },
-                passesMade: { $sum: "$clubPlayers.passesMade" },
-                passesSuccess: { $sum: "$clubPlayers.passesSuccess" },
-                tacklesMade: { $sum: "$clubPlayers.tacklesMade" },
-                tacklesSuccess: { $sum: "$clubPlayers.tacklesSuccess" }
+                position: { $last: '$clubPlayers.position' },
+                secondsPlayed: { $sum: '$clubPlayers.secondsPlayed' },
+                shots: { $sum: '$clubPlayers.shots' },
+                goals: { $sum: '$clubPlayers.goals' },
+                assists: { $sum: '$clubPlayers.assists' },
+                redCards: { $sum: '$clubPlayers.redCards' },
+                goalsConceded: { $sum: '$clubPlayers.goalsConceded' },
+                cleanSheets: { $sum: { $cond: ['$clubPlayers.cleanSheet', 1, 0] } },
+                manOfTheMatch: { $sum: { $cond: ['$clubPlayers.manOfTheMatch', 1, 0] } },
+                saves: { $sum: '$clubPlayers.saves' },
+                passesMade: { $sum: '$clubPlayers.passesMade' },
+                passesSuccess: { $sum: '$clubPlayers.passesSuccess' },
+                tacklesMade: { $sum: '$clubPlayers.tacklesMade' },
+                tacklesSuccess: { $sum: '$clubPlayers.tacklesSuccess' },
             }
         },
         {
             $match: {
-                gamesPlayed: { $gte: MIN_GAMES_PLAYED },
-                _id: { $nin: excludedPlayers }
+                gamesPlayed: { $gte: minGames },
+                _id: { $nin: excludedPlayers },
             }
         },
         {
             $addFields: {
-                minutesPlayed: { $round: [{ $divide: ["$secondsPlayed", 60] }, 0] },
+                minutesPlayed: { $round: [{ $divide: ['$secondsPlayed', 60] }, 0] },
                 shotAccuracy: {
                     $round: [{
                         $multiply: [
-                            { $cond: [{ $gt: ["$shots", 0] }, { $divide: ["$goals", "$shots"] }, 0] },
+                            { $cond: [{ $gt: ['$shots', 0] }, { $divide: ['$goals', '$shots'] }, 0] },
                             100
                         ]
                     }, 2]
@@ -91,7 +98,7 @@ const getTopPlayersByPosition = async (weekStartTimestamp: number, weekEndTimest
                 passAccuracy: {
                     $round: [{
                         $multiply: [
-                            { $cond: [{ $gt: ["$passesMade", 0] }, { $divide: ["$passesSuccess", "$passesMade"] }, 0] },
+                            { $cond: [{ $gt: ['$passesMade', 0] }, { $divide: ['$passesSuccess', '$passesMade'] }, 0] },
                             100
                         ]
                     }, 2]
@@ -99,20 +106,21 @@ const getTopPlayersByPosition = async (weekStartTimestamp: number, weekEndTimest
                 tackleAccuracy: {
                     $round: [{
                         $multiply: [
-                            { $cond: [{ $gt: ["$tacklesMade", 0] }, { $divide: ["$tacklesSuccess", "$tacklesMade"] }, 0] },
+                            { $cond: [{ $gt: ['$tacklesMade', 0] }, { $divide: ['$tacklesSuccess', '$tacklesMade'] }, 0] },
                             100
                         ]
                     }, 2]
-                }
+                },
             }
         },
-        { $sort: { avgRating: descOrder ? -1 : 1 } },
-        { $limit: limit },
+        // Desempate: rating -> partidos jugados -> goles
+        { $sort: { avgRating: descOrder ? -1 : 1, gamesPlayed: -1, goals: -1 } },
+        { $limit: limit + fetchExtra },
         {
             $project: {
                 _id: 0,
-                playerName: "$_id",
-                avgRating: { $round: ["$avgRating", 2] },
+                playerName: '$_id',
+                avgRating: { $round: ['$avgRating', 2] },
                 gamesPlayed: 1,
                 minutesPlayed: 1,
                 position: 1,
@@ -130,11 +138,78 @@ const getTopPlayersByPosition = async (weekStartTimestamp: number, weekEndTimest
                 passAccuracy: 1,
                 tacklesMade: 1,
                 tacklesSuccess: 1,
-                tackleAccuracy: 1
+                tackleAccuracy: 1,
             }
         }
     ])
-    return result
+}
+
+const fillPositionSlot = async (
+    weekStart: number,
+    weekEnd: number,
+    position: string,
+    limit: number,
+    hardExcluded: string[],
+    softExcluded: string[],
+    descOrder: boolean,
+): Promise<ITOTWPlayer[]> => {
+
+    const label = `${position} (${descOrder ? 'best' : 'worst'})`
+
+    const phases = [
+        { minGames: MIN_GAMES_PLAYED, excluded: [...hardExcluded, ...softExcluded], desc: 'condiciones ideales' },
+        { minGames: Math.ceil(MIN_GAMES_PLAYED / 2), excluded: [...hardExcluded, ...softExcluded], desc: 'minGames reducido' },
+        { minGames: MIN_GAMES_FLOOR, excluded: [...hardExcluded, ...softExcluded], desc: 'minGames mínimo' },
+        { minGames: MIN_GAMES_FLOOR, excluded: [...softExcluded], desc: 'sin hardExcluded' },
+        { minGames: MIN_GAMES_FLOOR, excluded: [], desc: 'sin exclusiones' },
+    ]
+
+    for (const [i, phase] of phases.entries()) {
+        const candidates = await getTopPlayersByPosition(
+            weekStart, weekEnd, position, limit,
+            phase.excluded, descOrder, phase.minGames
+        )
+
+        const players = candidates.slice(0, limit)
+
+        if (i > 0) {
+            console.warn(`[TOTW] ${label} — fase ${i + 1} (${phase.desc}): ${players.length}/${limit}`)
+        }
+
+        if (players.length === limit) return players
+
+        if (i === phases.length - 1) {
+            if (players.length > 0) {
+                console.warn(`[TOTW] ${label} — slot incompleto: ${players.length}/${limit}`)
+            } else {
+                console.warn(`[TOTW] ${label} — sin candidatos disponibles`)
+            }
+            return players
+        }
+    }
+
+    return []
+}
+
+const buildTeam = async (
+    weekStart: number,
+    weekEnd: number,
+    descOrder: boolean,
+    hardExcluded: string[] = [],
+): Promise<ITOTWPlayer[]> => {
+    const team: ITOTWPlayer[] = []
+    const softSelected: string[] = []
+
+    for (const position of POSITION_ORDER) {
+        const players = await fillPositionSlot(
+            weekStart, weekEnd, position, TOTW_SLOTS[position],
+            hardExcluded, softSelected, descOrder
+        )
+        players.forEach(p => softSelected.push(p.playerName))
+        team.push(...players)
+    }
+
+    return team
 }
 
 const addTOTWAppearances = async (players: { playerName: string, position: string, avgRating: number }[],
@@ -153,41 +228,27 @@ const addTOTWAppearances = async (players: { playerName: string, position: strin
 }
 
 
-export const calculateAndSaveTOTW = async (weekKey: string) => {
+export const calculateAndSaveTOTW = async (weekKey: string): Promise<void> => {
     const { start, end } = getWeekRangeFromKey(weekKey)
-    const startTimestamp = Math.floor(start.getTime() / 1000)
-    const endTimestamp = Math.floor(end.getTime() / 1000)
+    const weekStart = Math.floor(start.getTime() / 1000)
+    const weekEnd = Math.floor(end.getTime() / 1000)
 
-    let selectedPlayers: string[] = []
-    const bestPlayers = []
-    const worstPlayers = []
+    const bestPlayers = await buildTeam(weekStart, weekEnd, true)
+    const worstPlayers = await buildTeam(weekStart, weekEnd, false, bestPlayers.map(p => p.playerName))
 
-    //best players
-    for (const [position, limit] of Object.entries(TOTW_SLOTS)) {
-        const positionPlayers = await getTopPlayersByPosition(startTimestamp, endTimestamp, position, limit, selectedPlayers, true)
-        positionPlayers.forEach(p => selectedPlayers.push(p.playerName))
-        bestPlayers.push(...positionPlayers)
-    }
-    selectedPlayers = []
-    //worst players
-    for (const [position, limit] of Object.entries(TOTW_SLOTS)) {
-        const positionPlayers = await getTopPlayersByPosition(startTimestamp, endTimestamp, position, limit, selectedPlayers, false)
-        positionPlayers.forEach(p => selectedPlayers.push(p.playerName))
-        worstPlayers.push(...positionPlayers)
-    }
-
-    if (bestPlayers.length === 0 && worstPlayers.length === 0) {
-        console.info("[TOTW] No matches found for the week", weekKey, "skipping...")
+    if (!bestPlayers.length && !worstPlayers.length) {
+        console.info('[TOTW] No matches found for week', weekKey, '— skipping')
         return
     }
 
     const weekNumber = (await TOTWModel.countDocuments()) + 1
+
     await TOTWModel.create({ weekNumber, weekIso: weekKey, bestPlayers, worstPlayers })
-    await addTOTWAppearances(bestPlayers, weekKey, "best")
-    await addTOTWAppearances(worstPlayers, weekKey, "worst")
+    await addTOTWAppearances(bestPlayers, weekKey, 'best')
+    await addTOTWAppearances(worstPlayers, weekKey, 'worst')
 
-    const affectedPlayers = [...new Set([...bestPlayers, ...worstPlayers].map(p => p.playerName))]
-    await processTOTWAchievements(affectedPlayers)
+    const affected = [...new Set([...bestPlayers, ...worstPlayers].map(p => p.playerName))]
+    await processTOTWAchievements(affected)
 
-    console.info("[TOTW] Team of the week created successfully for week", weekNumber, "(", weekKey, ")")
+    console.info('[TOTW] Created successfully — week', weekNumber, `(${weekKey})`)
 }
