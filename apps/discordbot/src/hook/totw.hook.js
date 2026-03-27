@@ -72,7 +72,7 @@ async function handle(client, totw) {
         const filenameBest = `totw_${totw.weekIso}_best.jpeg`
         const imgattachBest = new AttachmentBuilder(imgBufferBest, { name: filenameBest })
         let embedMsgBest = new client.discord.EmbedBuilder()
-            .setTitle("¡Ya tenemos el mejor XI de la semana (Semana " + totw.weekNumber + ")!")
+            .setTitle("¡Ya tenemos el mejor XI de la semana! (Semana " + totw.weekNumber + ")")
             .addFields(
                 { name: "Portería", value: playerMentionsBestGK, inline: false },
                 { name: "Defensa", value: playerMentionsBestDF, inline: false },
@@ -93,7 +93,7 @@ async function handle(client, totw) {
         const filenameWorst = `totw_${totw.weekIso}_worst.jpeg`
         const imgattachWorst = new AttachmentBuilder(imgBufferWorst, { name: filenameWorst })
         let embedMsgWorst = new client.discord.EmbedBuilder()
-            .setTitle("¡Aquí llegan los más cojos de la semana (Semana " + totw.weekNumber + ")!")
+            .setTitle("¡Aquí llegan los más cojos de la semana! (Semana " + totw.weekNumber + ")")
             .addFields(
                 { name: "Portería", value: playerMentionsWorstGK || "N/A", inline: false },
                 { name: "Defensa", value: playerMentionsWorstDF || "N/A", inline: false },

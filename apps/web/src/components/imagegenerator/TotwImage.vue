@@ -70,7 +70,7 @@
 
 <style scoped>
     .toimage{
-        width: 1920px;
+        width: 1200px;
         height: 1080px;
     }
 </style>
