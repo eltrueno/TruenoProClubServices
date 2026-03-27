@@ -1,5 +1,6 @@
 import { captureImage } from "./imageCapture"
 import fs from "fs"
+import path from "path"
 import dotenv from "dotenv"
 dotenv.config()
 
@@ -7,7 +8,8 @@ const DEVMODE = false;
 const BASE_URL = process.env.BASE_URL || (DEVMODE ? "http://localhost:4321" : "https://www.casemurocity.org")
 
 const getAchievementImage = async (playerName: string, type: string, reached: number) => {
-    const filepath = `./imagescache/playerachievement_${playerName}_${type}_${reached}.jpeg`
+    const dir = path.join(__dirname, "../../imagescache");
+    const filepath = path.join(dir, `playerachievement_${playerName}_${type}_${reached}.jpeg`);
     if (!fs.existsSync(filepath)) {
         console.log("Image not cached. Capturing...")
         const filename = `playerachievement_${playerName}_${type}_${reached}`

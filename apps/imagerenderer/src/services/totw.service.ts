@@ -1,5 +1,6 @@
 import { captureImage } from "./imageCapture"
 import fs from "fs"
+import path from "path"
 import dotenv from "dotenv"
 dotenv.config()
 
@@ -7,7 +8,8 @@ const DEVMODE = process.env.DEVMODE || false;
 const BASE_URL = process.env.BASE_URL || (DEVMODE ? "http://localhost:4321" : "https://www.casemurocity.org")
 
 const getTotwByWeekImage = async (week: number | string, type: "best" | "worst") => {
-    const filepath = `./imagescache/totw_${week}_${type}.jpeg`
+    const dir = path.join(__dirname, "../../imagescache");
+    const filepath = path.join(dir, `totw_${week}_${type}.jpeg`);
     if (!fs.existsSync(filepath)) {
         console.log("Image not cached. Capturing...")
         const img = await captureImage(`${BASE_URL}/imagegenerator/totw/${week}?type=${type}`, "totw_" + week + "_" + type, "#to_image", 1920, 1080)
@@ -21,7 +23,8 @@ const getTotwByWeekImage = async (week: number | string, type: "best" | "worst")
 }
 
 const getLatestTotwImage = async (type: "best" | "worst") => {
-    const filepath = `./imagescache/totw_latest_${type}.jpeg`
+    const dir = path.join(__dirname, "../../imagescache");
+    const filepath = path.join(dir, `totw_latest_${type}.jpeg`);
     if (!fs.existsSync(filepath)) {
         console.log("Image not cached. Capturing...")
         const img = await captureImage(`${BASE_URL}/imagegenerator/totw?type=${type}`, "totw_latest_" + type, "#to_image", 1920, 1080)

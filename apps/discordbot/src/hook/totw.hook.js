@@ -80,7 +80,7 @@ async function handle(client, totw) {
                 { name: "Delantera", value: playerMentionsBestFW, inline: false }
             )
             .setAuthor(
-                { name: 'Ver más en la web', iconURL: 'https://www.casemurocity.org/logo.webp', url: 'https://www.casemurocity.org/totw/' + totw.weekIso }
+                { name: 'Ver más en la web', iconURL: 'https://www.casemurocity.org/logo.webp', url: 'https://www.casemurocity.org/totw?semana=' + totw.weekIso }
             )
             .setColor(13110541)
             .setImage('attachment://' + filenameBest)
@@ -101,7 +101,7 @@ async function handle(client, totw) {
                 { name: "Delantera", value: playerMentionsWorstFW || "N/A", inline: false }
             )
             .setAuthor(
-                { name: 'Ver más en la web', iconURL: 'https://www.casemurocity.org/logo.webp', url: 'https://www.casemurocity.org/totw/' + totw.weekIso }
+                { name: 'Ver más en la web', iconURL: 'https://www.casemurocity.org/logo.webp', url: 'https://www.casemurocity.org/totw?semana=' + totw.weekIso }
             )
             .setColor(13110541)
             .setImage('attachment://' + filenameWorst)

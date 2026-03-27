@@ -5,7 +5,7 @@ require('dotenv').config();
 async function handle(client, achievement) {
     try {
         console.log("[Event Listener] 'memberachievement' event recieved")
-        const announcementsChannel = await client.channels.cache.get("1134219726780911667")
+        const announcementsChannel = await client.channels.cache.get("411962391799136266")
 
         const player = achievement.player
         const findMatch = client.playerDatabase.players.filter((e) => e.playerName === player.playerName)[0]

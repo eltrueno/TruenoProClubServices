@@ -1,5 +1,6 @@
 import { Page } from "puppeteer";
 import fs from "fs";
+import path from "path";
 import { getBrowser } from "./browser";
 import { limit } from "./queue";
 
@@ -30,8 +31,8 @@ const captureImage = async (
       console.log(`[ImageCapture] Navigating to ${url}`);
       await page.goto(url, { waitUntil: 'networkidle0', timeout: 60000 });
 
-      const dir = './imagescache';
-      const path = `${dir}/${filename}.jpeg`;
+      const dir = path.join(__dirname, "../../imagescache");
+      const filepath = path.join(dir, `${filename}.jpeg`);
 
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
@@ -56,7 +57,7 @@ const captureImage = async (
       }
 
       // Save to cache as well
-      fs.writeFileSync(path, screenshotBuffer);
+      fs.writeFileSync(filepath, screenshotBuffer);
 
       return screenshotBuffer;
     } catch (e) {

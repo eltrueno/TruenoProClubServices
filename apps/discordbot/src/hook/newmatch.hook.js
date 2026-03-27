@@ -5,7 +5,7 @@ require('dotenv').config();
 async function handle(client, match) {
     try {
         console.log("[Event Listener] 'newmatch' event recieved")
-        const matchesChannel = await client.channels.cache.get("1268013298339545232")
+        const matchesChannel = await client.channels.cache.get("411962391799136266")
 
         const players = match.localTeam ? match.localClub.players : match.awayClub.players
         let playerMentions = ""
