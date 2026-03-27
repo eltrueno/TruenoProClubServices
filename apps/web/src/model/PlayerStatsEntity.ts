@@ -19,6 +19,7 @@ export default class PlayerStatsEntity implements IPlayerStats {
     tacklesSuccess: number;
     cleanSheets: number;
     manOfTheMatch: number;
+    goalsConceded: number;
     hattricks: number;
     pokers: number;
     saves: number;
@@ -40,6 +41,7 @@ export default class PlayerStatsEntity implements IPlayerStats {
     winRate: number;
     savesPerMatch: number;
     cleanSheetsPercent: number;
+    goalsConcededPerMatch: number;
 
     constructor(stats: IPlayerStats) {
         Object.assign(this, stats)
@@ -67,6 +69,8 @@ export default class PlayerStatsEntity implements IPlayerStats {
 
         this.savesPerMatch = this.gamesPlayed ? this.saves / this.gamesPlayed : 0
         this.cleanSheetsPercent = this.gamesPlayed ? (this.cleanSheets / this.gamesPlayed) * 100 : 0
+
+        this.goalsConcededPerMatch = this.gamesPlayed ? this.goalsConceded / this.gamesPlayed : 0
     }
 
 }

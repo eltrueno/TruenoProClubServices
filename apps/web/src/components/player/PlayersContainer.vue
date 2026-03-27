@@ -262,7 +262,8 @@ const plstats = computed<PlayerStatsEntity[]>(() => {
         members.value.reverse()
     }
 
-    const orderTypes = ['Partidos jugados','Goles', 'Asistencias', 'Valoración media', 'Partidos ganados (%)','Porterías a cero', 'Tarjetas rojas']
+    const orderTypes = ['Partidos jugados','Goles', 'Asistencias', 'Valoración media', 'Partidos ganados (%)', 
+    'Porterías a cero', 'Goles encajados', 'Encajados por partido', 'Tarjetas rojas']
     const selectedOrder = ref(0)
 
     function handleOrder(fmembers){
@@ -294,6 +295,14 @@ const plstats = computed<PlayerStatsEntity[]>(() => {
                 if(!ascOrder) fmembers.reverse()
                 break;
             case 6:
+                fmembers.sort((a,b) => (a.stats?.goalsConceded > b.stats?.goalsConceded) ? 1 : ((b.stats?.goalsConceded > a.stats?.goalsConceded) ? -1 : 0))
+                if(!ascOrder) fmembers.reverse()
+                break;
+            case 7:
+                fmembers.sort((a,b) => (a.stats?.goalsConcededPerMatch > b.stats?.goalsConcededPerMatch) ? 1 : ((b.stats?.goalsConcededPerMatch > a.stats?.goalsConcededPerMatch) ? -1 : 0))
+                if(!ascOrder) fmembers.reverse()
+                break;
+            case 8:
                 fmembers.sort((a,b) => (a.stats?.redCards > b.stats?.redCards) ? 1 : ((b.stats?.redCards > a.stats?.redCards) ? -1 : 0))
                 if(!ascOrder) fmembers.reverse()
                 break;
