@@ -140,34 +140,44 @@
         return { monday, sunday }
     }
 
-    function getNextMonday(): Date {
+    function getNextSunday21h(): Date {
         const today = new Date()
         const day = today.getDay()
-        const daysUntilNextMonday = (8 - day) % 7 || 7
-        const nextMonday = new Date(today)
-        nextMonday.setDate(today.getDate() + daysUntilNextMonday)
-        nextMonday.setHours(0, 0, 0, 0)
-        return nextMonday
+        const daysUntilNextSunday = (7 - day) % 7
+        const nextSunday = new Date(today)
+        nextSunday.setDate(today.getDate() + daysUntilNextSunday)
+        nextSunday.setHours(21, 0, 0, 0)
+
+        if (nextSunday <= today) {
+            nextSunday.setDate(nextSunday.getDate() + 7)
+        }
+        return nextSunday
     }
 
     function getTimeLeft(targetDate: Date) {
         const now = new Date()
         const diff = targetDate.getTime() - now.getTime()
 
-        if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 }
+        if (diff <= 0) return { days: "00", hours: "00", minutes: "00", seconds: "00" }
 
         const days = Math.floor(diff / (1000 * 60 * 60 * 24))
         const hours = Math.floor((diff / (1000 * 60 * 60)) % 24)
         const minutes = Math.floor((diff / (1000 * 60)) % 60)
         const seconds = Math.floor((diff / 1000) % 60)
 
-        return { days, hours, minutes, seconds }
+        return { 
+            days: days.toString().padStart(2, '0'), 
+            hours: hours.toString().padStart(2, '0'), 
+            minutes: minutes.toString().padStart(2, '0'), 
+            seconds: seconds.toString().padStart(2, '0') 
+        }
     }
 
     const weekRangeString: ComputedRef<string> = computed(() => {
         if (!selectedTotw.value) return ""
         const range = getIsoWeekRange(selectedTotw.value.weekIso)
-        return `${range.monday.toLocaleDateString()} - ${range.sunday.toLocaleDateString()}`
+        const dateOptions: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' }
+        return `${range.monday.toLocaleDateString('es-ES', dateOptions)} - ${range.sunday.toLocaleDateString('es-ES', dateOptions)}`
     })
 
     const isBestValue = computed({
@@ -175,12 +185,12 @@
         set: (val) => selectedType.value = val ? 'best' : 'worst'
     })
 
-    const timeLeft = ref(getTimeLeft(getNextMonday()))
+    const timeLeft = ref(getTimeLeft(getNextSunday21h()))
 
     let timer: number
     onMounted(() => {
         timer = window.setInterval(() => {
-            timeLeft.value = getTimeLeft(getNextMonday())
+            timeLeft.value = getTimeLeft(getNextSunday21h())
         }, 1000)
     })
 
