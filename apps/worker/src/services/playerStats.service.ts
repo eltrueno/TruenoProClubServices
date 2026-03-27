@@ -47,6 +47,7 @@ const accumulateStatsFromMatch = async (match: IMatch, clubId: number, skipAchie
             tacklesMade: player.tacklesMade || 0,
             tacklesSuccess: player.tacklesSuccess || 0,
             cleanSheets: player.cleanSheet ? 1 : 0,
+            goalsConceded: player.goalsConceded || 0,
             saves: player.saves || 0,
             manOfTheMatch: player.manOfTheMatch ? 1 : 0,
             hattricks: isHattrick ? 1 : 0,

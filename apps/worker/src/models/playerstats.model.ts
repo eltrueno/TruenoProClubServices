@@ -23,6 +23,7 @@ const playerStatsSchema = new Schema<IPlayerStats>(
         tacklesMade: { type: Number, required: true, default: 0 },
         tacklesSuccess: { type: Number, required: true, default: 0 },
         cleanSheets: { type: Number, required: true, default: 0 },
+        goalsConceded: { type: Number, required: true, default: 0 },
         manOfTheMatch: { type: Number, required: true, default: 0 },
         hattricks: { type: Number, required: true, default: 0 },
         pokers: { type: Number, required: true, default: 0 },
