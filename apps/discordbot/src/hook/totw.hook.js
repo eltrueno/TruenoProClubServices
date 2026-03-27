@@ -5,65 +5,26 @@ require('dotenv').config();
 async function handle(client, totw) {
     try {
         console.log("[Event Listener] 'totw.new' event recieved")
-        const totwBestChannel = await client.channels.cache.get("411962391799136266")
-        const totwWorstChannel = await client.channels.cache.get("411962391799136266")
+        const totwBestChannels = client.config.totwBestChannelsID.map(id => client.channels.cache.get(id)).filter(c => !!c)
+        const totwWorstChannels = client.config.totwWorstChannelsID.map(id => client.channels.cache.get(id)).filter(c => !!c)
+        if (totwBestChannels.length === 0 || totwWorstChannels.length === 0) {
+            console.error("[Event Listener] 'totw.new' hook: One or more channels not found")
+            return
+        }
 
-        const playersBest = totw.bestPlayers
-        let playerMentionsBestGK = ""
-        let playerMentionsBestDF = ""
-        let playerMentionsBestMD = ""
-        let playerMentionsBestFW = ""
-        for (p in playersBest) {
-            var player = playersBest[p]
-            var findMatch = client.playerDatabase.players.filter((e) => e.playerName === player.playerName)[0]
-            var discordId = findMatch ? findMatch.discordId : null
-            switch (player.position) {
-                case "goalkeeper": {
-                    playerMentionsBestGK += discordId ? `<@${discordId}> ` : player.playerName + " "
-                    break;
-                }
-                case "defender": {
-                    playerMentionsBestDF += discordId ? `<@${discordId}> ` : player.playerName + " "
-                    break;
-                }
-                case "midfielder": {
-                    playerMentionsBestMD += discordId ? `<@${discordId}> ` : player.playerName + " "
-                    break;
-                }
-                case "forward": {
-                    playerMentionsBestFW += discordId ? `<@${discordId}> ` : player.playerName + " "
-                    break;
-                }
-            }
-        }
-        const playersWorst = totw.worstPlayers
-        let playerMentionsWorstGK = ""
-        let playerMentionsWorstDF = ""
-        let playerMentionsWorstMD = ""
-        let playerMentionsWorstFW = ""
-        for (p in playersWorst) {
-            var player = playersWorst[p]
-            var findMatch = client.playerDatabase.players.filter((e) => e.playerName === player.playerName)[0]
-            var discordId = findMatch ? findMatch.discordId : null
-            switch (player.position) {
-                case "goalkeeper": {
-                    playerMentionsWorstGK += discordId ? `<@${discordId}> ` : player.playerName + " "
-                    break;
-                }
-                case "defender": {
-                    playerMentionsWorstDF += discordId ? `<@${discordId}> ` : player.playerName + " "
-                    break;
-                }
-                case "midfielder": {
-                    playerMentionsWorstMD += discordId ? `<@${discordId}> ` : player.playerName + " "
-                    break;
-                }
-                case "forward": {
-                    playerMentionsWorstFW += discordId ? `<@${discordId}> ` : player.playerName + " "
-                    break;
-                }
-            }
-        }
+        const playersBest = totw.bestPlayers.sort((a, b) => b.avgRating - a.avgRating)
+        let playerMentionsBest = ""
+        var player = playersBest[0]
+        var findMatch = client.playerDatabase.players.filter((e) => e.playerName === player.playerName)[0]
+        var discordId = findMatch ? findMatch.discordId : null
+        playerMentionsBest += discordId ? `<@${discordId}> ` : player.playerName + " "
+
+        const playersWorst = totw.worstPlayers.sort((a, b) => a.avgRating - b.avgRating)
+        let playerMentionsWorst = ""
+        var player = playersWorst[0]
+        var findMatch = client.playerDatabase.players.filter((e) => e.playerName === player.playerName)[0]
+        var discordId = findMatch ? findMatch.discordId : null
+        playerMentionsWorst += discordId ? `<@${discordId}> ` : player.playerName + " "
 
         const imgBufferBest = await render({
             type: 'totw',
@@ -74,17 +35,23 @@ async function handle(client, totw) {
         let embedMsgBest = new client.discord.EmbedBuilder()
             .setTitle("¡Ya tenemos el mejor XI de la semana! (Semana " + totw.weekNumber + ")")
             .addFields(
-                { name: "Portería", value: playerMentionsBestGK, inline: false },
-                { name: "Defensa", value: playerMentionsBestDF, inline: false },
-                { name: "Mediocampo", value: playerMentionsBestMD, inline: false },
-                { name: "Delantera", value: playerMentionsBestFW, inline: false }
+                {
+                    name: "El mejor jugador de la semana es: ",
+                    value: playerMentionsBest + " con una valoración de ***" + totw.bestPlayers[0].avgRating.toFixed(2) + "***", inline: false
+                }
             )
             .setAuthor(
                 { name: 'Ver más en la web', iconURL: 'https://www.casemurocity.org/logo.webp', url: 'https://www.casemurocity.org/totw?semana=' + totw.weekIso }
             )
             .setColor(13110541)
             .setImage('attachment://' + filenameBest)
-        await totwBestChannel.send({ embeds: [embedMsgBest], files: [imgattachBest] })
+        for (const channel of totwBestChannels) {
+            try {
+                await channel.send({ embeds: [embedMsgBest], files: [imgattachBest] })
+            } catch (e) {
+                console.error("[Event Listener] 'totw.new' hook: Error sending to channel", channel?.id, e)
+            }
+        }
 
         const imgBufferWorst = await render({
             type: 'totw',
@@ -95,17 +62,23 @@ async function handle(client, totw) {
         let embedMsgWorst = new client.discord.EmbedBuilder()
             .setTitle("¡Aquí llegan los más cojos de la semana! (Semana " + totw.weekNumber + ")")
             .addFields(
-                { name: "Portería", value: playerMentionsWorstGK || "N/A", inline: false },
-                { name: "Defensa", value: playerMentionsWorstDF || "N/A", inline: false },
-                { name: "Mediocampo", value: playerMentionsWorstMD || "N/A", inline: false },
-                { name: "Delantera", value: playerMentionsWorstFW || "N/A", inline: false }
+                {
+                    name: "El peor jugador de la semana es: ",
+                    value: playerMentionsWorst + " con una valoración de ***" + totw.worstPlayers[0].avgRating.toFixed(2) + "***", inline: false
+                }
             )
             .setAuthor(
                 { name: 'Ver más en la web', iconURL: 'https://www.casemurocity.org/logo.webp', url: 'https://www.casemurocity.org/totw?semana=' + totw.weekIso }
             )
             .setColor(13110541)
             .setImage('attachment://' + filenameWorst)
-        await totwWorstChannel.send({ embeds: [embedMsgWorst], files: [imgattachWorst] })
+        for (const channel of totwWorstChannels) {
+            try {
+                await channel.send({ embeds: [embedMsgWorst], files: [imgattachWorst] })
+            } catch (e) {
+                console.error("[Event Listener] 'totw.new' hook: Error sending to channel", channel?.id, e)
+            }
+        }
 
         console.info("[Event Listener] 'totw.new' hook: Message sended")
     } catch (e) {
