@@ -48,7 +48,7 @@
                 <div class="relative flex container w-full h-96  p-2 overflow-visible">
                     <img :src=fullImage class="absolute plimg select-none pointer-events-none md:w-4/6 h-full object-cover object-left" alt="Player ingame photo" @error="defaultFullImage">
                     <div class="absolute z-20 right-0 top-0 w-8/12 md:w-7/12 ploverlay  rounded-lg  h-full backdrop-blur-2xl">
-                        <div class="relative h-full overflow-y-scroll pt-2 w-full customscroll">
+                        <div v-if="player.stats" class="relative h-full overflow-y-scroll pt-2 w-full customscroll">
                             <div class="absolute h-full space-y-2 w-full pr-1">
                             <div class="font-semibold w-full flex content-center align-middle  space-x-1">
                                 <p class="self-center w-full text-clip text-pretty">Valoración media</p>
@@ -171,6 +171,9 @@
                                 <p class="self-center text-end text-primary text-lg"><count-up :end-val="player.stats.savesPerMatch" :decimal-places="1" class="inline"></count-up></p>
                             </div>
                             </div>
+                        </div>
+                        <div v-else class="flex h-full items-center justify-center p-4 text-center">
+                            <p class="text-lg opacity-60 text-base-content">Este jugador aún no tiene estadísticas registradas en esta categoría.</p>
                         </div>
                     </div>
                 </div>
