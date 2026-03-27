@@ -5,6 +5,7 @@ import { startOfISOWeek, endOfISOWeek } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 import dotenv from "dotenv"
 import { ITOTWPlayer } from "srcinterfaces/totw.interface"
+import { getTOTWProducer } from "@events/index";
 dotenv.config()
 
 const TIMEZONE = process.env.TZ || "Europe/Madrid"
@@ -243,12 +244,14 @@ export const calculateAndSaveTOTW = async (weekKey: string): Promise<void> => {
 
     const weekNumber = (await TOTWModel.countDocuments()) + 1
 
-    await TOTWModel.create({ weekNumber, weekIso: weekKey, bestPlayers, worstPlayers })
+    const totw = await TOTWModel.create({ weekNumber, weekIso: weekKey, bestPlayers, worstPlayers })
     await addTOTWAppearances(bestPlayers, weekKey, 'best')
     await addTOTWAppearances(worstPlayers, weekKey, 'worst')
 
     const affected = [...new Set([...bestPlayers, ...worstPlayers].map(p => p.playerName))]
     await processTOTWAchievements(affected)
+
+    await getTOTWProducer().publish(totw)
 
     console.info('[TOTW] Created successfully — week', weekNumber, `(${weekKey})`)
 }

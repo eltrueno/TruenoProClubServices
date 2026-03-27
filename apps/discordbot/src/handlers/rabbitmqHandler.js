@@ -2,8 +2,9 @@ const amqp = require('amqplib');
 const path = require('path');
 require('dotenv').config();
 
-const newMatchWebhook = require('../hook/newmatch.hook');
-const memberAchievementWebhook = require('../hook/memberachievement.hook');
+const newMatchHook = require('../hook/newmatch.hook');
+const memberAchievementHook = require('../hook/memberachievement.hook');
+const totwHook = require('../hook/totw.hook');
 
 const EXCHANGE_NAME = 'events';
 const QUEUE_NAME = 'discordbot';
@@ -20,6 +21,7 @@ async function startConsumer(client) {
 
     await channel.bindQueue(QUEUE_NAME, EXCHANGE_NAME, 'match.new');
     await channel.bindQueue(QUEUE_NAME, EXCHANGE_NAME, 'player.achievement');
+    await channel.bindQueue(QUEUE_NAME, EXCHANGE_NAME, 'totw.new');
 
     console.log('[RabbitMQ] Listening...');
 
@@ -58,11 +60,15 @@ async function startConsumer(client) {
       try {
         switch (routingKey) {
           case 'match.new':
-            await newMatchWebhook.handle(client, content);
+            await newMatchHook.handle(client, content);
             break;
 
           case 'player.achievement':
-            await memberAchievementWebhook.handle(client, content);
+            await memberAchievementHook.handle(client, content);
+            break;
+
+          case 'totw.new':
+            await totwHook.handle(client, content);
             break;
 
           default:

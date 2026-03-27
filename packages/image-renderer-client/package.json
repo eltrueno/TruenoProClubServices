@@ -1,0 +1,17 @@
+{
+  "name": "@trueno-proclub-services/imagerenderer-client",
+  "version": "1.0.0",
+  "description": "Typed client for imagerenderer service",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "Trueno Pro Club Services",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
