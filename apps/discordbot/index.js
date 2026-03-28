@@ -9,8 +9,7 @@ const { Client, Collection, GatewayIntentBits } = Discord;
 const handler = require("./src/handlers/index");
 
 const client = new Client({
-    // Or use https://discord-intents-calculator.vercel.app/
-    intents: [Object.keys(GatewayIntentBits)],
+    intents: [GatewayIntentBits.Guilds],
 });
 
 
@@ -30,7 +29,7 @@ module.exports = client;
 // Records commands and events
 handler.loadEvents(client);
 //handler.loadCommands(client);
-handler.loadSlashCommands(client);
+//handler.loadSlashCommands(client);
 
 // Error Handling
 process.on("uncaughtException", (err) => {

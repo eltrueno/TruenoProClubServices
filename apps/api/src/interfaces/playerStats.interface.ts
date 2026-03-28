@@ -15,6 +15,7 @@ export interface IPlayerStats {
     tacklesMade: number
     tacklesSuccess: number
     cleanSheets: number
+    goalsConceded: number
     manOfTheMatch: number
     hattricks: number
     pokers: number

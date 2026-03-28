@@ -43,8 +43,8 @@ export const scheduleTOTWJob = () => {
         console.info("[TOTW] Force recalculate enabled, running now...")
         checkMissedTOTW()
     } else console.log("[TOTW] Force recalculate disabled, skipping...")
-    //Domingos a las 22:00
-    cron.schedule("0 22 * * 0", async () => {
+    //Domingos a las 21:00
+    cron.schedule("0 21 * * 0", async () => {
         console.info("[TOTW] Calculating team of the week...")
         const week = getCurrentWeekKey()
         await calculateAndSaveTOTW(week)

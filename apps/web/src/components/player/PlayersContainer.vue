@@ -197,6 +197,7 @@ function mergeStats(
             existing.passesMade += s.passesMade
             existing.passesSuccess += s.passesSuccess
             existing.cleanSheets += s.cleanSheets
+            existing.goalsConceded += s.goalsConceded
             existing.redCards += s.redCards
             existing.manOfTheMatch += s.manOfTheMatch
             existing.hattricks += s.hattricks
@@ -262,7 +263,8 @@ const plstats = computed<PlayerStatsEntity[]>(() => {
         members.value.reverse()
     }
 
-    const orderTypes = ['Partidos jugados','Goles', 'Asistencias', 'Tarjetas rojas']
+    const orderTypes = ['Partidos jugados','Goles', 'Asistencias', 'Valoración media', 'Partidos ganados (%)', 
+    'Porterías a cero', 'Goles encajados', 'Encajados por partido', 'Tarjetas rojas']
     const selectedOrder = ref(0)
 
     function handleOrder(fmembers){
@@ -282,6 +284,26 @@ const plstats = computed<PlayerStatsEntity[]>(() => {
                 if(!ascOrder) fmembers.reverse()
                 break;
             case 3:
+                fmembers.sort((a,b) => (a.stats?.ratingAve > b.stats?.ratingAve) ? 1 : ((b.stats?.ratingAve > a.stats?.ratingAve) ? -1 : 0))
+                if(!ascOrder) fmembers.reverse()
+                break;
+            case 4:
+                fmembers.sort((a,b) => (a.stats?.winRate > b.stats?.winRate) ? 1 : ((b.stats?.winRate > a.stats?.winRate) ? -1 : 0))
+                if(!ascOrder) fmembers.reverse()
+                break;
+            case 5:
+                fmembers.sort((a,b) => (a.stats?.cleanSheets > b.stats?.cleanSheets) ? 1 : ((b.stats?.cleanSheets > a.stats?.cleanSheets) ? -1 : 0))
+                if(!ascOrder) fmembers.reverse()
+                break;
+            case 6:
+                fmembers.sort((a,b) => (a.stats?.goalsConceded > b.stats?.goalsConceded) ? 1 : ((b.stats?.goalsConceded > a.stats?.goalsConceded) ? -1 : 0))
+                if(!ascOrder) fmembers.reverse()
+                break;
+            case 7:
+                fmembers.sort((a,b) => (a.stats?.goalsConcededPerMatch > b.stats?.goalsConcededPerMatch) ? 1 : ((b.stats?.goalsConcededPerMatch > a.stats?.goalsConcededPerMatch) ? -1 : 0))
+                if(!ascOrder) fmembers.reverse()
+                break;
+            case 8:
                 fmembers.sort((a,b) => (a.stats?.redCards > b.stats?.redCards) ? 1 : ((b.stats?.redCards > a.stats?.redCards) ? -1 : 0))
                 if(!ascOrder) fmembers.reverse()
                 break;

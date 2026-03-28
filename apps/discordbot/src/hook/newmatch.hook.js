@@ -1,23 +1,27 @@
 const { AttachmentBuilder } = require("discord.js")
+const { render } = require("@trueno-proclub-services/imagerenderer-client")
 require('dotenv').config();
-
-const BASE_URL = process.env.IMAGE_GENERATOR_BASEURL || "http://localhost";
 
 async function handle(client, match) {
     try {
         console.log("[Event Listener] 'newmatch' event recieved")
-        const matchesChannel = await client.channels.cache.get("1268013298339545232")
+        const matchesChannel = await client.channels.cache.get("411962391799136266")
 
         const players = match.localTeam ? match.localClub.players : match.awayClub.players
         let playerMentions = ""
         for (p in players) {
             var player = players[p]
-            var discordId = client.playerDatabase.players.filter((e) => e.playerName === player.playerName)[0].discordId
+            var findMatch = client.playerDatabase.players.filter((e) => e.playerName === player.playerName)[0]
+            var discordId = findMatch ? findMatch.discordId : null
             playerMentions += discordId ? `<@${discordId}> ` : player.playerName + " "
         }
 
         let embedMsg
-        const imgattach = await new AttachmentBuilder(BASE_URL + '/matchsummary/' + match.matchId, { name: `match_${match.matchId}.jpeg` })
+        const imgBuffer = await render({
+            type: 'match-summary',
+            data: { matchId: match.matchId }
+        })
+        const imgattach = new AttachmentBuilder(imgBuffer, { name: `match_${match.matchId}.jpeg` })
         switch (match.result) {
             case "tie": {
                 embedMsg = new client.discord.EmbedBuilder()

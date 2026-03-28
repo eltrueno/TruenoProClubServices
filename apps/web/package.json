@@ -22,7 +22,7 @@
     "tailwindcss": "^3.4.1",
     "three": "^0.177.0",
     "typescript": "^5.3.3",
-    "vue": "^3.4.13",
+    "vue": "^3.5.31",
     "vue-countup-v3": "^1.4.1",
     "vue-css-donut-chart": "^2.0.0",
     "vue-tailwind-datepicker": "^1.7.3"

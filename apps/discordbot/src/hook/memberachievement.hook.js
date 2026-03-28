@@ -1,15 +1,15 @@
 const { AttachmentBuilder } = require("discord.js")
+const { render } = require("@trueno-proclub-services/imagerenderer-client")
 require('dotenv').config();
-
-const IMAGE_GENERATOR_BASEURL = process.env.IMAGE_GENERATOR_BASEURL || "http://localhost";
 
 async function handle(client, achievement) {
     try {
         console.log("[Event Listener] 'memberachievement' event recieved")
-        const announcementsChannel = await client.channels.cache.get("1134219726780911667")
+        const announcementsChannel = await client.channels.cache.get("411962391799136266")
 
         const player = achievement.player
-        const discordId = client.playerDatabase.players.filter((e) => e.playerName === player.playerName)[0].discordId
+        const findMatch = client.playerDatabase.players.filter((e) => e.playerName === player.playerName)[0]
+        const discordId = findMatch ? findMatch.discordId : null
         const playerMention = discordId ? `<@${discordId}>` : player.playerName
 
         const encoraugements = ['¡Increible!', '¡Imparable!', '¡Impresionante!', '¡Menudo logro!']
@@ -43,7 +43,15 @@ async function handle(client, achievement) {
         }
 
         const filename = `playerachievement_${player.playerName}_${achievement.type}_${achievement.reached}.jpeg`
-        const imgattach = await new AttachmentBuilder(IMAGE_GENERATOR_BASEURL + '/playerachievement/' + player.playerName + '?type=' + achievement.type + "&reached=" + achievement.reached, { name: filename })
+        const imgBuffer = await render({
+            type: 'player-achievement',
+            data: {
+                playerName: player.playerName,
+                type: achievement.type,
+                reached: achievement.reached
+            }
+        })
+        const imgattach = new AttachmentBuilder(imgBuffer, { name: filename })
         let embedMsg = new client.discord.EmbedBuilder()
             .setTitle(encoraugements[Math.floor(Math.random() * encoraugements.length)])
             .setDescription(

@@ -95,8 +95,8 @@ const positionLabel = computed(
 const positionStats = computed(() => {
   const p = props.player
   switch (p.position) {
-    case 'goalkeeper': return [{ l: 'PARADAS', v: p.saves }, { l: 'IMBATIDO', v: p.cleanSheets }, { l: 'PASE%', v: `${p.passAccuracy}%` }]
-    case 'defender':   return [{ l: 'TAKLEES', v: p.tacklesSuccess }, { l: 'TAKLEES%', v: `${p.tackleAccuracy}%` }, { l: 'IMBATIDO', v: p.cleanSheets }]
+    case 'goalkeeper': return [{ l: 'PARADAS', v: p.saves }, { l: 'ENCAJADOS', v: p.goalsConceded }, { l: 'IMBATIDO', v: p.cleanSheets }]
+    case 'defender':   return [{ l: 'TAKLEES%', v: `${p.tackleAccuracy}%` }, { l: 'ENCAJADOS', v: p.goalsConceded }, { l: 'IMBATIDO', v: p.cleanSheets }]
     case 'midfielder': return [{ l: 'ASIST', v: p.assists }, { l: 'PASE%', v: `${p.passAccuracy}%` }, { l: 'GOLES', v: p.goals }]
     case 'forward':    return [{ l: 'GOLES', v: p.goals }, { l: 'ASIST', v: p.assists }, { l: 'TIROS%', v: `${p.shotAccuracy}%` }]
     default:           return [{ l: 'GOLES', v: p.goals }, { l: 'ASIST', v: p.assists }, { l: 'PASES', v: p.passesMade }]
