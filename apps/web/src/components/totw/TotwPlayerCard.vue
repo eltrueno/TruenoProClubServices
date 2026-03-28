@@ -1,5 +1,5 @@
 <template>
-  <div ref="atroposEl" class="atropos shrink-0 cursor-pointer" style="width: 188px;">
+  <div ref="atroposEl" class="atropos shrink-0 cursor-pointer relative z-[1] hover:z-[50]" style="width: 188px; aspect-ratio: 8/9;">
 
     <div class="atropos-scale">
       <div class="atropos-rotate">
