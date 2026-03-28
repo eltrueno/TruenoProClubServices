@@ -197,6 +197,7 @@ function mergeStats(
             existing.passesMade += s.passesMade
             existing.passesSuccess += s.passesSuccess
             existing.cleanSheets += s.cleanSheets
+            existing.goalsConceded += s.goalsConceded
             existing.redCards += s.redCards
             existing.manOfTheMatch += s.manOfTheMatch
             existing.hattricks += s.hattricks
