@@ -364,7 +364,6 @@ function getPlayerSummaryText(player) {
 
     // PORTERO
     if (player.position == "goalkeeper") {
-        console.log("portero")
 
         if (player.saves >= 10) {
             phrases.push("❝ Partido de superhéroe bajo palos ❞")

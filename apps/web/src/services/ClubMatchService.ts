@@ -20,8 +20,6 @@ export default class ClubMatchService extends FetchService {
             const url = "https://api.casemurocity.org/matches/" + this.id
             const response = await fetch(url)
             const json = await response.json()
-            console.log("json", json)
-            console.log("status", response.status)
             this.status.value = response.status
 
             if (this.status.value == 200) {
@@ -35,11 +33,9 @@ export default class ClubMatchService extends FetchService {
                 }
             } else this.error.value = json.status.message ?? response.statusText
         } catch (error) {
-            console.error(error)
             this.error.value = error
         } finally {
             this.isloading.value = false;
-            console.log("this", this)
         }
     }
 }
