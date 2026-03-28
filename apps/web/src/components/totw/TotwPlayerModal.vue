@@ -134,6 +134,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { ITOTWPlayer } from '@/interfaces/totw.interface';
+import { translatePosition } from '@i18n/translations';
 
 const props = defineProps<{
   player?: ITOTWPlayer | null;
@@ -161,10 +162,11 @@ function defaultTopImage(e: Event) {
   (e.target as HTMLImageElement).src = '/players/placeholder_top_transp.png'
 }
 
-const POSITION_LABELS: Record<string, string> = { goalkeeper: 'POR', defender: 'DEF', midfielder: 'MC', forward: 'DEL' }
+const POSITION_LABELS: Record<string, string> = { goalkeeper: 'PORTERO', defender: 'DEFENSA', midfielder: 'MEDIO', forward: 'DELANTERO' }
 const positionLabel = computed(() => {
   if (!props.player) return ''
   return POSITION_LABELS[props.player.position] ?? props.player.position.slice(0, 3).toUpperCase()
+  //return translatePosition(props.player.position).toUpperCase()
 })
 
 const topGridStats = computed(() => {

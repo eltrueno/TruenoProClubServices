@@ -166,7 +166,7 @@
                                 <p class="self-center text-end text-primary text-lg"><count-up :end-val="player.stats.goalsConceded" :decimal-places="0" class="inline"></count-up></p>
                             </div>
                             <div class="font-semibold w-full flex content-center align-middle space-x-1 overflow-hidden">
-                                <p class="self-center w-full text-clip text-pretty">Goles encajados por partido</p>
+                                <p class="self-center w-full text-clip text-pretty">Encajados por partido</p>
                                 <p class="self-center text-end text-primary text-lg"><count-up :end-val="player.stats.goalsConcededPerMatch" :decimal-places="1" class="inline"></count-up></p>
                             </div>
                             <div class="divider p-0 m-0"></div>
