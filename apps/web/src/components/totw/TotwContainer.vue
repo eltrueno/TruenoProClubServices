@@ -75,6 +75,7 @@
 <script setup lang="ts">
     import { onBeforeMount, computed, ref, type Ref, type ComputedRef, onUnmounted, onMounted } from 'vue';
     import TotwAllService from "@/services/TotwAllService";
+    import TotwScheduleService from "@/services/TotwScheduleService";
     import type TotwEntity from "@/model/totw/TotwEntity";
     import TotwTitle from './TotwTitle.vue';
     import TotwItem from './TotwItem.vue';
@@ -93,7 +94,9 @@
     })
 
     const totwAllService = new TotwAllService()
+    const totwScheduleService = new TotwScheduleService()
     const totwList: Ref<Array<TotwEntity>> = totwAllService.getData()
+    const totwSchedule: Ref<{ timezone: string, nextDate: string }> = totwScheduleService.getData()
     const isloading:Ref<boolean> = totwAllService.isloading as Ref<boolean>
     const errorText:Ref<string> = totwAllService.getError() as Ref<string>
     const hasError:Ref<boolean> = totwAllService.getHasError() as Ref<boolean>
@@ -109,6 +112,7 @@
 
     onBeforeMount(async () => {
         await totwAllService.fetch()
+        await totwScheduleService.fetch()
 
         const isIsoWeek = isNaN(Number(props.week))
         const paramsTotw:TotwEntity | undefined = totwSorted.value.find((totw) => {
@@ -140,19 +144,6 @@
         return { monday, sunday }
     }
 
-    function getNextSunday21h(): Date {
-        const today = new Date()
-        const day = today.getDay()
-        const daysUntilNextSunday = (7 - day) % 7
-        const nextSunday = new Date(today)
-        nextSunday.setDate(today.getDate() + daysUntilNextSunday)
-        nextSunday.setHours(21, 0, 0, 0)
-
-        if (nextSunday <= today) {
-            nextSunday.setDate(nextSunday.getDate() + 7)
-        }
-        return nextSunday
-    }
 
     function getTimeLeft(targetDate: Date) {
         const now = new Date()
@@ -185,12 +176,19 @@
         set: (val) => selectedType.value = val ? 'best' : 'worst'
     })
 
-    const timeLeft = ref(getTimeLeft(getNextSunday21h()))
+    const targetDate = computed(() => {
+        if (totwSchedule.value?.nextDate) {
+            return new Date(totwSchedule.value.nextDate)
+        }
+        return new Date()
+    })
+
+    const timeLeft = ref(getTimeLeft(targetDate.value))
 
     let timer: number
     onMounted(() => {
         timer = window.setInterval(() => {
-            timeLeft.value = getTimeLeft(getNextSunday21h())
+            timeLeft.value = getTimeLeft(targetDate.value)
         }, 1000)
     })
 
