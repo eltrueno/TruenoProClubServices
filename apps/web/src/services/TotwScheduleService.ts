@@ -1,30 +1,27 @@
 import { ref, type Ref } from "vue";
 import FetchService from "@services/FetchService";
-import TotwEntity from "@/model/totw/TotwEntity";
-export default class TotwService extends FetchService {
+export default class TotwScheduleService extends FetchService {
 
-    private week?: number | string
 
-    constructor(week?: number | string) {
+    constructor() {
         super()
-        this.data = ref<TotwEntity>()
-        this.week = week
+        this.data = ref<{ timezone: string, nextDate: string }>()
     }
 
-    getData(): Ref<TotwEntity> {
+    getData(): Ref<{ timezone: string, nextDate: string }> {
         return this.data;
     }
 
 
     async fetch(): Promise<void> {
         try {
-            const url = "https://api.casemurocity.org/totw/" + (this.week ? this.week : "latest")
+            const url = "https://api.casemurocity.org/totw/schedule"
             const response = await fetch(url)
             const json = await response.json()
             this.status.value = response.status
 
             if (this.status.value == 200) {
-                this.data.value = new TotwEntity(json.response);
+                this.data.value = json.response;
             } else try {
                 this.error.value = json.status.message;
             } catch (e) {

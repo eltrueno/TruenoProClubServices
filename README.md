@@ -123,6 +123,8 @@ Las variables de entorno se deben configurar en archivos `.env` (u otro tipo var
 | `CLUBID` | `number` | ID del club en EA Sports | `2766636` |
 | `PLATFORM` | `string` | Plataforma del club (Xbox/PS/PC) | `common-gen5` |
 | `CLUB_CACHE_MS` | `number` | Tiempo de caché para datos del club (ms) | `3600000` (1 hora) |
+| `TOTW_CRON_SCHEDULE` | `string` | Expresión cron para horario del TOTW | `0 21 * * 0` |
+| `TZ` | `string` | Zona horaria para el cron (Huso horario) | `Europe/Madrid` |
 
 **Ejemplo `.env`:**
 ```env
@@ -132,6 +134,8 @@ MONGO_URL=mongodb://localhost:27017/tpcs
 CLUBID=2766636
 PLATFORM=common-gen5
 CLUB_CACHE_MS=3600000
+TOTW_CRON_SCHEDULE="0 21 * * 0"
+TZ=Europe/Madrid
 ```
 
 ##### Worker (`apps/worker/.env`)
@@ -145,6 +149,7 @@ CLUB_CACHE_MS=3600000
 | `FORCE_RECALCULATE` | `boolean` | Fuerza recálculo de estadísticas en startup | `false` |
 | `RABBITMQ_URL` | `string` | URL de conexión a RabbitMQ | `amqp://localhost` |
 | `TZ` | `string` | Zona horaria para cálculos de fechas | `Europe/Madrid` |
+| `TOTW_CRON_SCHEDULE` | `string` | Expresión cron para proceso de TOTW | `0 21 * * 0` |
 | `TOTW_MIN_GAMES_PLAYED` | `number` | Mínimo de partidos jugados para ser considerado en el TOTW | `5` |
 
 **Ejemplo `.env`:**
@@ -156,6 +161,7 @@ WORKER_INTERVAL=300
 FORCE_RECALCULATE=false
 RABBITMQ_URL=amqp://localhost
 TZ=Europe/Madrid
+TOTW_CRON_SCHEDULE="0 21 * * 0"
 TOTW_MIN_GAMES_PLAYED=5
 ```
 
@@ -392,6 +398,8 @@ Environment variables should be configured in `.env` files (or other environment
 | `CLUBID` | `number` | Club ID on EA Sports | `2766636` |
 | `PLATFORM` | `string` | Club platform (Xbox/PS/PC) | `common-gen5` |
 | `CLUB_CACHE_MS` | `number` | Cache time for club data (ms) | `3600000` (1 hour) |
+| `TOTW_CRON_SCHEDULE` | `string` | Cron expression for TOTW schedule | `0 21 * * 0` |
+| `TZ` | `string` | Timezone for cron calculates | `Europe/Madrid` |
 
 **Example `.env`:**
 ```env
@@ -401,6 +409,8 @@ MONGO_URL=mongodb://localhost:27017/tpcs
 CLUBID=2766636
 PLATFORM=common-gen5
 CLUB_CACHE_MS=3600000
+TOTW_CRON_SCHEDULE="0 21 * * 0"
+TZ=Europe/Madrid
 ```
 
 ##### Worker (`apps/worker/.env`)
@@ -414,6 +424,7 @@ CLUB_CACHE_MS=3600000
 | `FORCE_RECALCULATE` | `boolean` | Force statistics recalculation on startup | `false` |
 | `RABBITMQ_URL` | `string` | RabbitMQ connection URL | `amqp://localhost` |
 | `TZ` | `string` | Timezone for date calculations | `Europe/Madrid` |
+| `TOTW_CRON_SCHEDULE` | `string` | Cron expression for TOTW process | `0 21 * * 0` |
 | `TOTW_MIN_GAMES_PLAYED` | `number` | Minimum games played to be considered for TOTW | `5` |
 
 **Example `.env`:**
@@ -425,6 +436,7 @@ WORKER_INTERVAL=300
 FORCE_RECALCULATE=false
 RABBITMQ_URL=amqp://localhost
 TZ=Europe/Madrid
+TOTW_CRON_SCHEDULE="0 21 * * 0"
 TOTW_MIN_GAMES_PLAYED=5
 ```
 
