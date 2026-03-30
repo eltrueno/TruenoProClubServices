@@ -52,14 +52,16 @@
           </div>
           <div v-if="player" class="absolute bottom-0 left-0 right-0 px-4 pb-4 pt-12 card-bottom flex flex-col items-center z-10">
             <h2 class="text-3xl font-black tracking-wider text-white text-center mb-1 drop-shadow truncate w-full px-2" style="text-shadow: 0 4px 10px rgba(0,0,0, 0.9);">
-              {{ player.playerName }}
+              {{ player.playerName === "SweetYanira5" ? "SweetIAnira" : player.playerName }}
             </h2>
             <div class="h-px w-full my-3 divider-gold shrink-0 scale-x-95" />
-            <div class="grid grid-cols-3 gap-y-4 gap-x-2 w-full px-2">
-              <div v-for="(stat, index) in topGridStats" :key="index" class="text-center w-full">
-                <span class="block text-2xl font-black leading-none text-white drop-shadow-md">{{ stat.v }}</span>
-                <span class="block text-[10px] uppercase tracking-wider text-[#FFD700]/90 mt-1 leading-tight font-bold">{{ stat.l }}</span>
-              </div>
+            <div class="flex flex-wrap justify-center gap-y-4 gap-x-2 w-full px-2">
+              <template v-for="(stat, index) in topGridStats" :key="index">
+                <div v-if="stat.l" class="text-center w-[22%] sm:w-[23%] shrink-0">
+                    <span class="block text-2xl font-black leading-none text-white drop-shadow-md">{{ stat.v }}</span>
+                    <span class="block text-[10px] uppercase tracking-wider text-[#FFD700]/90 mt-1 leading-tight font-bold">{{ stat.l }}</span>
+                </div>
+              </template>
             </div>
           </div>
         </div>
@@ -105,16 +107,6 @@
                 </div>
                 <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                   <div class="h-full bg-gradient-to-r from-white to-[#FFD700] rounded-full" :style="{ width: saveAccuracy + '%' }"></div>
-                </div>
-              </div>
-              <div class="flex justify-between w-full mt-2" v-if="player.position !== 'goalkeeper'">
-                <div class="flex flex-col">
-                  <span class="text-[10px] font-bold text-white/50 tracking-wider">PORTERÍAS A CERO</span>
-                  <span class="text-md font-black text-[#FFD700]">{{ player.cleanSheets ?? 0 }}</span>
-                </div>
-                <div class="flex flex-col text-right">
-                  <span class="text-[10px] font-bold text-white/50 tracking-wider">GOLES ENCAJADOS</span>
-                  <span class="text-md font-black text-[#FFD700]">{{ player.goalsConceded ?? 0 }}</span>
                 </div>
               </div>
 
@@ -175,12 +167,18 @@ const topGridStats = computed(() => {
   const isGK = p.position === 'goalkeeper'
   
   return [
-    { l: isGK ? 'PARADAS' : 'GOLES', v: isGK ? (p.saves ?? 0) : (p.goals ?? 0) },
+    { l: 'GOLES', v: p.goals ?? 0 },
     { l: 'ASISTENCIAS', v: p.assists ?? 0 },
+    { l: 'IMBATIDO', v: p.cleanSheets ?? 0 },
     { l: 'TIROS', v: p.shots ?? 0 },
     { l: 'PASES', v: p.passesMade ?? 0 },
     { l: 'TACKLES', v: p.tacklesMade ?? 0 },
-    { l: isGK ? 'ENCAJADOS' : 'IMBATIDO', v: isGK ? (p.goalsConceded ?? 0) : (p.cleanSheets ?? 0) },
+    { l: 'ENCAJADOS', v: p.goalsConceded ?? 0 },
+    isGK ? { l: 'PARADAS', v: p.saves ?? 0 } : {},
+    { l: 'PASES POR PARTIDO', v: (p.passesMade / p.gamesPlayed).toFixed(2) ?? 0 },
+    { l: 'TACKLES POR PARTIDO', v: (p.tacklesMade / p.gamesPlayed).toFixed(2) ?? 0 },
+    { l: 'ENCAJADOS POR PARTIDO', v: (p.goalsConceded / p.gamesPlayed).toFixed(2) ?? 0 },
+    isGK ? { l: 'PARADAS POR PARTIDO', v: (p.saves / p.gamesPlayed).toFixed(2) ?? 0 } : {},
   ]
 })
 

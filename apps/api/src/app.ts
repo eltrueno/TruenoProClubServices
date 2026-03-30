@@ -77,6 +77,7 @@ app.get("/", async function (req, res) {
             {
                 "/totw": [
                     { "/": "List of all Team of the Weeks" },
+                    { "/schedule": "Get Team of the Week UTC time for next calculation" },
                     { "/latest": "Get latest Team of the Week" },
                     { "/{weekNumber | ISOweek}": "Get Team of the Week by week number or ISO week" },
                     { "/appearances": "List of all Team of the Weeks member appearances" },

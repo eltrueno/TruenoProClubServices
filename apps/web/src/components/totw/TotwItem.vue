@@ -53,6 +53,7 @@
 
     const totwPlayersByPosition: ComputedRef<Map<string, ITOTWPlayer[]>> = computed(() => {
         const map = new Map<string, ITOTWPlayer[]>()
+        const orderedPositions = ['goalkeeper', 'defender', 'midfielder', 'forward']
         totwPlayers.value.forEach((player) => {
             const position = player.position
             if (!map.has(position)) {
@@ -60,7 +61,14 @@
             }
             map.get(position)!.push(player)
         })
-        return map
+        //ordenar el mapa por posicion
+        const orderedMap = new Map<string, ITOTWPlayer[]>()
+        orderedPositions.forEach((position) => {
+            if (map.has(position)) {
+                orderedMap.set(position, map.get(position)!)  
+            }
+        })
+        return orderedMap
     })
 </script>
 

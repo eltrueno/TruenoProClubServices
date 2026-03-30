@@ -11,7 +11,7 @@
             :class="{
                     'plextrainfo-opened': hovered
                 }">
-                <p class="font-bold text-2xl">{{ player.playerName }}
+                <p class="font-bold text-2xl">{{ player.playerName === "SweetYanira5" ? "SweetIAnira" : player.playerName }}
                 
                 <svg class="w-6 fixed top-2 right-0 animate-bounce" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" 
                 :class="{

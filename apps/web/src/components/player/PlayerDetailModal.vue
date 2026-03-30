@@ -42,7 +42,7 @@
                 <button class="btn btn-sm btn-circle btn-ghost fixed right-1 top-1">✕</button>
             </form>
             <header>
-                <h3 class="font-bold text-xl text-primary text-center">{{ player.playerName }} <span class="font-semibold text-lg text-base-content">({{ player.proOverall? player.proOverall : "¿?" }})</span></h3>
+                <h3 class="font-bold text-xl text-primary text-center">{{ player.playerName === "SweetYanira5" ? "SweetIAnira" : player.playerName }} <span class="font-semibold text-lg text-base-content">({{ player.proOverall? player.proOverall : "¿?" }})</span></h3>
             </header>
             <section >
                 <div class="relative flex container w-full h-96  p-2 overflow-visible">
