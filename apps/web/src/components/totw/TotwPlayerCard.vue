@@ -52,7 +52,7 @@
           <!-- nombre + stats -->
           <div class="absolute bottom-0 left-0 right-0 px-2.5 pb-2.5 pt-6 card-bottom" data-atropos-offset="3">
             <p class="text-xs font-black tracking-wider text-white truncate text-center mb-1.5 drop-shadow">
-              {{ player.playerName }}
+              {{ player.playerName === "SweetYanira5" ? "SweetIAnira" : player.playerName }}
             </p>
             <div class="h-px w-full mb-1.5 divider-gold" />
             <div class="flex justify-around" data-atropos-offset="5">
