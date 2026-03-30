@@ -8,6 +8,7 @@ dotenv.config()
 
 const FORCE_RECALCULATE = process.env.FORCE_RECALCULATE === "true"
 const TIMEZONE = process.env.TZ || "Europe/Madrid"
+const TOTW_CRON_SCHEDULE = process.env.TOTW_CRON_SCHEDULE || "0 21 * * 0"
 
 const getPreviousWeekKey = () => {
     const now = new Date()
@@ -43,13 +44,14 @@ export const scheduleTOTWJob = () => {
         console.info("[TOTW] Force recalculate enabled, running now...")
         checkMissedTOTW()
     } else console.log("[TOTW] Force recalculate disabled, skipping...")
-    //Domingos a las 21:00
-    cron.schedule("0 21 * * 0", async () => {
+    // Schedule basado en variable de entorno (por defecto Domingos a las 21:00)
+    console.log(`[TOTW] Cron schedule set to: ${TOTW_CRON_SCHEDULE} in ${TIMEZONE}`);
+    cron.schedule(TOTW_CRON_SCHEDULE, async () => {
         console.info("[TOTW] Calculating team of the week...")
         const week = getCurrentWeekKey()
         await calculateAndSaveTOTW(week)
         console.info("[TOTW] Done")
     }, {
-        timezone: "Europe/Madrid"
+        timezone: TIMEZONE
     })
 }

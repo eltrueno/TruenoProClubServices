@@ -17,6 +17,22 @@ export const getLatestTOTW = async (req: Request, res: Response, next: NextFunct
     }
 }
 
+export const getSchedule = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const response = TOTWService.getSchedule()
+        res.json({
+            status: {
+                code: 200,
+                message: "Ok"
+            },
+            response: response
+        })
+    } catch (err) {
+        console.error(err)
+        next(new Error("ERROR_GETTING_TOTW_SCHEDULE"))
+    }
+}
+
 export const getTOTWByWeek = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const week = String(req.params.week)
