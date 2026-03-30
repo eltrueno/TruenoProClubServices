@@ -192,19 +192,28 @@ const fillPositionSlot = async (
     return []
 }
 
+interface ExcludedProfile {
+    playerName: string;
+    position: string;
+}
+
 const buildTeam = async (
     weekStart: number,
     weekEnd: number,
     descOrder: boolean,
-    hardExcluded: string[] = [],
+    hardExcludedProfiles: ExcludedProfile[] = [],
 ): Promise<ITOTWPlayer[]> => {
     const team: ITOTWPlayer[] = []
     const softSelected: string[] = []
 
     for (const position of POSITION_ORDER) {
+        const hardExclThisSlot = hardExcludedProfiles
+            .filter(p => p.position === position)
+            .map(p => p.playerName)
+
         const players = await fillPositionSlot(
             weekStart, weekEnd, position, TOTW_SLOTS[position],
-            hardExcluded, softSelected, descOrder
+            hardExclThisSlot, softSelected, descOrder
         )
         players.forEach(p => softSelected.push(p.playerName))
         team.push(...players)
@@ -235,7 +244,13 @@ export const calculateAndSaveTOTW = async (weekKey: string): Promise<void> => {
     const weekEnd = Math.floor(end.getTime() / 1000)
 
     const bestPlayers = await buildTeam(weekStart, weekEnd, true)
-    const worstPlayers = await buildTeam(weekStart, weekEnd, false, bestPlayers.map(p => p.playerName))
+    
+    const hardExcludedProfiles = bestPlayers.map(p => ({
+        playerName: p.playerName,
+        position: p.position
+    }))
+    
+    const worstPlayers = await buildTeam(weekStart, weekEnd, false, hardExcludedProfiles)
 
     if (!bestPlayers.length && !worstPlayers.length) {
         console.info('[TOTW] No matches found for week', weekKey, '— skipping')
