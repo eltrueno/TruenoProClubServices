@@ -1,14 +1,16 @@
 import { TOTWModel, MemberTotwAppearancesModel } from "@models/totw.model"
 import MatchModel from "@models/match.model"
 import { processTOTWAchievements } from "@services/achievement.service"
-import { startOfISOWeek, endOfISOWeek } from "date-fns"
+import { endOfISOWeek } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
+import { CronExpressionParser } from "cron-parser"
 import dotenv from "dotenv"
 import { ITOTWPlayer } from "srcinterfaces/totw.interface"
 import { getTOTWProducer } from "@events/index";
 dotenv.config()
 
 const TIMEZONE = process.env.TZ || "Europe/Madrid"
+const TOTW_CRON_SCHEDULE = process.env.TOTW_CRON_SCHEDULE || "0 21 * * 0"
 const MIN_GAMES_PLAYED = Number(process.env.TOTW_MIN_GAMES_PLAYED) || 5
 const MIN_GAMES_FLOOR = Number(process.env.TOTW_MIN_GAMES_FLOOR) || 2
 
@@ -29,8 +31,15 @@ const getWeekRangeFromKey = (weekKey: string) => {
     const simple = new Date(Date.UTC(year, 0, 1 + (week - 1) * 7))
     const madridDate = toZonedTime(simple, TIMEZONE)
 
-    const start = startOfISOWeek(madridDate)
-    const end = endOfISOWeek(madridDate)
+    const weekEndISO = endOfISOWeek(madridDate)
+
+    const interval = CronExpressionParser.parse(TOTW_CRON_SCHEDULE, { 
+        currentDate: weekEndISO, 
+        tz: TIMEZONE 
+    } as any);
+
+    const end = interval.prev().toDate()
+    const start = interval.prev().toDate()
 
     return { start, end }
 }
