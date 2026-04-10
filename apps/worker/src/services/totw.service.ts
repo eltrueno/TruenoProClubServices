@@ -275,7 +275,7 @@ export const calculateAndSaveTOTW = async (weekKey: string): Promise<void> => {
     const affected = [...new Set([...bestPlayers, ...worstPlayers].map(p => p.playerName))]
     await processTOTWAchievements(affected)
 
-    await getTOTWProducer().publish(totw)
+    await getTOTWProducer().publish(totw.toObject())
 
     console.info('[TOTW] Created successfully — week', weekNumber, `(${weekKey})`)
 }
