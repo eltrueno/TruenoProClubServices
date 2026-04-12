@@ -2,9 +2,9 @@
   <Teleport to="body">
     <!-- El modifier .self en el modal preventa que el clic interno en la carta cierre la vista -->
     <dialog ref="dialogRef" class="modal" @close="onClose" @click.self="hide">
-    <div class="modal-box p-0 bg-transparent shadow-none overflow-y-auto overflow-x-hidden max-w-none w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col sm:items-center sm:justify-center" @click.self="hide">
+    <div class="modal-box p-0 bg-transparent shadow-none overflow-y-auto overflow-x-hidden max-w-none w-full max-h-[100dvh] sm:max-h-[90vh]" @click.self="hide">
       <div 
-        class="card-inner relative rounded-none sm:rounded-2xl w-full sm:w-[450px] flex flex-col my-auto overflow-hidden shrink-0" 
+        class="card-inner relative rounded-none sm:rounded-2xl w-full sm:w-[450px] mx-auto flex flex-col overflow-hidden shrink-0" 
         :class="variant">
         <form method="dialog" class="absolute right-4 top-4 z-50">
           <button class="btn btn-sm btn-circle btn-neutral bg-black/40 border-white/20 text-white shadow-xl backdrop-blur-md hover:bg-black hover:border-white/50 transition-all">✕</button>
