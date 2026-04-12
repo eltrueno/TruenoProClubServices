@@ -1,5 +1,4 @@
 const amqp = require('amqplib');
-const path = require('path');
 require('dotenv').config();
 
 const newMatchHook = require('../hook/newmatch.hook');
@@ -9,85 +8,112 @@ const totwHook = require('../hook/totw.hook');
 const EXCHANGE_NAME = 'events';
 const QUEUE_NAME = 'discordbot';
 
-async function startConsumer(client) {
-  try {
-    const connection = await amqp.connect(process.env.RABBITMQ_URL || 'amqp://localhost');
-    const channel = await connection.createChannel();
+class RabbitMQManager {
+    constructor(client) {
+        this.client = client;
+        this.connection = null;
+        this.channel = null;
+        this.isConnecting = false;
+        this.url = process.env.RABBITMQ_URL || 'amqp://localhost';
+    }
 
-    await channel.prefetch(1);
+    async connect() {
+        if (this.isConnecting) return;
+        this.isConnecting = true;
 
-    await channel.assertExchange(EXCHANGE_NAME, 'topic', { durable: true });
-    await channel.assertQueue(QUEUE_NAME, { durable: true });
+        try {
+            this.connection = await amqp.connect(this.url);
 
-    await channel.bindQueue(QUEUE_NAME, EXCHANGE_NAME, 'match.new');
-    await channel.bindQueue(QUEUE_NAME, EXCHANGE_NAME, 'player.achievement');
-    await channel.bindQueue(QUEUE_NAME, EXCHANGE_NAME, 'totw.new');
+            this.connection.on('error', (err) => {
+                console.error('[RabbitMQ] Connection error', err);
+                this.handleDisconnect();
+            });
 
-    console.log('[RabbitMQ] Listening...');
+            this.connection.on('close', () => {
+                console.warn('[RabbitMQ] Connection closed');
+                this.handleDisconnect();
+            });
 
-    /*channel.consume(QUEUE_NAME, async (msg) => {
-      if (!msg) return;
+            this.channel = await this.connection.createChannel();
 
-      const routingKey = msg.fields.routingKey;
-      const content = JSON.parse(msg.content.toString());
+            this.channel.on('error', (err) => {
+                console.error('[RabbitMQ] Channel error', err);
+            });
 
-      try {
-        switch (routingKey) {
-          case 'match.new':
-            setTimeout(async ()=>{
-                await newMatchWebhook.handle(client, content);
-            }, 2000)
-            break;
-          case 'player.achievement':
-            setTimeout(async ()=>{
-              await memberAchievementWebhook.handle(client, content);
-            }, 2000)
-            break;
-          default:
-            console.warn(`[RabbitMQ] Unknown event type: ${routingKey}`);
+            this.channel.on('close', () => {
+                console.warn('[RabbitMQ] Channel closed');
+                this.channel = null;
+            });
+
+            await this.setup();
+            await this.startConsumption();
+
+            console.log('[RabbitMQ] Connected and consuming events');
+            this.isConnecting = false;
+        } catch (error) {
+            console.error('[RabbitMQ] Connection failed:', error.message);
+            this.isConnecting = false;
+            this.handleDisconnect();
         }
-      } catch (err) {
-        console.error(`[RabbitMQ] Error processing event ${routingKey}`, err);
-      }
-      channel.ack(msg);
-    });*/
-    channel.consume(QUEUE_NAME, async (msg) => {
-      if (!msg) return;
+    }
 
-      const routingKey = msg.fields.routingKey;
-      const content = JSON.parse(msg.content.toString());
+    handleDisconnect() {
+        this.connection = null;
+        this.channel = null;
+        setTimeout(() => this.connect(), 5000);
+    }
 
-      try {
-        switch (routingKey) {
-          case 'match.new':
-            await newMatchHook.handle(client, content);
-            break;
+    async setup() {
+        await this.channel.prefetch(1);
+        await this.channel.assertExchange(EXCHANGE_NAME, 'topic', { durable: true });
+        await this.channel.assertQueue(QUEUE_NAME, { durable: true });
 
-          case 'player.achievement':
-            await memberAchievementHook.handle(client, content);
-            break;
+        await this.channel.bindQueue(QUEUE_NAME, EXCHANGE_NAME, 'match.new');
+        await this.channel.bindQueue(QUEUE_NAME, EXCHANGE_NAME, 'player.achievement');
+        await this.channel.bindQueue(QUEUE_NAME, EXCHANGE_NAME, 'totw.new');
+    }
 
-          case 'totw.new':
-            await totwHook.handle(client, content);
-            break;
+    async startConsumption() {
+        if (!this.channel) return;
 
-          default:
-            console.warn(`[RabbitMQ] Unknown event type: ${routingKey}`);
-        }
+        this.channel.consume(QUEUE_NAME, async (msg) => {
+            if (!msg) return;
 
-        channel.ack(msg);
+            const routingKey = msg.fields.routingKey;
+            const content = JSON.parse(msg.content.toString());
 
-      } catch (err) {
-        console.error(`[RabbitMQ] Error processing event ${routingKey}`, err);
+            try {
+                switch (routingKey) {
+                    case 'match.new':
+                        await newMatchHook.handle(this.client, content);
+                        break;
+                    case 'player.achievement':
+                        await memberAchievementHook.handle(this.client, content);
+                        break;
+                    case 'totw.new':
+                        await totwHook.handle(this.client, content);
+                        break;
+                    default:
+                        console.warn(`[RabbitMQ] Unknown event type: ${routingKey}`);
+                }
+                
+                if (this.channel) {
+                    this.channel.ack(msg);
+                }
+            } catch (err) {
+                console.error(`[RabbitMQ] Error processing event ${routingKey}`, err);
+                if (this.channel) {
+                    this.channel.nack(msg, false, true);
+                }
+            }
+        });
+    }
+}
 
-        channel.nack(msg, false, true);
-      }
-    });
-
-
-  } catch (err) {
-    console.error('[RabbitMQ] Error connecting to rabbitmq:', err);
-  }
+function startConsumer(client) {
+    const manager = new RabbitMQManager(client);
+    manager.connect();
 }
 
 module.exports = { startConsumer };
+

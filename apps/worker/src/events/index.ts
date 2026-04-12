@@ -1,22 +1,25 @@
-import { createConnection } from '@config/rabbitmq.config';
+import { RabbitMQManager } from '@config/rabbitmq.config';
 import { NewMatchEvent } from '@events/newMatchEvent.producer';
 import { MilestoneEvent } from '@events/milestoneEvent.producer';
 import { UniqueAchievementEvent } from '@events/achievementEvent.producer';
 import { TOTWEvent } from '@events/totwEvent.producer';
 
+let mqManager: RabbitMQManager
 let matchProducer: NewMatchEvent
 let milestoneProducer: MilestoneEvent
 let uniqueAchievementProducer: UniqueAchievementEvent
 let totwProducer: TOTWEvent
 
 export async function setupRabbitmqProducers() {
-    const { channel } = await createConnection()
+    mqManager = new RabbitMQManager()
+    await mqManager.connect()
 
-    matchProducer = new NewMatchEvent(channel)
-    milestoneProducer = new MilestoneEvent(channel)
-    uniqueAchievementProducer = new UniqueAchievementEvent(channel)
-    totwProducer = new TOTWEvent(channel)
+    matchProducer = new NewMatchEvent(mqManager)
+    milestoneProducer = new MilestoneEvent(mqManager)
+    uniqueAchievementProducer = new UniqueAchievementEvent(mqManager)
+    totwProducer = new TOTWEvent(mqManager)
 }
+
 
 export function getMatchProducer() {
     if (!matchProducer) throw new Error('Match Producer not initialized');
