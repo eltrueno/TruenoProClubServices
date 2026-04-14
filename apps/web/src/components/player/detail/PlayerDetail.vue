@@ -64,7 +64,7 @@
             <div class="overflow-x-auto mb-8">
                 <div role="tablist" class="tabs tabs-bordered flex-nowrap whitespace-nowrap min-w-max">
                     <a 
-                        v-for="tab in ['estadísticas', 'historial', 'progresión', 'logros', 'comparador']" 
+                        v-for="tab in ['estadísticas', 'historial y progresión', 'logros', 'comparador']" 
                         :key="tab"
                         role="tab" 
                         class="tab capitalize"
@@ -82,8 +82,7 @@
                 :matches="playerMatches"
                 :currentFilter="filterMode"
             />
-            <PlayerDetailWIP v-else-if="activeTab === 'historial'" title="Historial de Partidos" icon="📜" />
-            <PlayerDetailWIP v-else-if="activeTab === 'progresión'" title="Progresión" icon="📈" />
+            <PlayerDetailWIP v-else-if="activeTab === 'historial y progresión'" title="Historial y Progresión" icon="📈" />
             <PlayerDetailWIP v-else-if="activeTab === 'logros'" title="Logros y Premios" icon="🏆" />
             <PlayerDetailWIP v-else-if="activeTab === 'comparador'" title="Comparador" icon="⚔️" />
         </section>
