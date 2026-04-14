@@ -29,7 +29,7 @@
                             @mouseenter="hoveredIdx = index; isHoveringChart = false"
                             @mouseleave="hoveredIdx = null"
                             class="dark:bg-base-100 bg-base-300 p-4 rounded-2xl text-center border-2 border-transparent transition-all duration-200 cursor-default"
-                            :class="{ '!border-primary ring-1 ring-primary/20 bg-primary/5 shadow-lg': hoveredIdx === index }"
+                            :class="{ '!border-primary ring-1 ring-primary/20 shadow-lg': hoveredIdx === index }"
                         >
                             <p class="text-xs uppercase font-bold mb-1 transition-colors" :class="{ 'text-primary': hoveredIdx === index, 'opacity-50': hoveredIdx !== index }">{{ m.label }}</p>
                             <p class="text-2xl font-black tabular-nums transition-colors">{{ formatRadarDisplay(m) }}</p>
@@ -42,7 +42,7 @@
         <!-- Detailed Stats Panels -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div v-for="group in statGroups" :key="group.title" class="group h-full">
-                <div class="card h-full bg-base-200 border border-base-300 shadow-sm hover:shadow-md transition-all duration-300">
+                <div class="card h-full bg-base-200 border border-base-300 shadow-md transition-all duration-300">
                     <div class="card-body p-6">
                         <h3 class="flex items-center gap-3 text-lg font-black uppercase tracking-tight mb-6">
                             <span class="p-2 bg-primary/10 rounded-lg">
@@ -56,7 +56,7 @@
                         </h3>
                         <div class="space-y-4">
                             <div v-for="stat in group.stats" :key="stat.label" class="flex items-center justify-between pb-3 border-b border-base-content/5 last:border-0 group/row">
-                                <span class="text-sm font-medium text-base-content/60 group-hover/row:text-base-content transition-colors">{{ stat.label }}</span>
+                                <span class="text-sm font-medium text-base-content/60">{{ stat.label }}</span>
                                 <span class="text-lg font-bold tabular-nums">{{ formatValue(stat) }}</span>
                             </div>
                         </div>
@@ -117,7 +117,7 @@
 
     const statGroups = computed(() => [
         {
-            title: 'Participación y Premios',
+            title: 'Participación',
             icon: 'trophy',
             stats: [
                 { label: 'Rating medio', key: 'ratingAve', type: 'decimal' },
@@ -130,7 +130,7 @@
             ]
         },
         {
-            title: 'Finalización / Ataque',
+            title: 'Ataque',
             icon: 'sword',
             stats: [
                 { label: 'Goles Totales', key: 'goals', type: 'count' },
@@ -145,7 +145,7 @@
             ]
         },
         {
-            title: 'Distribución / Juego',
+            title: 'Distribución',
             icon: 'move',
             stats: [
                 { label: 'Pases Totales', key: 'passesMade', type: 'count' },
@@ -155,7 +155,7 @@
             ]
         },
         {
-            title: 'Defensa y Físico',
+            title: 'Defensa',
             icon: 'shield',
             stats: [
                 { label: 'Entradas Totales', key: 'tacklesMade', type: 'count' },

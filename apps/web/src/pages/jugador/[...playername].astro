@@ -3,6 +3,7 @@ export const prerender = false;
 
 import Layout from "@layouts/Layout.astro";
 import PlayerDetail from "@components/player/detail/PlayerDetail.vue";
+import PlayerDetailSkeleton from "@components/player/detail/PlayerDetailSkeleton.vue";
 
 const { playername } = Astro.params;
 let finalplayername: string = "";
@@ -41,7 +42,9 @@ if (playername != undefined) {
 
 	<section>
 		<container class="flex p-6 lg:p-12 justify-center items-center text-center">
-			<PlayerDetail client:only="vue" playerName={finalplayername} />
+			<PlayerDetail client:only="vue" playerName={finalplayername}>
+				<PlayerDetailSkeleton slot="fallback" />
+			</PlayerDetail>
 		</container>
 	</section>
 </Layout>

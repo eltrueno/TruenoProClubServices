@@ -22,7 +22,10 @@
                         </div>
                         
                         <div class="flex flex-wrap gap-2 mb-3 lg:mb-4">
-                             <div v-for="pos in topPositions" :key="pos" class="badge badge-primary badge-sm lg:badge-lg uppercase font-bold py-2 lg:py-3">{{ translatePosition(pos) }}</div>
+                             <div v-for="pos in topPositions" :key="pos.name" class="badge badge-primary badge-sm lg:badge-lg uppercase font-bold py-2 lg:py-3 shadow-sm">
+                                {{ translatePosition(pos.name) }}
+                                <span class="ml-1.5 font-semibold italic text-[0.95em] bg-base-100/20 rounded">{{ pos.percentage }}%</span>
+                             </div>
                         </div>
                         <p v-if="playerProfile.member.proOverall" class="text-base-content/60 text-sm lg:text-lg">
                             {{ playerProfile.member.proHeight }}cm · {{ playerProfile.member.proOverall }} OVR
@@ -82,12 +85,7 @@
     </div>
 
     <!-- Loading State -->
-    <div v-else-if="isloading" class="min-h-screen flex items-center justify-center bg-base-200">
-        <div class="flex flex-col items-center gap-4">
-            <span class="loading loading-spinner loading-lg text-primary scale-150"></span>
-            <p class="font-black uppercase tracking-widest text-primary animate-pulse">Cargando Jugador...</p>
-        </div>
-    </div>
+    <PlayerDetailSkeleton v-else-if="isloading" />
 
     <!-- Error State -->
     <div v-else class="min-h-screen flex flex-col items-center justify-center bg-base-200 p-4">
@@ -114,6 +112,7 @@
     // Subcomponents
     import PlayerDetailStats from "./PlayerDetailStats.vue";
     import PlayerDetailWIP from "./PlayerDetailWIP.vue";
+    import PlayerDetailSkeleton from "./PlayerDetailSkeleton.vue";
 
     const props = defineProps({
         playerName: {
@@ -148,12 +147,15 @@
     }
 
     const topPositions = computed(() => {
-        if (!activeStats.value?.playedPositions) return []
-        const positions = activeStats.value.playedPositions
-        return Object.entries(positions)
+        if (!activeStats.value?.playedPositions || !activeStats.value.gamesPlayed) return []
+        const total = activeStats.value.gamesPlayed
+        return Object.entries(activeStats.value.playedPositions)
             .sort(([, a], [, b]) => (b as number) - (a as number))
             .slice(0, 2)
-            .map(([pos]) => pos)
+            .map(([pos, count]) => ({
+                name: pos,
+                percentage: Math.round(((count as number) / total) * 100)
+            }))
     })
 
     const activeStats = computed(() => {
