@@ -4,6 +4,7 @@ Disallow: /404.html
 Disallow: /imagegenerator
 Disallow: /partido/
 Disallow: /logrosdef
+Disallow: /jugador/
 
 Allow: /partidos
 Allow: /totw
