@@ -20,12 +20,19 @@
                 </div>
                 <div class="flex flex-col lg:flex-row gap-12 items-center">
                     <div class="w-full max-w-[460px] mx-auto lg:mx-0 flex-shrink-0">
-                        <Radar :data="radarData" :options="radarOptions" />
+                        <Radar ref="radarChart" :data="radarData" :options="radarOptions" />
                     </div>
                     <div class="w-full grid grid-cols-2 gap-4">
-                        <div v-for="m in radarMetrics" :key="m.label" class="dark:bg-base-100 bg-base-300 p-4 rounded-2xl text-center">
-                            <p class="text-xs uppercase opacity-50 font-bold mb-1">{{ m.label }}</p>
-                            <p class="text-2xl font-black tabular-nums">{{ formatRadarDisplay(m) }}</p>
+                        <div 
+                            v-for="(m, index) in radarMetrics" 
+                            :key="m.label" 
+                            @mouseenter="hoveredIdx = index; isHoveringChart = false"
+                            @mouseleave="hoveredIdx = null"
+                            class="dark:bg-base-100 bg-base-300 p-4 rounded-2xl text-center border-2 border-transparent transition-all duration-200 cursor-default"
+                            :class="{ '!border-primary ring-1 ring-primary/20 bg-primary/5 shadow-lg': hoveredIdx === index }"
+                        >
+                            <p class="text-xs uppercase font-bold mb-1 transition-colors" :class="{ 'text-primary': hoveredIdx === index, 'opacity-50': hoveredIdx !== index }">{{ m.label }}</p>
+                            <p class="text-2xl font-black tabular-nums transition-colors">{{ formatRadarDisplay(m) }}</p>
                         </div>
                     </div>
                 </div>
@@ -61,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-    import { computed, ref } from 'vue';
+    import { computed, ref, watch } from 'vue';
     import { 
         Chart as ChartJS, 
         RadialLinearScale, 
@@ -70,7 +77,8 @@
         Filler, 
         Tooltip, 
         Legend,
-        RadarController
+        RadarController,
+        type ChartOptions
     } from 'chart.js';
     import { Radar } from 'vue-chartjs';
     import { translatePosition, Position } from '@/i18n/translations';
@@ -83,6 +91,9 @@
     }>()
 
     const statMode = ref<'total' | 'avg'>('total')
+    const hoveredIdx = ref<number | null>(null)
+    const isHoveringChart = ref(false)
+    const radarChart = ref<any>(null)
 
     const formatValue = (stat: any) => {
         const val = (props.stats as any)[stat.key]
@@ -166,8 +177,8 @@
             { label: 'Valoración',   key: 'ratingAve',           raw: s.ratingAve,           max: 10,  val: s.ratingAve * 10 },
             { label: 'G+A por Partido',  key: 'goalsPlusAssistsPerMatch', max: 10,               val: s.goalsPlusAssistsPerMatch * 10 },
             { label: '% Pase',       key: 'passSuccessRate',     max: 100,                   val: s.passSuccessRate },
-            { label: '% Entrada',    key: 'tackleSuccessRate',   max: 100,                   val: s.tackleSuccessRate },
-            { label: '% Solidez',    key: 'cleanSheetsPercent',  max: 100,                   val: s.cleanSheetsPercent },
+            { label: '% Tackles',    key: 'tackleSuccessRate',   max: 100,                   val: s.tackleSuccessRate },
+            { label: '% Imbatido',    key: 'cleanSheetsPercent',  max: 100,                   val: s.cleanSheetsPercent },
             isGK 
                 ? { label: '% Paradas', key: 'savesPercent', max: 100, val: s.savesPercent }
                 : { label: '% Tiro',    key: 'shotSuccessRate', max: 100, val: s.shotSuccessRate },
@@ -191,15 +202,31 @@
                     pointBackgroundColor: '#C80D0D',
                     pointBorderColor: '#fff',
                     pointRadius: 4,
-                    pointHoverRadius: 6
+                    pointHoverRadius: 8,
+                    pointHitRadius: 12
                 }
             ]
         }
     })
 
-    const radarOptions: any = {
+    const radarOptions = computed<ChartOptions<'radar'>>(() => ({
         responsive: true,
         maintainAspectRatio: false,
+        interaction: {
+            mode: 'nearest' as const,
+            intersect: false,
+        },
+        onHover: (_event, activeElements) => {
+            const nextIdx = activeElements.length > 0 ? activeElements[0].index : null;
+            isHoveringChart.value = nextIdx !== null;
+            if (hoveredIdx.value !== nextIdx) {
+                hoveredIdx.value = nextIdx;
+            }
+        },
+        onLeave: () => {
+            isHoveringChart.value = false;
+            hoveredIdx.value = null;
+        },
         scales: {
             r: {
                 type: 'radialLinear',
@@ -224,7 +251,24 @@
                 displayColors: false
             }
         }
-    }
+    }))
+
+    watch(hoveredIdx, (newIdx) => {
+        // Prevent feedback loop when hovering directly on the chart
+        if (isHoveringChart.value) return
+
+        const chart = radarChart.value?.chart
+        if (!chart) return
+
+        if (newIdx !== null) {
+            chart.setActiveElements([{ datasetIndex: 0, index: newIdx }])
+            chart.tooltip.setActiveElements([{ datasetIndex: 0, index: newIdx }], { x: 0, y: 0 })
+        } else {
+            chart.setActiveElements([])
+            chart.tooltip.setActiveElements([], { x: 0, y: 0 })
+        }
+        chart.update('none')
+    })
 </script>
 
 <style scoped>

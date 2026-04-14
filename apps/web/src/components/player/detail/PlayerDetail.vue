@@ -46,7 +46,7 @@
 
                 <!-- KPI Cards -->
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 lg:mt-12">
-                    <div v-for="kpi in kpis" :key="kpi.label" class="card dark:bg-base-100 bg-base-300 border border-base-300 shadow-sm overflow-hidden group hover:border-primary/50 transition-all duration-300">
+                    <div v-for="kpi in kpis" :key="kpi.label" class="card dark:bg-base-100 bg-base-300 shadow-sm overflow-hidden group">
                         <div class="card-body p-4 lg:p-6 items-center text-center">
                             <span class="text-base-content/50 uppercase text-xs font-black text-primary tracking-widest">{{ kpi.label }}</span>
                             <span class="text-2xl lg:text-4xl font-black mt-1 tabular-nums">{{ kpi.value }}</span>
