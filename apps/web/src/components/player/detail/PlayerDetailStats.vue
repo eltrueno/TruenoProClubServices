@@ -12,14 +12,14 @@
                             :class="statMode === 'total' ? 'btn-primary' : 'btn-ghost'"
                         >Todos</button>
                         <button
-                            @click="statMode = 'avg'"
+                            @click="statMode = 'last5'"
                             class="btn btn-xs join-item"
-                            :class="statMode === 'avg' ? 'btn-primary' : 'btn-ghost'"
+                            :class="statMode === 'last5' ? 'btn-primary' : 'btn-ghost'"
                         >Últimos 5</button>
                     </div>
                 </div>
                 <div class="flex flex-col lg:flex-row gap-12 items-center">
-                    <div class="w-full max-w-[460px] mx-auto lg:mx-0 flex-shrink-0">
+                    <div class="w-full max-w-[520px] mx-auto lg:mx-0 flex-shrink-0 aspect-square">
                         <Radar ref="radarChart" :data="radarData" :options="radarOptions" />
                     </div>
                     <div class="w-full grid grid-cols-2 gap-4">
@@ -83,17 +83,102 @@
     import { Radar } from 'vue-chartjs';
     import { translatePosition, Position } from '@/i18n/translations';
     import PlayerStatsEntity from '@/model/PlayerStatsEntity';
+    import ClubMatchEntity from '@/model/match/ClubMatchEntity';
 
     ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, RadarController);
 
     const props = defineProps<{
-        stats: PlayerStatsEntity
+        stats: PlayerStatsEntity,
+        matches: ClubMatchEntity[] | undefined
+        currentFilter: string
     }>()
 
-    const statMode = ref<'total' | 'avg'>('total')
+    const statMode = ref<'total' | 'last5'>('total')
     const hoveredIdx = ref<number | null>(null)
     const isHoveringChart = ref(false)
     const radarChart = ref<any>(null)
+
+    const last5Stats = computed(() => {
+        if (!props.matches || props.matches.length === 0) return props.stats
+        
+        // Filter matches based on the current filter mode
+        const filteredMatches = props.matches.filter(m => {
+            if (props.currentFilter === 'all') return true;
+            if (props.currentFilter === 'official') return (m.matchType === 'league' || m.matchType === 'playoff');
+            if (props.currentFilter === 'friendly') return (m.matchType !== 'league' && m.matchType !== 'playoff');
+            return true;
+        });
+
+        if (filteredMatches.length === 0) return props.stats
+        
+        const recentMatches = filteredMatches.slice(0, 5)
+        const aggregated: any = {
+            gamesPlayed: 0,
+            ratingSum: 0,
+            goals: 0,
+            assists: 0,
+            shots: 0,
+            passesMade: 0,
+            passesSuccess: 0,
+            tacklesMade: 0,
+            tacklesSuccess: 0,
+            saves: 0,
+            goalsConceded: 0,
+            cleanSheets: 0,
+            manOfTheMatch: 0,
+            redCards: 0,
+            wins: 0,
+            losses: 0,
+            ties: 0,
+            minutesPlayed: 0,
+            playedPositions: {},
+            mostPlayedPosition: props.stats.mostPlayedPosition
+        }
+
+        recentMatches.forEach(match => {
+            const playerInMatch = match.localClub.players.find(p => p.playername.toLowerCase() === props.stats.playerName.toLowerCase()) 
+                               || match.awayClub.players.find(p => p.playername.toLowerCase() === props.stats.playerName.toLowerCase())
+            
+            if (playerInMatch) {
+                aggregated.gamesPlayed++
+                aggregated.ratingSum += playerInMatch.rating
+                aggregated.goals += playerInMatch.goals
+                aggregated.assists += playerInMatch.assists
+                aggregated.shots += playerInMatch.shots
+                aggregated.passesMade += playerInMatch.passesMade
+                aggregated.passesSuccess += playerInMatch.passesSuccess
+                aggregated.tacklesMade += playerInMatch.tacklesMade
+                aggregated.tacklesSuccess += playerInMatch.tacklesSuccess
+                aggregated.saves += playerInMatch.saves
+                aggregated.goalsConceded += playerInMatch.goalsConceded
+                if (playerInMatch.goalsConceded === 0) aggregated.cleanSheets++
+                if (playerInMatch.manOfTheMatch) aggregated.manOfTheMatch++
+                aggregated.redCards += playerInMatch.redCards
+                aggregated.minutesPlayed += (playerInMatch.minutesPlayed || 0)
+
+                const pos = playerInMatch.position as Position
+                aggregated.playedPositions[pos] = (aggregated.playedPositions[pos] || 0) + 1
+                
+                if (match.result === 'win') aggregated.wins++
+                else if (match.result === 'loose') aggregated.losses++
+                else aggregated.ties++
+            }
+        })
+
+        if (aggregated.gamesPlayed === 0) return props.stats
+
+        let maxCount = -1
+        Object.entries(aggregated.playedPositions).forEach(([pos, count]) => {
+            if ((count as number) > maxCount) {
+                maxCount = count as number
+                aggregated.mostPlayedPosition = pos as Position
+            }
+        })
+
+        return new PlayerStatsEntity(aggregated)
+    })
+
+    const currentStats = computed(() => statMode.value === 'last5' ? last5Stats.value : props.stats)
 
     const formatValue = (stat: any) => {
         const val = (props.stats as any)[stat.key]
@@ -105,7 +190,7 @@
     }
 
     const formatRadarDisplay = (m: any) => {
-        const val = m.raw !== undefined ? m.raw : (props.stats as any)[m.key]
+        const val = m.raw !== undefined ? m.raw : (currentStats.value as any)[m.key]
         if (val == null) return '—'
         
         if (m.key === 'ratingAve') return val.toFixed(1)
@@ -170,7 +255,7 @@
     ])
 
     const radarMetrics = computed(() => {
-        const s = props.stats
+        const s = currentStats.value
         const isGK = s.mostPlayedPosition === Position.goalkeeper
         
         return [
@@ -188,26 +273,71 @@
     })
 
     const radarData = computed(() => {
-        const data = radarMetrics.value.map(m => Math.min(m.val ?? 0, 100))
+        const historicalPoints = getRadarDataPoints(props.stats)
+        const last5Points = getRadarDataPoints(last5Stats.value)
+        
+        const isTotal = statMode.value === 'total'
+        
+        const colors = {
+            highlight: {
+                bg: 'rgba(200, 13, 13, 0.45)',
+                border: '#C80D0D',
+                point: '#C80D0D'
+            },
+            faded: {
+                bg: 'rgba(166, 173, 187, 0.1)',
+                border: 'rgba(166, 173, 187, 0.4)',
+                point: 'transparent'
+            }
+        }
+
         return {
             labels: radarMetrics.value.map(m => m.label),
             datasets: [
                 {
-                    label: 'Desempeño',
-                    data: data,
+                    label: 'Histórico',
+                    data: historicalPoints,
                     fill: true,
-                    backgroundColor: 'rgba(200, 13, 13, 0.45)',
-                    borderColor: '#C80D0D',
-                    borderWidth: 3,
-                    pointBackgroundColor: '#C80D0D',
-                    pointBorderColor: '#fff',
-                    pointRadius: 4,
-                    pointHoverRadius: 8,
-                    pointHitRadius: 12
+                    backgroundColor: isTotal ? colors.highlight.bg : colors.faded.bg,
+                    borderColor: isTotal ? colors.highlight.border : colors.faded.border,
+                    borderWidth: isTotal ? 3 : 2,
+                    borderDash: isTotal ? [] : [5, 5],
+                    pointBackgroundColor: isTotal ? colors.highlight.point : colors.faded.point,
+                    pointBorderColor: isTotal ? '#fff' : 'transparent',
+                    pointRadius: isTotal ? 4 : 0,
+                    order: isTotal ? 1 : 2
+                },
+                {
+                    label: 'Últimos 5',
+                    data: last5Points,
+                    fill: true,
+                    backgroundColor: !isTotal ? colors.highlight.bg : colors.faded.bg,
+                    borderColor: !isTotal ? colors.highlight.border : colors.faded.border,
+                    borderWidth: !isTotal ? 3 : 2,
+                    borderDash: !isTotal ? [] : [5, 5],
+                    pointBackgroundColor: !isTotal ? colors.highlight.point : colors.faded.point,
+                    pointBorderColor: !isTotal ? '#fff' : 'transparent',
+                    pointRadius: !isTotal ? 4 : 0,
+                    order: !isTotal ? 1 : 2
                 }
             ]
         }
     })
+
+    const getRadarDataPoints = (s: PlayerStatsEntity) => {
+        const isGK = s.mostPlayedPosition === Position.goalkeeper
+        const points = [
+            s.ratingAve * 10,
+            s.goalsPlusAssistsPerMatch * 10,
+            s.passSuccessRate,
+            s.tackleSuccessRate,
+            s.cleanSheetsPercent,
+            isGK ? s.savesPercent : s.shotSuccessRate,
+            s.manOfTheMatchPercent,
+            s.winRate
+        ]
+        return points.map(v => Math.min(v ?? 0, 100))
+    }
 
     const radarOptions = computed<ChartOptions<'radar'>>(() => ({
         responsive: true,
@@ -243,7 +373,17 @@
             }
         },
         plugins: {
-            legend: { display: false },
+            legend: { 
+                display: true,
+                position: 'top' as const,
+                labels: {
+                    color: '#A6ADBB',
+                    font: { size: 12, weight: 'bold' },
+                    padding: 20,
+                    usePointStyle: true,
+                    pointStyle: 'circle'
+                }
+            },
             tooltip: {
                 backgroundColor: '#1D232A',
                 padding: 12,

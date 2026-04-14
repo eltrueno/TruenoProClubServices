@@ -76,7 +76,12 @@
             </div>
 
             <!-- Tab Content (Modularized) -->
-            <PlayerDetailStats v-if="activeTab === 'estadísticas'" :stats="activeStats" />
+            <PlayerDetailStats 
+                v-if="activeTab === 'estadísticas'" 
+                :stats="activeStats" 
+                :matches="playerMatches"
+                :currentFilter="filterMode"
+            />
             <PlayerDetailWIP v-else-if="activeTab === 'historial'" title="Historial de Partidos" icon="📜" />
             <PlayerDetailWIP v-else-if="activeTab === 'progresión'" title="Progresión" icon="📈" />
             <PlayerDetailWIP v-else-if="activeTab === 'logros'" title="Logros y Premios" icon="🏆" />
@@ -105,8 +110,9 @@
 <script setup lang="ts">
     import { ref, computed, onBeforeMount, type Ref } from "vue";
     import PlayerProfileService from "@/services/PlayerProfileService";
-    import type PlayerProfileEntity from "@/model/PlayerProfileEntity";
+    import ClubMatchByPlayerService from "@/services/ClubMatchByPlayerService";
     import PlayerStatsEntity from "@/model/PlayerStatsEntity";
+    import ClubMatchEntity from "@/model/match/ClubMatchEntity";
     import { translatePosition } from "@/i18n/translations";
 
     // Subcomponents
@@ -123,9 +129,13 @@
 
     const playerProfileService = new PlayerProfileService(props.playerName)
     const isloading = playerProfileService.isloading as Ref<boolean>
-    const errorText = playerProfileService.getError() as Ref<string>
-    const hasError = playerProfileService.getHasError() as Ref<boolean>
     const playerProfile = playerProfileService.getData()
+
+    const clubMatchByPlayerService = new ClubMatchByPlayerService(props.playerName)
+    const playerMatches = clubMatchByPlayerService.getData()
+
+    const hasError = playerProfileService.getHasError() || clubMatchByPlayerService.getHasError() as Ref<boolean>
+    const errorText = playerProfileService.getError() || clubMatchByPlayerService.getError() as Ref<string>
 
     // State
     const filterMode = ref('all') // all, official, friendly
@@ -133,6 +143,7 @@
 
     const fetchData = async () => {
         await playerProfileService.fetch()
+        await clubMatchByPlayerService.fetch()
     }
 
     onBeforeMount(fetchData)
