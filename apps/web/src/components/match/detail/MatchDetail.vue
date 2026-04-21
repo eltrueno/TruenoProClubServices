@@ -57,7 +57,7 @@
             <div class="py-2 px-4 flex justify-between gap-x-8 md:gap-x-12">
                 <div v-if="match.winnerByDnf" class="badge badge-error badge-lg">Desconexión</div>
                 <div class="badge badge-primary badge-lg">{{ translateMatchType(match.matchType) }}</div>
-                <div v-if="match.matchType=='playoff'&&match.winnerByPen" class="badge badge-neutral badge-lg">Penaltis</div>
+                <div v-if="match.winnerByPen" class="badge badge-neutral badge-lg">Penaltis</div>
             </div>
             <div class="flex my-3 items-center justify-center text-center text-xl gap-x-1">
                 <p class="font-semibold">Rating del equipo: </p>

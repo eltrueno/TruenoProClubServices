@@ -1,6 +1,7 @@
 import type { IAchievementUnlocked } from "./achievement.interface"
 import type { IClubMember } from "./clubMember.interface"
 import type { IPlayerStats } from "./playerStats.interface"
+import type { IMemberTotwAppearances } from "./totw.interface"
 
 export interface IPlayerProfile {
     member: IClubMember
@@ -8,5 +9,6 @@ export interface IPlayerProfile {
         "official": IPlayerStats,
         "friendly": IPlayerStats
     }
-    achievements: IAchievementUnlocked[]
+    achievements: IAchievementUnlocked[],
+    totw: IMemberTotwAppearances[]
 }
