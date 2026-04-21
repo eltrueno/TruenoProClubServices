@@ -67,7 +67,7 @@
                         v-for="tab in ['estadísticas', 'historial y progresión', 'logros', 'comparador']" 
                         :key="tab"
                         role="tab" 
-                        class="tab capitalize"
+                        class="tab capitalize text-xs lg:text-base"
                         :class="activeTab === tab ? 'tab-active font-semibold !border-primary' : ''"
                         @click="activeTab = tab">
                         {{ tab.toUpperCase() }}
