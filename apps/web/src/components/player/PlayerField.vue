@@ -40,7 +40,7 @@
                                 </p>
                             </div>
                         </div>
-                        <button class="btn btn-sm btn-primary my-1 md:my-2"  v-on:click="clickPlayer(index,player)">Ver más</button>
+                        <a class="btn btn-sm btn-primary my-1 md:my-2" :href="`/jugador/${player.playerName}`">Ver perfíl</a>
                     </div>
                 </div>
             </div>
@@ -65,7 +65,9 @@
     })
 
     function clickPlayer(index, player){
-        emit('clickedPlayer', {index, player})
+        //emit('clickedPlayer', {index, player})
+        
+
     }
 
     function trimDecimal(decimal:number, trim:number){

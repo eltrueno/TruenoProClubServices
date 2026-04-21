@@ -62,7 +62,7 @@
         <!-- Tabs Section -->
         <section class="mx-auto px-4 py-8">
             <div class="overflow-x-auto mb-8">
-                <div role="tablist" class="tabs tabs-bordered flex-nowrap whitespace-nowrap min-w-max">
+                <div role="tablist" class="tabs tabs-boxed flex-nowrap whitespace-nowrap min-w-max">
                     <a 
                         v-for="tab in ['estadísticas', 'historial y progresión', 'logros', 'comparador']" 
                         :key="tab"
@@ -70,7 +70,7 @@
                         class="tab capitalize"
                         :class="activeTab === tab ? 'tab-active font-semibold !border-primary' : ''"
                         @click="activeTab = tab">
-                        {{ tab }}
+                        {{ tab.toUpperCase() }}
                     </a>
                 </div>
             </div>
@@ -92,16 +92,10 @@
     <PlayerDetailSkeleton v-else-if="isloading" />
 
     <!-- Error State -->
-    <div v-else class="min-h-screen flex flex-col items-center justify-center bg-base-200 p-4">
-        <div class="bg-base-100 p-10 rounded-3xl text-center max-w-md border border-error/30 shadow-2xl">
-            <div class="bg-error/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-            </div>
-            <h2 class="text-3xl font-black text-error mb-4 uppercase">Error en la carga</h2>
-            <p class="mb-8 opacity-70 text-lg leading-relaxed">{{ errorText || 'No se han podido obtener los datos del jugador en este momento.' }}</p>
-            <button class="btn btn-primary btn-block text-lg h-14" @click="fetchData">Intentar de nuevo</button>
+    <div class="flex flex-col h-full overflow-hidden" v-else>
+        <h3 class="text-center text-2xl p-3">No se ha podido encontrar al jugador</h3>
+        <div class="flex place-content-center p-6">
+            <img src="/illustrations/bugfixingsvg.svg" class="lg:w-2/3 w-full select-none pointer-events-none" alt="Image representing error">
         </div>
     </div>
 </template>
@@ -111,7 +105,6 @@
     import PlayerProfileService from "@/services/PlayerProfileService";
     import ClubMatchByPlayerService from "@/services/ClubMatchByPlayerService";
     import PlayerStatsEntity from "@/model/PlayerStatsEntity";
-    import ClubMatchEntity from "@/model/match/ClubMatchEntity";
     import { translatePosition } from "@/i18n/translations";
 
     // Subcomponents

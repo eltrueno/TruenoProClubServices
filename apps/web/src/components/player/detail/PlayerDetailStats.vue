@@ -1,23 +1,30 @@
 <template>
     <div class="flex flex-col gap-8 animate-in mt-2">
         <!-- Radar Card -->
-        <div class="card bg-base-200 shadow-md">
+        <div class="card bg-base-200 shadow-md relative">
             <div class="card-body p-6">
-                <div class="flex items-center justify-between mb-6">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
                     <h2 class="card-title text-xl font-black uppercase border-l-4 border-primary pl-4">Desempeño</h2>
-                    <div class="join dark:bg-base-100 bg-base-300 p-1 rounded-2xl">
+                    
+                    <div class="join dark:bg-base-100 bg-base-300 p-1 rounded-2xl w-full sm:w-auto">
                         <button
                             @click="statMode = 'total'"
-                            class="btn btn-xs join-item"
+                            class="grow sm:grow-0 btn btn-xs join-item"
                             :class="statMode === 'total' ? 'btn-primary' : 'btn-ghost'"
-                        >Todos</button>
+                        >Histórico</button>
                         <button
                             @click="statMode = 'last5'"
-                            class="btn btn-xs join-item"
+                            class="grow sm:grow-0 btn btn-xs join-item"
                             :class="statMode === 'last5' ? 'btn-primary' : 'btn-ghost'"
-                        >Últimos 5</button>
+                        >Últ. 5</button>
+                        <button
+                            @click="statMode = 'last10'"
+                            class="grow sm:grow-0 btn btn-xs join-item"
+                            :class="statMode === 'last10' ? 'btn-primary' : 'btn-ghost'"
+                        >Últ. 10</button>
                     </div>
                 </div>
+                
                 <div class="flex flex-col lg:flex-row gap-12 items-center">
                     <div class="w-full max-w-[520px] mx-auto lg:mx-0 flex-shrink-0 aspect-square">
                         <Radar ref="radarChart" :data="radarData" :options="radarOptions" />
@@ -93,12 +100,11 @@
         currentFilter: string
     }>()
 
-    const statMode = ref<'total' | 'last5'>('total')
     const hoveredIdx = ref<number | null>(null)
     const isHoveringChart = ref(false)
     const radarChart = ref<any>(null)
 
-    const last5Stats = computed(() => {
+    const getAggregatedStats = (count: number) => {
         if (!props.matches || props.matches.length === 0) return props.stats
         
         // Filter matches based on the current filter mode
@@ -111,7 +117,7 @@
 
         if (filteredMatches.length === 0) return props.stats
         
-        const recentMatches = filteredMatches.slice(0, 5)
+        const recentMatches = filteredMatches.slice(0, count)
         const aggregated: any = {
             gamesPlayed: 0,
             ratingSum: 0,
@@ -137,7 +143,7 @@
 
         recentMatches.forEach(match => {
             const playerInMatch = match.localClub.players.find(p => p.playername.toLowerCase() === props.stats.playerName.toLowerCase()) 
-                               || match.awayClub.players.find(p => p.playername.toLowerCase() === props.stats.playerName.toLowerCase())
+                                || match.awayClub.players.find(p => p.playername.toLowerCase() === props.stats.playerName.toLowerCase())
             
             if (playerInMatch) {
                 aggregated.gamesPlayed++
@@ -176,9 +182,19 @@
         })
 
         return new PlayerStatsEntity(aggregated)
-    })
+    }
 
-    const currentStats = computed(() => statMode.value === 'last5' ? last5Stats.value : props.stats)
+    const last5Stats = computed(() => getAggregatedStats(5))
+    const last10Stats = computed(() => getAggregatedStats(10))
+
+    type StatMode = 'total' | 'last5' | 'last10'
+    const statMode = ref<StatMode>('total')
+
+    const currentStats = computed(() => {
+        if (statMode.value === 'last5') return last5Stats.value
+        if (statMode.value === 'last10') return last10Stats.value
+        return props.stats
+    })
 
     const formatValue = (stat: any) => {
         const val = (props.stats as any)[stat.key]
@@ -206,10 +222,10 @@
             icon: 'trophy',
             stats: [
                 { label: 'Rating medio', key: 'ratingAve', type: 'decimal' },
-                { label: 'Victorias Totales', key: 'wins', type: 'count' },
+                { label: 'Victorias', key: 'wins', type: 'count' },
                 { label: '% Victorias', key: 'winRate', type: 'percent', fixed: true },
-                { label: 'MVPs Totales', key: 'manOfTheMatch', type: 'count' },
-                { label: 'MVP %', key: 'manOfTheMatchPercent', type: 'percent', fixed: true },
+                { label: 'MVPs', key: 'manOfTheMatch', type: 'count' },
+                { label: '% MVPs', key: 'manOfTheMatchPercent', type: 'percent', fixed: true },
                 { label: 'Porterías a 0', key: 'cleanSheets', type: 'count' },
                 { label: '% Porterías a 0', key: 'cleanSheetsPercent', type: 'percent', fixed: true }
             ]
@@ -218,11 +234,11 @@
             title: 'Ataque',
             icon: 'sword',
             stats: [
-                { label: 'Goles Totales', key: 'goals', type: 'count' },
-                { label: 'Goles/partido', key: 'goalsPerMatch', type: 'decimal' },
-                { label: 'Asistencias Totales', key: 'assists', type: 'count' },
+                { label: 'Goles', key: 'goals', type: 'count' },
+                { label: 'Goles / partido', key: 'goalsPerMatch', type: 'decimal' },
+                { label: 'Asistencias', key: 'assists', type: 'count' },
                 { label: 'Asistencias/partido', key: 'assistsPerMatch', type: 'decimal' },
-                { label: 'G+A Totales', key: 'goalsPlusAssists', type: 'count' },
+                { label: 'Goles+Asistencias', key: 'goalsPlusAssists', type: 'count' },
                 { label: 'G+A por partido', key: 'goalsPlusAssistsPerMatch', type: 'decimal' },
                 { label: '% Éxito Tiro', key: 'shotSuccessRate', type: 'percent', fixed: true },
                 { label: 'Hattricks', key: 'hattricks', type: 'count' },
@@ -233,8 +249,8 @@
             title: 'Distribución',
             icon: 'move',
             stats: [
-                { label: 'Pases Totales', key: 'passesMade', type: 'count' },
-                { label: 'Pases/partido', key: 'passesMadePerMatch', type: 'decimal' },
+                { label: 'Pases', key: 'passesMade', type: 'count' },
+                { label: 'Pases / partido', key: 'passesMadePerMatch', type: 'decimal' },
                 { label: 'Pases Completados', key: 'passesSuccess', type: 'count' },
                 { label: '% Éxito Pase', key: 'passSuccessRate', type: 'percent', fixed: true }
             ]
@@ -243,7 +259,7 @@
             title: 'Defensa',
             icon: 'shield',
             stats: [
-                { label: 'Entradas Totales', key: 'tacklesMade', type: 'count' },
+                { label: 'Entradas', key: 'tacklesMade', type: 'count' },
                 { label: 'Entradas con éxito', key: 'tacklesSuccess', type: 'count' },
                 { label: '% Éxito Entrada', key: 'tackleSuccessRate', type: 'percent', fixed: true },
                 { label: 'Goles Concedidos', key: 'goalsConceded', type: 'count' },
@@ -272,11 +288,22 @@
         ]
     })
 
+    const lastRecentMode = ref<'last5' | 'last10'>('last5')
+
+    watch(statMode, (newMode) => {
+        if (newMode !== 'total') {
+            lastRecentMode.value = newMode
+        }
+    })
+
     const radarData = computed(() => {
         const historicalPoints = getRadarDataPoints(props.stats)
-        const last5Points = getRadarDataPoints(last5Stats.value)
         
         const isTotal = statMode.value === 'total'
+        const recentKey = isTotal ? lastRecentMode.value : statMode.value
+        const recentStatsObj = recentKey === 'last10' ? last10Stats.value : last5Stats.value
+        const recentPoints = getRadarDataPoints(recentStatsObj)
+        const recentLabel = recentKey === 'last10' ? 'Últimos 10' : 'Últimos 5'
         
         const colors = {
             highlight: {
@@ -285,8 +312,8 @@
                 point: '#C80D0D'
             },
             faded: {
-                bg: 'rgba(166, 173, 187, 0.1)',
-                border: 'rgba(166, 173, 187, 0.4)',
+                bg: 'rgba(200, 13, 13, 0.1)',
+                border: 'rgba(200, 13, 13, 0.5)',
                 point: 'transparent'
             }
         }
@@ -308,8 +335,8 @@
                     order: isTotal ? 1 : 2
                 },
                 {
-                    label: 'Últimos 5',
-                    data: last5Points,
+                    label: recentLabel,
+                    data: recentPoints,
                     fill: true,
                     backgroundColor: !isTotal ? colors.highlight.bg : colors.faded.bg,
                     borderColor: !isTotal ? colors.highlight.border : colors.faded.border,
@@ -377,11 +404,25 @@
                 display: true,
                 position: 'top' as const,
                 labels: {
-                    color: '#A6ADBB',
+                    color: 'rgba(200, 13, 13, 0.8)',
                     font: { size: 12, weight: 'bold' },
                     padding: 20,
                     usePointStyle: true,
-                    pointStyle: 'circle'
+                    generateLabels: (chart: any) => {
+                        const data = chart.data;
+                        return data.datasets.map((dataset: any, i: number) => ({
+                            text: dataset.label,
+                            datasetIndex: i,
+                            fillStyle: dataset.backgroundColor,
+                            strokeStyle: dataset.borderColor,
+                            lineWidth: dataset.borderWidth,
+                            lineDash: dataset.borderDash,
+                            pointStyle: 'circle',
+                            hidden: !chart.isDatasetVisible(i),
+                            // This ensures the legend color matches the current state
+                            fontColor: 'rgba(166, 173, 187, 0.8)'
+                        }));
+                    }
                 }
             },
             tooltip: {

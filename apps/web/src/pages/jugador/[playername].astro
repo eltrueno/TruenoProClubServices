@@ -9,7 +9,7 @@ const { playername } = Astro.params;
 let finalplayername: string = "";
 
 if (playername != undefined) {
-	finalplayername = playername?.toString();
+	finalplayername = playername;
 }
 ---
 
