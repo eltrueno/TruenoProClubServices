@@ -197,17 +197,19 @@
     })
 
     const formatValue = (stat: any) => {
-        const val = (props.stats as any)[stat.key]
-        if (val == null) return '—'
-        if (stat.type === 'percent' || stat.fixed) return val?.toFixed(1) + '%'
+        const raw = (props.stats as any)[stat.key]
+        const val = raw ?? 0
+        if (typeof val === 'number' && isNaN(val)) return '0'
+        if (stat.type === 'percent' || stat.fixed) return val.toFixed(1) + '%'
         if (stat.type === 'decimal') return typeof val === 'number' ? val.toFixed(2) : val
         if (typeof val === 'number' && !Number.isInteger(val)) return val.toFixed(2)
         return val
     }
 
     const formatRadarDisplay = (m: any) => {
-        const val = m.raw !== undefined ? m.raw : (currentStats.value as any)[m.key]
-        if (val == null) return '—'
+        const rawVal = m.raw !== undefined ? m.raw : (currentStats.value as any)[m.key]
+        const val = rawVal ?? 0
+        if (typeof val === 'number' && isNaN(val)) return '0'
         
         if (m.key === 'ratingAve') return val.toFixed(1)
         if (m.key.toLowerCase().includes('rate') || m.key.toLowerCase().includes('percent')) return val.toFixed(1) + '%'
@@ -221,7 +223,11 @@
             title: 'Participación',
             icon: 'trophy',
             stats: [
+                { label: 'Partidos Jugados', key: 'gamesPlayed', type: 'count' },
+                { label: 'Minutos Jugados', key: 'minutesPlayed', type: 'count' },
                 { label: 'Rating medio', key: 'ratingAve', type: 'decimal' },
+                { label: 'Tarjetas rojas', key: 'redCards', type: 'count' },
+                { label: 'Tarjetas rojas/partido', key: 'redCardsPerMatch', type: 'decimal' },
                 { label: 'Victorias', key: 'wins', type: 'count' },
                 { label: '% Victorias', key: 'winRate', type: 'percent', fixed: true },
                 { label: 'MVPs', key: 'manOfTheMatch', type: 'count' },
@@ -242,7 +248,7 @@
                 { label: 'G+A por partido', key: 'goalsPlusAssistsPerMatch', type: 'decimal' },
                 { label: '% Éxito Tiro', key: 'shotSuccessRate', type: 'percent', fixed: true },
                 { label: 'Hattricks', key: 'hattricks', type: 'count' },
-                { label: 'Pokers', key: 'pokers', type: 'count' }
+                { label: 'Pókers', key: 'pokers', type: 'count' }
             ]
         },
         {

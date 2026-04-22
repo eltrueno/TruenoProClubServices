@@ -1,5 +1,13 @@
 <template>
-    <div class="w-full min-h-screen bg-base-200/50 pb-2 rounded-xl" v-if="!isloading && !hasError && playerProfile">
+    <div class="w-full min-h-screen pb-2 rounded-xl bg-base-200/50" v-if="!isloading && !hasError && playerProfile">
+        <!-- Breadcrumbs -->
+        <div class="breadcrumbs text-sm ">
+            <ul>
+                <li><a href="/" class="">Inicio</a></li>
+                <li><a href="/plantilla" class="">Jugadores</a></li>
+                <li>{{ playerProfile.member.playerName }}</li>
+            </ul>
+        </div>
         <!-- Hero Section -->
         <section class="bg-base-200 rounded-2xl shadow-md">
             <div class=" mx-auto px-4 py-8 lg:py-12">
@@ -48,8 +56,8 @@
                 </div>
 
                 <!-- KPI Cards -->
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 lg:mt-12">
-                    <div v-for="kpi in kpis" :key="kpi.label" class="card dark:bg-base-100 bg-base-300 shadow-sm overflow-hidden group">
+                <div class="flex flex-wrap gap-4 mt-8 lg:mt-12">
+                    <div v-for="kpi in kpis" :key="kpi.label" class="kpi-card card dark:bg-base-100 bg-base-300 shadow-sm overflow-hidden group">
                         <div class="card-body p-4 lg:p-6 items-center text-center">
                             <span class="text-base-content/50 uppercase text-xs font-black text-primary tracking-widest">{{ kpi.label }}</span>
                             <span class="text-2xl lg:text-4xl font-black mt-1 tabular-nums">{{ kpi.value }}</span>
@@ -93,6 +101,12 @@
 
     <!-- Error State -->
     <div class="flex flex-col h-full overflow-hidden" v-else>
+        <div class="breadcrumbs text-sm">
+            <ul>
+                <li><a href="/" class="">Inicio</a></li>
+                <li><a href="/plantilla" class="">Jugadores</a></li>
+            </ul>
+        </div>
         <h3 class="text-center text-2xl p-3">No se ha podido encontrar al jugador</h3>
         <div class="flex place-content-center p-6">
             <img src="/illustrations/bugfixingsvg.svg" class="lg:w-2/3 w-full select-none pointer-events-none" alt="Image representing error">
@@ -168,40 +182,52 @@
         if (filterMode.value === 'friendly') return friendly
 
         const merged = new PlayerStatsEntity({ ...official })
-        merged.gamesPlayed   += friendly.gamesPlayed
-        merged.goals         += friendly.goals
-        merged.assists       += friendly.assists
-        merged.wins          += friendly.wins
-        merged.losses        += friendly.losses
-        merged.ties          += friendly.ties
-        merged.minutesPlayed += friendly.minutesPlayed
-        merged.shots         += friendly.shots
-        merged.saves         += friendly.saves
-        merged.tacklesMade   += friendly.tacklesMade
-        merged.tacklesSuccess+= friendly.tacklesSuccess
-        merged.passesMade    += friendly.passesMade
-        merged.passesSuccess += friendly.passesSuccess
-        merged.cleanSheets   += friendly.cleanSheets
-        merged.goalsConceded += friendly.goalsConceded
-        merged.redCards      += friendly.redCards
-        merged.manOfTheMatch += friendly.manOfTheMatch
-        merged.hattricks     += friendly.hattricks
-        merged.pokers        += friendly.pokers
-        merged.ratingSum     += friendly.ratingSum
+        merged.gamesPlayed   += (friendly.gamesPlayed || 0)
+        merged.goals         += (friendly.goals || 0)
+        merged.assists       += (friendly.assists || 0)
+        merged.wins          += (friendly.wins || 0)
+        merged.losses        += (friendly.losses || 0)
+        merged.ties          += (friendly.ties || 0)
+        merged.minutesPlayed += (friendly.minutesPlayed || 0)
+        merged.shots         += (friendly.shots || 0)
+        merged.saves         += (friendly.saves || 0)
+        merged.tacklesMade   += (friendly.tacklesMade || 0)
+        merged.tacklesSuccess+= (friendly.tacklesSuccess || 0)
+        merged.passesMade    += (friendly.passesMade || 0)
+        merged.passesSuccess += (friendly.passesSuccess || 0)
+        merged.cleanSheets   += (friendly.cleanSheets || 0)
+        merged.goalsConceded += (friendly.goalsConceded || 0)
+        merged.redCards      += (friendly.redCards || 0)
+        merged.manOfTheMatch += (friendly.manOfTheMatch || 0)
+        merged.hattricks     += (friendly.hattricks || 0)
+        merged.pokers        += (friendly.pokers || 0)
+        merged.ratingSum     += (friendly.ratingSum || 0)
         merged.computeAggregatedStats()
         return merged
     })
 
     const kpis = computed(() => [
-        { label: 'Partidos', value: activeStats.value.gamesPlayed },
-        { label: 'Goles', value: activeStats.value.goals },
-        { label: 'Asistencias', value: activeStats.value.assists },
-        { label: 'Valoración', value: activeStats.value.ratingAve?.toFixed(1) }
+        { label: 'Partidos', value: activeStats.value.gamesPlayed ?? 0 },
+        { label: 'Goles', value: activeStats.value.goals ?? 0 },
+        { label: 'Asistencias', value: activeStats.value.assists ?? 0 },
+        { label: 'Valoración', value: (activeStats.value.ratingAve ?? 0).toFixed(1) },
+        { label: 'Rojas', value: activeStats.value.redCards ?? 0 },
+        { label: 'Winrate', value: (activeStats.value.winRate ?? 0).toFixed(1)+"%" },
+        { label: 'MVP', value: activeStats.value.manOfTheMatch ?? 0 }
     ])
 </script>
 
 <style scoped>
     .tab-active {
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .kpi-card {
+        flex: 1 1 calc(50% - 1rem);
+        max-width: 100%;
+    }
+    @media (min-width: 1024px) {
+        .kpi-card {
+            flex: 1 1 calc(25% - 1rem);
+        }
     }
 </style>
