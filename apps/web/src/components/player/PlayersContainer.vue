@@ -3,7 +3,7 @@
         <div class="breadcrumbs text-sm w-full flex justify-center text-center ml-4">
             <ul class="flex w-full">
                 <li><a href="/" class="">Inicio</a></li>
-                <li><a href="/plantilla" class="">Jugadores</a></li>
+                <li><a href="/plantilla" class="">Plantilla</a></li>
             </ul>
         </div>
         <header class="flex w-full justify-end">

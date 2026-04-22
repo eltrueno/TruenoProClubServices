@@ -2,12 +2,7 @@ User-agent: *
 Disallow: /404
 Disallow: /404.html
 Disallow: /imagegenerator
-Disallow: /partido/
 Disallow: /logrosdef
-Disallow: /jugador/
 
-Allow: /partidos
-Allow: /totw
-Allow: /plantilla
 
 Sitemap: https://www.casemurocity.org/sitemap.xml

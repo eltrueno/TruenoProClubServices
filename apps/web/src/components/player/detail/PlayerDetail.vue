@@ -4,7 +4,7 @@
         <div class="breadcrumbs text-sm ">
             <ul>
                 <li><a href="/" class="">Inicio</a></li>
-                <li><a href="/plantilla" class="">Jugadores</a></li>
+                <li><a href="/plantilla" class="">Plantilla</a></li>
                 <li>{{ playerProfile.member.playerName }}</li>
             </ul>
         </div>
