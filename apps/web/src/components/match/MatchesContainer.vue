@@ -1,5 +1,11 @@
 <template>
     <div role="container" class="w-full lg:px-10 xl:px-16 overflow-hidden">
+        <div class="breadcrumbs text-sm ">
+            <ul>
+                <li><a href="/" class="">Inicio</a></li>
+                <li><a href="/partidos" class="">Partidos</a></li>
+            </ul>
+        </div>
         <header role="container" class="w-full py-4 px-6 h-full rounded-lg shadow-xl dark:shadow dark:bg-base-200">
             <div class="p-4 grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-10 justify-around items-center h-full">
                 <div class="flex flex-col h-full justify-between gap-1">

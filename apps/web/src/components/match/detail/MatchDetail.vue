@@ -31,6 +31,13 @@
 <template>
     <div v-if="!hasError && !isLoading" class="w-full">
         <div class="flex w-full  flex-col items-center justify-center align-middle" v-if="!isLoading">
+            <div class="breadcrumbs text-sm w-full flex justify-center text-center ">
+                <ul class="flex w-full">
+                    <li><a href="/" class="">Inicio</a></li>
+                    <li><a href="/partidos" class="">Partidos</a></li>
+                    <li>#{{ matchId }}</li>
+                </ul>
+            </div>
             <p class="w-full text-5xl md:text-6xl font-bold text-center" :class="resultColor">{{ translateMatchResult(match.result).toUpperCase() }}</p>
             <div class="items-center justify-center align-middle h-full w-full p-4 hidden md:flex">
                 <p class="text-end self-center font-medium text-2xl">{{match.localClub.name}}</p>
