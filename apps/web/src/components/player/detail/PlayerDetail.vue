@@ -1,5 +1,5 @@
 <template>
-    <div class="w-full min-h-screen pb-2 rounded-xl bg-base-200/50" v-if="!isloading && !hasError && playerProfile">
+    <div class="w-full min-h-screen pb-2 rounded-xl" v-if="!isloading && !hasError && playerProfile">
         <!-- Breadcrumbs -->
         <div class="breadcrumbs text-sm ">
             <ul>
@@ -67,32 +67,68 @@
             </div>
         </section>
 
-        <!-- Tabs Section -->
-        <section class="mx-auto px-4 py-8">
-            <div class="overflow-x-auto mb-8">
-                <div role="tablist" class="tabs tabs-boxed flex-nowrap whitespace-nowrap min-w-max">
-                    <a 
-                        v-for="tab in ['estadísticas', 'historial y progresión', 'logros', 'comparador']" 
-                        :key="tab"
-                        role="tab" 
-                        class="tab capitalize text-xs lg:text-base"
-                        :class="activeTab === tab ? 'tab-active font-semibold !border-primary' : ''"
-                        @click="activeTab = tab">
-                        {{ tab.toUpperCase() }}
-                    </a>
-                </div>
+        <!-- Tab Navigation + Content (integrated block) -->
+        <section class="mx-auto px-1 pt-8">
+            <!-- Nav Bar (rounded top only) -->
+            <div class="flex justify-around dark:bg-base-100 bg-base-300 rounded-t-2xl rounded-b-sm shadow-md p-1 gap-1">
+                <!-- Estadísticas -->
+                <button 
+                    @click="activeTab = 'estadísticas'"
+                    class="flex-1 flex flex-col items-center gap-1 py-3 rounded-xl transition-all duration-200"
+                    :class="activeTab === 'estadísticas' ? 'bg-primary text-primary-content shadow-sm' : 'hover:bg-base-200'">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <span class="text-xs font-semibold hidden lg:block">Estadísticas</span>
+                </button>
+                <!-- Historial -->
+                <button 
+                    @click="activeTab = 'historial'"
+                    class="flex-1 flex flex-col items-center gap-1 py-3 rounded-xl transition-all duration-200"
+                    :class="activeTab === 'historial' ? 'bg-primary text-primary-content shadow-sm' : 'hover:bg-base-200'">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                    <span class="text-xs font-semibold hidden lg:block">Historial</span>
+                </button>
+                <!-- Logros -->
+                <button 
+                    @click="activeTab = 'logros'"
+                    class="flex-1 flex flex-col items-center gap-1 py-3 rounded-xl transition-all duration-200"
+                    :class="activeTab === 'logros' ? 'bg-primary text-primary-content shadow-sm' : 'hover:bg-base-200'">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                    <span class="text-xs font-semibold hidden lg:block">Logros</span>
+                </button>
+                <!-- Comparador -->
+                <button 
+                    @click="activeTab = 'comparador'"
+                    class="flex-1 flex flex-col items-center gap-1 py-3 rounded-xl transition-all duration-200"
+                    :class="activeTab === 'comparador' ? 'bg-primary text-primary-content shadow-sm' : 'hover:bg-base-200'">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                    <span class="text-xs font-semibold hidden lg:block">Comparador</span>
+                </button>
             </div>
 
-            <!-- Tab Content (Modularized) -->
-            <PlayerDetailStats 
-                v-if="activeTab === 'estadísticas'" 
-                :stats="activeStats" 
-                :matches="playerMatches"
-                :currentFilter="filterMode"
-            />
-            <PlayerDetailWIP v-else-if="activeTab === 'historial y progresión'" title="Historial y Progresión" icon="📈" />
-            <PlayerDetailWIP v-else-if="activeTab === 'logros'" title="Logros y Premios" icon="🏆" />
-            <PlayerDetailWIP v-else-if="activeTab === 'comparador'" title="Comparador" icon="⚔️" />
+            <!-- Tab Content (rounded bottom only, no gap) -->
+            <div class="bg-base-200/50 rounded-b-2xl p-2">
+                <PlayerDetailStats
+                    v-if="activeTab === 'estadísticas'" 
+                    :stats="activeStats" 
+                    :matches="playerMatches"
+                    :currentFilter="filterMode"
+                />
+                <PlayerDetailWIP v-else-if="activeTab === 'historial'" title="Historial y Progresión" icon="📈" />
+                <PlayerDetailWIP v-else-if="activeTab === 'logros'" title="Logros y Premios" icon="🏆" />
+                <PlayerDetailWIP v-else-if="activeTab === 'comparador'" title="Comparador" icon="⚔️" />
+            </div>
         </section>
     </div>
 
@@ -168,7 +204,6 @@
         const total = activeStats.value.gamesPlayed
         return Object.entries(activeStats.value.playedPositions)
             .sort(([, a], [, b]) => (b as number) - (a as number))
-            .slice(0, 2)
             .map(([pos, count]) => ({
                 name: pos,
                 percentage: Math.round(((count as number) / total) * 100)
@@ -202,6 +237,16 @@
         merged.hattricks     += (friendly.hattricks || 0)
         merged.pokers        += (friendly.pokers || 0)
         merged.ratingSum     += (friendly.ratingSum || 0)
+
+        // Merge playedPositions
+        const mergedPositions: Record<string, number> = { ...(official.playedPositions || {}) }
+        if (friendly.playedPositions) {
+            Object.entries(friendly.playedPositions).forEach(([pos, count]) => {
+                mergedPositions[pos] = (mergedPositions[pos] || 0) + (count as number)
+            })
+        }
+        merged.playedPositions = mergedPositions
+
         merged.computeAggregatedStats()
         return merged
     })

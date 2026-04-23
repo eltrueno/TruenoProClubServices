@@ -1,5 +1,5 @@
 <template>
-    <div class="flex flex-col gap-8 animate-in mt-2">
+    <div class="flex flex-col gap-8 animate-in mt-1">
         <!-- Radar Card -->
         <div class="card bg-base-200 shadow-md relative">
             <div class="card-body p-6">
