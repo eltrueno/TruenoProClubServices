@@ -1,5 +1,11 @@
 <template>
     <div role="contentinfo" class="w-full">
+        <div class="breadcrumbs text-sm w-full flex justify-center text-center ml-4">
+            <ul class="flex w-full">
+                <li><a href="/" class="">Inicio</a></li>
+                <li><a href="/plantilla" class="">Plantilla</a></li>
+            </ul>
+        </div>
         <header class="flex w-full justify-end">
             <div class="basis-4/4 lg:basis-3/4 w-full py-4 px-6 flex flex-wrap justify-around items-center rounded-lg shadow-lg dark:shadow dark:bg-base-100">
                 <div class="basis-2/2 lg:basis-1/2 flex flex-row justify-center align-middle items-center gap-2">

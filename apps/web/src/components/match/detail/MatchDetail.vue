@@ -31,6 +31,13 @@
 <template>
     <div v-if="!hasError && !isLoading" class="w-full">
         <div class="flex w-full  flex-col items-center justify-center align-middle" v-if="!isLoading">
+            <div class="breadcrumbs text-sm w-full flex justify-center text-center ">
+                <ul class="flex w-full">
+                    <li><a href="/" class="">Inicio</a></li>
+                    <li><a href="/partidos" class="">Partidos</a></li>
+                    <li>#{{ matchId }}</li>
+                </ul>
+            </div>
             <p class="w-full text-5xl md:text-6xl font-bold text-center" :class="resultColor">{{ translateMatchResult(match.result).toUpperCase() }}</p>
             <div class="items-center justify-center align-middle h-full w-full p-4 hidden md:flex">
                 <p class="text-end self-center font-medium text-2xl">{{match.localClub.name}}</p>
@@ -57,7 +64,7 @@
             <div class="py-2 px-4 flex justify-between gap-x-8 md:gap-x-12">
                 <div v-if="match.winnerByDnf" class="badge badge-error badge-lg">Desconexión</div>
                 <div class="badge badge-primary badge-lg">{{ translateMatchType(match.matchType) }}</div>
-                <div v-if="match.matchType=='playoff'&&match.winnerByPen" class="badge badge-neutral badge-lg">Penaltis</div>
+                <div v-if="match.winnerByPen" class="badge badge-neutral badge-lg">Penaltis</div>
             </div>
             <div class="flex my-3 items-center justify-center text-center text-xl gap-x-1">
                 <p class="font-semibold">Rating del equipo: </p>

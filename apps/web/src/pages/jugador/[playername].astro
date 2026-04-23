@@ -1,0 +1,52 @@
+---
+export const prerender = false;
+
+import Layout from "@layouts/Layout.astro";
+import PlayerDetail from "@components/player/detail/PlayerDetail.vue";
+import PlayerDetailSkeleton from "@components/player/detail/PlayerDetailSkeleton.vue";
+
+const { playername } = Astro.params;
+let finalplayername: string = "";
+
+if (playername != undefined) {
+	finalplayername = playername;
+}
+---
+
+<Layout
+	title="Casemuro City: Perfil del jugador"
+	isindex={false}
+	description="Perfil y detalles dep jugador"
+	keywords="fifa, eafc, fifa23, fifa24, eafc24, club, pro, clubespro, proclubs, casemurocity, eltrueno, el_trueno, inicio, jugador, stats, detalles, detail, casemuro, mrcasemuro, mr_casemuro"
+>
+	<meta
+		slot="metadata"
+		property="og:url"
+		content={`https://www.casemurocity.org/jugador/${finalplayername}`}
+	/>
+	<meta
+		slot="metadata"
+		property="og:image"
+		content="https://www.casemurocity.org/escudo_banner_fondo.webp"
+	/>
+	<meta
+		slot="metadata"
+		name="twitter:url"
+		content={`https://www.casemurocity.org/jugador/${finalplayername}`}
+	/>
+	<meta
+		slot="metadata"
+		name="twitter:image"
+		content="https://www.casemurocity.org/escudo_banner_fondo.webp"
+	/>
+
+	<meta slot="metadata" name="robots" content="noindex, nofollow" />
+
+	<section>
+		<container class="flex p-6 lg:p-12 justify-center items-center text-center">
+			<PlayerDetail client:only="vue" playerName={finalplayername}>
+				<PlayerDetailSkeleton slot="fallback" />
+			</PlayerDetail>
+		</container>
+	</section>
+</Layout>

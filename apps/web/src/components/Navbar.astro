@@ -10,13 +10,13 @@ const {isindex} = Astro.props;
 
 <nav class="navbar bg-primary min-w-full sticky top-0 rounded-b-md shadow-md z-50">
 	<div class="flex-1 flex-grow-0">
-		<a href="/" class="btn btn-ghost text-xl"><img src="/logo.webp" class="max-h-12" class:list={[{ 'logo-anim': isindex }]} alt="Escudo"></img> </a>
+		<a href="/" class="btn btn-ghost text-xl" aria-label="Volver al inicio de la página"><img src="/logo.webp" class="max-h-12" class:list={[{ 'logo-anim': isindex }]} alt="Logo del equipo CaseMuroCity"></img> </a>
 	</div>
 	<div class="space-x-1 absolute text-[#eeeeee]" class:list={[{ 'links-anim': isindex },{'right-0': !isindex}]}>
-		<a href="/" class="btn btn-ghost hidden md:inline-flex"><span>INICIO</span></a>
-		<a href="/plantilla" class="btn btn-ghost "><span>PLANTILLA</span></a>
-		<a href="/partidos" class="btn btn-ghost "><span>PARTIDOS</span></a>
-		<a href="/totw" class="btn btn-ghost"><span>TOTW</span></a>
+		<a href="/" class="btn btn-ghost hidden md:inline-flex uppercase" aria-label="Volver al inicio de la página"><span>Inicio</span></a>
+		<a href="/plantilla" class="btn btn-ghost uppercase" aria-label="Ver plantilla del equipo CaseMuroCity"><span>Plantilla</span></a>
+		<a href="/partidos" class="btn btn-ghost uppercase" aria-label="Ver partidos del equipo CaseMuroCity"><span>Partidos</span></a>
+		<a href="/totw" class="btn btn-ghost uppercase" aria-label="Ver Team Of The Week del equipo CaseMuroCity"><span>Totw</span></a>
 	</div>
 </nav>
 
