@@ -111,6 +111,16 @@
               </div>
 
            </div>
+
+           <!-- Botón para ir al perfil del jugador -->
+           <div class="w-full flex justify-center pt-2">
+             <a 
+               :href="`/jugador/${player.playerName}`"
+               class="btn btn-sm btn-outline border-[#FFD700]/30 text-[#FFD700]/80 hover:bg-[#FFD700] hover:text-black hover:border-[#FFD700] transition-all duration-300 font-bold tracking-widest text-[10px] h-auto min-h-0 py-2 px-4"
+             >
+               VER PERFIL COMPLETO
+             </a>
+           </div>
         </div>
         <div class="layer-foil absolute inset-0 pointer-events-none rounded-none sm:rounded-2xl" />
 
