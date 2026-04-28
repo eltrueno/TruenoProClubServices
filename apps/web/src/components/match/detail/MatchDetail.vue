@@ -131,6 +131,7 @@
                             <svg  v-if="getSelectedPlayer().manOfTheMatch" xmlns="http://www.w3.org/2000/svg" class="mr-1 w-8 h-8  px-1 self-center font-semibold text-primary" width="24" height="24" fill="currentColor" viewBox="0 -960 960 960" ><path d="m363-310 117-71 117 71-31-133 104-90-137-11-53-126-53 126-137 11 104 90-31 133ZM480-28 346-160H160v-186L28-480l132-134v-186h186l134-132 134 132h186v186l132 134-132 134v186H614L480-28Zm0-112 100-100h140v-140l100-100-100-100v-140H580L480-820 380-720H240v140L140-480l100 100v140h140l100 100Zm0-340Z"/></svg>
                             <p class="text-primary font-semibold text-lg md:text-xl lg:text-2xl">{{ getSelectedPlayer().playername }}</p>
                             <p class="font-medium text-lg md:text-xl lg:text-2xl">({{ getSelectedPlayer().rating }})</p>
+                            <a :href="`/jugador/${getSelectedPlayer().playername}`" class="btn btn-xs btn-primary self-center ml-2">Ver Perfil</a>
                             <div class="grid h-6 w-4 place-items-center bg-error rounded-sm self-center" v-if="getSelectedPlayer().redCards>0"></div>
                         </div>
                         <p class="self-center text-lg font-light">{{ translatePosition(getSelectedPlayer().position) }}</p>
