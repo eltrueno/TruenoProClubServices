@@ -1,0 +1,8 @@
+<script is:inline>
+    if (window.opener) {
+        window.opener.postMessage("auth-success", "https://www.casemurocity.org")
+        window.close()
+    } else {
+        window.location.href = "/login"
+    }
+</script>

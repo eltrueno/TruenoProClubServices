@@ -1,0 +1,65 @@
+import { authClient } from "@/lib/auth"
+import { computed } from "vue"
+
+export function useAuth() {
+    const sessionState = authClient.useSession()
+
+    const session = computed(() => sessionState.value?.data ?? null)
+    const isPending = computed(() => sessionState.value?.isPending ?? false)
+
+    const user = computed(() => session.value?.user ?? null)
+    const isLoggedIn = computed(() => !!user.value)
+
+    async function loginWithTwitch(callbackURL = "https://www.casemurocity.org/login") {
+        await authClient.signIn.social({ provider: "twitch", callbackURL })
+    }
+
+    async function loginWithTwitchPopup(silent?: boolean, callbackURL?: string) {
+        const { data } = await authClient.signIn.social({
+            provider: "twitch",
+            callbackURL: "https://www.casemurocity.org/authcallback",
+            scopes: ["user:read:email", "user:read:follows"],
+            disableRedirect: true
+        })
+
+        if (!data?.url) return
+
+        const width = 600
+        const height = 700
+        const left = window.screenX + (window.outerWidth - width) / 2
+        const top = window.screenY + (window.outerHeight - height) / 2
+
+        window.open(data.url, "Login con Twitch", `width=${width},height=${height},left=${left},top=${top}`)
+
+        // Escucha el mensaje de la página intermedia
+        window.addEventListener("message", async (e) => {
+            if (e.origin !== "https://www.casemurocity.org") return
+            if (e.data === "auth-success") {
+                await authClient.$fetch("/get-session")
+                if (!silent) window.location.href = callbackURL ?? "/login"
+                else window.location.reload()
+            }
+        }, { once: true })
+    }
+
+    async function logout(silent?: boolean, callbackURL?: string) {
+        await authClient.signOut({
+            fetchOptions: {
+                onSuccess: async () => {
+                    await authClient.$fetch("/get-session")
+                    if (!silent) window.location.href = callbackURL ?? "/login"
+                }
+            }
+        })
+    }
+
+    return {
+        user,
+        session,
+        isLoggedIn,
+        isPending,
+        loginWithTwitch,
+        loginWithTwitchPopup,
+        logout,
+    }
+}

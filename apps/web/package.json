@@ -19,6 +19,7 @@
     "astro": "^4.1.2",
     "astro-icon": "^1.1.5",
     "atropos": "^2.0.2",
+    "better-auth": "^1.6.9",
     "chart.js": "^4.5.1",
     "tailwindcss": "^3.4.1",
     "three": "^0.177.0",

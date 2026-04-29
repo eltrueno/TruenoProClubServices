@@ -1,7 +1,9 @@
 import "dotenv/config"
 import { betterAuth } from "better-auth"
+import { createAuthMiddleware, APIError } from "better-auth/api"
 import { mongodbAdapter } from "better-auth/adapters/mongodb"
 import { db } from "./db"
+import { ObjectId } from "mongodb"
 
 export const auth = betterAuth({
   database: mongodbAdapter(db),
@@ -13,27 +15,49 @@ export const auth = betterAuth({
     }
   },
 
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path === "/update-user") {
+        throw new APIError("FORBIDDEN", {
+          message: "Not allowed"
+        })
+      }
+    }),
+  },
+
+  databaseHooks: {
+    account: {
+      create: {
+        after: async (account: any) => {
+          if (account.providerId === "twitch") {
+            await db.collection("user").updateOne(
+              { _id: new ObjectId(account.userId) },
+              { $set: { twitchId: account.accountId } }
+            )
+          }
+        }
+      }
+    }
+  },
+
   user: {
     additionalFields: {
       discordId: {
         type: "string",
-        required: false,
-        nullable: true
+        required: false
       },
       eaPlayerName: {
         type: "string",
-        required: false,
-        nullable: true
+        required: false
       },
       twitchId: {
         type: "string",
-        required: false,
-        nullable: true
+        required: false
       },
       twitchFollowing: {
         type: "boolean",
         required: true,
-        default: false
+        defaultValue: false
       },
       role: {
         type: "string",
@@ -41,6 +65,8 @@ export const auth = betterAuth({
       }
     }
   },
+
+
 
   trustedOrigins: [
     process.env.WWW_URL || "https://www.casemurocity.org",
@@ -51,6 +77,7 @@ export const auth = betterAuth({
     twitch: {
       clientId: process.env.TWITCH_CLIENT_ID || "",
       clientSecret: process.env.TWITCH_CLIENT_SECRET || "",
+      overrideUserInfoOnSignIn: true
     }
   }
 })
