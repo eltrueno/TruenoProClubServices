@@ -2,10 +2,11 @@ import "dotenv/config"
 import { betterAuth } from "better-auth"
 import { createAuthMiddleware, APIError } from "better-auth/api"
 import { mongodbAdapter } from "better-auth/adapters/mongodb"
-import { db } from "./db"
 import { ObjectId } from "mongodb"
 
-export const auth = betterAuth({
+
+
+export const createAuth = (db: any) => betterAuth({
   database: mongodbAdapter(db),
 
   advanced: {
@@ -63,10 +64,11 @@ export const auth = betterAuth({
         type: "string",
         defaultValue: "visitor"
       }
+    },
+    deleteUser: {
+      enabled: true,
     }
   },
-
-
 
   trustedOrigins: [
     process.env.WWW_URL || "https://www.casemurocity.org",
@@ -81,3 +83,6 @@ export const auth = betterAuth({
     }
   }
 })
+
+/*DUMMY CLIENT FOR TYPE INFERENCE */
+export type AuthType = ReturnType<typeof createAuth>

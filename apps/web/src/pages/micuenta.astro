@@ -1,18 +1,18 @@
 ---
-import LoginWall from "@/components/auth/LoginWall.vue"
+import MyAccountPage from "@/components/auth/MyAccountPage.vue"
 import Layout from "@/layouts/Layout.astro"
 ---
 
 <Layout
-	title="Casemuro City: Inicio de sesión"
+	title="Casemuro City: Mi Cuenta"
 	isindex={false}
-	description="Inicio de sesión en Casemuro City"
-	keywords="fifa, eafc, fifa23, fifa24, eafc24, club, pro, clubespro, proclubs, casemurocity, eltrueno, el_trueno, inicio, jugador, login, cuenta, casemuro, mrcasemuro, mr_casemuro"
+	description="Mi Cuenta en Casemuro City"
+	keywords="fifa, eafc, fifa23, fifa24, eafc24, club, pro, clubespro, proclubs, casemurocity, eltrueno, el_trueno, inicio, jugador, login, cuenta, micuenta, mi cuenta, casemuro, mrcasemuro, mr_casemuro"
 >
 	<meta
 		slot="metadata"
 		property="og:url"
-		content={`https://www.casemurocity.org/login`}
+		content={`https://www.casemurocity.org/micuenta`}
 	/>
 	<meta
 		slot="metadata"
@@ -22,7 +22,7 @@ import Layout from "@/layouts/Layout.astro"
 	<meta
 		slot="metadata"
 		name="twitter:url"
-		content={`https://www.casemurocity.org/login`}
+		content={`https://www.casemurocity.org/micuenta`}
 	/>
 	<meta
 		slot="metadata"
@@ -34,7 +34,7 @@ import Layout from "@/layouts/Layout.astro"
 
 	<section>
 		<container class="flex p-6 lg:p-12 justify-center items-center text-center">
-			<LoginWall client:load />
+			<MyAccountPage client:load />
 		</container>
 	</section>
 </Layout>

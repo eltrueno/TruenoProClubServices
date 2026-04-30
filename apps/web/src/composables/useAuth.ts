@@ -36,7 +36,7 @@ export function useAuth() {
             if (e.origin !== "https://www.casemurocity.org") return
             if (e.data === "auth-success") {
                 await authClient.$fetch("/get-session")
-                if (!silent) window.location.href = callbackURL ?? "/login"
+                if (!silent) window.location.href = callbackURL ?? "/micuenta"
                 else window.location.reload()
             }
         }, { once: true })
@@ -44,6 +44,17 @@ export function useAuth() {
 
     async function logout(silent?: boolean, callbackURL?: string) {
         await authClient.signOut({
+            fetchOptions: {
+                onSuccess: async () => {
+                    await authClient.$fetch("/get-session")
+                    if (!silent) window.location.href = callbackURL ?? "/login"
+                }
+            }
+        })
+    }
+
+    async function deleteAccount(silent?: boolean, callbackURL?: string) {
+        await authClient.deleteUser({
             fetchOptions: {
                 onSuccess: async () => {
                     await authClient.$fetch("/get-session")
@@ -61,5 +72,7 @@ export function useAuth() {
         loginWithTwitch,
         loginWithTwitchPopup,
         logout,
+        deleteAccount,
+        error: sessionState.value?.error,
     }
 }

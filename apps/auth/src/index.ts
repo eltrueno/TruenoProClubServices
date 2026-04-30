@@ -2,8 +2,10 @@ import "dotenv/config"
 import express from "express"
 import cors from "cors"
 import { toNodeHandler } from "better-auth/node"
-import { auth } from "./auth"
-import { connectToDatabase } from "./db"
+import { createAuth } from "@trueno-proclub-services/auth"
+import { db, connectToDatabase } from "./db"
+
+const auth = createAuth(db)
 
 const app = express()
 

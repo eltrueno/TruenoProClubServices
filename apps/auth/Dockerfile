@@ -1,7 +1,7 @@
 # ===========================
 # Stage 1: Build
 # ===========================
-FROM node:20-bookworm AS builder
+FROM node:20-alpine AS builder
 
 # Instala pnpm global
 RUN npm install -g pnpm
@@ -16,17 +16,21 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/auth/package.json ./apps/auth/
 COPY apps/auth/tsconfig.json ./apps/auth/
 COPY apps/auth/src ./apps/auth/src
+COPY packages/auth/package.json ./packages/auth/
+COPY packages/auth/tsconfig.json ./packages/auth/
+COPY packages/auth/src ./packages/auth/src
 
 # Instala dependencias desde la raíz (pnpm detecta workspaces)
 RUN pnpm install
 
 # Build de la app
 RUN pnpm --filter @trueno-proclub-services/auth build
+RUN pnpm --filter @trueno-proclub-services/authservice build
 
 # ===========================
 # Stage 2: Runtime
 # ===========================
-FROM node:20-bookworm
+FROM node:20-alpine
 
 WORKDIR /app
 
