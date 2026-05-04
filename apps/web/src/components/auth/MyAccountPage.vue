@@ -74,7 +74,7 @@ const icons = {
     </template>
     <template #loggedin>
     <div class="min-h-[80vh] flex justify-center items-start p-4 sm:p-8">
-      <div class="w-full max-w-2xl space-y-6">
+      <div class="w-full max-w-[48rem] space-y-6">
         
         <!-- Hero card superior -->
         <div class="rounded-xl dark:bg-base-200 shadow-md overflow-hidden relative">
@@ -100,17 +100,19 @@ const icons = {
             </div>
             
             <!-- Info Usuario -->
-            <div class="pt-14 flex items-start justify-between">
-              <div>
-                <div class="flex items-center gap-2">
-                  <h1 class="text-xl font-bold text-base-content tracking-tight">{{ user?.name || 'Usuario' }}</h1>
-                  <svg class="w-4 h-4 text-[#9146FF]" fill="currentColor" viewBox="0 0 32 32">
-                    <path :d="icons.twitch" />
-                  </svg>
-                </div>
-                <p class="text-sm text-base-content/50 mt-1">{{ user?.email || 'usuario@email.com' }}</p>
+            <div class="pt-14 text-left">
+              <div class="flex items-center gap-2">
+                <h1 class="text-xl font-bold text-base-content tracking-tight">{{ user?.name || 'Usuario' }}</h1>
+                <svg class="w-4 h-4 text-[#9146FF]" fill="currentColor" viewBox="0 0 32 32">
+                  <path :d="icons.twitch" />
+                </svg>
               </div>
-              <button @click="logout(true)" class="btn btn-sm btn-ghost text-base-content/50 hover:text-error hover:bg-error/10 rounded-lg font-medium gap-1.5 transition-all">
+              <p class="text-sm text-base-content/50 mt-1">{{ user?.email || 'usuario@email.com' }}</p>
+            </div>
+            
+            <!-- Botón cerrar sesión -->
+            <div class="mt-5 pt-4 border-t border-base-content/10">
+              <button @click="logout(true)" class="btn btn-sm btn-ghost rounded-lg font-bold w-full transition-all text-base-content/50 hover:text-error hover:bg-error/10 hover:border-error/30 gap-1.5">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
@@ -122,22 +124,22 @@ const icons = {
 
         <!-- Card Conexiones opcionales -->
         <div class="rounded-xl dark:bg-base-200 shadow-md p-6">
-          <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Conexiones opcionales</h2>
+          <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Conexiones</h2>
           
           <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div class="flex items-center gap-4">
-              <div class="w-10 h-10 rounded-full bg-[#5865F2]/20 flex items-center justify-center text-[#5865F2]">
+              <div class="w-10 h-10 shrink-0 rounded-full bg-[#5865F2]/20 flex items-center justify-center text-[#5865F2]">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                    <path :d="icons.discord" />
                 </svg>
               </div>
               <div>
                 <p class="font-bold text-base-content text-sm">Discord</p>
-                <p class="text-xs text-base-content/50 mt-0.5">No conectado</p>
+                <p class="text-xs text-base-content/50 mt-0.5">Conecta tu cuenta de discord para que puedas ser mencionado si eres el mejor o el peor jugador de la semana y recibir puntos de lealtad en el canal de casemuro</p>
               </div>
             </div>
-            <button class="btn btn-sm btn-outline rounded-lg font-bold w-full sm:w-auto transition-all">
-              Conectar
+            <button class="btn btn-sm btn-outline btn-disabled rounded-lg font-bold w-full sm:w-auto transition-all">
+              Proximamente...
             </button>
           </div>
         </div>
@@ -147,11 +149,11 @@ const icons = {
           <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Cuenta de juego</h2>
           <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <p class="text-xs text-base-content/50 mb-1">EA ID / FC Player Name</p>
-              <p class="font-bold text-base-content text-sm">{{ user?.eaPlayerName || 'Sin vincular' }}</p>
+              <p class="font-bold text-base-content text-sm">ID De EA</p>
+              <p class="text-xs text-base-content/50 mt-0.5">{{ user?.eaPlayerName || 'Sin vincular' }}</p>
             </div>
-            <button class="btn btn-sm btn-outline rounded-lg font-bold w-full sm:w-auto transition-all">
-              Cambiar
+            <button class="btn btn-sm btn-outline btn-disabled rounded-lg font-bold w-full sm:w-auto transition-all">
+              Proximamente...
             </button>
           </div>
         </div>
