@@ -1,10 +1,10 @@
 # Trueno Pro Club Services (TPCS)
 
-[Español <img src="https://flagcdn.com/16x12/es.png" width="16" height="12" alt="ES">](#es) | [English <img src="https://flagcdn.com/16x12/gb.png" width="16" height="12" alt="GB">](#en)
+[Español <img src="https://flagcdn.com/w40/es.png" width="16" height="12" alt="ES">](#es) | [English <img src="https://flagcdn.com/w40/gb.png" width="16" height="12" alt="GB">](#en)
 
 ---
 
-## <a id="es"></a> <img src="https://flagcdn.com/16x12/es.png" width="24" height="18" alt="ES"> Español
+## <a id="es"></a> <img src="https://flagcdn.com/w40/es.png" width="24" height="18" alt="ES"> Español
 
 Un sistema integral de gestión para clubes de Pro Clubs.
 
@@ -45,11 +45,22 @@ Este es un **monorepo** estructurado con [pnpm workspaces](https://pnpm.io/works
 - **Propósito**: Procesamiento asincrónico de events y tareas programadas
 - **Características**: Sistema de eventos y manejo de trabajos en segundo plano
 
+##### **auth** - Authentication Service
+- **Stack**: Express.js + Better Auth + MongoDB
+- **Funcionalidades principales**:
+  - Autenticación social (Twitch)
+  - Gestión de sesiones y tokens
+  - API de autenticación para el frontend
+
 #### `/packages`
 
 ##### **eafcapi** - API de EA directa
 - Paquete compartido reutilizable
 - Contiene modelos y utilidades comunes
+
+##### **auth** - Lógica de Autenticación
+- Paquete compartido para la configuración de Better Auth
+- Reutilizable por otras aplicaciones del monorepo
 
 ### 🚀 Primeros Pasos
 
@@ -105,6 +116,20 @@ pnpm build
 
 # Previsualizar build de producción
 pnpm preview
+```
+
+#### Auth
+```bash
+cd apps/auth
+
+# Iniciar en modo desarrollo
+pnpm dev
+
+# Construir para producción
+pnpm build
+
+# Iniciar en modo producción
+pnpm start
 ```
 
 ### 🔧 Configuración
@@ -165,6 +190,35 @@ TOTW_CRON_SCHEDULE="0 21 * * 0"
 TOTW_MIN_GAMES_PLAYED=5
 ```
 
+##### Auth (`apps/auth/.env`)
+
+| Variable | Tipo | Descripción | Valor por defecto |
+|----------|------|-------------|-------------------|
+| `PORT` | `number` | Puerto en el que escucha el servicio | `3001` |
+| `WWW_URL` | `string` | URL del frontend | `https://www.casemurocity.org` |
+| `API_URL` | `string` | URL de la API principal | `https://api.casemurocity.org` |
+| `COOKIE_DOMAIN` | `string` | Dominio para las cookies | `.casemurocity.org` |
+| `MONGODB_URI` | `string` | URL de conexión a MongoDB | **Requerido** |
+| `DBNAME` | `string` | Nombre de la base de datos | `tpcsauth` |
+| `BETTER_AUTH_SECRET` | `string` | Secreto para Better Auth | **Requerido** |
+| `BETTER_AUTH_URL` | `string` | URL base del servicio de auth | `https://auth.casemurocity.org` |
+| `TWITCH_CLIENT_ID` | `string` | ID de cliente de Twitch | **Requerido** |
+| `TWITCH_CLIENT_SECRET` | `string` | Secreto de cliente de Twitch | **Requerido** |
+
+**Ejemplo `.env`:**
+```env
+PORT=3001
+WWW_URL=https://www.casemurocity.org
+API_URL=https://api.casemurocity.org
+COOKIE_DOMAIN=.casemurocity.org
+MONGODB_URI="mongodb://user:pass@host:port/db"
+DBNAME="tpcsauth"
+BETTER_AUTH_SECRET="your-secret"
+BETTER_AUTH_URL=https://auth.casemurocity.org
+TWITCH_CLIENT_ID="your-client-id"
+TWITCH_CLIENT_SECRET="your-client-secret"
+```
+
 #### Servicios Externos
 
 **MongoDB:**
@@ -210,6 +264,11 @@ apps/
         ├── services/
         ├── jobs/
         └── events/
+
+├── auth/                         # Authentication Service
+│   └── src/
+│       ├── db.ts                 # Configuración de base de datos
+│       └── index.ts              # Punto de entrada y middleware
 ```
 
 ### 🔌 Endpoints API
@@ -244,6 +303,10 @@ docker build -t tpcs-api .
 # Construir imagen Worker
 cd apps/worker
 docker build -t tpcs-worker .
+
+# Construir imagen Auth
+cd apps/auth
+docker build -t tpcs-auth .
 ```
 
 ### 🖱️ Seguridad
@@ -257,6 +320,7 @@ docker build -t tpcs-worker .
 | Componente | Tecnologías |
 |-----------|------------|
 | **API Backend** | Express.js, TypeScript, MongoDB, Mongoose |
+| **Auth Service** | Express.js, Better Auth, TypeScript, MongoDB |
 | **Frontend Web** | Astro, Vue.js, Tailwind CSS, DaisyUI |
 | **Build Tools** | TypeScript, pnpm, Webpack |
 
@@ -279,7 +343,7 @@ Las contribuciones son bienvenidas. Por favor:
 
 ---
 
-## <a id="en"></a> <img src="https://flagcdn.com/16x12/gb.png" width="24" height="18" alt="GB"> English
+## <a id="en"></a> <img src="https://flagcdn.com/w40/gb.png" width="24" height="18" alt="GB"> English
 
 A comprehensive management system for Pro Clubs.
 
@@ -320,11 +384,22 @@ This is a **monorepo** structured with [pnpm workspaces](https://pnpm.io/workspa
 - **Purpose**: Asynchronous processing of events and scheduled tasks
 - **Features**: Event system and background job handling
 
+##### **auth** - Authentication Service
+- **Stack**: Express.js + Better Auth + MongoDB
+- **Main functionalities**:
+  - Social Authentication (Twitch)
+  - Session and token management
+  - Authentication API for the frontend
+
 #### `/packages`
 
 ##### **eafcapi** - Direct EA API
 - Reusable shared package
 - Contains common models and utilities
+
+##### **auth** - Authentication Logic
+- Shared package for Better Auth configuration
+- Reusable by other applications in the monorepo
 
 ### 🚀 Getting Started
 
@@ -380,6 +455,20 @@ pnpm build
 
 # Preview production build
 pnpm preview
+```
+
+#### Auth
+```bash
+cd apps/auth
+
+# Start in development mode
+pnpm dev
+
+# Build for production
+pnpm build
+
+# Start in production mode
+pnpm start
 ```
 
 ### 🔧 Configuration
@@ -440,6 +529,35 @@ TOTW_CRON_SCHEDULE="0 21 * * 0"
 TOTW_MIN_GAMES_PLAYED=5
 ```
 
+##### Auth (`apps/auth/.env`)
+
+| Variable | Type | Description | Default Value |
+|----------|------|-------------|----------------|
+| `PORT` | `number` | Port on which the service listens | `3001` |
+| `WWW_URL` | `string` | Frontend URL | `https://www.casemurocity.org` |
+| `API_URL` | `string` | Main API URL | `https://api.casemurocity.org` |
+| `COOKIE_DOMAIN` | `string` | Cookie domain | `.casemurocity.org` |
+| `MONGODB_URI` | `string` | MongoDB connection URL | **Required** |
+| `DBNAME` | `string` | Database name | `tpcsauth` |
+| `BETTER_AUTH_SECRET` | `string` | Better Auth secret | **Required** |
+| `BETTER_AUTH_URL` | `string` | Auth service base URL | `https://auth.casemurocity.org` |
+| `TWITCH_CLIENT_ID` | `string` | Twitch Client ID | **Required** |
+| `TWITCH_CLIENT_SECRET` | `string` | Twitch Client Secret | **Required** |
+
+**Example `.env`:**
+```env
+PORT=3001
+WWW_URL=https://www.casemurocity.org
+API_URL=https://api.casemurocity.org
+COOKIE_DOMAIN=.casemurocity.org
+MONGODB_URI="mongodb://user:pass@host:port/db"
+DBNAME="tpcsauth"
+BETTER_AUTH_SECRET="your-secret"
+BETTER_AUTH_URL=https://auth.casemurocity.org
+TWITCH_CLIENT_ID="your-client-id"
+TWITCH_CLIENT_SECRET="your-client-secret"
+```
+
 #### External Services
 
 **MongoDB:**
@@ -485,6 +603,11 @@ apps/
         ├── services/
         ├── jobs/
         └── events/
+
+├── auth/                         # Authentication Service
+│   └── src/
+│       ├── db.ts                 # Database configuration
+│       └── index.ts              # Entry point and middleware
 ```
 
 ### 🔌 API Endpoints
@@ -519,6 +642,10 @@ docker build -t tpcs-api .
 # Build Worker image
 cd apps/worker
 docker build -t tpcs-worker .
+
+# Build Auth image
+cd apps/auth
+docker build -t tpcs-auth .
 ```
 
 ### 🛡️ Security
@@ -532,6 +659,7 @@ docker build -t tpcs-worker .
 | Component | Technologies |
 |-----------|------------|
 | **API Backend** | Express.js, TypeScript, MongoDB, Mongoose |
+| **Auth Service** | Express.js, Better Auth, TypeScript, MongoDB |
 | **Frontend Web** | Astro, Vue.js, Tailwind CSS, DaisyUI |
 | **Build Tools** | TypeScript, pnpm, Webpack |
 
