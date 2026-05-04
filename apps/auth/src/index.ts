@@ -2,12 +2,13 @@ import "dotenv/config"
 import express from "express"
 import cors from "cors"
 import { toNodeHandler } from "better-auth/node"
-import { createAuth } from "@trueno-proclub-services/auth"
-import { db, connectToDatabase } from "./db"
-
-const auth = createAuth(db)
+import { auth } from "./lib/auth"
+import { connectToDatabase } from "./db"
+import { createRequireAuth } from "./middleware/requireAuth"
+import twitchRoutes from "./routes/twitchRoutes"
 
 const app = express()
+const requireAuth = createRequireAuth(auth)
 
 app.set("trust proxy", true)
 app.use(cors({
@@ -18,8 +19,11 @@ app.use(cors({
 // Better Auth handles everything under /api/auth/*
 app.all("/api/auth/*", toNodeHandler(auth))
 
+// Custom API routes protected by middleware
+app.use("/api/twitch", requireAuth, twitchRoutes)
+
 app.get("/health", (_, res) => {
-  res.json({ status: "ok", service: "auth" })
+  res.json({ status: "ok" })
 })
 
 const PORT = process.env.PORT || 3001

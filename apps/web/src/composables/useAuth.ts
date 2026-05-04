@@ -1,5 +1,7 @@
 import { authClient } from "@/lib/auth"
-import { computed } from "vue"
+import { computed, onMounted, watch } from "vue"
+
+let synced = false
 
 export function useAuth() {
     const sessionState = authClient.useSession()
@@ -10,6 +12,19 @@ export function useAuth() {
     const user = computed(() => session.value?.user ?? null)
     const isLoggedIn = computed(() => !!user.value)
 
+    onMounted(() => {
+        watch(isPending, async (pending) => {
+            if (!pending && !synced && isLoggedIn.value) {
+                synced = true
+                console.log("syncing")
+                await fetch(`https://auth.casemurocity.org/api/twitch/sync`, {
+                    credentials: "include"
+                })
+                console.log("synced")
+            }
+        }, { immediate: true })
+    })
+
     async function loginWithTwitch(callbackURL = "https://www.casemurocity.org/login") {
         await authClient.signIn.social({ provider: "twitch", callbackURL })
     }
@@ -18,7 +33,7 @@ export function useAuth() {
         const { data } = await authClient.signIn.social({
             provider: "twitch",
             callbackURL: "https://www.casemurocity.org/authcallback",
-            scopes: ["user:read:email", "user:read:follows"],
+            scopes: ["user:read:email", "user:read:follows", "user:read:subscriptions"],
             disableRedirect: true
         })
 
@@ -43,6 +58,7 @@ export function useAuth() {
     }
 
     async function logout(silent?: boolean, callbackURL?: string) {
+        synced = false
         await authClient.signOut({
             fetchOptions: {
                 onSuccess: async () => {
@@ -75,4 +91,5 @@ export function useAuth() {
         deleteAccount,
         error: sessionState.value?.error,
     }
+
 }

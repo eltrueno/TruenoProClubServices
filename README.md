@@ -204,6 +204,7 @@ TOTW_MIN_GAMES_PLAYED=5
 | `BETTER_AUTH_URL` | `string` | URL base del servicio de auth | `https://auth.casemurocity.org` |
 | `TWITCH_CLIENT_ID` | `string` | ID de cliente de Twitch | **Requerido** |
 | `TWITCH_CLIENT_SECRET` | `string` | Secreto de cliente de Twitch | **Requerido** |
+| `TWITCH_CHANNEL_ID` | `string` | ID del canal de Twitch a seguir | **Requerido** |
 
 **Ejemplo `.env`:**
 ```env
@@ -543,6 +544,7 @@ TOTW_MIN_GAMES_PLAYED=5
 | `BETTER_AUTH_URL` | `string` | Auth service base URL | `https://auth.casemurocity.org` |
 | `TWITCH_CLIENT_ID` | `string` | Twitch Client ID | **Required** |
 | `TWITCH_CLIENT_SECRET` | `string` | Twitch Client Secret | **Required** |
+| `TWITCH_CHANNEL_ID` | `string` | Twitch Channel ID to follow | **Required** |
 
 **Example `.env`:**
 ```env

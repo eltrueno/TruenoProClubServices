@@ -60,6 +60,11 @@ export const createAuth = (db: any) => betterAuth({
         required: true,
         defaultValue: false
       },
+      twitchSub: {
+        type: "boolean",
+        required: true,
+        defaultValue: false
+      },
       role: {
         type: "string",
         defaultValue: "visitor"
@@ -84,5 +89,7 @@ export const createAuth = (db: any) => betterAuth({
   }
 })
 
-/*DUMMY CLIENT FOR TYPE INFERENCE */
+/* TYPE INFERENCE */
 export type AuthType = ReturnType<typeof createAuth>
+export type Session = AuthType["$Infer"]["Session"]
+export type User = AuthType["$Infer"]["Session"]["user"]
