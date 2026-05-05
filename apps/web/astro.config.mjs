@@ -27,6 +27,7 @@ export default defineConfig({
   }),
   vite: {
     ssr: {
+      noExternal: ['better-auth', '@trueno-proclub-services/auth'],
       external: ['fs', 'path', 'os', 'url', 'http', 'https', 'zlib', 'stream', 'buffer', 'util']
     },
     resolve: {

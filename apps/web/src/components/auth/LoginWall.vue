@@ -33,7 +33,7 @@ const privacyModal = ref(null)
            </div>
            
            <div class="space-y-3">
-             <h2 class="text-4xl font-black tracking-tighter text-white uppercase">Mi Cuenta</h2>
+             <h2 class="text-4xl font-black tracking-tighter uppercase">Mi Cuenta</h2>
              <p class="text-sm opacity-60 leading-relaxed px-4">Inicia sesión para acceder a tu perfil y poder vincular tus cuentas, gestionar ajustes y obtener recompensas.</p>
            </div>
 

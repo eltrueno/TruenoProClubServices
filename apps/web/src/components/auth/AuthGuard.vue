@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, onMounted } from "vue"
 import { useAuth } from "@/composables/useAuth"
 import LoginWall from "@/components/auth/LoginWall.vue"
 const props = defineProps<{
@@ -6,10 +7,15 @@ const props = defineProps<{
 }>()
 
 const { isLoggedIn, isPending, user, logout } = useAuth()
+const isMounted = ref(false)
+
+onMounted(() => {
+  isMounted.value = true
+})
 </script>
 
 <template>
-  <div v-if="isPending">
+  <div v-if="!isMounted || isPending">
     <slot name="pending">
       <div class="w-full min-h-[80vh] flex flex-col items-center justify-center gap-6">
     <div class="relative">
@@ -30,7 +36,7 @@ const { isLoggedIn, isPending, user, logout } = useAuth()
 
   <div v-else-if="!isLoggedIn">
     <slot name="loggedout">
-        <LoginPage />
+        <LoginWall />
     </slot>
   </div>
 
