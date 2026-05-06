@@ -16,7 +16,29 @@ const handleSync = async (silent: boolean = false) => {
   twitchSyncing.value = false
 }
 
-onMounted(() => handleSync(true))
+onMounted(() => {
+  handleSync(true)
+  currentTheme.value = (localStorage.getItem('theme') as any) || 'system'
+})
+
+// Gestión de Temas
+const currentTheme = ref<'light' | 'dark' | 'system'>('system')
+
+const updateThemeClasses = (theme: string) => {
+  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light')
+  if (isDark) {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+}
+
+const setTheme = (theme: 'light' | 'dark' | 'system') => {
+  currentTheme.value = theme
+  localStorage.setItem('theme', theme)
+  updateThemeClasses(theme)
+}
 
 // SVG icon paths reutilizables
 const icons = {
@@ -88,7 +110,7 @@ const icons = {
       <div class="w-full max-w-[48rem] space-y-6">
         
         <!-- Hero card superior -->
-        <div class="rounded-xl dark:bg-base-200 shadow-md overflow-hidden relative">
+        <div class="rounded-xl bg-base-200 shadow-md overflow-hidden relative">
           <!-- Banner -->
           <div class="h-28 bg-base-300 relative overflow-hidden">
              <div class="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-150 transform -translate-y-1/2"></div>
@@ -148,7 +170,7 @@ const icons = {
         </div>
 
         <!-- Card Conexiones opcionales -->
-        <div class="rounded-xl dark:bg-base-200 shadow-md p-6">
+        <div class="rounded-xl bg-base-200 shadow-md p-6">
           <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Conexiones</h2>
           
           <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -169,8 +191,9 @@ const icons = {
           </div>
         </div>
 
+
         <!-- Card Cuenta de juego -->
-        <div class="rounded-xl dark:bg-base-200 shadow-md p-6">
+        <div class="rounded-xl bg-base-200 shadow-md p-6">
           <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Cuenta de juego</h2>
           <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
@@ -183,8 +206,39 @@ const icons = {
           </div>
         </div>
 
+        <!-- Card Preferencias -->
+        <div class="rounded-xl bg-base-200 shadow-md p-6">
+          <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest text-center sm:text-left">Preferencias</h2>
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="text-center sm:text-left">
+              <p class="font-bold text-base-content text-sm">Tema Visual</p>
+              <p class="text-xs text-base-content/50 mt-0.5">Elige tu tema favorito para la web</p>
+            </div>
+            <div class="join border border-base-content/10">
+              <button 
+                @click="setTheme('light')" 
+                :class="['join-item btn btn-sm min-w-[80px] font-bold', currentTheme === 'light' ? 'btn-primary' : 'btn-ghost']"
+              >
+                Claro
+              </button>
+              <button 
+                @click="setTheme('dark')" 
+                :class="['join-item btn btn-sm min-w-[80px] font-bold', currentTheme === 'dark' ? 'btn-primary' : 'btn-ghost']"
+              >
+                Oscuro
+              </button>
+              <button 
+                @click="setTheme('system')" 
+                :class="['join-item btn btn-sm min-w-[80px] font-bold', currentTheme === 'system' ? 'btn-primary' : 'btn-ghost']"
+              >
+                Sistema
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Card Zona de peligro -->
-        <div class="rounded-xl dark:bg-base-200 shadow-md p-6 border border-error/20 text-left">
+        <div class="rounded-xl bg-base-200 shadow-md p-6 border border-error/20 text-left">
           <h2 class="text-xs font-black text-error/80 mb-5 uppercase tracking-widest">Zona de peligro</h2>
           <div class="flex flex-col sm:flex-row items-start justify-between gap-6">
             <div>
@@ -209,7 +263,7 @@ const icons = {
 
   <!-- Modal de confirmación de eliminación -->
   <dialog ref="deleteModal" class="modal modal-bottom sm:modal-middle">
-    <div class="modal-box dark:bg-base-200 border border-error/20">
+    <div class="modal-box bg-base-200 border border-error/20">
       <h3 class="font-bold text-lg text-error">¿Eliminar cuenta?</h3>
       <p class="py-4 text-sm text-base-content/70">
         Estás a punto de eliminar tu cuenta de forma permanente. Se borrarán todos tus datos, conexiones y configuración. 

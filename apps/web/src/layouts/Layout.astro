@@ -30,6 +30,30 @@ import { Icon } from "astro-icon/components";
 		{!keywords && <meta name="keywords" content={title} />}
 		<title>{title}</title>
 		<ViewTransitions />
+		<script is:inline>
+			const applyTheme = () => {
+				const theme = localStorage.getItem('theme') || 'system';
+				const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+				
+				document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+				if (isDark) {
+					document.documentElement.classList.add('dark');
+				} else {
+					document.documentElement.classList.remove('dark');
+				}
+			};
+
+			applyTheme();
+			
+			// Escuchar cambios en el sistema si el modo es 'system'
+			window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+				if (localStorage.getItem('theme') === 'system' || !localStorage.getItem('theme')) {
+					applyTheme();
+				}
+			});
+
+			document.addEventListener('astro:after-swap', applyTheme);
+		</script>
 
 		<meta name="theme-color" content="#C80D0D" />
 		<meta name="color-scheme" content="dark light" />
