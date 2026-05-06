@@ -70,7 +70,7 @@ const privacyModal = ref(null)
        <div class="prose prose-invert prose-sm opacity-90 max-h-[60vh] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-primary/20 space-y-4">
          
          <section>
-           <h4 class="text-white font-bold text-lg mb-2">1. Responsable del tratamiento</h4>
+           <h4 class="font-bold text-lg mb-2">1. Responsable del tratamiento</h4>
            <p>El responsable del tratamiento de los datos personales es:</p>
            <ul class="list-disc ml-4 space-y-1">
              <li><strong>Responsable:</strong> Raúl Jiménez (el_trueno)</li>
@@ -79,7 +79,7 @@ const privacyModal = ref(null)
          </section>
 
          <section>
-           <h4 class="text-white font-bold text-lg mb-2">2. Datos personales recopilados</h4>
+           <h4 class="font-bold text-lg mb-2">2. Datos personales recopilados</h4>
            <p>A través de esta web se pueden recopilar los siguientes datos personales:</p>
            <div class="ml-4 space-y-2">
              <p><strong>Datos de identificación:</strong> Nombre de usuario (Twitch/Discord), ID de usuario.</p>
@@ -90,7 +90,7 @@ const privacyModal = ref(null)
          </section>
 
          <section>
-           <h4 class="text-white font-bold text-lg mb-2">3. Finalidad del tratamiento</h4>
+           <h4 class="font-bold text-lg mb-2">3. Finalidad del tratamiento</h4>
            <ul class="list-disc ml-4 space-y-1">
              <li>Gestionar registro y autenticación (Twitch/Discord).</li>
              <li>Permitir el acceso y uso de la plataforma.</li>
@@ -101,17 +101,17 @@ const privacyModal = ref(null)
          </section>
 
          <section>
-           <h4 class="text-white font-bold text-lg mb-2">4. Base legal</h4>
+           <h4 class="font-bold text-lg mb-2">4. Base legal</h4>
            <p>El tratamiento se basa en la <strong>ejecución de un contrato</strong> (gestión de cuenta) y el <strong>consentimiento del usuario</strong>.</p>
          </section>
 
          <section>
-           <h4 class="text-white font-bold text-lg mb-2">5. Conservación de los datos</h4>
+           <h4 class="font-bold text-lg mb-2">5. Conservación de los datos</h4>
            <p>Los datos se conservarán mientras la cuenta esté activa, hasta 30 días después de su eliminación o hasta que se solicite su supresión.</p>
          </section>
 
          <section>
-           <h4 class="text-white font-bold text-lg mb-2">6. Destinatarios de los datos</h4>
+           <h4 class="font-bold text-lg mb-2">6. Destinatarios de los datos</h4>
            <p>Los datos podrán ser comunicados o tratados por los siguientes terceros para garantizar el servicio:</p>
            <ul class="list-disc ml-4 space-y-2 mt-2">
              <li>
@@ -127,22 +127,22 @@ const privacyModal = ref(null)
          </section>
 
          <section>
-           <h4 class="text-white font-bold text-lg mb-2">7. Derechos del usuario</h4>
+           <h4 class="font-bold text-lg mb-2">7. Derechos del usuario</h4>
            <p>Tienes derecho a acceder, rectificar, suprimir, limitar u oponerte al tratamiento. Contacto: truenodeveloper@gmail.com.</p>
          </section>
 
          <section>
-           <h4 class="text-white font-bold text-lg mb-2">8. Seguridad de los datos</h4>
+           <h4 class="font-bold text-lg mb-2">8. Seguridad de los datos</h4>
            <p>Adoptamos medidas técnicas para garantizar la seguridad y evitar pérdidas o accesos no autorizados.</p>
          </section>
 
          <section>
-           <h4 class="text-white font-bold text-lg mb-2">9. Cambios en la política</h4>
+           <h4 class="font-bold text-lg mb-2">9. Cambios en la política</h4>
            <p>Esta política puede actualizarse. Se recomienda revisarla periódicamente.</p>
          </section>
 
          <section>
-           <h4 class="text-white font-bold text-lg mb-2">10. Aceptación</h4>
+           <h4 class="font-bold text-lg mb-2">10. Aceptación</h4>
            <p>El uso de esta web implica la aceptación de esta política de privacidad.</p>
          </section>
 
