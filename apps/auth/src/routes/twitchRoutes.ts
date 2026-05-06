@@ -6,6 +6,58 @@ import { ObjectId } from "mongodb"
 
 const router = Router()
 
+async function fetchTwitchAPI(url: string, accessToken: string) {
+  return fetch(url, {
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Client-Id": process.env.TWITCH_CLIENT_ID!,
+    }
+  })
+}
+
+async function refreshTwitchToken(account: any) {
+  const response = await fetch("https://id.twitch.tv/oauth2/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: account.refreshToken,
+      client_id: process.env.TWITCH_CLIENT_ID!,
+      client_secret: process.env.TWITCH_CLIENT_SECRET!,
+    })
+  })
+
+  if (!response.ok) return null
+
+  const data = await response.json()
+
+  await db.collection("account").updateOne(
+    { _id: account._id },
+    {
+      $set: {
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        accessTokenExpiresAt: new Date(Date.now() + data.expires_in * 1000)
+      }
+    }
+  )
+
+  return data.access_token
+}
+
+async function fetchTwitchWithRefresh(urls: string[], account: any) {
+
+  let responses = await Promise.all(urls.map(url => fetchTwitchAPI(url, account.accessToken)))
+
+  if (responses.some(r => r.status === 401)) {
+    const newToken = await refreshTwitchToken(account)
+    if (!newToken) return { expired: true, responses: null }
+    responses = await Promise.all(urls.map(url => fetchTwitchAPI(url, newToken)))
+  }
+
+  return { expired: false, responses }
+}
+
 /**
  * Verifica si el usuario autenticado sigue al canal configurado en Twitch
  */
@@ -32,23 +84,6 @@ router.get("/sync", async (req, res) => {
       })
     }
 
-    const tokenData = await auth.api.getAccessToken({
-      body: {
-        providerId: "twitch",
-        accountId: account.accountId
-      },
-      headers: new Headers(req.headers as any)
-    })
-
-    if (!tokenData?.accessToken) {
-      return res.status(404).json({
-        status: "error",
-        message: "Twitch access token not found"
-      })
-    }
-
-    const accessToken = tokenData.accessToken
-
     const broadcasterId = process.env.TWITCH_CHANNEL_ID
 
     if (!broadcasterId) {
@@ -58,20 +93,26 @@ router.get("/sync", async (req, res) => {
       })
     }
 
-    const twitchHeaders = {
-      "Authorization": `Bearer ${accessToken}`,
-      "Client-Id": process.env.TWITCH_CLIENT_ID!,
+    const urls = [
+      `https://api.twitch.tv/helix/channels/followed?user_id=${user.twitchId}&broadcaster_id=${broadcasterId}`,
+      `https://api.twitch.tv/helix/subscriptions/user?broadcaster_id=${broadcasterId}&user_id=${user.twitchId}`,
+      `https://api.twitch.tv/helix/users?id=${user.twitchId}`,
+    ]
+
+    const { expired, responses } = await fetchTwitchWithRefresh(urls, account)
+
+    if (expired) {
+      return res.status(401).json({
+        status: "error",
+        message: "Twitch token expired",
+        code: "TWITCH_TOKEN_EXPIRED"
+      })
     }
 
-    // Llamadas en paralelo
-    const [followRes, subRes] = await Promise.all([
-      fetch(`https://api.twitch.tv/helix/channels/followed?user_id=${user.twitchId}&broadcaster_id=${broadcasterId}`, { headers: twitchHeaders }),
-      fetch(`https://api.twitch.tv/helix/subscriptions/user?broadcaster_id=${broadcasterId}&user_id=${user.twitchId}`, { headers: twitchHeaders }),
-    ])
+    const [followRes, subRes, userRes] = responses!
 
     if (!followRes.ok) {
       const error = await followRes.json()
-      console.error("Twitch follow API error:", error)
       return res.status(followRes.status).json({
         status: "error",
         message: "Error checking Twitch follow status",
@@ -79,14 +120,17 @@ router.get("/sync", async (req, res) => {
       })
     }
 
-    const [followData, subData] = await Promise.all([
+    const [followData, subData, userData] = await Promise.all([
       followRes.json(),
       subRes.json(),
+      userRes.json(),
     ])
+
 
     const isFollowing = followData.total > 0
     const isSub = subRes.ok && subData.data?.length > 0
     const subTier = isSub ? subData.data[0].tier : null
+    const twitchUser = userData.data[0]
 
     let role = "visitor"
     if (isFollowing) role = "follower"
@@ -99,7 +143,9 @@ router.get("/sync", async (req, res) => {
         $set: {
           twitchFollowing: isFollowing,
           twitchSub: isSub,
-          role
+          role,
+          name: twitchUser?.display_name ?? user.name,
+          image: twitchUser?.profile_image_url ?? user.image,
         }
       }
     )

@@ -1,11 +1,23 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref, onMounted } from "vue"
 import { useAuth } from "@/composables/useAuth"
 import AuthGuard from "@/components/auth/AuthGuard.vue"
 import LoginWall from "@/components/auth/LoginWall.vue"
 
-const { user, logout, deleteAccount } = useAuth()
+const { user, syncTwitch, logout, deleteAccount, isLoggedIn } = useAuth()
 const deleteModal = ref<HTMLDialogElement | null>(null)
+const twitchSyncing = ref(false)
+
+
+const handleSync = async (silent: boolean = false) => {
+  if (!isLoggedIn.value) return
+  twitchSyncing.value = true
+  const res = await syncTwitch(silent)
+  console.log(res)
+  twitchSyncing.value = false
+}
+
+onMounted(() => handleSync(true))
 
 // SVG icon paths reutilizables
 const icons = {
@@ -110,9 +122,23 @@ const icons = {
               <p class="text-sm text-base-content/50 mt-1">{{ user?.email || 'usuario@email.com' }}</p>
             </div>
             
-            <!-- Botón cerrar sesión -->
-            <div class="mt-5 pt-4 border-t border-base-content/10">
-              <button @click="logout(true)" class="btn btn-sm btn-ghost rounded-lg font-bold w-full transition-all text-base-content/50 hover:text-error hover:bg-error/10 hover:border-error/30 gap-1.5">
+            <!-- Botones de acción -->
+            <div class="mt-5 pt-4 border-t border-base-content/10 flex flex-col sm:flex-row gap-2">
+              <div class="tooltip tooltip-bottom flex-1" :data-tip="twitchSyncing ? 'Sincronizando...' : 'Sincroniza tu perfil con datos nuevos de twitch'">
+                <button 
+                  @click="handleSync(true)" 
+                  :disabled="twitchSyncing"
+                  class="btn btn-sm btn-primary rounded-lg font-bold w-full transition-all gap-1.5"
+                >
+                  <span v-if="twitchSyncing" class="loading loading-spinner loading-xs"></span>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Actualizar datos
+                </button>
+              </div>
+
+              <button @click="logout(true)" class="btn btn-sm btn-ghost rounded-lg font-bold flex-1 transition-all text-base-content/50 hover:text-error hover:bg-error/10 hover:border-error/30 gap-1.5">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>

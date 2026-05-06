@@ -1,7 +1,7 @@
 import { authClient } from "@/lib/auth"
-import { computed, onMounted, watch } from "vue"
+import { computed, ref } from "vue"
 
-let synced = false
+const _userOverride = ref<any>(null)
 
 export function useAuth() {
     const sessionState = authClient.useSession()
@@ -9,21 +9,28 @@ export function useAuth() {
     const session = computed(() => sessionState.value?.data ?? null)
     const isPending = computed(() => sessionState.value?.isPending ?? false)
 
-    const user = computed(() => session.value?.user ?? null)
+    const user = computed(() => _userOverride.value ?? session.value?.user ?? null)
     const isLoggedIn = computed(() => !!user.value)
 
-    onMounted(() => {
-        watch(isPending, async (pending) => {
-            if (!pending && !synced && isLoggedIn.value) {
-                synced = true
-                console.log("syncing")
-                await fetch(`https://auth.casemurocity.org/api/twitch/sync`, {
-                    credentials: "include"
-                })
-                console.log("synced")
-            }
-        }, { immediate: true })
-    })
+
+    async function syncTwitch(silent?: boolean) {
+        const syncRes = await fetch(`https://auth.casemurocity.org/api/twitch/sync`, { credentials: "include" })
+        const syncData = await syncRes.json()
+        if (syncData.code === "TWITCH_TOKEN_EXPIRED") {
+            await loginWithTwitchPopup(true)
+            return
+        }
+        //refresh session
+        await authClient.$fetch("/get-session", { method: "GET" })
+        _userOverride.value = {
+            ...user.value,
+            twitchFollowing: syncData.twitchFollowing,
+            twitchSub: syncData.twitchSub,
+            role: syncData.role,
+        }
+        if (!silent) window.location.reload()
+        return syncData
+    }
 
     async function loginWithTwitch(callbackURL = "https://www.casemurocity.org/login") {
         await authClient.signIn.social({ provider: "twitch", callbackURL })
@@ -58,12 +65,12 @@ export function useAuth() {
     }
 
     async function logout(silent?: boolean, callbackURL?: string) {
-        synced = false
         await authClient.signOut({
             fetchOptions: {
                 onSuccess: async () => {
                     await authClient.$fetch("/get-session")
                     if (!silent) window.location.href = callbackURL ?? "/login"
+                    else window.location.reload()
                 }
             }
         })
@@ -85,6 +92,7 @@ export function useAuth() {
         session,
         isLoggedIn,
         isPending,
+        syncTwitch,
         loginWithTwitch,
         loginWithTwitchPopup,
         logout,
