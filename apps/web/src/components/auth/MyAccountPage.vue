@@ -12,8 +12,7 @@ const twitchSyncing = ref(false)
 const handleSync = async (silent: boolean = false) => {
   if (!isLoggedIn.value) return
   twitchSyncing.value = true
-  const res = await syncTwitch(silent)
-  console.log(res)
+  await syncTwitch(silent)
   twitchSyncing.value = false
 }
 
@@ -119,7 +118,7 @@ const icons = {
                   <path :d="icons.twitch" />
                 </svg>
               </div>
-              <p class="text-sm text-base-content/50 mt-1">{{ user?.email || 'usuario@email.com' }}</p>
+              <p class="text-sm text-base-content/50 mt-1">{{  user?.email?.replace(/^(.{3}).+(@.+)$/, '$1***$2') || 'usuario@email.com' }}</p>
             </div>
             
             <!-- Botones de acción -->
