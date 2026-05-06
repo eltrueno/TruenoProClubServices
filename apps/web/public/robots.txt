@@ -3,6 +3,6 @@ Disallow: /404
 Disallow: /404.html
 Disallow: /imagegenerator
 Disallow: /logrosdef
-
+Disallow: /authcallback
 
 Sitemap: https://www.casemurocity.org/sitemap.xml
