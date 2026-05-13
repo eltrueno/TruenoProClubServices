@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue"
+import { ref, onMounted, onUnmounted } from "vue"
 import { useAuth } from "@/composables/useAuth"
 import AuthGuard from "@/components/auth/AuthGuard.vue"
 import LoginWall from "@/components/auth/LoginWall.vue"
@@ -9,16 +9,40 @@ const deleteModal = ref<HTMLDialogElement | null>(null)
 const twitchSyncing = ref(false)
 
 
+const syncCooldown = ref(0)
+const COOLDOWN_TIME = 60 * 1000 // 1 minuto
+
+const updateCooldown = () => {
+  const lastSync = localStorage.getItem('last_twitch_sync')
+  if (lastSync) {
+    const elapsed = Date.now() - parseInt(lastSync)
+    if (elapsed < COOLDOWN_TIME) {
+      syncCooldown.value = Math.ceil((COOLDOWN_TIME - elapsed) / 1000)
+      return
+    }
+  }
+  syncCooldown.value = 0
+}
+
+let cooldownTimer: any = null
+
 const handleSync = async (silent: boolean = false) => {
-  if (!isLoggedIn.value) return
+  if (!isLoggedIn.value || syncCooldown.value > 0) return
   twitchSyncing.value = true
   await syncTwitch(silent)
+  localStorage.setItem('last_twitch_sync', Date.now().toString())
+  updateCooldown()
   twitchSyncing.value = false
 }
 
 onMounted(() => {
-  handleSync(true)
   currentTheme.value = (localStorage.getItem('theme') as any) || 'system'
+  updateCooldown()
+  cooldownTimer = setInterval(updateCooldown, 1000)
+})
+
+onUnmounted(() => {
+  if (cooldownTimer) clearInterval(cooldownTimer)
 })
 
 // Gestión de Temas
@@ -147,15 +171,15 @@ const icons = {
             <div class="mt-5 pt-4 border-t border-base-content/10 flex flex-col sm:flex-row gap-2">
               <div class="tooltip tooltip-bottom flex-1" :data-tip="twitchSyncing ? 'Sincronizando...' : 'Sincroniza tu perfil con datos nuevos de twitch'">
                 <button 
-                  @click="handleSync(true)" 
-                  :disabled="twitchSyncing"
+                  @click="handleSync()" 
+                  :disabled="twitchSyncing || syncCooldown > 0"
                   class="btn btn-sm btn-primary rounded-lg font-bold w-full transition-all gap-1.5"
                 >
                   <span v-if="twitchSyncing" class="loading loading-spinner loading-xs"></span>
                   <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
-                  Actualizar datos
+                  {{ syncCooldown > 0 ? `Reintentar en ${syncCooldown}s` : 'Actualizar datos' }}
                 </button>
               </div>
 

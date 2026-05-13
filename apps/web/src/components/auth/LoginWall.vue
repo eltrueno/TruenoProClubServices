@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useAuth } from "@/composables/useAuth"
 
-const { isLoggedIn, isPending, loginWithTwitchPopup } = useAuth()
+const { isLoggedIn, isPending, isLoggingIn, loginWithTwitchPopup } = useAuth()
 const acceptedPrivacy = ref(false)
 const privacyModal = ref(null)
 </script>
@@ -48,14 +48,17 @@ const privacyModal = ref(null)
 
              <div :class="['w-full', { 'tooltip tooltip-bottom tooltip-warning': !acceptedPrivacy }]" data-tip="Debes aceptar la política de privacidad">
                <button 
-                 @click="loginWithTwitchPopup(true)" 
-                 :disabled="!acceptedPrivacy"
+                 @click="loginWithTwitchPopup(false)" 
+                 :disabled="!acceptedPrivacy || isLoggingIn"
                  class="btn bg-[#9146FF] hover:bg-[#772ce8] border-none text-white btn-block btn-md sm:btn-lg gap-2 sm:gap-3 shadow-[0_10px_30px_rgba(145,70,255,0.3)] transition-all duration-300 active:scale-[0.98] font-black tracking-tight sm:tracking-wider group text-xs sm:text-base disabled:bg-[#9146FF]/30 disabled:text-white/30 disabled:cursor-not-allowed"
                >
-                 <svg class="h-5 w-5 sm:h-6 sm:w-6 transition-transform group-hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
-                   <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
-                 </svg>
-                 <span class="whitespace-nowrap">ENTRAR CON TWITCH</span>
+                 <span v-if="isLoggingIn" class="loading loading-spinner loading-md"></span>
+                 <template v-else>
+                   <svg class="h-5 w-5 sm:h-6 sm:w-6 transition-transform group-hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
+                   </svg>
+                   <span class="whitespace-nowrap">ENTRAR CON TWITCH</span>
+                 </template>
                </button>
              </div>
            </div>

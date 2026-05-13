@@ -8,6 +8,7 @@ export function useAuth() {
 
     const session = computed(() => sessionState.value?.data ?? null)
     const isPending = computed(() => sessionState.value?.isPending ?? false)
+    const isLoggingIn = ref(false)
 
     const user = computed(() => _userOverride.value ?? session.value?.user ?? null)
     const isLoggedIn = computed(() => !!user.value)
@@ -37,31 +38,41 @@ export function useAuth() {
     }
 
     async function loginWithTwitchPopup(silent?: boolean, callbackURL?: string) {
-        const { data } = await authClient.signIn.social({
-            provider: "twitch",
-            callbackURL: "https://www.casemurocity.org/authcallback",
-            scopes: ["user:read:email", "user:read:follows", "user:read:subscriptions"],
-            disableRedirect: true
-        })
-
-        if (!data?.url) return
-
-        const width = 600
-        const height = 700
-        const left = window.screenX + (window.outerWidth - width) / 2
-        const top = window.screenY + (window.outerHeight - height) / 2
-
-        window.open(data.url, "Login con Twitch", `width=${width},height=${height},left=${left},top=${top}`)
-
-        // Escucha el mensaje de la página intermedia
-        window.addEventListener("message", async (e) => {
-            if (e.origin !== "https://www.casemurocity.org") return
-            if (e.data === "auth-success") {
-                await authClient.$fetch("/get-session")
-                if (!silent) window.location.href = callbackURL ?? "/micuenta"
-                else window.location.reload()
+        isLoggingIn.value = true
+        try {
+            const { data } = await authClient.signIn.social({
+                provider: "twitch",
+                callbackURL: "https://www.casemurocity.org/authcallback",
+                scopes: ["user:read:email", "user:read:follows", "user:read:subscriptions"],
+                disableRedirect: true
+            })
+    
+            if (!data?.url) {
+                isLoggingIn.value = false
+                return
             }
-        }, { once: true })
+    
+            const width = 600
+            const height = 700
+            const left = window.screenX + (window.outerWidth - width) / 2
+            const top = window.screenY + (window.outerHeight - height) / 2
+    
+            window.open(data.url, "Login con Twitch", `width=${width},height=${height},left=${left},top=${top}`)
+    
+            // Escucha el mensaje de la página intermedia
+            window.addEventListener("message", async (e) => {
+                if (e.origin !== "https://www.casemurocity.org") return
+                if (e.data === "auth-success") {
+                    await authClient.$fetch("/get-session")
+                    if (!silent) window.location.href = callbackURL ?? "/micuenta"
+                    else window.location.reload()
+                }
+                isLoggingIn.value = false
+            }, { once: true })
+        } catch (error) {
+            console.error("Login error:", error)
+            isLoggingIn.value = false
+        }
     }
 
     async function logout(silent?: boolean, callbackURL?: string) {
@@ -97,6 +108,7 @@ export function useAuth() {
         loginWithTwitchPopup,
         logout,
         deleteAccount,
+        isLoggingIn,
         error: sessionState.value?.error,
     }
 

@@ -2,12 +2,17 @@ import "dotenv/config"
 import express from "express"
 import cors from "cors"
 import { toNodeHandler } from "better-auth/node"
-import { auth } from "./lib/auth"
-import { connectToDatabase } from "./db"
+import { connectToDatabase, db } from "./db/index"
 import { createRequireAuth } from "./middleware/requireAuth"
 import twitchRoutes from "./routes/twitchRoutes"
+import { twitchService } from "./services/twitchService"
+import { createAuth, User } from "@trueno-proclub-services/auth"
 
 const app = express()
+export const auth = createAuth(db, async (user: User) => {
+  await twitchService.syncTwitchData(user)
+})
+
 const requireAuth = createRequireAuth(auth)
 
 app.set("trust proxy", true)

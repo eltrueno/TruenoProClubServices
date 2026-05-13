@@ -6,7 +6,7 @@ import { ObjectId } from "mongodb"
 
 
 
-export const createAuth = (db: any) => betterAuth({
+export const createAuth = (db: any, onTwitchLogin?: (user: any) => Promise<void>) => betterAuth({
   database: mongodbAdapter(db),
 
   advanced: {
@@ -31,10 +31,17 @@ export const createAuth = (db: any) => betterAuth({
       create: {
         after: async (account: any) => {
           if (account.providerId === "twitch") {
+            // Actualizamos el twitchId en el usuario
             await db.collection("user").updateOne(
               { _id: new ObjectId(account.userId) },
               { $set: { twitchId: account.accountId } }
             )
+
+            const userDoc = await db.collection("user").findOne({ _id: new ObjectId(account.userId) })
+            if (userDoc) {
+              const user = { ...userDoc, id: userDoc._id.toString() }
+              onTwitchLogin?.(user)
+            }
           }
         }
       }
@@ -57,12 +64,12 @@ export const createAuth = (db: any) => betterAuth({
       },
       twitchFollowing: {
         type: "boolean",
-        required: true,
+        required: false,
         defaultValue: false
       },
       twitchSub: {
         type: "boolean",
-        required: true,
+        required: false,
         defaultValue: false
       },
       role: {
@@ -92,4 +99,37 @@ export const createAuth = (db: any) => betterAuth({
 /* TYPE INFERENCE */
 export type AuthType = ReturnType<typeof createAuth>
 export type Session = AuthType["$Infer"]["Session"]
-export type User = AuthType["$Infer"]["Session"]["user"]
+export interface User {
+  id: string
+  email: string
+  emailVerified: boolean
+  name: string
+  image?: string | null
+  createdAt: Date
+  updatedAt: Date
+  twitchId?: string | null
+  twitchFollowing?: boolean | null
+  twitchSub?: boolean | null
+  role?: string | null
+  discordId?: string | null
+  eaPlayerName?: string | null
+}
+
+export interface Account {
+  id: string | any
+  userId: string | any
+  providerId: string
+  accountId: string
+  accessToken?: string | null
+  refreshToken?: string | null
+  accessTokenExpiresAt?: Date | null
+  refreshTokenExpiresAt?: Date | null
+  scope?: string | null
+  idToken?: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+/* SHARED TYPES */
+export * from "./types/twitch.js"
+export * from "./types/user.js"
