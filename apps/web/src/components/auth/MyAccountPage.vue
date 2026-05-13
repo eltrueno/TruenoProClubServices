@@ -10,7 +10,7 @@ const twitchSyncing = ref(false)
 
 
 const syncCooldown = ref(0)
-const COOLDOWN_TIME = 60 * 1000 // 1 minuto
+const COOLDOWN_TIME = 60 * 1000
 
 const updateCooldown = () => {
   const lastSync = localStorage.getItem('last_twitch_sync')
@@ -171,7 +171,7 @@ const icons = {
             <div class="mt-5 pt-4 border-t border-base-content/10 flex flex-col sm:flex-row gap-2">
               <div class="tooltip tooltip-bottom flex-1" :data-tip="twitchSyncing ? 'Sincronizando...' : 'Sincroniza tu perfil con datos nuevos de twitch'">
                 <button 
-                  @click="handleSync()" 
+                  @click="handleSync(true)" 
                   :disabled="twitchSyncing || syncCooldown > 0"
                   class="btn btn-sm btn-primary rounded-lg font-bold w-full transition-all gap-1.5"
                 >
@@ -179,7 +179,7 @@ const icons = {
                   <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
-                  {{ syncCooldown > 0 ? `Reintentar en ${syncCooldown}s` : 'Actualizar datos' }}
+                  {{ syncCooldown > 0 ? `Sincronizar datos en ${syncCooldown}s` : 'Sincronizar datos' }}
                 </button>
               </div>
 
