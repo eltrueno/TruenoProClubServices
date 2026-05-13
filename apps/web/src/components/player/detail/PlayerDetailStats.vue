@@ -25,7 +25,7 @@
                     </div>
                 </div>
                 
-                <div class="flex flex-col lg:flex-row gap-12 items-center">
+                <div class="flex flex-col lg:flex-row gap-10 items-center">
                     <div class="w-full max-w-[520px] mx-auto lg:mx-0 flex-shrink-0 aspect-square">
                         <Radar ref="radarChart" :data="radarData" :options="radarOptions" />
                     </div>
@@ -75,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-    import { computed, ref, watch } from 'vue';
+    import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
     import { 
         Chart as ChartJS, 
         RadialLinearScale, 
@@ -103,6 +103,20 @@
     const hoveredIdx = ref<number | null>(null)
     const isHoveringChart = ref(false)
     const radarChart = ref<any>(null)
+
+    const isMobile = ref(false)
+    const updateMobile = () => {
+        isMobile.value = window.innerWidth < 640
+    }
+
+    onMounted(() => {
+        updateMobile()
+        window.addEventListener('resize', updateMobile)
+    })
+
+    onUnmounted(() => {
+        window.removeEventListener('resize', updateMobile)
+    })
 
     const getAggregatedStats = (count: number) => {
         if (!props.matches || props.matches.length === 0) return props.stats
@@ -282,7 +296,7 @@
         
         return [
             { label: 'Valoración',   key: 'ratingAve',           raw: s.ratingAve,           max: 10,  val: s.ratingAve * 10 },
-            { label: 'G+A por Partido',  key: 'goalsPlusAssistsPerMatch', max: 10,               val: s.goalsPlusAssistsPerMatch * 10 },
+            { label: 'G+A/Partido',  key: 'goalsPlusAssistsPerMatch', max: 10,               val: s.goalsPlusAssistsPerMatch * 10 },
             { label: '% Pase',       key: 'passSuccessRate',     max: 100,                   val: s.passSuccessRate },
             { label: '% Tackles',    key: 'tackleSuccessRate',   max: 100,                   val: s.tackleSuccessRate },
             { label: '% Imbatido',    key: 'cleanSheetsPercent',  max: 100,                   val: s.cleanSheetsPercent },
@@ -399,6 +413,7 @@
                 suggestedMax: 100,
                 ticks: { display: false, stepSize: 20 },
                 pointLabels: {
+                    display: !isMobile.value,
                     font: { size: 12, weight: 'bold', family: 'Inter' },
                     color: '#A6ADBB',
                     padding: 10

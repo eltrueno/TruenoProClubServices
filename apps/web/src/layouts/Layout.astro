@@ -18,7 +18,7 @@ import { Icon } from "astro-icon/components";
 ---
 
 <!doctype html>
-<html lang="es" class="dark:bg-base-300">
+<html lang="es" class="min-h-screen">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
@@ -72,7 +72,7 @@ import { Icon } from "astro-icon/components";
 
 		<slot name="metadata" />
 	</head>
-	<body>
+	<body class="min-h-screen bg-base-100 dark:bg-base-300 text-base-content transition-colors duration-300">
 		{isindex && <Mainheader />}
 		<Navbar isindex={isindex} />
 		<main>
