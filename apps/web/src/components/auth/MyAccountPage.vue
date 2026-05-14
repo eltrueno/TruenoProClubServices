@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from "vue"
 import { useAuth } from "@/composables/useAuth"
 import AuthGuard from "@/components/auth/AuthGuard.vue"
 import LoginWall from "@/components/auth/LoginWall.vue"
+import { translateRole } from "@/i18n/translations"
 
 const { user, syncTwitch, logout, deleteAccount, isLoggedIn } = useAuth()
 const deleteModal = ref<HTMLDialogElement | null>(null)
@@ -152,7 +153,7 @@ const icons = {
             <!-- Badge a la derecha -->
             <div class="absolute top-4 right-6">
               <span class="badge badge-primary badge-outline uppercase tracking-wide font-bold text-[10px]">
-                {{ user?.role }}
+                {{ translateRole(user?.role || 'visitor') }}
               </span>
             </div>
             
