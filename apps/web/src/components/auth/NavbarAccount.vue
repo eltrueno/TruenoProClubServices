@@ -30,7 +30,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- Usuario Autenticado: Usamos details para mayor control sobre el cierre -->
+  <!-- Usuario Autenticado -->
   <details 
     v-if="isLoggedIn" 
     ref="dropdownRef"
@@ -65,7 +65,7 @@ onUnmounted(() => {
       </div>
     </summary>
 
-    <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[100] w-64 p-2 shadow-xl border border-base-200 mt-2">
+    <ul tabindex="0" class="dropdown-content menu bg-base-200 rounded-box z-[100] w-64 p-2 shadow-xl border border-base-200 mt-2">
       <li class="px-4 py-3 mb-1 border-b border-base-200 cursor-default pointer-events-none">
         <div class="flex flex-col gap-0.5 p-0 hover:bg-transparent cursor-default">
           <span class="font-bold text-base leading-tight text-base-content">{{ user?.name }}</span>

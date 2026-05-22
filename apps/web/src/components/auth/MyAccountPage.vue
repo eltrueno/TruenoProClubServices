@@ -76,7 +76,7 @@ const icons = {
   <AuthGuard>
     <template #pending>
         <div class="min-h-[80vh] flex justify-center items-start p-4 sm:p-8">
-          <div class="w-full max-w-2xl space-y-6">
+          <div class="w-full max-w-[48rem] space-y-6">
 
             <div class="rounded-xl dark:bg-base-200 shadow-md overflow-hidden">
               <div class="h-28 skeleton dark:bg-base-100 skeletondark"></div>
@@ -194,46 +194,10 @@ const icons = {
           </div>
         </div>
 
-        <!-- Card Conexiones opcionales -->
-        <div class="rounded-xl bg-base-200 shadow-md p-6">
-          <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Conexiones</h2>
-          
-          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div class="flex items-center gap-4">
-              <div class="w-10 h-10 shrink-0 rounded-full bg-[#5865F2]/20 flex items-center justify-center text-[#5865F2]">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                   <path :d="icons.discord" />
-                </svg>
-              </div>
-              <div>
-                <p class="font-bold text-base-content text-sm">Discord</p>
-                <p class="text-xs text-base-content/50 mt-0.5">Conecta tu cuenta de discord para que puedas ser mencionado si eres el mejor o el peor jugador de la semana y recibir puntos de lealtad en el canal de casemuro</p>
-              </div>
-            </div>
-            <button class="btn btn-sm btn-outline btn-disabled rounded-lg font-bold w-full sm:w-auto transition-all">
-              Proximamente...
-            </button>
-          </div>
-        </div>
-
-
-        <!-- Card Cuenta de juego -->
-        <div class="rounded-xl bg-base-200 shadow-md p-6">
-          <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Cuenta de juego</h2>
-          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <p class="font-bold text-base-content text-sm">ID De EA</p>
-              <p class="text-xs text-base-content/50 mt-0.5">{{ user?.eaPlayerName || 'Sin vincular' }}</p>
-            </div>
-            <button class="btn btn-sm btn-outline btn-disabled rounded-lg font-bold w-full sm:w-auto transition-all">
-              Proximamente...
-            </button>
-          </div>
-        </div>
-
+        
         <!-- Card Preferencias -->
         <div class="rounded-xl bg-base-200 shadow-md p-6">
-          <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest text-center sm:text-left">Preferencias</h2>
+          <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest text-center">Preferencias</h2>
           <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="text-center sm:text-left">
               <p class="font-bold text-base-content text-sm">Tema Visual</p>
@@ -261,6 +225,44 @@ const icons = {
             </div>
           </div>
         </div>
+
+        <!-- Card Conexiones opcionales -->
+        <div class="rounded-xl bg-base-200 shadow-md p-6">
+          <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Conexiones</h2>
+          
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 shrink-0 rounded-full bg-[#5865F2]/20 flex items-center justify-center text-[#5865F2]">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                   <path :d="icons.discord" />
+                </svg>
+              </div>
+              <div>
+                <p class="font-bold text-base-content text-sm text-left">Discord</p>
+                <p class="text-xs text-base-content/50 mt-0.5 text-left">Conecta tu cuenta de discord para que puedas ser mencionado si eres el mejor o el peor jugador de la semana y recibir puntos de lealtad en el canal de casemuro</p>
+              </div>
+            </div>
+            <button class="btn btn-sm btn-outline btn-disabled rounded-lg font-bold w-full sm:w-auto transition-all">
+              Proximamente...
+            </button>
+          </div>
+        </div>
+
+
+        <!-- Card Cuenta de juego -->
+        <div class="rounded-xl bg-base-200 shadow-md p-6">
+          <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Cuenta de juego</h2>
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <p class="font-bold text-base-content text-sm">ID De EA</p>
+              <p class="text-xs text-base-content/50 mt-0.5">{{ user?.eaPlayerName || 'Sin vincular' }}</p>
+            </div>
+            <button class="btn btn-sm btn-outline btn-disabled rounded-lg font-bold w-full sm:w-auto transition-all">
+              Proximamente...
+            </button>
+          </div>
+        </div>
+
 
         <!-- Card Zona de peligro -->
         <div class="rounded-xl bg-base-200 shadow-md p-6 border border-error/20 text-left">
