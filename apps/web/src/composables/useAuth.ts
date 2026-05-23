@@ -37,6 +37,31 @@ export function useAuth() {
         await authClient.signIn.social({ provider: "twitch", callbackURL })
     }
 
+    async function waitForTwitchLogin(): Promise<void> {
+        const { data } = await authClient.signIn.social({
+            provider: "twitch",
+            callbackURL: "https://www.casemurocity.org/authcallback",
+            scopes: ["user:read:email", "user:read:follows", "user:read:subscriptions"],
+            disableRedirect: true
+        })
+
+        if (!data?.url) return
+
+        const width = 600
+        const height = 700
+        const left = window.screenX + (window.outerWidth - width) / 2
+        const top = window.screenY + (window.outerHeight - height) / 2
+
+        window.open(data.url, "Login con Twitch", `width=${width},height=${height},left=${left},top=${top}`)
+
+        return new Promise<void>((resolve) => {
+            window.addEventListener("message", (e) => {
+                if (e.origin !== "https://www.casemurocity.org") return
+                if (e.data === "auth-success") resolve()
+            }, { once: true })
+        })
+    }
+
     async function loginWithTwitchPopup(silent?: boolean, callbackURL?: string) {
         isLoggingIn.value = true
         try {
@@ -46,19 +71,19 @@ export function useAuth() {
                 scopes: ["user:read:email", "user:read:follows", "user:read:subscriptions"],
                 disableRedirect: true
             })
-    
+
             if (!data?.url) {
                 isLoggingIn.value = false
                 return
             }
-    
+
             const width = 600
             const height = 700
             const left = window.screenX + (window.outerWidth - width) / 2
             const top = window.screenY + (window.outerHeight - height) / 2
-    
+
             window.open(data.url, "Login con Twitch", `width=${width},height=${height},left=${left},top=${top}`)
-    
+
             // Escucha el mensaje de la página intermedia
             window.addEventListener("message", async (e) => {
                 if (e.origin !== "https://www.casemurocity.org") return
@@ -88,14 +113,21 @@ export function useAuth() {
     }
 
     async function deleteAccount(silent?: boolean, callbackURL?: string) {
-        await authClient.deleteUser({
-            fetchOptions: {
-                onSuccess: async () => {
-                    await authClient.$fetch("/get-session")
-                    if (!silent) window.location.href = callbackURL ?? "/login"
+        const { error } = await authClient.deleteUser()
+
+        if (error?.code === "SESSION_EXPIRED") {
+            await waitForTwitchLogin()
+            await authClient.deleteUser({
+                fetchOptions: {
+                    onSuccess: () => {
+                        if (!silent) window.location.href = callbackURL ?? "/login"
+                    }
                 }
-            }
-        })
+            })
+            return
+        }
+
+        if (!silent) window.location.href = callbackURL ?? "/login"
     }
 
     return {

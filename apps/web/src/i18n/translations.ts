@@ -36,6 +36,14 @@ export enum Result {
     win = "win"
 }
 
+export enum Role {
+    admin = "admin",
+    vip = "vip",
+    follower = "follower",
+    visitor = "visitor",
+    subscriber = "subscriber"
+}
+
 export enum AchievementType {
     played = "partidos jugados",
     goals = "goles",
@@ -82,6 +90,17 @@ export const translateMatchResult = (result: Result | string): string => {
         [Result.win]: "Victoria"
     };
     return map[result as Result] || result;
+}
+
+export const translateRole = (role: Role | string): string => {
+    const map: Record<Role, string> = {
+        [Role.admin]: "Admin",
+        [Role.vip]: "VIP",
+        [Role.follower]: "Seguidor",
+        [Role.visitor]: "Visitante",
+        [Role.subscriber]: "Suscriptor"
+    };
+    return map[role as Role] || role;
 }
 
 export const translatePosition = (position: Position | string): string => {

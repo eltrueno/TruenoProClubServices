@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from "vue"
 import { useAuth } from "@/composables/useAuth"
 import AuthGuard from "@/components/auth/AuthGuard.vue"
 import LoginWall from "@/components/auth/LoginWall.vue"
+import { translateRole } from "@/i18n/translations"
 
 const { user, syncTwitch, logout, deleteAccount, isLoggedIn } = useAuth()
 const deleteModal = ref<HTMLDialogElement | null>(null)
@@ -75,54 +76,92 @@ const icons = {
   <AuthGuard>
     <template #pending>
         <div class="min-h-[80vh] flex justify-center items-start p-4 sm:p-8">
-          <div class="w-full max-w-2xl space-y-6">
+          <div class="w-full max-w-[48rem] space-y-6">
 
-            <div class="rounded-xl dark:bg-base-200 shadow-md overflow-hidden">
-              <div class="h-28 skeleton dark:bg-base-100 skeletondark"></div>
-              <div class="px-6 pb-6 pt-4">
-                <div class="flex items-center gap-4">
-                  <div class="w-24 h-24 rounded-full skeleton dark:bg-base-100 skeletondark -mt-16"></div>
-                  <div class="flex-1 space-y-2 pt-4">
-                    <div class="skeleton dark:bg-base-100 skeletondark h-5 w-40"></div>
-                    <div class="skeleton dark:bg-base-100 skeletondark h-3 w-52"></div>
+            <!-- Hero card superior Skeleton -->
+            <div class="rounded-xl bg-base-200 shadow-md overflow-hidden relative">
+              <!-- Banner Skeleton -->
+              <div class="h-28 bg-base-300/50 skeleton animate-pulse"></div>
+              
+              <!-- Contenido relativo al banner Skeleton -->
+              <div class="px-6 pb-6 relative z-10">
+                <!-- Avatar montado Skeleton -->
+                <div class="absolute -top-12 left-6">
+                  <div class="w-24 h-24 rounded-full border-[4px] border-base-100 bg-base-300 skeleton animate-pulse shadow-lg"></div>
+                </div>
+                
+                <!-- Badge a la derecha Skeleton -->
+                <div class="absolute top-4 right-6">
+                  <div class="w-16 h-5 rounded-full skeleton animate-pulse bg-base-300/80"></div>
+                </div>
+                
+                <!-- Info Usuario Skeleton -->
+                <div class="pt-14 text-left">
+                  <div class="flex items-center gap-2">
+                    <div class="h-6 w-32 rounded-lg skeleton animate-pulse bg-base-300"></div>
+                    <div class="h-4 w-4 rounded-md skeleton animate-pulse bg-base-300"></div>
+                  </div>
+                  <div class="h-4 w-48 rounded-lg skeleton animate-pulse bg-base-300 mt-2"></div>
+                </div>
+                
+                <!-- Botones de acción Skeleton -->
+                <div class="mt-5 pt-4 border-t border-base-content/10 flex flex-col sm:flex-row gap-2">
+                  <div class="h-8 rounded-lg skeleton animate-pulse bg-base-300 flex-1"></div>
+                  <div class="h-8 rounded-lg skeleton animate-pulse bg-base-300 flex-1"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Preferencias Skeleton -->
+            <div class="rounded-xl bg-base-200 shadow-md p-6">
+              <div class="h-4 w-28 mx-auto rounded-lg skeleton animate-pulse bg-base-300 mb-5"></div>
+              <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="text-center sm:text-left space-y-1.5">
+                  <div class="h-4 w-24 rounded-lg skeleton animate-pulse bg-base-300 mx-auto sm:mx-0"></div>
+                  <div class="h-3.5 w-48 rounded-lg skeleton animate-pulse bg-base-300 mx-auto sm:mx-0"></div>
+                </div>
+                <div class="h-8 w-60 rounded-lg skeleton animate-pulse bg-base-300"></div>
+              </div>
+            </div>
+
+            <!-- Card Conexiones Skeleton -->
+            <div class="rounded-xl bg-base-200 shadow-md p-6 text-left">
+              <div class="h-4 w-28 rounded-lg skeleton animate-pulse bg-base-300 mb-5"></div>
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-start sm:items-center gap-4 w-full">
+                  <div class="w-10 h-10 shrink-0 rounded-full skeleton animate-pulse bg-base-300"></div>
+                  <div class="space-y-1.5 flex-1">
+                    <div class="h-4 w-16 rounded-lg skeleton animate-pulse bg-base-300"></div>
+                    <div class="h-3 w-full rounded-lg skeleton animate-pulse bg-base-300"></div>
+                    <div class="h-3 w-2/3 rounded-lg skeleton animate-pulse bg-base-300"></div>
                   </div>
                 </div>
+                <div class="h-8 w-full sm:w-28 rounded-lg skeleton animate-pulse bg-base-300 shrink-0"></div>
               </div>
             </div>
 
-            <div class="rounded-xl dark:bg-base-200 shadow-md p-6 space-y-4">
-              <div class="skeleton dark:bg-base-100 skeletondark h-3 w-32"></div>
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                  <div class="w-10 h-10 rounded-full skeleton dark:bg-base-100 skeletondark"></div>
-                  <div class="space-y-2">
-                    <div class="skeleton dark:bg-base-100 skeletondark h-4 w-20"></div>
-                    <div class="skeleton dark:bg-base-100 skeletondark h-3 w-28"></div>
-                  </div>
+            <!-- Card Cuenta de juego Skeleton -->
+            <div class="rounded-xl bg-base-200 shadow-md p-6 text-left">
+              <div class="h-4 w-32 rounded-lg skeleton animate-pulse bg-base-300 mb-5"></div>
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="space-y-1.5">
+                  <div class="h-4 w-16 rounded-lg skeleton animate-pulse bg-base-300"></div>
+                  <div class="h-3 w-24 rounded-lg skeleton animate-pulse bg-base-300"></div>
                 </div>
-                <div class="skeleton dark:bg-base-100 skeletondark h-8 w-24 rounded-lg"></div>
+                <div class="h-8 w-full sm:w-28 rounded-lg skeleton animate-pulse bg-base-300 shrink-0"></div>
               </div>
             </div>
 
-            <div class="rounded-xl dark:bg-base-200 shadow-md p-6 space-y-4">
-              <div class="skeleton dark:bg-base-100 skeletondark h-3 w-36"></div>
-              <div class="flex items-center justify-between">
-                <div class="space-y-2">
-                  <div class="skeleton dark:bg-base-100 skeletondark h-3 w-40"></div>
-                  <div class="skeleton dark:bg-base-100 skeletondark h-4 w-32"></div>
+            <!-- Card Zona de peligro Skeleton -->
+            <div class="rounded-xl bg-base-200 shadow-md p-6 border border-error/20 text-left">
+              <div class="h-4 w-32 rounded-lg skeleton animate-pulse bg-error/10 mb-5"></div>
+              <div class="flex flex-col sm:flex-row items-start justify-between gap-6 w-full">
+                <div class="space-y-2 flex-1">
+                  <div class="h-4 w-28 rounded-lg skeleton animate-pulse bg-base-300"></div>
+                  <div class="h-3 w-full rounded-lg skeleton animate-pulse bg-base-300"></div>
+                  <div class="h-3 w-3/4 rounded-lg skeleton animate-pulse bg-base-300"></div>
                 </div>
-                <div class="skeleton dark:bg-base-100 skeletondark h-8 w-24 rounded-lg"></div>
-              </div>
-            </div>
-
-            <div class="rounded-xl dark:bg-base-200 shadow-md p-6 space-y-4 border border-base-content/5">
-              <div class="skeleton dark:bg-base-100 skeletondark h-3 w-36"></div>
-              <div class="flex items-start justify-between">
-                <div class="space-y-2">
-                  <div class="skeleton dark:bg-base-100 skeletondark h-4 w-32"></div>
-                  <div class="skeleton dark:bg-base-100 skeletondark h-3 w-64"></div>
-                </div>
-                <div class="skeleton dark:bg-base-100 skeletondark h-8 w-32 rounded-lg"></div>
+                <div class="h-8 w-full sm:w-28 rounded-lg skeleton animate-pulse bg-error/20 shrink-0"></div>
               </div>
             </div>
 
@@ -152,7 +191,7 @@ const icons = {
             <!-- Badge a la derecha -->
             <div class="absolute top-4 right-6">
               <span class="badge badge-primary badge-outline uppercase tracking-wide font-bold text-[10px]">
-                {{ user?.role }}
+                {{ translateRole(user?.role || 'visitor') }}
               </span>
             </div>
             
@@ -193,46 +232,10 @@ const icons = {
           </div>
         </div>
 
-        <!-- Card Conexiones opcionales -->
-        <div class="rounded-xl bg-base-200 shadow-md p-6">
-          <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Conexiones</h2>
-          
-          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div class="flex items-center gap-4">
-              <div class="w-10 h-10 shrink-0 rounded-full bg-[#5865F2]/20 flex items-center justify-center text-[#5865F2]">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                   <path :d="icons.discord" />
-                </svg>
-              </div>
-              <div>
-                <p class="font-bold text-base-content text-sm">Discord</p>
-                <p class="text-xs text-base-content/50 mt-0.5">Conecta tu cuenta de discord para que puedas ser mencionado si eres el mejor o el peor jugador de la semana y recibir puntos de lealtad en el canal de casemuro</p>
-              </div>
-            </div>
-            <button class="btn btn-sm btn-outline btn-disabled rounded-lg font-bold w-full sm:w-auto transition-all">
-              Proximamente...
-            </button>
-          </div>
-        </div>
-
-
-        <!-- Card Cuenta de juego -->
-        <div class="rounded-xl bg-base-200 shadow-md p-6">
-          <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Cuenta de juego</h2>
-          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <p class="font-bold text-base-content text-sm">ID De EA</p>
-              <p class="text-xs text-base-content/50 mt-0.5">{{ user?.eaPlayerName || 'Sin vincular' }}</p>
-            </div>
-            <button class="btn btn-sm btn-outline btn-disabled rounded-lg font-bold w-full sm:w-auto transition-all">
-              Proximamente...
-            </button>
-          </div>
-        </div>
-
+        
         <!-- Card Preferencias -->
         <div class="rounded-xl bg-base-200 shadow-md p-6">
-          <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest text-center sm:text-left">Preferencias</h2>
+          <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest text-center">Preferencias</h2>
           <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="text-center sm:text-left">
               <p class="font-bold text-base-content text-sm">Tema Visual</p>
@@ -260,6 +263,44 @@ const icons = {
             </div>
           </div>
         </div>
+
+        <!-- Card Conexiones opcionales -->
+        <div class="rounded-xl bg-base-200 shadow-md p-6">
+          <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Conexiones</h2>
+          
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 shrink-0 rounded-full bg-[#5865F2]/20 flex items-center justify-center text-[#5865F2]">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                   <path :d="icons.discord" />
+                </svg>
+              </div>
+              <div>
+                <p class="font-bold text-base-content text-sm text-left">Discord</p>
+                <p class="text-xs text-base-content/50 mt-0.5 text-left">Conecta tu cuenta de discord para que puedas ser mencionado si eres el mejor o el peor jugador de la semana y recibir puntos de lealtad en el canal de casemuro</p>
+              </div>
+            </div>
+            <button class="btn btn-sm btn-outline btn-disabled rounded-lg font-bold w-full sm:w-auto transition-all">
+              Proximamente...
+            </button>
+          </div>
+        </div>
+
+
+        <!-- Card Cuenta de juego -->
+        <div class="rounded-xl bg-base-200 shadow-md p-6">
+          <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Cuenta de juego</h2>
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <p class="font-bold text-base-content text-sm">ID De EA</p>
+              <p class="text-xs text-base-content/50 mt-0.5">{{ user?.eaPlayerName || 'Sin vincular' }}</p>
+            </div>
+            <button class="btn btn-sm btn-outline btn-disabled rounded-lg font-bold w-full sm:w-auto transition-all">
+              Proximamente...
+            </button>
+          </div>
+        </div>
+
 
         <!-- Card Zona de peligro -->
         <div class="rounded-xl bg-base-200 shadow-md p-6 border border-error/20 text-left">

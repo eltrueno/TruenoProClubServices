@@ -7,14 +7,8 @@ import icon from "astro-icon";
 
 // https://astro.build/config
 export default defineConfig({
-  integrations: [tailwind(), icon(
-    {
-      iconsets: {
-        local: "/src/icons",
-      },
-    }
-  ), vue({
-    appEntrypoint: '/src/pages/vueapp.ts',
+  integrations: [tailwind(), icon(), vue({
+    appEntrypoint: './src/pages/vueapp.ts',
     template: {
       transformAssetUrls: {
         includeAbsolute: false,

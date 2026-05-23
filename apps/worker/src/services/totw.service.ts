@@ -13,6 +13,7 @@ const TIMEZONE = process.env.TZ || "Europe/Madrid"
 const TOTW_CRON_SCHEDULE = process.env.TOTW_CRON_SCHEDULE || "0 21 * * 0"
 const MIN_GAMES_PLAYED = Number(process.env.TOTW_MIN_GAMES_PLAYED) || 5
 const MIN_GAMES_FLOOR = Number(process.env.TOTW_MIN_GAMES_FLOOR) || 2
+const TOTW_K_FACTOR = Number(process.env.TOTW_K_FACTOR) || 5
 
 const TOTW_SLOTS = {
     goalkeeper: 1,
@@ -33,9 +34,9 @@ const getWeekRangeFromKey = (weekKey: string) => {
 
     const weekEndISO = endOfISOWeek(madridDate)
 
-    const interval = CronExpressionParser.parse(TOTW_CRON_SCHEDULE, { 
-        currentDate: weekEndISO, 
-        tz: TIMEZONE 
+    const interval = CronExpressionParser.parse(TOTW_CRON_SCHEDULE, {
+        currentDate: weekEndISO,
+        tz: TIMEZONE
     } as any);
 
     const end = interval.prev().toDate()
@@ -121,15 +122,55 @@ const getTopPlayersByPosition = async (
                         ]
                     }, 2]
                 },
+                rankingScore: descOrder
+                    ?
+                    {
+                        $multiply: [
+                            {
+                                $add: ['$avgRating', {
+                                    $min: [{
+                                        $multiply: [{
+                                            $cond: [{ $gt: ['$gamesPlayed', 0] },
+                                            { $divide: ['$manOfTheMatch', '$gamesPlayed'] }, 0]
+                                        }, 1.0]
+                                    }, 0.25]
+                                }]
+                            },
+                            { $cond: [{ $gt: ['$gamesPlayed', 0] }, { $divide: ['$gamesPlayed', { $add: ['$gamesPlayed', TOTW_K_FACTOR] }] }, 0] }
+                        ]
+                    }
+                    :
+                    {
+                        $multiply: [
+                            {
+                                $add: ['$avgRating', {
+                                    $min: [{
+                                        $multiply: [{
+                                            $cond: [{ $gt: ['$gamesPlayed', 0] },
+                                            { $divide: ['$manOfTheMatch', '$gamesPlayed'] }, 0]
+                                        }, 1.0]
+                                    }, 0.25]
+                                }]
+                            },
+                            { $divide: [{ $add: ['$gamesPlayed', TOTW_K_FACTOR] }, { $max: ['$gamesPlayed', 1] }] }
+                        ]
+                    }
             }
         },
-        // Desempate: rating -> partidos jugados -> goles
-        { $sort: { avgRating: descOrder ? -1 : 1, gamesPlayed: -1, goals: -1 } },
+        {
+            $sort: {
+                rankingScore: descOrder ? -1 : 1,
+                avgRating: descOrder ? -1 : 1,
+                gamesPlayed: -1,
+                goals: -1
+            }
+        },
         { $limit: limit + fetchExtra },
         {
             $project: {
                 _id: 0,
                 playerName: '$_id',
+                rankingScore: { $round: ['$rankingScore', 3] },
                 avgRating: { $round: ['$avgRating', 2] },
                 gamesPlayed: 1,
                 minutesPlayed: 1,
@@ -162,22 +203,20 @@ const fillPositionSlot = async (
     hardExcluded: string[],
     softExcluded: string[],
     descOrder: boolean,
+    minGames: number, // ← ya no tiene default, viene de buildTeam
 ): Promise<ITOTWPlayer[]> => {
 
     const label = `${position} (${descOrder ? 'best' : 'worst'})`
 
     const phases = [
-        { minGames: MIN_GAMES_PLAYED, excluded: [...hardExcluded, ...softExcluded], desc: 'condiciones ideales' },
-        { minGames: Math.ceil(MIN_GAMES_PLAYED / 2), excluded: [...hardExcluded, ...softExcluded], desc: 'minGames reducido' },
-        { minGames: MIN_GAMES_FLOOR, excluded: [...hardExcluded, ...softExcluded], desc: 'minGames mínimo' },
-        { minGames: MIN_GAMES_FLOOR, excluded: [...softExcluded], desc: 'sin hardExcluded' },
-        { minGames: MIN_GAMES_FLOOR, excluded: [], desc: 'sin exclusiones' },
+        { excluded: [...hardExcluded, ...softExcluded], desc: 'condiciones ideales' },
+        { excluded: [...hardExcluded], desc: 'sin softExcluded' },
     ]
 
     for (const [i, phase] of phases.entries()) {
         const candidates = await getTopPlayersByPosition(
             weekStart, weekEnd, position, limit,
-            phase.excluded, descOrder, phase.minGames
+            phase.excluded, descOrder, minGames
         )
 
         const players = candidates.slice(0, limit)
@@ -189,11 +228,7 @@ const fillPositionSlot = async (
         if (players.length === limit) return players
 
         if (i === phases.length - 1) {
-            if (players.length > 0) {
-                console.warn(`[TOTW] ${label} — slot incompleto: ${players.length}/${limit}`)
-            } else {
-                console.warn(`[TOTW] ${label} — sin candidatos disponibles`)
-            }
+            console.warn(`[TOTW] ${label} — slot incompleto con minGames=${minGames}: ${players.length}/${limit}`)
             return players
         }
     }
@@ -211,6 +246,7 @@ const buildTeam = async (
     weekEnd: number,
     descOrder: boolean,
     hardExcludedProfiles: ExcludedProfile[] = [],
+    minGames: number, // ← viene de fuera
 ): Promise<ITOTWPlayer[]> => {
     const team: ITOTWPlayer[] = []
     const softSelected: string[] = []
@@ -222,7 +258,7 @@ const buildTeam = async (
 
         const players = await fillPositionSlot(
             weekStart, weekEnd, position, TOTW_SLOTS[position],
-            hardExclThisSlot, softSelected, descOrder
+            hardExclThisSlot, softSelected, descOrder, minGames
         )
         players.forEach(p => softSelected.push(p.playerName))
         team.push(...players)
@@ -246,20 +282,35 @@ const addTOTWAppearances = async (players: { playerName: string, position: strin
     await MemberTotwAppearancesModel.insertMany(docs, { ordered: false })
 }
 
-
+const MIN_GAMES_LEVELS = [MIN_GAMES_PLAYED, MIN_GAMES_FLOOR]
 export const calculateAndSaveTOTW = async (weekKey: string): Promise<void> => {
     const { start, end } = getWeekRangeFromKey(weekKey)
     const weekStart = Math.floor(start.getTime() / 1000)
     const weekEnd = Math.floor(end.getTime() / 1000)
 
-    const bestPlayers = await buildTeam(weekStart, weekEnd, true)
-    
-    const hardExcludedProfiles = bestPlayers.map(p => ({
-        playerName: p.playerName,
-        position: p.position
-    }))
-    
-    const worstPlayers = await buildTeam(weekStart, weekEnd, false, hardExcludedProfiles)
+    const totalSlots = Object.values(TOTW_SLOTS).reduce((a, b) => a + b, 0)
+
+    let bestPlayers: ITOTWPlayer[] = []
+    let worstPlayers: ITOTWPlayer[] = []
+
+    for (const minGames of MIN_GAMES_LEVELS) {
+        const best = await buildTeam(weekStart, weekEnd, true, [], minGames)
+
+        const hardExcludedProfiles = best.map(p => ({
+            playerName: p.playerName,
+            position: p.position
+        }))
+
+        const worst = await buildTeam(weekStart, weekEnd, false, hardExcludedProfiles, minGames)
+
+        if (best.length === totalSlots && worst.length === totalSlots) {
+            bestPlayers = best
+            worstPlayers = worst
+            break
+        }
+
+        console.warn(`[TOTW] Intento con minGames=${minGames} incompleto (best=${best.length}, worst=${worst.length}), reintentando...`)
+    }
 
     if (!bestPlayers.length && !worstPlayers.length) {
         console.info('[TOTW] No matches found for week', weekKey, '— skipping')
