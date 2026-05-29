@@ -1,5 +1,4 @@
 import { getClubMatchHistory, TPlatformType } from '@trueno-proclub-services/eafcapi';
-import { TGametype } from '@trueno-proclub-services/eafcapi/dist/model/club';
 import { getLatestMatch, insertMatch } from '@controllers/match.controller';
 import { IMatch } from '@interfaces/match.interface';
 import MatchDTO from '@dtos/match.dto';

@@ -6,8 +6,8 @@ import type { IMemberTotwAppearances } from "./totw.interface"
 export interface IPlayerProfile {
     member: IClubMember
     stats: {
-        "official": IPlayerStats,
-        "friendly": IPlayerStats
+        "official": IPlayerStats[],
+        "friendly": IPlayerStats[]
     }
     achievements: IAchievementUnlocked[],
     totw: IMemberTotwAppearances[]

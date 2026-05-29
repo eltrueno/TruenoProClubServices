@@ -172,88 +172,58 @@
     const errorText = memberService.getError()
     const hasError:Boolean = (errorText.value=='') ? false : true
 
-function mergeStats(
-    official: PlayerStatsEntity[],
-    friendly: PlayerStatsEntity[]
-): PlayerStatsEntity[] {
-
-    const map = new Map<string, PlayerStatsEntity>()
-
-    const merge = (stats: PlayerStatsEntity[]) => {
-        for (const s of stats) {
-
-            if (!map.has(s.playerName)) {
-                map.set(s.playerName, new PlayerStatsEntity({ ...s }))
-                continue
-            }
-
-            const existing = map.get(s.playerName)!
-
-            existing.gamesPlayed += s.gamesPlayed
-            existing.goals += s.goals
-            existing.assists += s.assists
-            existing.wins += s.wins
-            existing.losses += s.losses
-            existing.ties += s.ties
-            existing.minutesPlayed += s.minutesPlayed
-            existing.shots += s.shots
-            existing.saves += s.saves
-            existing.tacklesMade += s.tacklesMade
-            existing.tacklesSuccess += s.tacklesSuccess
-            existing.passesMade += s.passesMade
-            existing.passesSuccess += s.passesSuccess
-            existing.cleanSheets += s.cleanSheets
-            existing.goalsConceded += s.goalsConceded
-            existing.redCards += s.redCards
-            existing.manOfTheMatch += s.manOfTheMatch
-            existing.hattricks += s.hattricks
-            existing.pokers += s.pokers
-            existing.ratingSum += s.ratingSum
+function aggregatePlayerStats(stats: PlayerStatsEntity[]): PlayerStatsEntity[] {
+    const grouped = new Map<string, PlayerStatsEntity[]>()
+    for (const s of stats) {
+        if (!grouped.has(s.playerName)) {
+            grouped.set(s.playerName, [])
         }
+        grouped.get(s.playerName)!.push(s)
     }
-
-    merge(official)
-    merge(friendly)
-
-    const result = Array.from(map.values())
-
-    for (const p of result) {
-        p.computeAggregatedStats()
+    const result: PlayerStatsEntity[] = []
+    for (const [playerName, playerStats] of grouped.entries()) {
+        result.push(PlayerStatsEntity.aggregate(playerStats))
     }
-
     return result
 }
 
 
 const plstats = computed<PlayerStatsEntity[]>(() => {
     const data = plStatsService.getData().value
+    let raw: PlayerStatsEntity[] = []
 
-    if (statsType.value === 'official') {
-        return data.official ?? []
-    }
+    if (statsType.value === 'official') raw = data.official ?? []
+    else if (statsType.value === 'friendly') raw = data.friendly ?? []
+    else raw = [...(data.official ?? []), ...(data.friendly ?? [])]
 
-    if (statsType.value === 'friendly') {
-        return data.friendly ?? []
-    }
-
-    return mergeStats(data.official ?? [], data.friendly ?? [])
-
+    return aggregatePlayerStats(raw)
 })
+const mergedPlayers = computed(() => {
+    if (!members.value?.length) return []
 
+    const rawData = plStatsService.getData().value
+    let raw: PlayerStatsEntity[] = []
 
-    const mergedPlayers = computed(() => {
+    if (statsType.value === 'official') raw = rawData.official ?? []
+    else if (statsType.value === 'friendly') raw = rawData.friendly ?? []
+    else raw = [...(rawData.official ?? []), ...(rawData.friendly ?? [])]
 
-        if (!members.value?.length) return []
+    // playedPositions sale de los mismos docs filtrados por statsType
+    const positionsMap = new Map<string, Record<string, number>>()
+    for (const s of raw) {
+        if (!positionsMap.has(s.playerName)) positionsMap.set(s.playerName, {})
+        const pos = positionsMap.get(s.playerName)!
+        pos[s.position] = (pos[s.position] || 0) + s.gamesPlayed
+    }
 
-        const statsMap = new Map(
-            plstats.value.map(s => [s.playerName, s])
-        )
+    const statsMap = new Map(plstats.value.map(s => [s.playerName, s]))
 
-        return members.value.map(member => ({
-            ...member,
-            stats: statsMap.get(member.playerName)
-        }))
-    })
+    return members.value.map(member => ({
+        ...member,
+        stats: statsMap.get(member.playerName),
+        playedPositions: positionsMap.get(member.playerName) ?? {}
+    }))
+})
 
 
     
@@ -349,7 +319,7 @@ const plstats = computed<PlayerStatsEntity[]>(() => {
                 normalize(el.playerName).includes(normalize(search)) ||
                 normalize(el.proName).includes(normalize(search))
 
-            const positions = Object.keys(el.stats?.playedPositions ?? {})
+            const positions = Object.keys(el.playedPositions ?? {})
 
             const positionMatch =
                 positionFilter.value.length === 0 ||
