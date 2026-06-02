@@ -28,7 +28,7 @@
                     <div class="plextrainfo p-1">
                         <div class="flex md:text-lg">
                             <div class="w-full flex justify-center space-x-4 flex-wrap mb-1">
-                                <p v-for="pos in Object.keys(player.stats.playedPositions)" class="w-fit font-semibold text-xs flex text-center justify-center p-1 px-2 text-white rounded-full"
+                                <p v-for="pos in Object.keys(player.playedPositions)" class="w-fit font-semibold text-xs flex text-center justify-center p-1 px-2 text-white rounded-full"
                                 :class="{
                                     'bg-orange-600': pos==Position.goalkeeper,
                                     'bg-yellow-500': pos==Position.defender,

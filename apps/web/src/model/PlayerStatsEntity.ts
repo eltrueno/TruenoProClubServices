@@ -3,6 +3,7 @@ import { Position } from "@/i18n/translations"
 
 export default class PlayerStatsEntity implements IPlayerStats {
     playerName: string;
+    position: Position;
     gamesPlayed: number;
     minutesPlayed: number;
     wins: number;
@@ -23,8 +24,6 @@ export default class PlayerStatsEntity implements IPlayerStats {
     hattricks: number;
     pokers: number;
     saves: number;
-    mostPlayedPosition: Position;
-    playedPositions: Record<Position, number>;
 
     ratingAve: number;
     goalsPerMatch: number;
@@ -47,6 +46,7 @@ export default class PlayerStatsEntity implements IPlayerStats {
     constructor(stats: Partial<IPlayerStats>) {
         // Initialize all numeric fields to 0 to prevent NaN
         this.playerName = ''
+        this.position = undefined
         this.gamesPlayed = 0
         this.minutesPlayed = 0
         this.wins = 0
@@ -67,8 +67,6 @@ export default class PlayerStatsEntity implements IPlayerStats {
         this.hattricks = 0
         this.pokers = 0
         this.saves = 0
-        this.mostPlayedPosition = Position.midfielder
-        this.playedPositions = {} as Record<Position, number>
 
         // Aggregated (computed) fields
         this.ratingAve = 0
@@ -119,6 +117,39 @@ export default class PlayerStatsEntity implements IPlayerStats {
         this.savesPercent = (this.saves + this.goalsConceded)
             ? (this.saves / (this.saves + this.goalsConceded)) * 100
             : 0
+    }
+
+    static aggregate(statsArray: PlayerStatsEntity[]): PlayerStatsEntity {
+        const merged = new PlayerStatsEntity({})
+        if (!statsArray?.length) return merged
+
+        merged.playerName = statsArray[0].playerName
+
+        for (const s of statsArray) {
+            merged.gamesPlayed += s.gamesPlayed
+            merged.minutesPlayed += s.minutesPlayed
+            merged.wins += s.wins
+            merged.losses += s.losses
+            merged.ties += s.ties
+            merged.goals += s.goals
+            merged.assists += s.assists
+            merged.shots += s.shots
+            merged.redCards += s.redCards
+            merged.passesMade += s.passesMade
+            merged.passesSuccess += s.passesSuccess
+            merged.ratingSum += s.ratingSum
+            merged.tacklesMade += s.tacklesMade
+            merged.tacklesSuccess += s.tacklesSuccess
+            merged.cleanSheets += s.cleanSheets
+            merged.goalsConceded += s.goalsConceded
+            merged.manOfTheMatch += s.manOfTheMatch
+            merged.hattricks += s.hattricks
+            merged.pokers += s.pokers
+            merged.saves += s.saves
+        }
+
+        merged.computeAggregatedStats()
+        return merged
     }
 
 }

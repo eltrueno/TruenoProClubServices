@@ -1,5 +1,6 @@
 export interface IPlayerStats {
     playerName: string
+    position: 'goalkeeper' | 'defender' | 'midfielder' | 'forward'
     gamesPlayed: number
     minutesPlayed: number
     wins: number
@@ -20,6 +21,4 @@ export interface IPlayerStats {
     hattricks: number
     pokers: number
     saves: number
-    mostPlayedPosition: string
-    playedPositions: Record<string, number>
 }

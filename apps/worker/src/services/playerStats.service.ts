@@ -54,20 +54,22 @@ const accumulateStatsFromMatch = async (match: IMatch, clubId: number, skipAchie
             pokers: isPoker ? 1 : 0,
         }
 
-        const positionKey = `playedPositions.${player.position}`
 
         await StatsModel.updateOne(
-            { playerName: player.playername },
+            { playerName: player.playername, position: player.position },
             {
                 $inc: {
-                    ...incFields,
-                    [positionKey]: 1
+                    ...incFields
+                },
+                $setOnInsert: {
+                    playerName: player.playername,
+                    position: player.position,
                 }
             },
             { upsert: true }
         )
 
-        await recomputeMostPlayedPosition(player.playername, StatsModel)
+        //await recomputeMostPlayedPosition(player.playername, StatsModel)
 
         if (!skipAchievements) {
             const updatedStats = await StatsModel.findOne({ playerName: player.playername }).lean()
@@ -83,7 +85,7 @@ const accumulateStatsFromMatch = async (match: IMatch, clubId: number, skipAchie
 /**
  * After updating playedPositions, recalculates and saves mostPlayedPosition.
  */
-const recomputeMostPlayedPosition = async (playerName: string, StatsModel: Model<any>) => {
+/*const recomputeMostPlayedPosition = async (playerName: string, StatsModel: Model<any>) => {
     const doc = await StatsModel.findOne({ playerName })
     if (!doc || !doc.playedPositions) return;
 
@@ -113,7 +115,7 @@ const recomputeMostPlayedPosition = async (playerName: string, StatsModel: Model
         { playerName },
         { $set: { mostPlayedPosition: maxPos } }
     )
-}
+}*/
 
 /**
  * Full recalculation from scratch for ALL players, for both official and friendly.
