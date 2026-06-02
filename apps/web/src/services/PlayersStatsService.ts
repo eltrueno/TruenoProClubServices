@@ -29,7 +29,10 @@ export default class PlayersStatsService extends FetchService {
                 for (const type in json.response) {
 
                     const parsed: PlayerStatsEntity[] = json.response[type].map(
-                        (m: any) => new PlayerStatsEntity(m)
+                        (m: any) => {
+                            const entity = new PlayerStatsEntity(m)
+                            return entity
+                        }
                     )
 
                     this.data.value[type] = parsed

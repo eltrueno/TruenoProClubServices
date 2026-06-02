@@ -30,10 +30,19 @@
                         </div>
                         
                         <div class="flex flex-wrap gap-2 mb-3 lg:mb-4">
-                             <div v-for="pos in topPositions" :key="pos.name" class="badge badge-primary badge-sm lg:badge-lg uppercase font-bold py-2 lg:py-3 shadow-sm">
-                                {{ translatePosition(pos.name) }}
-                                <span class="ml-1.5 font-semibold italic text-[0.95em] bg-base-100/20 rounded">{{ pos.percentage }}%</span>
-                             </div>
+                            <div v-for="pos in topPositions" :key="pos.name"
+                            :class="[
+                                (isPositionActive(Position[pos.name]) && posFilter !== null)
+                                    ? 'tooltip tooltip-open tooltip-bottom tooltip-neutral'
+                                    : ''
+                            ]" data-tip="Clic para ver todas las posiciones">
+                                 <button class="badge badge-primary badge-sm lg:badge-lg uppercase font-bold py-2 lg:py-3 shadow-sm cursor-pointer select-none"
+                                    :class="isPositionActive(Position[pos.name]) ? '' : 'badge-outline'"
+                                    @click="handlePosFilter(Position[pos.name])">
+                                    {{ translatePosition(pos.name) }}
+                                    <span class="ml-1.5 font-semibold italic text-[0.95em] bg-base-100/20 rounded">{{ pos.percentage }}%</span>
+                                 </button>
+                            </div>
                         </div>
                         <p v-if="playerProfile.member.proOverall" class="text-base-content/60 text-sm lg:text-lg">
                             {{ playerProfile.member.proHeight }}cm · {{ playerProfile.member.proOverall }} OVR
@@ -167,7 +176,7 @@
     import PlayerProfileService from "@/services/PlayerProfileService";
     import ClubMatchByPlayerService from "@/services/ClubMatchByPlayerService";
     import PlayerStatsEntity from "@/model/PlayerStatsEntity";
-    import { translatePosition } from "@/i18n/translations";
+    import { Position, translatePosition } from "@/i18n/translations";
 
     // Subcomponents
     import PlayerDetailStats from "./PlayerDetailStats.vue";
@@ -194,6 +203,18 @@
     // State
     const filterMode = ref('all') // all, official, friendly
     const activeTab = ref('estadísticas')
+    const posFilter = ref<Position | null>(null)
+
+    function handlePosFilter(position: Position) {
+        if (posFilter.value === position) {
+            posFilter.value = null 
+        } else {
+            posFilter.value = position
+        }
+    }
+    function isPositionActive(position: Position) {
+        return posFilter.value === null || posFilter.value === position
+    }
 
     const fetchData = async () => {
         await playerProfileService.fetch()
@@ -211,56 +232,58 @@
         e.target.src = '/players/placeholder_top_transp.png'
     }
 
-    const topPositions = computed(() => {
-        if (!activeStats.value?.playedPositions || !activeStats.value.gamesPlayed) return []
-        const total = activeStats.value.gamesPlayed
-        return Object.entries(activeStats.value.playedPositions)
-            .sort(([, a], [, b]) => (b as number) - (a as number))
-            .map(([pos, count]) => ({
-                name: pos,
-                percentage: Math.round(((count as number) / total) * 100)
-            }))
+    const filteredStats = computed(() => {
+        const { official, friendly } = playerProfile.value.stats
+
+        if (filterMode.value === 'official') return official
+        if (filterMode.value === 'friendly') return friendly
+
+        return [...official, ...friendly]
     })
 
     const activeStats = computed(() => {
         if (!playerProfile.value) return {} as PlayerStatsEntity
-        const { official, friendly } = playerProfile.value.stats as { official: PlayerStatsEntity, friendly: PlayerStatsEntity }
-        if (filterMode.value === 'official') return official
-        if (filterMode.value === 'friendly') return friendly
+        const { official, friendly } = playerProfile.value.stats
 
-        const merged = new PlayerStatsEntity({ ...official })
-        merged.gamesPlayed   += (friendly.gamesPlayed || 0)
-        merged.goals         += (friendly.goals || 0)
-        merged.assists       += (friendly.assists || 0)
-        merged.wins          += (friendly.wins || 0)
-        merged.losses        += (friendly.losses || 0)
-        merged.ties          += (friendly.ties || 0)
-        merged.minutesPlayed += (friendly.minutesPlayed || 0)
-        merged.shots         += (friendly.shots || 0)
-        merged.saves         += (friendly.saves || 0)
-        merged.tacklesMade   += (friendly.tacklesMade || 0)
-        merged.tacklesSuccess+= (friendly.tacklesSuccess || 0)
-        merged.passesMade    += (friendly.passesMade || 0)
-        merged.passesSuccess += (friendly.passesSuccess || 0)
-        merged.cleanSheets   += (friendly.cleanSheets || 0)
-        merged.goalsConceded += (friendly.goalsConceded || 0)
-        merged.redCards      += (friendly.redCards || 0)
-        merged.manOfTheMatch += (friendly.manOfTheMatch || 0)
-        merged.hattricks     += (friendly.hattricks || 0)
-        merged.pokers        += (friendly.pokers || 0)
-        merged.ratingSum     += (friendly.ratingSum || 0)
-
-        // Merge playedPositions
-        const mergedPositions: Record<string, number> = { ...(official.playedPositions || {}) }
-        if (friendly.playedPositions) {
-            Object.entries(friendly.playedPositions).forEach(([pos, count]) => {
-                mergedPositions[pos] = (mergedPositions[pos] || 0) + (count as number)
-            })
+        if (filterMode.value === 'official') {
+            return PlayerStatsEntity.aggregate(official.filter(stats => posFilter.value === null ||
+                    Position[stats.position] === posFilter.value))
         }
-        merged.playedPositions = mergedPositions
+        if (filterMode.value === 'friendly') {
+            return PlayerStatsEntity.aggregate(friendly.filter(stats => posFilter.value === null ||
+                    Position[stats.position] === posFilter.value))
+        }
 
-        merged.computeAggregatedStats()
-        return merged
+        return PlayerStatsEntity.aggregate(
+            [...official, ...friendly].filter(
+                stats =>
+                    posFilter.value === null ||
+                    Position[stats.position] === posFilter.value
+            )
+        )
+    })
+
+    const topPositions = computed(() => {
+        const stats = filteredStats.value
+
+        if (!stats.length) return []
+
+        const positionMap: Record<string, number> = {}
+
+        for (const stat of stats) {
+            positionMap[stat.position] ??= 0
+            positionMap[stat.position] += stat.gamesPlayed
+        }
+
+        const total = Object.values(positionMap)
+            .reduce((a, b) => a + b, 0)
+
+        return Object.entries(positionMap)
+            .sort(([, a], [, b]) => b - a)
+            .map(([pos, count]) => ({
+                name: pos,
+                percentage: Math.round((count / total) * 100)
+            }))
     })
 
     const kpis = computed(() => [

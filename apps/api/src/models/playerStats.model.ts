@@ -5,8 +5,12 @@ const playerStatsSchema = new Schema<IPlayerStats>(
     {
         playerName: {
             type: String,
+            required: true
+        },
+        position: {
+            type: String,
             required: true,
-            unique: true
+            enum: ["goalkeeper", "defender", "midfielder", "forward"]
         },
         gamesPlayed: { type: Number, required: true, default: 0 },
         minutesPlayed: { type: Number, required: true, default: 0 },
@@ -28,19 +32,14 @@ const playerStatsSchema = new Schema<IPlayerStats>(
         hattricks: { type: Number, required: true, default: 0 },
         pokers: { type: Number, required: true, default: 0 },
         saves: { type: Number, required: true, default: 0 },
-        mostPlayedPosition: { type: String, required: true, default: "unknown" },
-        playedPositions: {
-            type: Map,
-            of: Number,
-            required: true,
-            default: {}
-        }
     },
     {
         timestamps: true,
         versionKey: false
     }
 )
+
+playerStatsSchema.index({ playerName: 1, position: 1 }, { unique: true })
 
 export const PlayerStatsOfficialModel = model("member_stats_officials", playerStatsSchema)
 export const PlayerStatsFriendlyModel = model("member_stats_friendlies", playerStatsSchema)
