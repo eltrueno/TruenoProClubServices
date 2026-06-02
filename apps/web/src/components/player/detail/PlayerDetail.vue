@@ -30,12 +30,19 @@
                         </div>
                         
                         <div class="flex flex-wrap gap-2 mb-3 lg:mb-4">
-                             <div v-for="pos in topPositions" :key="pos.name" class="badge badge-primary badge-sm lg:badge-lg uppercase font-bold py-2 lg:py-3 shadow-sm cursor-pointer select-none"
-                             :class="posFilter[pos.name] ? '' : 'badge-outline'"
-                             @click="handlePosFilter(pos.name)">
-                                {{ translatePosition(pos.name) }}
-                                <span class="ml-1.5 font-semibold italic text-[0.95em] bg-base-100/20 rounded">{{ pos.percentage }}%</span>
-                             </div>
+                            <div v-for="pos in topPositions" :key="pos.name"
+                            :class="[
+                                (isPositionActive(Position[pos.name]) && posFilter !== null)
+                                    ? 'tooltip tooltip-open tooltip-bottom tooltip-neutral'
+                                    : ''
+                            ]" data-tip="Clic para ver todas las posiciones">
+                                 <button class="badge badge-primary badge-sm lg:badge-lg uppercase font-bold py-2 lg:py-3 shadow-sm cursor-pointer select-none"
+                                    :class="isPositionActive(Position[pos.name]) ? '' : 'badge-outline'"
+                                    @click="handlePosFilter(Position[pos.name])">
+                                    {{ translatePosition(pos.name) }}
+                                    <span class="ml-1.5 font-semibold italic text-[0.95em] bg-base-100/20 rounded">{{ pos.percentage }}%</span>
+                                 </button>
+                            </div>
                         </div>
                         <p v-if="playerProfile.member.proOverall" class="text-base-content/60 text-sm lg:text-lg">
                             {{ playerProfile.member.proHeight }}cm · {{ playerProfile.member.proOverall }} OVR
@@ -169,7 +176,7 @@
     import PlayerProfileService from "@/services/PlayerProfileService";
     import ClubMatchByPlayerService from "@/services/ClubMatchByPlayerService";
     import PlayerStatsEntity from "@/model/PlayerStatsEntity";
-    import { translatePosition } from "@/i18n/translations";
+    import { Position, translatePosition } from "@/i18n/translations";
 
     // Subcomponents
     import PlayerDetailStats from "./PlayerDetailStats.vue";
@@ -195,16 +202,18 @@
 
     // State
     const filterMode = ref('all') // all, official, friendly
-    const posFilter = ref({
-        goalkeeper: true,
-        defender: true,
-        midfielder: true,
-        forward: true
-    })
     const activeTab = ref('estadísticas')
+    const posFilter = ref<Position | null>(null)
 
-    function handlePosFilter(position: string) {
-        posFilter.value[position] = !posFilter.value[position]
+    function handlePosFilter(position: Position) {
+        if (posFilter.value === position) {
+            posFilter.value = null 
+        } else {
+            posFilter.value = position
+        }
+    }
+    function isPositionActive(position: Position) {
+        return posFilter.value === null || posFilter.value === position
     }
 
     const fetchData = async () => {
@@ -237,13 +246,21 @@
         const { official, friendly } = playerProfile.value.stats
 
         if (filterMode.value === 'official') {
-            return PlayerStatsEntity.aggregate(official.filter(stats => posFilter.value[stats.position]))
+            return PlayerStatsEntity.aggregate(official.filter(stats => posFilter.value === null ||
+                    Position[stats.position] === posFilter.value))
         }
         if (filterMode.value === 'friendly') {
-            return PlayerStatsEntity.aggregate(friendly.filter(stats => posFilter.value[stats.position]))
+            return PlayerStatsEntity.aggregate(friendly.filter(stats => posFilter.value === null ||
+                    Position[stats.position] === posFilter.value))
         }
 
-        return PlayerStatsEntity.aggregate([...official, ...friendly].filter(stats => posFilter.value[stats.position]))
+        return PlayerStatsEntity.aggregate(
+            [...official, ...friendly].filter(
+                stats =>
+                    posFilter.value === null ||
+                    Position[stats.position] === posFilter.value
+            )
+        )
     })
 
     const topPositions = computed(() => {
