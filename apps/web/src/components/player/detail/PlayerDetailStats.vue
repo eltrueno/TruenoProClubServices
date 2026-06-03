@@ -5,41 +5,92 @@
             <div class="card-body p-6">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
                     <h2 class="card-title text-xl font-black uppercase border-l-4 border-primary pl-4">Desempeño</h2>
-                    
-                    <div class="join dark:bg-base-100 bg-base-300 p-1 rounded-2xl w-full sm:w-auto">
-                        <button
-                            @click="statMode = 'total'"
-                            class="grow sm:grow-0 btn btn-xs join-item"
-                            :class="statMode === 'total' ? 'btn-primary' : 'btn-ghost'"
-                        >Histórico</button>
-                        <button
-                            @click="statMode = 'last5'"
-                            class="grow sm:grow-0 btn btn-xs join-item"
-                            :class="statMode === 'last5' ? 'btn-primary' : 'btn-ghost'"
-                        >Últ. 5</button>
-                        <button
-                            @click="statMode = 'last10'"
-                            class="grow sm:grow-0 btn btn-xs join-item"
-                            :class="statMode === 'last10' ? 'btn-primary' : 'btn-ghost'"
-                        >Últ. 10</button>
-                    </div>
                 </div>
                 
                 <div class="flex flex-col lg:flex-row gap-10 items-center">
-                    <div class="w-full max-w-[520px] mx-auto lg:mx-0 flex-shrink-0 aspect-square">
-                        <Radar ref="radarChart" :data="radarData" :options="radarOptions" />
+                    <div class="w-full max-w-[600px] mx-auto lg:mx-0 flex-shrink-0 flex flex-col gap-1">
+                        <!-- Custom Legend -->
+                        <div class="flex flex-wrap justify-center gap-x-4">
+                            <!-- Histórico Toggle -->
+                            <button 
+                                @click="toggleDataset(0)"
+                                class="group flex items-center gap-3 px-4 py-2 rounded-xl border-2 transition-all duration-300"
+                                :class="visibleDatasets[0] ? 'border-primary/30 bg-primary/5 shadow-sm hover:border-primary/50' : 'border-base-content/5 bg-base-100 hover:bg-base-200 opacity-60 grayscale'"
+                            >
+                                <div class="relative flex items-center justify-center w-6 h-4">
+                                    <div class="absolute w-full h-[3px] bg-[#C80D0D] rounded-full"></div>
+                                    <div class="absolute w-2.5 h-2.5 rounded-full bg-[#C80D0D] border-[2px] border-white z-10 box-content shadow-sm"></div>
+                                </div>
+                                <span class="text-xs font-black uppercase tracking-wider text-base-content">Histórico</span>
+                                <div class="relative w-4 h-4 ml-1">
+                                    <svg class="absolute inset-0 text-primary transition-opacity duration-300" :class="visibleDatasets[0] ? 'opacity-100' : 'opacity-0'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    <svg class="absolute inset-0 text-base-content/60 transition-opacity duration-300" :class="!visibleDatasets[0] ? 'opacity-100' : 'opacity-0'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                    </svg>
+                                </div>
+                            </button>
+
+                            <!-- Últimos Toggle -->
+                            <button 
+                                @click="toggleDataset(1)"
+                                class="group flex items-center gap-3 px-4 py-2 rounded-xl border-2 transition-all duration-300"
+                                :class="visibleDatasets[1] ? 'border-primary/30 bg-primary/5 shadow-sm hover:border-primary/50' : 'border-base-content/5 bg-base-100 hover:bg-base-200 opacity-60 grayscale'"
+                            >
+                                <div class="relative flex items-center justify-center w-6 h-4">
+                                    <div class="absolute w-full h-0 border-t-[2.5px] border-dashed border-[rgba(200,13,13,0.5)]"></div>
+                                    <div class="absolute w-2 h-2 rounded-full bg-[rgba(200,13,13,0.4)] border-[1.5px] border-[rgba(200,13,13,0.6)] z-10 box-content"></div>
+                                </div>
+                                <span class="text-xs font-black uppercase tracking-wider text-base-content">{{ recentLabelComputed }}</span>
+                                <div class="relative w-4 h-4 ml-1">
+                                    <svg class="absolute inset-0 text-primary transition-opacity duration-300" :class="visibleDatasets[1] ? 'opacity-100' : 'opacity-0'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    <svg class="absolute inset-0 text-base-content/60 transition-opacity duration-300" :class="!visibleDatasets[1] ? 'opacity-100' : 'opacity-0'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                    </svg>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="aspect-square w-full relative">
+                            <Radar ref="radarChart" :data="radarData" :options="radarOptions" />
+                        </div>
                     </div>
-                    <div class="w-full grid grid-cols-2 gap-4">
-                        <div 
-                            v-for="(m, index) in radarMetrics" 
-                            :key="m.label" 
-                            @mouseenter="hoveredIdx = index; isHoveringChart = false"
-                            @mouseleave="hoveredIdx = null"
-                            class="dark:bg-base-100 bg-base-300 p-4 rounded-2xl text-center border-2 border-transparent transition-all duration-200 cursor-default"
-                            :class="{ '!border-primary ring-1 ring-primary/20 shadow-lg': hoveredIdx === index }"
-                        >
-                            <p class="text-xs uppercase font-bold mb-1 transition-colors" :class="{ 'text-primary': hoveredIdx === index, 'opacity-50': hoveredIdx !== index }">{{ m.label }}</p>
-                            <p class="text-2xl font-black tabular-nums transition-colors">{{ formatRadarDisplay(m) }}</p>
+                    <div class="w-full flex flex-col gap-4">
+                        <div class="flex justify-center">
+                            <div class="join dark:bg-base-100 bg-base-300 p-1 rounded-2xl w-full sm:w-auto">
+                                <button
+                                    @click="statMode = 'total'"
+                                    class="grow sm:grow-0 btn btn-xs join-item"
+                                    :class="statMode === 'total' ? 'btn-primary' : 'btn-ghost'"
+                                >Histórico</button>
+                                <button
+                                    @click="statMode = 'last5'"
+                                    class="grow sm:grow-0 btn btn-xs join-item"
+                                    :class="statMode === 'last5' ? 'btn-primary' : 'btn-ghost'"
+                                >Últimos 5</button>
+                                <button
+                                    @click="statMode = 'last10'"
+                                    class="grow sm:grow-0 btn btn-xs join-item"
+                                    :class="statMode === 'last10' ? 'btn-primary' : 'btn-ghost'"
+                                >Últimos 10</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div 
+                                v-for="(m, index) in radarMetrics" 
+                                :key="m.label" 
+                                @mouseenter="hoveredIdx = index; isHoveringChart = false"
+                                @mouseleave="hoveredIdx = null"
+                                class="dark:bg-base-100 bg-base-300 p-4 rounded-2xl text-center border-2 border-transparent transition-all duration-200 cursor-default"
+                                :class="{ '!border-primary ring-1 ring-primary/20 shadow-lg': hoveredIdx === index }"
+                            >
+                                <p class="text-xs uppercase font-bold mb-1 transition-colors" :class="{ 'text-primary': hoveredIdx === index, 'opacity-50': hoveredIdx !== index }">{{ m.label }}</p>
+                                <p class="text-2xl font-black tabular-nums transition-colors">{{ formatRadarDisplay(m) }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -91,14 +142,18 @@
     import { translatePosition, Position } from '@/i18n/translations';
     import PlayerStatsEntity from '@/model/PlayerStatsEntity';
     import ClubMatchEntity from '@/model/match/ClubMatchEntity';
+    import PlayerProfileEntity from '@/model/PlayerProfileEntity';
 
     ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, RadarController);
 
     const props = defineProps<{
+        profile: PlayerProfileEntity
         stats: PlayerStatsEntity,
         matches: ClubMatchEntity[] | undefined
         currentFilter: string
+        positionFilter: Position | null
     }>()
+
 
     const hoveredIdx = ref<number | null>(null)
     const isHoveringChart = ref(false)
@@ -152,7 +207,7 @@
             ties: 0,
             minutesPlayed: 0,
             playedPositions: {},
-            mostPlayedPosition: props.stats.mostPlayedPosition
+            mostPlayedPosition: props.profile.mostPlayedPosition
         }
 
         recentMatches.forEach(match => {
@@ -290,21 +345,25 @@
         }
     ])
 
+
     const radarMetrics = computed(() => {
         const s = currentStats.value
-        const isGK = s.mostPlayedPosition === Position.goalkeeper
-        
+        const isGK = (props.profile.mostPlayedPosition === Position.goalkeeper && props.positionFilter === null) || props.positionFilter === Position.goalkeeper
+
+        const norm = (val: number, expectedMax: number) =>
+            Math.min(Math.max((val / expectedMax) * 100, 0), 100)
+
         return [
-            { label: 'Valoración',   key: 'ratingAve',           raw: s.ratingAve,           max: 10,  val: s.ratingAve * 10 },
-            { label: 'G+A/Partido',  key: 'goalsPlusAssistsPerMatch', max: 10,               val: s.goalsPlusAssistsPerMatch * 10 },
-            { label: '% Pase',       key: 'passSuccessRate',     max: 100,                   val: s.passSuccessRate },
-            { label: '% Tackles',    key: 'tackleSuccessRate',   max: 100,                   val: s.tackleSuccessRate },
-            { label: '% Imbatido',    key: 'cleanSheetsPercent',  max: 100,                   val: s.cleanSheetsPercent },
-            isGK 
-                ? { label: '% Paradas', key: 'savesPercent', max: 100, val: s.savesPercent }
-                : { label: '% Tiro',    key: 'shotSuccessRate', max: 100, val: s.shotSuccessRate },
-            { label: '% MVP',        key: 'manOfTheMatchPercent', max: 100,                  val: s.manOfTheMatchPercent },
-            { label: '% Victorias',  key: 'winRate',             max: 100,                   val: s.winRate }
+            { label: 'Valoración',    key: 'ratingAve',                raw: s.ratingAve,                max: 10,  val: norm(s.ratingAve, 10) },
+            { label: 'G+A/Partido',   key: 'goalsPlusAssistsPerMatch', raw: s.goalsPlusAssistsPerMatch,  max: 1.5, val: norm(s.goalsPlusAssistsPerMatch, 1.5) },
+            { label: '% Pase',        key: 'passSuccessRate',          max: 100,                         val: norm(s.passSuccessRate, 100) },
+            { label: '% Tackles',     key: 'tackleSuccessRate',        max: 100,                         val: norm(s.tackleSuccessRate, 100) },
+            { label: '% Imbatido',    key: 'cleanSheetsPercent',       max: 100,                         val: norm(s.cleanSheetsPercent, 100) },
+            isGK
+                ? { label: '% Paradas', key: 'savesPercent',    max: 100, val: norm(s.savesPercent, 100) }
+                : { label: '% Tiro',    key: 'shotSuccessRate', max: 100, val: norm(s.shotSuccessRate, 100) },
+            { label: '% MVP',         key: 'manOfTheMatchPercent',     max: 100,                         val: norm(s.manOfTheMatchPercent, 30) },
+            { label: '% Victorias',   key: 'winRate',                  max: 100,                         val: norm(s.winRate, 100) }
         ]
     })
 
@@ -316,14 +375,33 @@
         }
     })
 
+    const visibleDatasets = ref([true, true])
+    
+    const toggleDataset = (index: number) => {
+        const isVisible = !visibleDatasets.value[index]
+        visibleDatasets.value[index] = isVisible
+        
+        const chart = radarChart.value?.chart
+        if (chart) {
+            if (isVisible) {
+                chart.show(index)
+            } else {
+                chart.hide(index)
+            }
+        }
+    }
+
+    const recentLabelComputed = computed(() => {
+        const recentKey = statMode.value === 'total' ? lastRecentMode.value : statMode.value
+        return recentKey === 'last10' ? 'Últimos 10' : 'Últimos 5'
+    })
+
     const radarData = computed(() => {
         const historicalPoints = getRadarDataPoints(props.stats)
         
-        const isTotal = statMode.value === 'total'
-        const recentKey = isTotal ? lastRecentMode.value : statMode.value
+        const recentKey = statMode.value === 'total' ? lastRecentMode.value : statMode.value
         const recentStatsObj = recentKey === 'last10' ? last10Stats.value : last5Stats.value
         const recentPoints = getRadarDataPoints(recentStatsObj)
-        const recentLabel = recentKey === 'last10' ? 'Últimos 10' : 'Últimos 5'
         
         const colors = {
             highlight: {
@@ -345,47 +423,49 @@
                     label: 'Histórico',
                     data: historicalPoints,
                     fill: true,
-                    backgroundColor: isTotal ? colors.highlight.bg : colors.faded.bg,
-                    borderColor: isTotal ? colors.highlight.border : colors.faded.border,
-                    borderWidth: isTotal ? 3 : 2,
-                    borderDash: isTotal ? [] : [5, 5],
-                    pointBackgroundColor: isTotal ? colors.highlight.point : colors.faded.point,
-                    pointBorderColor: isTotal ? '#fff' : 'transparent',
-                    pointRadius: isTotal ? 4 : 0,
-                    order: isTotal ? 1 : 2
+                    backgroundColor: colors.highlight.bg,
+                    borderColor: colors.highlight.border,
+                    borderWidth: 3,
+                    borderDash: [],
+                    pointBackgroundColor: colors.highlight.point,
+                    pointBorderColor: '#fff',
+                    pointRadius: 4,
+                    order: 1
                 },
                 {
-                    label: recentLabel,
+                    label: recentLabelComputed.value,
                     data: recentPoints,
                     fill: true,
-                    backgroundColor: !isTotal ? colors.highlight.bg : colors.faded.bg,
-                    borderColor: !isTotal ? colors.highlight.border : colors.faded.border,
-                    borderWidth: !isTotal ? 3 : 2,
-                    borderDash: !isTotal ? [] : [5, 5],
-                    pointBackgroundColor: !isTotal ? colors.highlight.point : colors.faded.point,
-                    pointBorderColor: !isTotal ? '#fff' : 'transparent',
-                    pointRadius: !isTotal ? 4 : 0,
-                    order: !isTotal ? 1 : 2
+                    backgroundColor: colors.faded.bg,
+                    borderColor: colors.faded.border,
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointBackgroundColor: 'rgba(200, 13, 13, 0.4)',
+                    pointBorderColor: 'rgba(200, 13, 13, 0.6)',
+                    pointRadius: 3,
+                    order: 2
                 }
             ]
         }
     })
 
     const getRadarDataPoints = (s: PlayerStatsEntity) => {
-        const isGK = s.mostPlayedPosition === Position.goalkeeper
-        const points = [
-            s.ratingAve * 10,
-            s.goalsPlusAssistsPerMatch * 10,
-            s.passSuccessRate,
-            s.tackleSuccessRate,
-            s.cleanSheetsPercent,
-            isGK ? s.savesPercent : s.shotSuccessRate,
-            s.manOfTheMatchPercent,
-            s.winRate
-        ]
-        return points.map(v => Math.min(v ?? 0, 100))
-    }
+        const isGK = (props.profile.mostPlayedPosition === Position.goalkeeper && props.positionFilter === null) || props.positionFilter === Position.goalkeeper
+        
+        const norm = (val: number, expectedMax: number) =>
+            Math.min(Math.max((val / expectedMax) * 100, 0), 100)
 
+        return [
+            norm(s.ratingAve, 10),
+            norm(s.goalsPlusAssistsPerMatch, 1.5),
+            norm(s.passSuccessRate, 100),
+            norm(s.tackleSuccessRate, 100),
+            norm(s.cleanSheetsPercent, 100),
+            isGK ? norm(s.savesPercent, 100) : norm(s.shotSuccessRate, 100),
+            norm(s.manOfTheMatchPercent, 30),
+            norm(s.winRate, 100)
+        ]
+    }
     const radarOptions = computed<ChartOptions<'radar'>>(() => ({
         responsive: true,
         maintainAspectRatio: false,
@@ -422,35 +502,35 @@
         },
         plugins: {
             legend: { 
-                display: true,
-                position: 'top' as const,
-                labels: {
-                    color: 'rgba(200, 13, 13, 0.8)',
-                    font: { size: 12, weight: 'bold' },
-                    padding: 20,
-                    usePointStyle: true,
-                    generateLabels: (chart: any) => {
-                        const data = chart.data;
-                        return data.datasets.map((dataset: any, i: number) => ({
-                            text: dataset.label,
-                            datasetIndex: i,
-                            fillStyle: dataset.backgroundColor,
-                            strokeStyle: dataset.borderColor,
-                            lineWidth: dataset.borderWidth,
-                            lineDash: dataset.borderDash,
-                            pointStyle: 'circle',
-                            hidden: !chart.isDatasetVisible(i),
-                            // This ensures the legend color matches the current state
-                            fontColor: 'rgba(166, 173, 187, 0.8)'
-                        }));
-                    }
-                }
+                display: false
             },
             tooltip: {
                 backgroundColor: '#1D232A',
                 padding: 12,
                 cornerRadius: 8,
-                displayColors: false
+                displayColors: false,
+                callbacks: {
+                    label: (context) => {
+                        const idx = context.dataIndex
+                        const metric = radarMetrics.value[idx]
+                        if (!metric) return ''
+                        
+                        const isHistorical = context.datasetIndex === 0
+                        const s = isHistorical ? props.stats : (statMode.value === 'total' ? (lastRecentMode.value === 'last10' ? last10Stats.value : last5Stats.value) : (statMode.value === 'last10' ? last10Stats.value : last5Stats.value))
+                        
+                        const rawVal = (s as any)[metric.key]
+                        const val = rawVal ?? 0
+                        let displayStr = ''
+                        
+                        if (typeof val === 'number' && isNaN(val)) displayStr = '0'
+                        else if (metric.key === 'ratingAve') displayStr = val.toFixed(1)
+                        else if (metric.key.toLowerCase().includes('rate') || metric.key.toLowerCase().includes('percent')) displayStr = val.toFixed(1) + '%'
+                        else if (metric.key === 'goalsPlusAssistsPerMatch') displayStr = val.toFixed(2)
+                        else displayStr = Number.isInteger(val) ? val.toString() : val.toFixed(0)
+
+                        return `${context.dataset.label}: ${displayStr}`
+                    }
+    }
             }
         }
     }))
@@ -463,8 +543,9 @@
         if (!chart) return
 
         if (newIdx !== null) {
-            chart.setActiveElements([{ datasetIndex: 0, index: newIdx }])
-            chart.tooltip.setActiveElements([{ datasetIndex: 0, index: newIdx }], { x: 0, y: 0 })
+            const targetDataset = statMode.value === 'total' ? 0 : 1;
+            chart.setActiveElements([{ datasetIndex: targetDataset, index: newIdx }])
+            chart.tooltip.setActiveElements([{ datasetIndex: targetDataset, index: newIdx }], { x: 0, y: 0 })
         } else {
             chart.setActiveElements([])
             chart.tooltip.setActiveElements([], { x: 0, y: 0 })
