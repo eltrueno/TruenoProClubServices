@@ -82,40 +82,6 @@ const accumulateStatsFromMatch = async (match: IMatch, clubId: number, skipAchie
     }
 }
 
-/**
- * After updating playedPositions, recalculates and saves mostPlayedPosition.
- */
-/*const recomputeMostPlayedPosition = async (playerName: string, StatsModel: Model<any>) => {
-    const doc = await StatsModel.findOne({ playerName })
-    if (!doc || !doc.playedPositions) return;
-
-    const posMap: any = doc.playedPositions
-    let maxPos = "unknown"
-    let maxCount = 0
-
-    // Mongoose Map support
-    if (posMap instanceof Map) {
-        posMap.forEach((count: number, pos: string) => {
-            if (count > maxCount) {
-                maxCount = count
-                maxPos = pos
-            }
-        })
-    } else {
-        // Plain object fallback
-        for (const pos in posMap) {
-            if (posMap[pos] > maxCount) {
-                maxCount = posMap[pos]
-                maxPos = pos
-            }
-        }
-    }
-
-    await StatsModel.updateOne(
-        { playerName },
-        { $set: { mostPlayedPosition: maxPos } }
-    )
-}*/
 
 /**
  * Full recalculation from scratch for ALL players, for both official and friendly.

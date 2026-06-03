@@ -2,6 +2,7 @@ import { syncRecentMatches } from '@services/sync.service';
 import { syncMembersFromEA } from '@services/member.service';
 import { recalculateAllPlayerStats } from '@services/playerStats.service';
 import { PlayerStatsOfficialModel } from '@models/playerstats.model';
+import { computePlayerStatsAverages } from '@services/averageStats.service';
 import dotenv from "dotenv"
 
 dotenv.config()
@@ -18,13 +19,19 @@ function startWorker() {
         const statsCount = await PlayerStatsOfficialModel.countDocuments();
 
         if (statsCount === 0 || FORCE_RECALCULATE) {
-            console.info("[Stats] Performing startup recalculation from match history...")
+            console.info("[Player Stats] Performing startup recalculation from match history...")
             await recalculateAllPlayerStats(CLUBID).catch(err =>
-                console.error("[Stats] Recalculation error:", err)
+                console.error("[Player Stats] Recalculation error:", err)
             )
         } else {
-            console.info("[Stats] Stats already present, skipping full recalculation. (Set FORCE_RECALCULATE=true to force it)");
+            console.info("[Player Stats] Stats already present, skipping full recalculation. (Set FORCE_RECALCULATE=true to force it)");
         }
+
+        console.info("[Average Stats] Performing startup recalculation...")
+        await computePlayerStatsAverages().catch(err =>
+            console.error("[Average Stats] Recalculation error:", err)
+        )
+        console.info("[Average Stats] Player averages recalculated")
     }).catch(err => {
         console.error("[Member Worker] Startup error:", err)
     })

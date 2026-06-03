@@ -142,9 +142,11 @@
             <div class="bg-base-200/50 rounded-b-2xl p-2">
                 <PlayerDetailStats
                     v-if="activeTab === 'estadísticas'" 
+                    :profile="playerProfile"
                     :stats="activeStats" 
                     :matches="playerMatches"
                     :currentFilter="filterMode"
+                    :positionFilter="posFilter"
                 />
                 <PlayerDetailWIP v-else-if="activeTab === 'historial'" title="Historial y Progresión" icon="📈" />
                 <PlayerDetailWIP v-else-if="activeTab === 'logros'" title="Logros y Premios" icon="🏆" />
@@ -175,6 +177,7 @@
     import { ref, computed, onBeforeMount, type Ref } from "vue";
     import PlayerProfileService from "@/services/PlayerProfileService";
     import ClubMatchByPlayerService from "@/services/ClubMatchByPlayerService";
+    import AverageStatsService from "@/services/AverageStatsService.ts";
     import PlayerStatsEntity from "@/model/PlayerStatsEntity";
     import { Position, translatePosition } from "@/i18n/translations";
 
@@ -191,14 +194,17 @@
     })
 
     const playerProfileService = new PlayerProfileService(props.playerName)
-    const isloading = playerProfileService.isloading as Ref<boolean>
     const playerProfile = playerProfileService.getData()
 
     const clubMatchByPlayerService = new ClubMatchByPlayerService(props.playerName)
     const playerMatches = clubMatchByPlayerService.getData()
 
-    const hasError = playerProfileService.getHasError() || clubMatchByPlayerService.getHasError() as Ref<boolean>
-    const errorText = playerProfileService.getError() || clubMatchByPlayerService.getError() as Ref<string>
+    const averageStatsService = new AverageStatsService()
+    const averageStats = averageStatsService.getData()
+
+    const isloading = playerProfileService.isloading || clubMatchByPlayerService.isloading || averageStatsService.isloading as Ref<boolean>
+    const hasError = playerProfileService.getHasError() || clubMatchByPlayerService.getHasError() || averageStatsService.getHasError() as Ref<boolean>
+    const errorText = playerProfileService.getError() || clubMatchByPlayerService.getError() || averageStatsService.getError() as Ref<string>
 
     // State
     const filterMode = ref('all') // all, official, friendly
@@ -219,6 +225,7 @@
     const fetchData = async () => {
         await playerProfileService.fetch()
         await clubMatchByPlayerService.fetch()
+        await averageStatsService.fetch()
     }
 
     onBeforeMount(fetchData)
