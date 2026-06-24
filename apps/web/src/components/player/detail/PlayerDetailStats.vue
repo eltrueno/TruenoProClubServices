@@ -142,16 +142,16 @@
     import { translatePosition, Position } from '@/i18n/translations';
     import PlayerStatsEntity from '@/model/PlayerStatsEntity';
     import ClubMatchEntity from '@/model/match/ClubMatchEntity';
-    import PlayerProfileEntity from '@/model/PlayerProfileEntity';
+    import type PlayerProfileEntity from '@/model/PlayerProfileEntity';
 
     ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, RadarController);
 
     const props = defineProps<{
         profile: PlayerProfileEntity
         stats: PlayerStatsEntity,
-        matches: ClubMatchEntity[] | undefined
-        currentFilter: string
-        positionFilter: Position | null
+        matches: ClubMatchEntity[] | undefined,
+        currentFilter: string,
+        positionFilter: string
     }>()
 
 
@@ -348,11 +348,8 @@
 
     const radarMetrics = computed(() => {
         const s = currentStats.value
-        const isGK = (props.profile.mostPlayedPosition === Position.goalkeeper && props.positionFilter === null) || props.positionFilter === Position.goalkeeper
-
-        const norm = (val: number, expectedMax: number) =>
-            Math.min(Math.max((val / expectedMax) * 100, 0), 100)
-
+        const isGK = props.profile.mostPlayedPosition === Position.goalkeeper || props.positionFilter === Position.goalkeeper        
+        
         return [
             { label: 'Valoración',    key: 'ratingAve',                raw: s.ratingAve,                max: 10,  val: norm(s.ratingAve, 10) },
             { label: 'G+A/Partido',   key: 'goalsPlusAssistsPerMatch', raw: s.goalsPlusAssistsPerMatch,  max: 1.5, val: norm(s.goalsPlusAssistsPerMatch, 1.5) },
@@ -366,6 +363,10 @@
             { label: '% Victorias',   key: 'winRate',                  max: 100,                         val: norm(s.winRate, 100) }
         ]
     })
+
+    function norm(value: number, max: number): number {
+        return Math.max(0, Math.min(100, (value / max) * 100));
+    }
 
     const lastRecentMode = ref<'last5' | 'last10'>('last5')
 
@@ -449,23 +450,24 @@
         }
     })
 
-    const getRadarDataPoints = (s: PlayerStatsEntity) => {
-        const isGK = (props.profile.mostPlayedPosition === Position.goalkeeper && props.positionFilter === null) || props.positionFilter === Position.goalkeeper
-        
-        const norm = (val: number, expectedMax: number) =>
-            Math.min(Math.max((val / expectedMax) * 100, 0), 100)
+const getRadarDataPoints = (s: PlayerStatsEntity): number[] => {
+    const isGK =
+        props.profile.mostPlayedPosition === Position.goalkeeper ||
+        props.positionFilter === Position.goalkeeper
 
-        return [
-            norm(s.ratingAve, 10),
-            norm(s.goalsPlusAssistsPerMatch, 1.5),
-            norm(s.passSuccessRate, 100),
-            norm(s.tackleSuccessRate, 100),
-            norm(s.cleanSheetsPercent, 100),
-            isGK ? norm(s.savesPercent, 100) : norm(s.shotSuccessRate, 100),
-            norm(s.manOfTheMatchPercent, 30),
-            norm(s.winRate, 100)
-        ]
-    }
+    return [
+        norm(s.ratingAve, 10),
+        norm(s.goalsPlusAssistsPerMatch, 1.5),
+        norm(s.passSuccessRate, 100),
+        norm(s.tackleSuccessRate, 100),
+        norm(s.cleanSheetsPercent, 100),
+        norm(isGK ? s.savesPercent : s.shotSuccessRate, 100),
+        norm(s.manOfTheMatchPercent, 30),
+        norm(s.winRate, 100)
+    ]
+}
+
+
     const radarOptions = computed<ChartOptions<'radar'>>(() => ({
         responsive: true,
         maintainAspectRatio: false,
