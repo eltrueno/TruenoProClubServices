@@ -82,75 +82,82 @@
             <div class="flex justify-around dark:bg-base-100/30 bg-base-300/30 backdrop-blur-md rounded-t-3xl p-2 gap-2 shadow-inner">
                 <!-- Estadísticas -->
                 <button 
-                    @click="activeTab = 'estadísticas'"
+                    @click="activeTab = 'stats'"
                     class="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl transition-all duration-300 relative overflow-hidden group border"
-                    :class="activeTab === 'estadísticas' 
+                    :class="activeTab === 'stats' 
                         ? 'bg-primary text-primary-content shadow-xl scale-[1.02] z-10 border-primary' 
                         : 'bg-base-200/40 dark:bg-base-100/40 text-base-content/60 shadow-sm border-transparent hover:border-primary/30 hover:bg-base-200/60 dark:hover:bg-base-100/60 hover:-translate-y-0.5'">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform duration-300" :class="activeTab === 'estadísticas' ? 'scale-110' : 'group-hover:scale-110 opacity-80'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform duration-300" :class="activeTab === 'stats' ? 'scale-110' : 'group-hover:scale-110 opacity-80'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                     <span class="text-xs font-bold hidden lg:block tracking-wide uppercase">Estadísticas</span>
-                    <div v-if="activeTab === 'estadísticas'" class="absolute bottom-1 w-6 h-1 bg-primary-content/30 rounded-full blur-[1px]"></div>
+                    <div v-if="activeTab === 'stats'" class="absolute bottom-1 w-6 h-1 bg-primary-content/30 rounded-full blur-[1px]"></div>
                 </button>
                 <!-- Historial -->
                 <button 
-                    @click="activeTab = 'historial'"
+                    @click="activeTab = 'form'"
                     class="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl transition-all duration-300 relative overflow-hidden group border"
-                    :class="activeTab === 'historial' 
+                    :class="activeTab === 'form' 
                         ? 'bg-primary text-primary-content shadow-xl scale-[1.02] z-10 border-primary' 
                         : 'bg-base-200/40 dark:bg-base-100/40 text-base-content/60 shadow-sm border-transparent hover:border-primary/30 hover:bg-base-200/60 dark:hover:bg-base-100/60 hover:-translate-y-0.5'">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform duration-300" :class="activeTab === 'historial' ? 'scale-110' : 'group-hover:scale-110 opacity-80'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform duration-300" :class="activeTab === 'form' ? 'scale-110' : 'group-hover:scale-110 opacity-80'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                     </svg>
-                    <span class="text-xs font-bold hidden lg:block tracking-wide uppercase">Historial</span>
-                    <div v-if="activeTab === 'historial'" class="absolute bottom-1 w-6 h-1 bg-primary-content/30 rounded-full blur-[1px]"></div>
+                    <span class="text-xs font-bold hidden lg:block tracking-wide uppercase">Forma</span>
+                    <div v-if="activeTab === 'form'" class="absolute bottom-1 w-6 h-1 bg-primary-content/30 rounded-full blur-[1px]"></div>
                 </button>
                 <!-- Logros -->
                 <button 
-                    @click="activeTab = 'logros'"
+                    @click="activeTab = 'achievements'"
                     class="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl transition-all duration-300 relative overflow-hidden group border"
-                    :class="activeTab === 'logros' 
+                    :class="activeTab === 'achievements' 
                         ? 'bg-primary text-primary-content shadow-xl scale-[1.02] z-10 border-primary' 
                         : 'bg-base-200/40 dark:bg-base-100/40 text-base-content/60 shadow-sm border-transparent hover:border-primary/30 hover:bg-base-200/60 dark:hover:bg-base-100/60 hover:-translate-y-0.5'">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform duration-300" :class="activeTab === 'logros' ? 'scale-110' : 'group-hover:scale-110 opacity-80'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform duration-300" :class="activeTab === 'achievements' ? 'scale-110' : 'group-hover:scale-110 opacity-80'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                     </svg>
                     <span class="text-xs font-bold hidden lg:block tracking-wide uppercase">Logros</span>
-                    <div v-if="activeTab === 'logros'" class="absolute bottom-1 w-6 h-1 bg-primary-content/30 rounded-full blur-[1px]"></div>
+                    <div v-if="activeTab === 'achievements'" class="absolute bottom-1 w-6 h-1 bg-primary-content/30 rounded-full blur-[1px]"></div>
                 </button>
                 <!-- Comparador -->
                 <button 
-                    @click="activeTab = 'comparador'"
+                    @click="activeTab = 'compare'"
                     class="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl transition-all duration-300 relative overflow-hidden group border"
-                    :class="activeTab === 'comparador' 
+                    :class="activeTab === 'compare' 
                         ? 'bg-primary text-primary-content shadow-xl scale-[1.02] z-10 border-primary' 
                         : 'bg-base-200/40 dark:bg-base-100/40 text-base-content/60 shadow-sm border-transparent hover:border-primary/30 hover:bg-base-200/60 dark:hover:bg-base-100/60 hover:-translate-y-0.5'">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform duration-300" :class="activeTab === 'comparador' ? 'scale-110' : 'group-hover:scale-110 opacity-80'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform duration-300" :class="activeTab === 'compare' ? 'scale-110' : 'group-hover:scale-110 opacity-80'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                     </svg>
                     <span class="text-xs font-bold hidden lg:block tracking-wide uppercase">Comparador</span>
-                    <div v-if="activeTab === 'comparador'" class="absolute bottom-1 w-6 h-1 bg-primary-content/30 rounded-full blur-[1px]"></div>
+                    <div v-if="activeTab === 'compare'" class="absolute bottom-1 w-6 h-1 bg-primary-content/30 rounded-full blur-[1px]"></div>
                 </button>
             </div>
 
             <!-- Tab Content (rounded bottom only, no gap) -->
             <div class="bg-base-200/50 rounded-b-2xl p-2">
                 <PlayerDetailStats
-                    v-if="activeTab === 'estadísticas'" 
+                    v-if="activeTab === 'stats'"
                     :profile="playerProfile"
                     :stats="activeStats" 
                     :matches="playerMatches"
                     :currentFilter="filterMode"
                     :positionFilter="posFilter"
                 />
-                <PlayerDetailWIP v-else-if="activeTab === 'historial'" title="Historial y Progresión" icon="📈" />
-                <PlayerDetailWIP v-else-if="activeTab === 'logros'" title="Logros y Premios" icon="🏆" />
-                <PlayerDetailWIP v-else-if="activeTab === 'comparador'" title="Comparador" icon="⚔️" />
+                <PlayerDetailProgression
+                    v-else-if="activeTab === 'form'"
+                    :player="playerProfile"
+                    :stats="activeStats"
+                    :matches="playerMatches"
+                    :currentFilter="filterMode"
+                    :positionFilter="posFilter"
+                />
+                <PlayerDetailWIP v-else-if="activeTab === 'achievements'" title="Logros y Premios" icon="🏆" />
+                <PlayerDetailWIP v-else-if="activeTab === 'compare'" title="Comparador" icon="⚔️" />
             </div>
         </section>
     </div>
@@ -174,7 +181,7 @@
 </template>
 
 <script setup lang="ts">
-    import { ref, computed, onBeforeMount, type Ref } from "vue";
+    import { ref, computed, onBeforeMount, watch, type Ref } from "vue";
     import PlayerProfileService from "@/services/PlayerProfileService";
     import ClubMatchByPlayerService from "@/services/ClubMatchByPlayerService";
     import AverageStatsService from "@/services/AverageStatsService.ts";
@@ -183,6 +190,7 @@
 
     // Subcomponents
     import PlayerDetailStats from "./PlayerDetailStats.vue";
+    import PlayerDetailProgression from "./PlayerDetailProgression.vue";
     import PlayerDetailWIP from "./PlayerDetailWIP.vue";
     import PlayerDetailSkeleton from "./PlayerDetailSkeleton.vue";
 
@@ -208,7 +216,24 @@
 
     // State
     const filterMode = ref('all') // all, official, friendly
-    const activeTab = ref('estadísticas')
+    
+    let defaultTab = 'stats'
+    if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search)
+        const t = params.get('tab')
+        if (t && ['stats', 'history', 'achievements', 'compare'].includes(t)) {
+            defaultTab = t
+        }
+    }
+    const activeTab = ref(defaultTab)
+
+    watch(activeTab, (newTab) => {
+        if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href)
+            url.searchParams.set('tab', newTab)
+            window.history.replaceState(null, '', url.toString())
+        }
+    })
     const posFilter = ref<Position | null>(null)
 
     function handlePosFilter(position: Position) {
