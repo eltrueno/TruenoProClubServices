@@ -198,7 +198,8 @@
         playerName: {
             type: String,
             required: true
-        }
+        },
+        initialTab: { type: String, default: 'stats' }
     })
 
     const playerProfileService = new PlayerProfileService(props.playerName)
@@ -221,7 +222,7 @@
     if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search)
         const t = params.get('tab')
-        if (t && ['stats', 'history', 'achievements', 'compare'].includes(t)) {
+        if (t && ['stats', 'form', 'achievements', 'compare'].includes(t)) {
             defaultTab = t
         }
     }

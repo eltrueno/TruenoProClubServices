@@ -185,28 +185,30 @@
                                </tr>
                            </thead>
                            <tbody>
-                               <tr v-for="row in visibleMatches" :key="row.matchId"
-                                   @click="navigateToMatch(row.matchId)"
-                                   class="border-b border-base-content/5 transition-colors duration-150 relative cursor-pointer"
-                                   :class="row.manOfTheMatch
-                                       ? 'bg-amber-400/[0.04] hover:bg-amber-400/[0.08] mvp-row'
-                                       : 'hover:bg-base-100/30'"
-                                   :title="row.manOfTheMatch ? '⭐ MVP del partido' : ''">
-                                   <!-- MVP star indicator on left -->
-                                   <td class="font-semibold py-3">
-                                       <div class="flex items-center gap-2">
-                                           <span v-if="row.manOfTheMatch"
-                                                 class="tooltip tooltip-right cursor-default"
-                                                 data-tip="MVP del partido"
-                                                 @click.stop>
-                                               <span class="text-amber-400 text-sm">★</span>
-                                           </span>
-                                           {{ row.rivalName }}
-                                       </div>
-                                   </td>
-                                   <td class="text-center py-3 text-xs tabular-nums text-base-content/60">
-                                       {{ row.date }}
-                                   </td>
+                                <tr v-for="row in visibleMatches" :key="row.matchId"
+                                    class="border-b border-base-content/5 transition-colors duration-150 relative cursor-pointer"
+                                    :class="row.manOfTheMatch
+                                        ? 'bg-amber-400/[0.04] hover:bg-amber-400/[0.08] mvp-row'
+                                        : 'hover:bg-base-100/30'">
+
+                                    <td class="font-semibold py-3">
+                                        <div class="flex items-center gap-2">
+                                            <span v-if="row.manOfTheMatch"
+                                                class="tooltip tooltip-right cursor-default z-10 relative"
+                                                data-tip="MVP del partido"
+                                                @click.stop>
+                                                <span class="text-amber-400 text-sm">★</span>
+                                            </span>
+                                            <a :href="`/partido/${row.matchId}`"
+                                            class="after:absolute after:inset-0 after:content-['']">
+                                                {{ row.rivalName }}
+                                            </a>
+                                        </div>
+                                    </td>
+
+                                    <td class="text-center py-3 text-xs tabular-nums text-base-content/60">
+                                        {{ row.date }}
+                                    </td>
                                    <td class="text-center py-3">
                                        <span class="badge badge-xs badge-primary font-bold uppercase px-2 py-2.5 rounded-md">
                                            {{ translateMatchType(row.matchType) }}
@@ -314,24 +316,24 @@
     onMounted(() => { updateMobile(); window.addEventListener('resize', updateMobile) })
     onUnmounted(() => { window.removeEventListener('resize', updateMobile) })
 
-    // ── Basic Helpers (Defined at the top to prevent access-before-initialization ReferenceErrors) ──
+
     const playerNameLower = computed(() => props.player?.member?.playerName?.toLowerCase() ?? '')
 
-    /** Find this player's data inside a match */
+
+    //TODO: FIx API
     const findPlayer = (match: ClubMatchEntity) => {
         const name = playerNameLower.value
-        return match.localClub.players.find(p => p.playername.toLowerCase() === name)
-            || match.awayClub.players.find(p => p.playername.toLowerCase() === name)
+        if (match.localClub.id == 101456) return match.localClub.players.find(p => p.playername.toLowerCase() === name)
+        else if (match.awayClub.id == 101456) return match.awayClub.players.find(p => p.playername.toLowerCase() === name)
+        else return null
     }
 
-    /** Get rival name */
     const getRivalName = (match: ClubMatchEntity) => {
         const name = playerNameLower.value
         const inLocal = match.localClub.players.some(p => p.playername.toLowerCase() === name)
         return inLocal ? match.awayClub.name : match.localClub.name
     }
 
-    /** Format Date to DD/MM/YYYY */
     const formatDate = (timestamp: number) => {
         const date = new Date(timestamp * 1000)
         const day = String(date.getDate()).padStart(2, '0')
@@ -340,14 +342,8 @@
         return `${day}/${month}/${year}`
     }
 
-    /** Format timestamp to datepicker format DD/MM/YYYY */
     const formatToDatePicker = (timestamp: number) => {
         return formatDate(timestamp)
-    }
-
-    /** Navigate to match detail page */
-    const navigateToMatch = (matchId: number) => {
-        window.location.href = `/partido/${matchId}`
     }
 
     // ═══════════════════════════════════════════
@@ -355,24 +351,24 @@
     // ═══════════════════════════════════════════
     const filteredMatches = computed(() => {
         if (!props.matches || props.matches.length === 0) return []
+        
+        // Filter matches based on the current filter mode
+        const filteredMatches = props.matches.filter(m => {
+            if (props.currentFilter === 'all') return true;
+            if (props.currentFilter === 'official') return (m.matchType === 'league' || m.matchType === 'playoff');
+            if (props.currentFilter === 'friendly') return (m.matchType !== 'league' && m.matchType !== 'playoff');
+            return true;
+        });
 
-        let list = props.matches
+        if (filteredMatches.length === 0) return []
 
-        // 1. Filter by match type (official / friendly / all)
-        list = list.filter(m => {
-            if (props.currentFilter === 'all') return true
-            if (props.currentFilter === 'official') return (m.matchType === 'league' || m.matchType === 'playoff')
-            if (props.currentFilter === 'friendly') return (m.matchType !== 'league' && m.matchType !== 'playoff')
-            return true
-        })
+        let list = filteredMatches
 
         // 2. Filter by position (if set in parent)
-        if (props.positionFilter) {
-            list = list.filter(m => {
-                const p = findPlayer(m)
-                return p && p.position === props.positionFilter
-            })
-        }
+        list = list.filter(m => {
+            const p = findPlayer(m)
+            return props.positionFilter ? (p && p.position === props.positionFilter) : true
+        })
 
         return list
     })
@@ -809,4 +805,5 @@
     .mvp-row {
         border-left: 3px solid rgb(251, 191, 36);
     }
+
 </style>
