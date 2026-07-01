@@ -123,7 +123,7 @@
             </div>
             </div>
 
-            <div class="w-full flex flex-col md:flex-row mt-4 lg:mt-1 gap-4 h-fit">
+            <div class="w-full flex flex-col md:flex-row mt-4 lg:mt-1 gap-4 h-fit" v-if="getSelectedPlayer()">
                 <div class="flex-1 flex align-middle bg-base-200 rounded-lg shadow-md p-4 overflow-hidden">
                     <img :src="playerImage(getSelectedPlayer().playername)" class="hidden md:flex drop-shadow-xl select-none pointer-events-none max-w-[30%] xl:max-w-[20%] h-auto object-contain mx-2" alt="Player ingame top image" style="aspect-ratio: 40/97;" @error="defaultPlayerImage"/>
                     <div class="flex flex-col w-full">
@@ -195,7 +195,7 @@
     </div>
 </template>
 <script setup lang="ts">
-    import { computed, onBeforeMount, ref, type Ref } from 'vue';
+    import { computed, onBeforeMount, ref, type Ref, watchEffect } from 'vue';
     import ClubMatchService from '@services/ClubMatchService';
     import ClubMatchEntity from '@models/match/ClubMatchEntity'
     import FootbalField from './FootbalField.vue';   
@@ -205,21 +205,44 @@
 
     const props = defineProps<{
         matchId: number
+        playerName?: string
     }>()
-    
+
     const selectedPlayer = ref<number>(0)
 
-    const matchService = new ClubMatchService(props.matchId)
-    const match:Ref<ClubMatchEntity> = matchService.getData()
-    const isLoading = matchService.isloading
-    const status = matchService.getStatus()
-    const errorText = matchService.getError()
-    const hasError = matchService.getHasError()
+    const matchService = new ClubMatchService(props.matchId);
+    const match: Ref<ClubMatchEntity> = matchService.getData();
+    const isLoading = matchService.isloading;
+    const errorText = matchService.getError();
+    const hasError = matchService.getHasError();
+
+    const players = computed(() => {
+        if (!match.value) return [];
+        return match.value.localTeam ? match.value.localClub.players : match.value.awayClub.players
+    });
+
+    // Sync selectedPlayer with playerName prop — re-runs when players load or isLoading changes
+    watchEffect(() => {
+      // Track isLoading so this effect re-runs once the fetch completes
+      const _loading = isLoading.value;
+      if (props.playerName && players.value?.length) {
+        const idx = players.value.findIndex(p => p.playername?.toLowerCase() === props.playerName?.toLowerCase())
+        if (idx !== -1) {
+          selectedPlayer.value = idx
+        }
+      }
+    })
 
 
 
-    function getSelectedPlayer(){
-        return players.value.filter(el => (players.value.indexOf(el)==selectedPlayer.value))[0]
+
+
+
+
+
+    // Return the currently selected player based on selectedPlayer index
+    function getSelectedPlayer(): MatchPlayerEntity | null {
+        return players.value?.[selectedPlayer.value] ?? null;
     }
 
     function playerImage(playername){
@@ -572,10 +595,6 @@ function getPlayerSummaryText(player) {
         return plist
     }
 
-    const players = computed(() => {
-        return match.value.localTeam ? match.value.localClub.players : match.value.awayClub.players
-    });
-    
     onBeforeMount(async ()=>{
         await matchService.fetch()
     })

@@ -5,6 +5,7 @@ import MatchDetail from "@/components/match/detail/MatchDetail.vue";
 import MatchDetailSkeleton from "@/components/match/detail/MatchDetailSkeleton.vue";
 
 const { matchid } = Astro.params;
+const selectedPlayer = Astro.url.searchParams.get('player');
 
 if (matchid == undefined) {
 	return Astro.redirect("/partidos");
@@ -42,7 +43,7 @@ if (matchid == undefined) {
 
 	<section>
 		<container class="flex p-6 lg:p-16 justify-center items-center text-center">
-			<MatchDetail client:only="vue" matchId={Number(matchid)}>
+			<MatchDetail client:only="vue" matchId={Number(matchid)} playerName={selectedPlayer ?? ""}>
                 <MatchDetailSkeleton slot="fallback" />
             </MatchDetail>
 		</container>
