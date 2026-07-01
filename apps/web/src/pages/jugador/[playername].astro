@@ -7,6 +7,7 @@ import PlayerDetailSkeleton from "@components/player/detail/PlayerDetailSkeleton
 
 const { playername } = Astro.params;
 let finalplayername: string = "";
+const tab = Astro.url.searchParams.get('tab') ?? 'stats'
 
 if (playername != undefined) {
 	finalplayername = playername;
@@ -44,7 +45,7 @@ if (playername != undefined) {
 
 	<section>
 		<container class="flex p-6 lg:p-12 justify-center items-center text-center">
-			<PlayerDetail client:only="vue" playerName={finalplayername}>
+			<PlayerDetail client:only="vue" playerName={finalplayername} initialTab={tab}>
 				<PlayerDetailSkeleton slot="fallback" />
 			</PlayerDetail>
 		</container>

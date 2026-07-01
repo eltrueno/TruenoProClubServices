@@ -55,7 +55,7 @@
             <!-- Preloader for Content Area -->
             <div class="flex flex-col items-center justify-center p-20 bg-base-100/30 rounded-3xl border-2 border-dashed border-base-content/5 mt-4">
                 <span class="loading loading-spinner loading-lg text-primary opacity-40"></span>
-                <p class="mt-4 text-xs font-black uppercase tracking-widest opacity-20">Preparando estadísticas...</p>
+                <p class="mt-4 text-xs font-black uppercase tracking-widest opacity-20">Cargando...</p>
             </div>
         </section>
     </div>

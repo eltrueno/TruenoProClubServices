@@ -3,6 +3,7 @@ import { getLatestMatch, insertMatch } from '@controllers/match.controller';
 import { IMatch } from '@interfaces/match.interface';
 import MatchDTO from '@dtos/match.dto';
 import { getMatchProducer } from "@events/index"
+import { computePlayerStatsAverages } from "@services/averageStats.service"
 
 /**
  * Fetches recent matches from EA and processes any new ones.
@@ -53,6 +54,10 @@ export const syncRecentMatches = async (clubId: number, platform: string) => {
 
             if (matchesToInsert.length > 0) {
                 console.info(`[Sync Service] Inserted ${matchesToInsert.length} new matches`);
+                console.info(`[Sync Service] Recalculating player averages...`);
+                await computePlayerStatsAverages();
+                console.info(`[Sync Service] Player averages recalculated`);
+
             }
         } else {
             console.info("[Sync Service] No matches found in database. Performing initial ingest...");

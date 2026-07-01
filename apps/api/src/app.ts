@@ -25,11 +25,13 @@ import membersRouter from './routes/members';
 import clubRouter from './routes/club';
 import achievementRouter from './routes/achievement'
 import totwRouter from './routes/totw'
+import playerAveragesRouter from './routes/playeraverages'
 
 app.use("/club", clubRouter);
 app.use("/members", membersRouter);
 app.use("/achievements", achievementRouter)
 app.use("/totw", totwRouter)
+app.use("/playeraverages", playerAveragesRouter)
 
 import matchesRouter from 'src/routes/matches'
 app.use("/matches", matchesRouter)
@@ -82,6 +84,12 @@ app.get("/", async function (req, res) {
                     { "/{weekNumber | ISOweek}": "Get Team of the Week by week number or ISO week" },
                     { "/appearances": "List of all Team of the Weeks member appearances" },
                     { "/appearances/{ISOweek}": "Get Team of the Weeks member appearances by ISO week" }
+                ]
+            },
+            {
+                "/playeraverages": [
+                    { "/": "List of all player averages" },
+                    { "/{position}": "Get player averages by position" }
                 ]
             }
         ]
