@@ -42,7 +42,7 @@ if (matchid == undefined) {
 	<meta slot="metadata" name="robots" content="noindex, nofollow" />
 
 	<section>
-		<container class="flex p-6 lg:p-16 justify-center items-center text-center">
+		<container class="flex px-2 py-4 justify-center items-center text-center">
 			<MatchDetail client:only="vue" matchId={Number(matchid)} playerName={selectedPlayer ?? ""}>
                 <MatchDetailSkeleton slot="fallback" />
             </MatchDetail>
