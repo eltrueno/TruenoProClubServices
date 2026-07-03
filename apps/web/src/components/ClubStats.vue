@@ -1,9 +1,9 @@
 <template>
 <!-- <div role="container" v-if="isloading">Cargando...</div> -->
-<div role="container" v-if="!hasError" class="flex flex-wrap  p-6 md:p-10 lg:p-12 justify-center items-center h-fit">
+<div role="container" v-if="!hasError" class="flex flex-wrap  px-2 py-4 justify-center items-center h-fit">
 
     <div v-if="stats && stats.updatedAt" class="w-full py-0 my-0 font-thin text-xs text-center"><i class="">Datos actualizados el {{new Date(stats.updatedAt).toLocaleDateString()}}</i></div>
-    <div role="container" class="flex flex-col justify-between gap-16 items-center p-12 basis-2/2 lg:basis-1/2 h-full w-full statsleft">
+    <div role="container" class="flex flex-col justify-between gap-16 items-center p-8  basis-2/2 lg:basis-1/2 h-full w-full statsleft">
         <div class="stats stats-vertical lg:stats-horizontal shadow-md w-full">
             <div class="stat dark:bg-base-200">
                 <div class="stat-figure text-secondary">

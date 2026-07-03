@@ -12,7 +12,7 @@
                         <div class="hidden sm:flex items-center gap-4 text-xs text-base-content/60 mr-2">
                             <span class="flex items-center gap-1.5">
                                 <span class="w-5 h-0.5 bg-[#C80D0D] rounded-full inline-block"></span>
-                                Jugador
+                                Partido
                             </span>
                             <span class="flex items-center gap-1.5">
                                 <span class="w-5 h-0.5 border-t-2 border-dashed border-base-content/40 inline-block"></span>
@@ -20,16 +20,116 @@
                             </span>
                         </div>
 
-                        <!-- Metric selector -->
+                        <!-- Metric selector (Mobile Native) -->
                         <select
                             v-model="evolutionMetric"
-                            class="select select-sm select-bordered dark:bg-base-100 bg-base-300 font-bold uppercase text-xs tracking-wide rounded-xl"
+                            class="select select-sm select-bordered dark:bg-base-100 bg-base-300 font-bold uppercase text-xs tracking-wide rounded-xl md:hidden w-full sm:w-auto"
                         >
                             <option value="rating">Valoración</option>
                             <option value="goals">Goles</option>
                             <option value="assists">Asistencias</option>
                             <option value="goalsPlusAssists">G+A</option>
+                            <option value="passes">Pases Intentados</option>
+                            <option value="passSuccessRate">% Acierto Pases</option>
+                            <option value="tackleSuccessRate">% Acierto Entradas</option>
+                            <option value="shotAccuracyPercent">% Acierto Tiros</option>
+                            <option v-if="isGK" value="saves">Paradas</option>
+                            <option v-if="isGK" value="savesSuccessRate">% Paradas</option>
                         </select>
+
+                        <!-- Metric selector (Desktop DaisyUI Dropdown) -->
+                        <details ref="metricDropdown" class="dropdown dropdown-end hidden md:inline-block">
+                            <summary class="btn btn-sm btn-bordered dark:bg-base-100 bg-base-300 font-bold uppercase text-xs tracking-wide rounded-xl flex items-center gap-2 cursor-pointer border border-base-content/10 shadow-sm min-w-[150px] justify-between">
+                                <span>
+                                    {{ 
+                                        evolutionMetric === 'rating' ? 'Valoración' :
+                                        evolutionMetric === 'goals' ? 'Goles' :
+                                        evolutionMetric === 'assists' ? 'Asistencias' :
+                                        evolutionMetric === 'goalsPlusAssists' ? 'G+A' :
+                                        evolutionMetric === 'passes' ? 'Pases Intentados' :
+                                        evolutionMetric === 'passSuccessRate' ? '% Acierto Pases' :
+                                        evolutionMetric === 'tackleSuccessRate' ? '% Acierto Entradas' :
+                                        evolutionMetric === 'shotAccuracyPercent' ? '% Acierto Tiros' :
+                                        evolutionMetric === 'saves' ? 'Paradas' : '% Paradas'
+                                    }}
+                                </span>
+                                <svg class="w-3 h-3 opacity-60" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </summary>
+                            <ul class="p-2 shadow menu dropdown-content z-20 bg-base-100 rounded-xl w-48 mt-1 border border-base-content/5">
+                                <li>
+                                    <button 
+                                        @click="evolutionMetric = 'rating'; metricDropdown?.removeAttribute('open')"
+                                        :class="{ 'active bg-primary text-primary-content': evolutionMetric === 'rating' }"
+                                        class="font-semibold uppercase text-xs tracking-wide py-2 rounded-lg"
+                                    >Valoración</button>
+                                </li>
+                                <li>
+                                    <button 
+                                        @click="evolutionMetric = 'goals'; metricDropdown?.removeAttribute('open')"
+                                        :class="{ 'active bg-primary text-primary-content': evolutionMetric === 'goals' }"
+                                        class="font-semibold uppercase text-xs tracking-wide py-2 rounded-lg"
+                                    >Goles</button>
+                                </li>
+                                <li>
+                                    <button 
+                                        @click="evolutionMetric = 'assists'; metricDropdown?.removeAttribute('open')"
+                                        :class="{ 'active bg-primary text-primary-content': evolutionMetric === 'assists' }"
+                                        class="font-semibold uppercase text-xs tracking-wide py-2 rounded-lg"
+                                    >Asistencias</button>
+                                </li>
+                                <li>
+                                    <button 
+                                        @click="evolutionMetric = 'goalsPlusAssists'; metricDropdown?.removeAttribute('open')"
+                                        :class="{ 'active bg-primary text-primary-content': evolutionMetric === 'goalsPlusAssists' }"
+                                        class="font-semibold uppercase text-xs tracking-wide py-2 rounded-lg"
+                                    >G+A</button>
+                                </li>
+                                <li>
+                                    <button 
+                                        @click="evolutionMetric = 'passes'; metricDropdown?.removeAttribute('open')"
+                                        :class="{ 'active bg-primary text-primary-content': evolutionMetric === 'passes' }"
+                                        class="font-semibold uppercase text-xs tracking-wide py-2 rounded-lg"
+                                    >Pases Intentados</button>
+                                </li>
+                                <li>
+                                    <button 
+                                        @click="evolutionMetric = 'passSuccessRate'; metricDropdown?.removeAttribute('open')"
+                                        :class="{ 'active bg-primary text-primary-content': evolutionMetric === 'passSuccessRate' }"
+                                        class="font-semibold uppercase text-xs tracking-wide py-2 rounded-lg"
+                                    >% Acierto Pases</button>
+                                </li>
+                                <li>
+                                    <button 
+                                        @click="evolutionMetric = 'tackleSuccessRate'; metricDropdown?.removeAttribute('open')"
+                                        :class="{ 'active bg-primary text-primary-content': evolutionMetric === 'tackleSuccessRate' }"
+                                        class="font-semibold uppercase text-xs tracking-wide py-2 rounded-lg"
+                                    >% Acierto Entradas</button>
+                                </li>
+                                <li>
+                                    <button 
+                                        @click="evolutionMetric = 'shotAccuracyPercent'; metricDropdown?.removeAttribute('open')"
+                                        :class="{ 'active bg-primary text-primary-content': evolutionMetric === 'shotAccuracyPercent' }"
+                                        class="font-semibold uppercase text-xs tracking-wide py-2 rounded-lg"
+                                    >% Acierto Tiros</button>
+                                </li>
+                                <li v-if="isGK">
+                                    <button 
+                                        @click="evolutionMetric = 'saves'; metricDropdown?.removeAttribute('open')"
+                                        :class="{ 'active bg-primary text-primary-content': evolutionMetric === 'saves' }"
+                                        class="font-semibold uppercase text-xs tracking-wide py-2 rounded-lg"
+                                    >Paradas</button>
+                                </li>
+                                <li v-if="isGK">
+                                    <button 
+                                        @click="evolutionMetric = 'savesSuccessRate'; metricDropdown?.removeAttribute('open')"
+                                        :class="{ 'active bg-primary text-primary-content': evolutionMetric === 'savesSuccessRate' }"
+                                        class="font-semibold uppercase text-xs tracking-wide py-2 rounded-lg"
+                                    >% Paradas</button>
+                                </li>
+                            </ul>
+                        </details>
                     </div>
                 </div>
 
@@ -58,7 +158,7 @@
                     </div>
 
                     <!-- Quick Presets -->
-                    <div class="flex items-center gap-1 bg-base-300/50 dark:bg-base-100/60 p-1 rounded-xl w-full md:w-auto justify-around md:justify-start">
+                    <div class="join dark:bg-base-100 bg-base-300 p-1 rounded-2xl w-full md:w-auto justify-around md:justify-start">
                         <button
                             v-for="preset in [
                                 { val: 'all', label: 'Todo' },
@@ -68,8 +168,8 @@
                             ]"
                             :key="preset.val"
                             @click="setQuickRange(preset.val as any)"
-                            class="btn btn-xs btn-ghost hover:bg-primary/10 hover:text-primary rounded-lg text-[10px] uppercase font-black px-2.5 py-1 transition-all duration-200"
-                            :class="activeQuickRange === preset.val ? 'bg-primary text-primary-content hover:bg-primary hover:text-primary-content shadow-sm' : 'text-base-content/60'"
+                            class="btn btn-xs join-item capitalize border-none px-4 lg:px-6"
+                            :class="activeQuickRange === preset.val ? 'btn-primary shadow-sm' : 'btn-ghost'"
                         >
                             {{ preset.label }}
                         </button>
@@ -77,7 +177,13 @@
                 </div>
 
                 <div class="w-full h-[260px] sm:h-[300px]">
-                    <Line v-if="evolutionChartData" :data="evolutionChartData" :options="evolutionOptions" />
+                    <Line
+                        ref="evolutionChart"
+                        v-if="evolutionChartData"
+                        :data="evolutionChartData"
+                        :options="evolutionOptions"
+                        @mouseup="handleChartMouseUp"
+                    />
                 </div>
             </div>
         </div>
@@ -89,7 +195,7 @@
             <div class="card bg-base-200 shadow-md relative">
                 <div class="card-body p-6 flex flex-col justify-between gap-5">
                     <div>
-                        <h2 class="card-title text-sm font-black uppercase border-l-4 border-primary pl-4 mb-6 tracking-widest">
+                        <h2 class="card-title text-xl font-black uppercase border-l-4 border-primary pl-4 mb-6 tracking-widest">
                             Forma Reciente · Últimos {{ recentCount }}
                         </h2>
 
@@ -148,17 +254,27 @@
             <!-- Mejores Registros -->
             <div class="card bg-base-200 shadow-md relative">
                 <div class="card-body p-6">
-                    <h2 class="card-title text-sm font-black uppercase border-l-4 border-primary pl-4 mb-6 tracking-widest">
+                    <h2 class="card-title text-xl font-black uppercase border-l-4 border-primary pl-4 mb-6 tracking-widest">
                         Mejores Registros
                     </h2>
 
                     <div class="grid grid-cols-2 gap-3 lg:gap-4">
                         <div v-for="h in highlightStats" :key="h.label"
-                             class="dark:bg-base-100 bg-base-300 border border-base-content/5 rounded-xl p-3 flex flex-col items-center text-center gap-1 group hover:-translate-y-0.5 hover:shadow-md hover:border-primary/25 transition-all duration-300">
+                             class="dark:bg-base-100 bg-base-300 border border-base-content/5 rounded-xl p-3 flex flex-col items-center text-center gap-1 group hover:-translate-y-0.5 hover:shadow-md hover:border-primary/25 transition-all duration-300 relative"
+                             :class="{ 'cursor-pointer hover:border-primary/40': h.matchId }">
                             <span class="text-xl group-hover:scale-110 transition-transform duration-300">{{ h.icon }}</span>
                             <span class="text-base-content/50 uppercase text-[0.65rem] lg:text-[0.7rem] font-black tracking-widest leading-tight">{{ h.label }}</span>
                             <span class="text-lg font-black tabular-nums mt-0.5">{{ h.value }}</span>
-                            <span v-if="h.sub" class="text-[0.6rem] lg:text-[0.65rem] text-base-content/40 font-medium truncate max-w-full" :title="h.sub">{{ h.sub }}</span>
+                            
+                            <span v-if="h.matchId" class="tooltip tooltip-top w-full before:text-[10px]" data-tip="Ir al partido">
+                                <a :href="`/partido/${h.matchId}?player=${props.player.member.playerName}`"
+                                   class="text-[0.6rem] lg:text-[0.65rem] text-base-content/40 font-medium truncate max-w-full hover:underline hover:text-primary transition-colors after:absolute after:inset-0 after:content-[''] block w-full">
+                                    {{ h.sub }}
+                                </a>
+                            </span>
+                            <span v-else-if="h.sub" class="text-[0.6rem] lg:text-[0.65rem] text-base-content/40 font-medium truncate max-w-full" :title="h.sub">
+                                {{ h.sub }}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -199,7 +315,7 @@
                                                 @click.stop>
                                                 <span class="text-amber-400 text-sm">★</span>
                                             </span>
-                                            <a :href="`/partido/${row.matchId}`"
+                                            <a :href="`/partido/${row.matchId}?player=${props.player.member.playerName}`"
                                             class="after:absolute after:inset-0 after:content-['']">
                                                 {{ row.rivalName }}
                                             </a>
@@ -279,10 +395,18 @@
     }>()
 
     // ── State ──
-    const evolutionMetric = ref<'rating' | 'goals' | 'assists' | 'goalsPlusAssists'>('rating')
+    const evolutionChart = ref<any>(null)
+    const metricDropdown = ref<HTMLDetailsElement | null>(null)
+    const evolutionMetric = ref<'rating' | 'goals' | 'assists' | 'goalsPlusAssists' | 'passes' | 'passSuccessRate' | 'saves' | 'savesSuccessRate' | 'tackleSuccessRate' | 'shotAccuracyPercent'>('rating')
     const showAll = ref(false)
     const initialShowCount = 7
     const recentCount = 5
+
+    const isGK = computed(() => {
+        if (!props.player) return false
+        return props.player.mostPlayedPosition === 'goalkeeper' || 
+            (props.player.playedPositions && props.player.playedPositions['goalkeeper'] > 0)
+    })
 
     // Chart Date Filter State using VueTailwindDatepicker
     const dateFilter = ref({
@@ -418,6 +542,13 @@
         })
     })
 
+    const chartMatchesOldestFirst = computed(() => {
+        return [...chartFilteredMatches.value].reverse().filter(m => {
+            const p = findPlayer(m)
+            return p !== null && p !== undefined
+        })
+    })
+
     const setQuickRange = (range: 'all' | 5 | 10 | 20) => {
         activeQuickRange.value = range
         if (!filteredMatches.value.length) return
@@ -488,10 +619,10 @@
         const matches = filteredMatches.value
         if (!matches.length) return []
 
-        let bestRating = 0, bestRatingRival = ''
-        let bestGoals = 0, bestGoalsRival = ''
-        let bestAssists = 0, bestAssistsRival = ''
-        let bestGA = 0, bestGARival = ''
+        let bestRating = 0, bestRatingRival = '', bestRatingMatchId: number | null = null
+        let bestGoals = 0, bestGoalsRival = '', bestGoalsMatchId: number | null = null
+        let bestAssists = 0, bestAssistsRival = '', bestAssistsMatchId: number | null = null
+        let bestGA = 0, bestGARival = '', bestGAMatchId: number | null = null
         let currentStreak = 0, maxStreak = 0
         let totalMvp = 0
 
@@ -502,10 +633,10 @@
 
             const rival = getRivalName(m)
 
-            if (p.rating > bestRating) { bestRating = p.rating; bestRatingRival = rival }
-            if (p.goals > bestGoals) { bestGoals = p.goals; bestGoalsRival = rival }
-            if (p.assists > bestAssists) { bestAssists = p.assists; bestAssistsRival = rival }
-            if ((p.goals + p.assists) > bestGA) { bestGA = p.goals + p.assists; bestGARival = rival }
+            if (p.rating > bestRating) { bestRating = p.rating; bestRatingRival = rival; bestRatingMatchId = m.matchId }
+            if (p.goals > bestGoals) { bestGoals = p.goals; bestGoalsRival = rival; bestGoalsMatchId = m.matchId }
+            if (p.assists > bestAssists) { bestAssists = p.assists; bestAssistsRival = rival; bestAssistsMatchId = m.matchId }
+            if ((p.goals + p.assists) > bestGA) { bestGA = p.goals + p.assists; bestGARival = rival; bestGAMatchId = m.matchId }
             if (p.manOfTheMatch) totalMvp++
         }
 
@@ -522,11 +653,11 @@
         }
 
         return [
-            { icon: '⭐', label: 'Mejor Valoración', value: bestRating.toFixed(1), sub: `vs ${bestRatingRival}` },
-            { icon: '⚽', label: 'Máx. Goles', value: bestGoals, sub: `vs ${bestGoalsRival}` },
-            { icon: '🅰️', label: 'Máx. Asistencias', value: bestAssists, sub: `vs ${bestAssistsRival}` },
+            { icon: '⭐', label: 'Mejor Valoración', value: bestRating.toFixed(1), sub: `vs ${bestRatingRival}`, matchId: bestRatingMatchId },
+            { icon: '⚽', label: 'Máx. Goles', value: bestGoals, sub: `vs ${bestGoalsRival}`, matchId: bestGoalsMatchId },
+            { icon: '🅰️', label: 'Máx. Asistencias', value: bestAssists, sub: `vs ${bestAssistsRival}`, matchId: bestAssistsMatchId },
             { icon: '🔥', label: 'Racha Victorias', value: currentStreak > 0 ? `${currentStreak} actual` : `${maxStreak} mejor`, sub: currentStreak > 0 ? 'Racha activa' : 'Récord histórico' },
-            { icon: '💥', label: 'Máx. G+A', value: bestGA, sub: `vs ${bestGARival}` },
+            { icon: '💥', label: 'Máx. G+A', value: bestGA, sub: `vs ${bestGARival}`, matchId: bestGAMatchId },
             { icon: '🏅', label: 'MVPs Totales', value: totalMvp, sub: `${matches.length} partidos` },
             { icon: '📊', label: 'Media Valoración', value: (props.stats?.ratingAve ?? 0).toFixed(2), sub: 'Histórica' },
             { icon: '🎯', label: 'G+A / Partido', value: (props.stats?.goalsPlusAssistsPerMatch ?? 0).toFixed(2), sub: 'Media por partido' },
@@ -537,7 +668,7 @@
     // ── EVOLUCIÓN (Line Chart) ──
     // ═══════════════════════════════════════
     const evolutionChartData = computed(() => {
-        const matches = [...chartFilteredMatches.value].reverse() // oldest first
+        const matches = chartMatchesOldestFirst.value
         if (matches.length === 0) return null
 
         const dataPoints: number[] = []
@@ -552,6 +683,16 @@
             else if (evolutionMetric.value === 'goals') val = p.goals
             else if (evolutionMetric.value === 'assists') val = p.assists
             else if (evolutionMetric.value === 'goalsPlusAssists') val = p.goals + p.assists
+            else if (evolutionMetric.value === 'passes') val = p.passesMade
+            else if (evolutionMetric.value === 'passSuccessRate') val = isNaN(p.passSuccessRate) ? 0 : p.passSuccessRate
+            else if (evolutionMetric.value === 'tackleSuccessRate') val = isNaN(p.tackleSuccessRate) ? 0 : p.tackleSuccessRate
+            else if (evolutionMetric.value === 'shotAccuracyPercent') val = isNaN(p.shotAccuracyPercent) ? 0 : p.shotAccuracyPercent
+            else if (evolutionMetric.value === 'saves') val = p.saves ?? 0
+            else if (evolutionMetric.value === 'savesSuccessRate') {
+                const totalShots = (p.saves ?? 0) + (p.goalsConceded ?? 0)
+                const rate = totalShots > 0 ? ((p.saves ?? 0) / totalShots) * 100 : 0
+                val = isNaN(rate) ? 0 : rate
+            }
 
             dataPoints.push(val)
             labels.push(formatDate(m.timestamp))
@@ -563,7 +704,7 @@
             labels,
             datasets: [
                 {
-                    label: 'Jugador',
+                    label: 'Partido',
                     data: dataPoints,
                     borderColor: '#C80D0D',
                     backgroundColor: 'rgba(200, 13, 13, 0.08)',
@@ -589,10 +730,17 @@
         }
     })
 
-    const evolutionOptions = computed<ChartOptions<'line'>>(() => ({
+     const evolutionOptions = computed<ChartOptions<'line'>>(() => ({
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
+        onHover: (event, elements) => {
+            if (event.native && event.native.target) {
+                const hasPlayerPoint = elements.some(el => el.datasetIndex === 0)
+                const target = event.native.target as HTMLElement
+                target.style.cursor = hasPlayerPoint ? 'pointer' : 'default'
+            }
+        },
         scales: {
             x: {
                 grid: { color: 'rgba(166, 173, 187, 0.08)' },
@@ -607,9 +755,17 @@
                 ticks: {
                     color: 'rgba(166, 173, 187, 0.5)',
                     font: { size: 11 },
-                    stepSize: evolutionMetric.value === 'rating' ? 1 : undefined
+                    stepSize: evolutionMetric.value === 'rating' ? 1 : undefined,
+                    callback: (value) => {
+                        const m = evolutionMetric.value
+                        if (m === 'passSuccessRate' || m === 'savesSuccessRate' || m === 'tackleSuccessRate' || m === 'shotAccuracyPercent') {
+                            return `${value}%`
+                        }
+                        return value
+                    }
                 },
-                suggestedMin: evolutionMetric.value === 'rating' ? 4 : 0
+                suggestedMin: evolutionMetric.value === 'rating' ? 4 : 0,
+                suggestedMax: (evolutionMetric.value === 'passSuccessRate' || evolutionMetric.value === 'savesSuccessRate' || evolutionMetric.value === 'tackleSuccessRate' || evolutionMetric.value === 'shotAccuracyPercent') ? 100 : undefined
             }
         },
         plugins: {
@@ -623,7 +779,7 @@
                 callbacks: {
                     title: (context) => {
                         const idx = context[0].dataIndex
-                        const matches = [...chartFilteredMatches.value].reverse()
+                        const matches = chartMatchesOldestFirst.value
                         const m = matches[idx]
                         if (m) {
                             return `${formatDate(m.timestamp)} · vs ${getRivalName(m)}`
@@ -632,16 +788,59 @@
                     },
                     label: (context) => {
                         const isPlayer = context.datasetIndex === 0
-                        const prefix = isPlayer ? 'Jugador: ' : 'Su media: '
+                        const prefix = isPlayer ? 'Partido: ' : 'Su media: '
 
                         let metricName = ''
-                        if (evolutionMetric.value === 'rating') metricName = 'Val'
-                        else if (evolutionMetric.value === 'goals') metricName = 'Goles'
-                        else if (evolutionMetric.value === 'assists') metricName = 'Asistencias'
-                        else if (evolutionMetric.value === 'goalsPlusAssists') metricName = 'G+A'
+                        let decimals = 0
+                        let suffix = ''
 
-                        const valueStr = context.parsed.y.toFixed(evolutionMetric.value === 'rating' ? (isPlayer ? 1 : 2) : 0)
-                        return `${prefix}${valueStr} (${metricName})`
+                        if (evolutionMetric.value === 'rating') {
+                            metricName = 'Val'
+                            decimals = isPlayer ? 1 : 2
+                        } else if (evolutionMetric.value === 'goals') {
+                            metricName = 'Goles'
+                        } else if (evolutionMetric.value === 'assists') {
+                            metricName = 'Asistencias'
+                        } else if (evolutionMetric.value === 'goalsPlusAssists') {
+                            metricName = 'G+A'
+                        } else if (evolutionMetric.value === 'passes') {
+                            metricName = 'Pases Intentados'
+                        } else if (evolutionMetric.value === 'passSuccessRate') {
+                            metricName = 'Acierto Pases'
+                            decimals = 1
+                            suffix = '%'
+                        } else if (evolutionMetric.value === 'tackleSuccessRate') {
+                            metricName = 'Acierto Entradas'
+                            decimals = 1
+                            suffix = '%'
+                        } else if (evolutionMetric.value === 'shotAccuracyPercent') {
+                            metricName = 'Acierto Tiros'
+                            decimals = 1
+                            suffix = '%'
+                        } else if (evolutionMetric.value === 'saves') {
+                            metricName = 'Paradas'
+                        } else if (evolutionMetric.value === 'savesSuccessRate') {
+                            metricName = '% Paradas'
+                            decimals = 1
+                            suffix = '%'
+                        }
+
+                        const valueStr = context.parsed.y.toFixed(decimals)
+                        return `${prefix}${valueStr}${suffix} (${metricName})`
+                    },
+                    footer: (tooltipItems) => {
+                        const playerItem = tooltipItems.find(item => item.datasetIndex === 0)
+                        if (!playerItem) return ''
+                        
+                        const idx = playerItem.dataIndex
+                        const matches = chartMatchesOldestFirst.value
+                        const m = matches[idx]
+                        if (m) {
+                            const p = findPlayer(m)
+                            const pos = p ? `Posición: ${translatePosition(p.position)}` : ''
+                            return [pos, '', '👉 Clic para ir al partido']
+                        }
+                        return ''
                     }
                 }
             }
@@ -666,6 +865,27 @@
         const overallAvg = props.stats?.ratingAve ?? 0
         return recentAvg - overallAvg
     })
+
+    const handleChartMouseUp = (event: MouseEvent) => {
+        const chartInstance = evolutionChart.value?.chart
+        if (!chartInstance) return
+
+        const elements = chartInstance.getElementsAtEventForMode(event, 'index', { intersect: false }, true)
+        if (elements && elements.length > 0) {
+            const playerEl = elements.find((el: any) => el.datasetIndex === 0) || elements[0]
+            const dataIndex = playerEl.index
+            const matches = chartMatchesOldestFirst.value
+            const m = matches[dataIndex]
+            if (m && m.matchId) {
+                const url = `/partido/${m.matchId}?player=${props.player.member.playerName}`
+                if (event.button === 1 || event.ctrlKey || event.metaKey) {
+                    window.open(url, '_blank')
+                } else if (event.button === 0) {
+                    window.location.href = url
+                }
+            }
+        }
+    }
 
     const recentBarData = computed(() => {
         const ratings = recentMatchesData.value

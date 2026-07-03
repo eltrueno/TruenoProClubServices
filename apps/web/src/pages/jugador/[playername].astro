@@ -44,7 +44,7 @@ if (playername != undefined) {
 	<meta slot="metadata" name="robots" content="noindex, nofollow" />
 
 	<section>
-		<container class="flex p-6 lg:p-12 justify-center items-center text-center">
+		<container class="flex px-2 py-4 justify-center items-center text-center">
 			<PlayerDetail client:only="vue" playerName={finalplayername} initialTab={tab}>
 				<PlayerDetailSkeleton slot="fallback" />
 			</PlayerDetail>

@@ -62,6 +62,10 @@ Este es un **monorepo** estructurado con [pnpm workspaces](https://pnpm.io/works
 - Paquete compartido para la configuración de Better Auth
 - Reutilizable por otras aplicaciones del monorepo
 
+## 📊 Diagrama de la aplicación
+
+![Diagrama de la arquitectura](https://i.imgur.com/DhuslGk.png)
+
 ### 🚀 Primeros Pasos
 
 #### Requisitos Previos
@@ -402,6 +406,10 @@ This is a **monorepo** structured with [pnpm workspaces](https://pnpm.io/workspa
 - Shared package for Better Auth configuration
 - Reusable by other applications in the monorepo
 
+## 📊 Application Diagram
+
+![Application Diagram](https://i.imgur.com/DhuslGk.png)
+
 ### 🚀 Getting Started
 
 #### Prerequisites
@@ -532,19 +540,19 @@ TOTW_MIN_GAMES_PLAYED=5
 
 ##### Auth (`apps/auth/.env`)
 
-| Variable | Type | Description | Default Value |
-|----------|------|-------------|----------------|
-| `PORT` | `number` | Port on which the service listens | `3001` |
-| `WWW_URL` | `string` | Frontend URL | `https://www.casemurocity.org` |
-| `API_URL` | `string` | Main API URL | `https://api.casemurocity.org` |
-| `COOKIE_DOMAIN` | `string` | Cookie domain | `.casemurocity.org` |
-| `MONGODB_URI` | `string` | MongoDB connection URL | **Required** |
-| `DBNAME` | `string` | Database name | `tpcsauth` |
-| `BETTER_AUTH_SECRET` | `string` | Better Auth secret | **Required** |
-| `BETTER_AUTH_URL` | `string` | Auth service base URL | `https://auth.casemurocity.org` |
-| `TWITCH_CLIENT_ID` | `string` | Twitch Client ID | **Required** |
-| `TWITCH_CLIENT_SECRET` | `string` | Twitch Client Secret | **Required** |
-| `TWITCH_CHANNEL_ID` | `string` | Twitch Channel ID to follow | **Required** |
+| Variable                | Type    | Description                                      | Default Value |
+|-------------------------|---------|--------------------------------------------------|--------------|
+| `PORT`                  | `number` | Port on which the service listens                | `3001` |
+| `WWW_URL`               | `string` | Frontend URL                                     | `https://www.casemurocity.org` |
+| `API_URL`               | `string` | Main API URL                                     | `https://api.casemurocity.org` |
+| `COOKIE_DOMAIN`         | `string` | Cookie domain                                    | `.casemurocity.org` |
+| `MONGODB_URI`           | `string` | MongoDB connection URL                           | **Required** |
+| `DBNAME`                | `string` | Database name                                    | `tpcsauth` |
+| `BETTER_AUTH_SECRET`    | `string` | [Better Auth](https://github.com/better-auth/better-auth) secret | **Required** |
+| `BETTER_AUTH_URL`       | `string` | Auth service base URL                            | `https://auth.casemurocity.org` |
+| `TWITCH_CLIENT_ID`      | `string` | Twitch Client ID                                 | **Required** |
+| `TWITCH_CLIENT_SECRET`  | `string` | Twitch Client Secret                             | **Required** |
+| `TWITCH_CHANNEL_ID`     | `string` | Twitch Channel ID to follow                      | **Required** |
 
 **Example `.env`:**
 ```env
