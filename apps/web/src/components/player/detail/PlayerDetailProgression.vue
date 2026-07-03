@@ -42,15 +42,7 @@
                             <summary class="btn btn-sm btn-bordered dark:bg-base-100 bg-base-300 font-bold uppercase text-xs tracking-wide rounded-xl flex items-center gap-2 cursor-pointer border border-base-content/10 shadow-sm min-w-[150px] justify-between">
                                 <span>
                                     {{ 
-                                        evolutionMetric === 'rating' ? 'Valoración' :
-                                        evolutionMetric === 'goals' ? 'Goles' :
-                                        evolutionMetric === 'assists' ? 'Asistencias' :
-                                        evolutionMetric === 'goalsPlusAssists' ? 'G+A' :
-                                        evolutionMetric === 'passes' ? 'Pases Intentados' :
-                                        evolutionMetric === 'passSuccessRate' ? '% Acierto Pases' :
-                                        evolutionMetric === 'tackleSuccessRate' ? '% Acierto Entradas' :
-                                        evolutionMetric === 'shotAccuracyPercent' ? '% Acierto Tiros' :
-                                        evolutionMetric === 'saves' ? 'Paradas' : '% Paradas'
+                                    currentMetricMeta?.label || 'Valoración'
                                     }}
                                 </span>
                                 <svg class="w-3 h-3 opacity-60" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -176,7 +168,7 @@
                     </div>
                 </div>
 
-                <div class="w-full h-[260px] sm:h-[300px]">
+                <div class="w-full h-[260px] sm:h-[300px] relative">
                     <Line
                         ref="evolutionChart"
                         v-if="evolutionChartData"
@@ -184,6 +176,10 @@
                         :options="evolutionOptions"
                         @mouseup="handleChartMouseUp"
                     />
+                    <div v-if="isMobile && pendingPointIndex !== null"
+                         class="absolute bottom-2 left-1/2 -translate-x-1/2 bg-primary text-primary-content text-[10px] font-black uppercase tracking-wide px-3 py-1.5 rounded-full shadow-lg pointer-events-none whitespace-nowrap">
+                        Toca de nuevo para ir al partido
+                    </div>
                 </div>
             </div>
         </div>
@@ -199,22 +195,31 @@
                             Forma Reciente · Últimos {{ recentCount }}
                         </h2>
 
-                        <div class="flex flex-col gap-5">
-                            <!-- Delta Card -->
+                        <div class="grid gap-3 grid-cols-1">
+                            <!-- Delta de valoración (siempre visible) -->
                             <div class="dark:bg-base-100 bg-base-300 rounded-2xl p-5 flex flex-col justify-center border-l-4"
-                                 :class="recentDelta >= 0 ? 'border-green-500' : 'border-red-500'">
-                                <div class="text-3xl font-black tabular-nums"
-                                     :class="recentDelta >= 0 ? 'text-green-500' : 'text-red-500'">
+                                :class="recentDelta >= 0 ? 'border-green-500' : 'border-red-500'">
+                                <div class="text-3xl font-black tabular-nums" :class="recentDelta >= 0 ? 'text-green-500' : 'text-red-500'">
                                     {{ recentDelta >= 0 ? '+' : '' }}{{ recentDelta.toFixed(2) }}
                                 </div>
                                 <div class="text-xs text-base-content/50 mt-1 font-medium">vs su media en valoración</div>
                             </div>
 
-                            <!-- Recent Form Bar Chart -->
-                            <div class="h-[140px]">
-                                <Bar v-if="recentBarData" :data="recentBarData" :options="recentBarOptions" />
+                            <!-- Delta de la métrica elegida en "Evolución" -->
+                            <div v-if="evolutionMetric !== 'rating'"
+                                class="dark:bg-base-100 bg-base-300 rounded-2xl p-5 flex flex-col justify-center border-l-4"
+                                :class="selectedMetricDelta >= 0 ? 'border-green-500' : 'border-red-500'">
+                                <div class="text-3xl font-black tabular-nums" :class="selectedMetricDelta >= 0 ? 'text-green-500' : 'text-red-500'">
+                                    {{ selectedMetricDelta >= 0 ? '+' : '' }}{{ selectedMetricDelta.toFixed(currentMetricMeta.decimals) }}{{ currentMetricMeta.suffix }}
+                                </div>
+                                <div class="text-xs text-base-content/50 mt-1 font-medium">vs su media en {{ currentMetricMeta.label.toLowerCase() }}</div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Recent Form Bar Chart -->
+                    <div class="h-[140px] mt-5">
+                        <Bar v-if="recentBarData" :data="recentBarData" :options="recentBarOptions" />
                     </div>
 
                     <!-- Additional details to fill the vertical space -->
@@ -281,10 +286,10 @@
             </div>
         </div>
 
-        <!-- ═══ ÚLTIMOS PARTIDOS (Table) ═══ -->
+        <!-- ═══ PARTIDOS (Table) ═══ -->
         <div class="card bg-base-200 shadow-md relative">
             <div class="card-body p-6">
-                <h2 class="card-title text-xl font-black uppercase border-l-4 border-primary pl-4 mb-6">Últimos Partidos</h2>
+                <h2 class="card-title text-xl font-black uppercase border-l-4 border-primary pl-4 mb-6">Partidos</h2>
 
                 <div class="overflow-x-auto">
                     <table class="table table-sm w-full">
@@ -401,6 +406,7 @@
     const showAll = ref(false)
     const initialShowCount = 7
     const recentCount = 5
+    const pendingPointIndex = ref<number | null>(null)
 
     const isGK = computed(() => {
         if (!props.player) return false
@@ -497,6 +503,11 @@
         return list
     })
 
+    // ── FILTERED LIST (with player entries) ---
+    const filteredMatchesWithPlayer = computed(() => {
+        return filteredMatches.value.filter(m => !!findPlayer(m))
+    })
+
     // ═══════════════════════════════════════════
     // ── CHART DATE FILTERING ──
     // ═══════════════════════════════════════════
@@ -543,10 +554,7 @@
     })
 
     const chartMatchesOldestFirst = computed(() => {
-        return [...chartFilteredMatches.value].reverse().filter(m => {
-            const p = findPlayer(m)
-            return p !== null && p !== undefined
-        })
+        return [...chartFilteredMatches.value].reverse().filter(m => !!findPlayer(m))
     })
 
     const setQuickRange = (range: 'all' | 5 | 10 | 20) => {
@@ -664,6 +672,41 @@
         ]
     })
 
+    const METRIC_META: Record<string, { label: string; decimals: number; suffix: string }> = {
+        rating: { label: 'Valoración', decimals: 2, suffix: '' },
+        goals: { label: 'Goles', decimals: 2, suffix: '' },
+        assists: { label: 'Asistencias', decimals: 2, suffix: '' },
+        goalsPlusAssists: { label: 'G+A', decimals: 2, suffix: '' },
+        passes: { label: 'Pases Intentados', decimals: 1, suffix: '' },
+        passSuccessRate: { label: '% Acierto Pases', decimals: 1, suffix: '%' },
+        tackleSuccessRate: { label: '% Acierto Entradas', decimals: 1, suffix: '%' },
+        shotAccuracyPercent: { label: '% Acierto Tiros', decimals: 1, suffix: '%' },
+        saves: { label: 'Paradas', decimals: 1, suffix: '' },
+        savesSuccessRate: { label: '% Paradas', decimals: 1, suffix: '%' },
+    }
+    const currentMetricMeta = computed(() => METRIC_META[evolutionMetric.value])
+
+    const getMetricValue = (p: any, metric: typeof evolutionMetric.value): number => {
+        if (!p) return 0
+        switch (metric) {
+            case 'rating': return p.rating
+            case 'goals': return p.goals
+            case 'assists': return p.assists
+            case 'goalsPlusAssists': return p.goals + p.assists
+            case 'passes': return p.passesMade
+            case 'passSuccessRate': return isNaN(p.passSuccessRate) ? 0 : p.passSuccessRate
+            case 'tackleSuccessRate': return isNaN(p.tackleSuccessRate) ? 0 : p.tackleSuccessRate
+            case 'shotAccuracyPercent': return isNaN(p.shotAccuracyPercent) ? 0 : p.shotAccuracyPercent
+            case 'saves': return p.saves ?? 0
+            case 'savesSuccessRate': {
+                const totalShots = (p.saves ?? 0) + (p.goalsConceded ?? 0)
+                const rate = totalShots > 0 ? ((p.saves ?? 0) / totalShots) * 100 : 0
+                return isNaN(rate) ? 0 : rate
+            }
+            default: return 0
+        }
+    }
+
     // ═══════════════════════════════════════
     // ── EVOLUCIÓN (Line Chart) ──
     // ═══════════════════════════════════════
@@ -678,21 +721,7 @@
             const p = findPlayer(m)
             if (!p) return
 
-            let val = 0
-            if (evolutionMetric.value === 'rating') val = p.rating
-            else if (evolutionMetric.value === 'goals') val = p.goals
-            else if (evolutionMetric.value === 'assists') val = p.assists
-            else if (evolutionMetric.value === 'goalsPlusAssists') val = p.goals + p.assists
-            else if (evolutionMetric.value === 'passes') val = p.passesMade
-            else if (evolutionMetric.value === 'passSuccessRate') val = isNaN(p.passSuccessRate) ? 0 : p.passSuccessRate
-            else if (evolutionMetric.value === 'tackleSuccessRate') val = isNaN(p.tackleSuccessRate) ? 0 : p.tackleSuccessRate
-            else if (evolutionMetric.value === 'shotAccuracyPercent') val = isNaN(p.shotAccuracyPercent) ? 0 : p.shotAccuracyPercent
-            else if (evolutionMetric.value === 'saves') val = p.saves ?? 0
-            else if (evolutionMetric.value === 'savesSuccessRate') {
-                const totalShots = (p.saves ?? 0) + (p.goalsConceded ?? 0)
-                const rate = totalShots > 0 ? ((p.saves ?? 0) / totalShots) * 100 : 0
-                val = isNaN(rate) ? 0 : rate
-            }
+            const val = getMetricValue(p, evolutionMetric.value)
 
             dataPoints.push(val)
             labels.push(formatDate(m.timestamp))
@@ -790,40 +819,10 @@
                         const isPlayer = context.datasetIndex === 0
                         const prefix = isPlayer ? 'Partido: ' : 'Su media: '
 
-                        let metricName = ''
-                        let decimals = 0
-                        let suffix = ''
+                        let metricName = currentMetricMeta.value.label
+                        let decimals = currentMetricMeta.value.decimals
+                        let suffix = currentMetricMeta.value.suffix
 
-                        if (evolutionMetric.value === 'rating') {
-                            metricName = 'Val'
-                            decimals = isPlayer ? 1 : 2
-                        } else if (evolutionMetric.value === 'goals') {
-                            metricName = 'Goles'
-                        } else if (evolutionMetric.value === 'assists') {
-                            metricName = 'Asistencias'
-                        } else if (evolutionMetric.value === 'goalsPlusAssists') {
-                            metricName = 'G+A'
-                        } else if (evolutionMetric.value === 'passes') {
-                            metricName = 'Pases Intentados'
-                        } else if (evolutionMetric.value === 'passSuccessRate') {
-                            metricName = 'Acierto Pases'
-                            decimals = 1
-                            suffix = '%'
-                        } else if (evolutionMetric.value === 'tackleSuccessRate') {
-                            metricName = 'Acierto Entradas'
-                            decimals = 1
-                            suffix = '%'
-                        } else if (evolutionMetric.value === 'shotAccuracyPercent') {
-                            metricName = 'Acierto Tiros'
-                            decimals = 1
-                            suffix = '%'
-                        } else if (evolutionMetric.value === 'saves') {
-                            metricName = 'Paradas'
-                        } else if (evolutionMetric.value === 'savesSuccessRate') {
-                            metricName = '% Paradas'
-                            decimals = 1
-                            suffix = '%'
-                        }
 
                         const valueStr = context.parsed.y.toFixed(decimals)
                         return `${prefix}${valueStr}${suffix} (${metricName})`
@@ -851,11 +850,8 @@
     // ── FORMA RECIENTE ──
     // ═══════════════════════════════════════
     const recentMatchesData = computed(() => {
-        const matches = filteredMatches.value.slice(0, recentCount)
-        return matches.map(m => {
-            const p = findPlayer(m)
-            return p ? p.rating : 0
-        }).reverse() // oldest → newest for display
+        const matches = filteredMatchesWithPlayer.value.slice(0, recentCount)
+        return matches.map(m => findPlayer(m)!.rating).reverse()
     })
 
     const recentDelta = computed(() => {
@@ -866,26 +862,93 @@
         return recentAvg - overallAvg
     })
 
+    const recentSelectedMetricAvg = computed(() => {
+        const matches = filteredMatchesWithPlayer.value.slice(0, recentCount)
+        const values = matches.map(m => getMetricValue(findPlayer(m), evolutionMetric.value))
+        if (!values.length) return 0
+        return values.reduce((a, b) => a + b, 0) / values.length
+    })
+
+    const overallSelectedMetricAvg = computed(() => {
+        const values = filteredMatchesWithPlayer.value.map(m => getMetricValue(findPlayer(m), evolutionMetric.value))
+        if (!values.length) return 0
+        return values.reduce((a, b) => a + b, 0) / values.length
+    })
+
+    const selectedMetricDelta = computed(() => recentSelectedMetricAvg.value - overallSelectedMetricAvg.value)
+
     const handleChartMouseUp = (event: MouseEvent) => {
         const chartInstance = evolutionChart.value?.chart
         if (!chartInstance) return
 
         const elements = chartInstance.getElementsAtEventForMode(event, 'index', { intersect: false }, true)
-        if (elements && elements.length > 0) {
-            const playerEl = elements.find((el: any) => el.datasetIndex === 0) || elements[0]
-            const dataIndex = playerEl.index
-            const matches = chartMatchesOldestFirst.value
-            const m = matches[dataIndex]
-            if (m && m.matchId) {
-                const url = `/partido/${m.matchId}?player=${props.player.member.playerName}`
-                if (event.button === 1 || event.ctrlKey || event.metaKey) {
-                    window.open(url, '_blank')
-                } else if (event.button === 0) {
-                    window.location.href = url
-                }
+
+        if (!elements || elements.length === 0) {
+            pendingPointIndex.value = null
+            return
+        }
+
+        const playerEl = elements.find((el: any) => el.datasetIndex === 0) || elements[0]
+        const dataIndex = playerEl.index
+        const matches = chartMatchesOldestFirst.value
+        const m = matches[dataIndex]
+        if (!m || !m.matchId) return
+
+        const url = `/partido/${m.matchId}?player=${props.player.member.playerName}`
+
+        // Ctrl/Cmd/click central: siempre abre directo
+        if (event.button === 1 || event.ctrlKey || event.metaKey) {
+            window.open(url, '_blank')
+            return
+        }
+
+        if (event.button !== 0) return
+
+        if (isMobile.value) {
+            // Primer toque: solo previsualiza (el tooltip ya se muestra solo)
+            if (pendingPointIndex.value === dataIndex) {
+                window.location.href = url
+                pendingPointIndex.value = null
+            } else {
+                pendingPointIndex.value = dataIndex
             }
+        } else {
+            // Desktop: el hover ya deja previsualizar, un clic navega directo
+            window.location.href = url
         }
     }
+
+    watch([evolutionMetric, dateFilter], () => {
+        pendingPointIndex.value = null
+    }, { deep: true })
+
+
+    const recentResults = computed(() => {
+        const matches = filteredMatchesWithPlayer.value.slice(0, recentCount)
+        return matches.map(m => {
+            const rival = getRivalName(m)
+            if (m.result === 'win') {
+                return { text: 'V', class: 'bg-green-500', tooltip: `Victoria vs ${rival}` }
+            } else if (m.result === 'tie') {
+                return { text: 'E', class: 'bg-gray-500 dark:bg-neutral-600', tooltip: `Empate vs ${rival}` }
+            } else {
+                return { text: 'D', class: 'bg-red-500', tooltip: `Derrota vs ${rival}` }
+            }
+        }).reverse()
+    })
+
+    // Brief Stats Summary of the last 5 matches
+    const recentStatsSummary = computed(() => {
+        const slice = filteredMatchesWithPlayer.value.slice(0, recentCount)
+        let goals = 0, assists = 0, minutes = 0
+        slice.forEach(m => {
+            const p = findPlayer(m)!
+            goals += p.goals ?? 0
+            assists += p.assists ?? 0
+            minutes += Math.round(p.minutesPlayed ?? 0)
+        })
+        return { goals, assists, minutes }
+    })
 
     const recentBarData = computed(() => {
         const ratings = recentMatchesData.value
@@ -923,44 +986,9 @@
         },
         plugins: {
             legend: { display: false },
-            tooltip: {
-                backgroundColor: '#1D232A',
-                padding: 12,
-                cornerRadius: 8,
-                displayColors: false
-            }
+            tooltip: {enabled: false}
         }
     }))
-
-    // Form Outcome Circles (W / D / L)
-    const recentResults = computed(() => {
-        const matches = filteredMatches.value.slice(0, recentCount)
-        return matches.map(m => {
-            const rival = getRivalName(m)
-            if (m.result === 'win') {
-                return { text: 'V', class: 'bg-green-500', tooltip: `Victoria vs ${rival}` }
-            } else if (m.result === 'tie') {
-                return { text: 'E', class: 'bg-gray-500 dark:bg-neutral-600', tooltip: `Empate vs ${rival}` }
-            } else {
-                return { text: 'D', class: 'bg-red-500', tooltip: `Derrota vs ${rival}` }
-            }
-        }).reverse()
-    })
-
-    // Brief Stats Summary of the last 5 matches
-    const recentStatsSummary = computed(() => {
-        const slice = filteredMatches.value.slice(0, recentCount)
-        let goals = 0, assists = 0, minutes = 0
-        slice.forEach(m => {
-            const p = findPlayer(m)
-            if (p) {
-                goals += p.goals ?? 0
-                assists += p.assists ?? 0
-                minutes += Math.round(p.minutesPlayed ?? 0)
-            }
-        })
-        return { goals, assists, minutes }
-    })
 
     // ═══════════════════════════════════════
     // ── ÚLTIMOS PARTIDOS (Table) ──
@@ -979,10 +1007,9 @@
     }
 
     const matchRows = computed<MatchRow[]>(() => {
-        return filteredMatches.value
+        return filteredMatchesWithPlayer.value
             .map(m => {
-                const p = findPlayer(m)
-                if (!p) return null
+                const p = findPlayer(m)!
                 return {
                     matchId: m.matchId,
                     rivalName: getRivalName(m),
@@ -996,7 +1023,6 @@
                     date: formatDate(m.timestamp)
                 }
             })
-            .filter(Boolean) as MatchRow[]
     })
 
     const visibleMatches = computed(() => {
