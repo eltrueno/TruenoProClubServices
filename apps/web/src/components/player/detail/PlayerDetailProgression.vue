@@ -307,70 +307,261 @@
         </div>
 
         <!-- ═══ PARTIDOS (Table) ═══ -->
+
+        <!-- ═══ PARTIDOS ═══ -->
         <div class="card bg-base-200 shadow-md relative">
             <div class="card-body p-6">
-                <h2 class="card-title text-xl font-black uppercase border-l-4 border-primary pl-4 mb-6">Partidos</h2>
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                    <h2 class="card-title text-xl font-black uppercase border-l-4 border-primary pl-4">Partidos</h2>
 
-                <div class="overflow-x-auto">
+                    <div class="relative w-full sm:w-64">
+                        <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+                        </svg>
+                        <input
+                            v-model="matchSearch"
+                            type="text"
+                            placeholder="Buscar rival..."
+                            class="input input-sm input-bordered dark:bg-base-100 bg-base-300 w-full pl-9 rounded-xl text-xs font-medium"
+                        />
+                        <button
+                            v-if="matchSearch"
+                            @click="matchSearch = ''"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content"
+                        >✕</button>
+                    </div>
+                </div>
+
+
+                <!-- Filtro de tipo de partido -->
+                <div class="join dark:bg-base-100 bg-base-300 p-1 rounded-2xl mb-4 w-full sm:w-auto mx-auto">
+                    <button
+                        v-for="t in [
+                            { val: 'all', label: 'Todos' },
+                            { val: 'league', label: 'Oficiales' },
+                            { val: 'friendly', label: 'Amistosos' }
+                        ]"
+                        :key="t.val"
+                        @click="tableMatchType = t.val as any"
+                        class="btn btn-xs join-item capitalize border-none px-4 flex-1 sm:flex-none"
+                        :class="tableMatchType === t.val ? 'btn-primary shadow-sm' : 'btn-ghost'"
+                    >
+                        {{ t.label }}
+                    </button>
+                </div>
+
+                <!-- Filtro de rango de fechas (mismo patrón que el chart de Evolución) -->
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-3 dark:bg-base-100/40 bg-base-300/30 border border-base-content/5 rounded-2xl mb-4">
+                    <div class="flex flex-wrap items-center gap-3 text-xs w-full md:w-auto">
+                        <span class="font-black uppercase tracking-wider text-base-content/50 flex items-center gap-1">
+                            Rango de fechas
+                        </span>
+                        <div class="relative w-full md:w-[260px]">
+                            <VueTailwindDatepicker
+                                i18n="es"
+                                v-model="tableDateFilter"
+                                class="w-full text-xs font-bold"
+                                :formatter="dateFormatter"
+                                :options="datePickerOptions"
+                                :shortcuts="false"
+                                as-single
+                                use-range
+                                @keypress.stop.prevent
+                                @keyup.stop.prevent
+                                @keydown.stop.prevent
+                            />
+                        </div>
+                    </div>
+
+                    <div class="join dark:bg-base-100 bg-base-300 p-1 rounded-2xl w-full md:w-auto justify-around md:justify-start">
+                        <button
+                            v-for="preset in [
+                                { val: 'all', label: 'Todo' },
+                                { val: 5, label: 'Últ. 5' },
+                                { val: 10, label: 'Últ. 10' },
+                                { val: 20, label: 'Últ. 20' }
+                            ]"
+                            :key="preset.val"
+                            @click="setTableQuickRange(preset.val as any)"
+                            class="btn btn-xs join-item capitalize border-none px-4 lg:px-6"
+                            :class="tableActiveQuickRange === preset.val ? 'btn-primary shadow-sm' : 'btn-ghost'"
+                        >
+                            {{ preset.label }}
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 mb-6 flex-wrap">
+                    <button
+                        @click="matchResultFilter = 'all'"
+                        class="text-[11px] font-black uppercase px-3 py-2 rounded-full transition-all"
+                        :class="matchResultFilter === 'all' ? 'dark:bg-base-100 bg-base-300 ring-2 ring-primary shadow-sm' : 'dark:bg-base-100/50 bg-base-300/50 text-base-content/50 hover:text-base-content/80'"
+                    >
+                        Todos <span class="opacity-60">({{ resultCounts.all }})</span>
+                    </button>
+
+                    <button
+                        v-for="f in [
+                            { val: 'win', label: 'Victorias', count: resultCounts.win, dot: 'bg-green-500' },
+                            { val: 'tie', label: 'Empates', count: resultCounts.tie, dot: 'bg-gray-500 dark:bg-neutral-600' },
+                            { val: 'loss', label: 'Derrotas', count: resultCounts.loss, dot: 'bg-red-500' }]"
+                        :key="f.val"
+                        @click="matchResultFilter = matchResultFilter === f.val ? 'all' : f.val as any" 
+                        class="flex items-center gap-1.5 text-[11px] font-black uppercase px-3 py-2 rounded-full transition-all"
+                        :class="matchResultFilter === f.val ? 'dark:bg-base-100 bg-base-300 ring-2 ring-primary shadow-sm' : 'dark:bg-base-100/50 bg-base-300/50 text-base-content/50 hover:text-base-content/80'">
+                        <span class="w-2 h-2 rounded-full" :class="f.dot"></span>
+                        {{ f.label }} <span class="opacity-60">({{ f.count }})</span>
+                    </button>
+                </div>
+
+                <!-- Selector de orden (visible SOLO en móvil, ya que desktop ordena por cabecera) -->
+                <div class="md:hidden flex items-center gap-2 mb-4">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-base-content/40 shrink-0">Ordenar:</span>
+                    <select
+                        v-model="matchSortKey"
+                        class="select select-xs select-bordered dark:bg-base-100 bg-base-300 font-bold uppercase text-[11px] tracking-wide rounded-lg flex-1"
+                    >
+                        <option v-for="opt in sortOptions" :key="opt.key" :value="opt.key">{{ opt.label }}</option>
+                    </select>
+                    <button
+                        @click="matchSortDir = matchSortDir === 'asc' ? 'desc' : 'asc'"
+                        class="btn btn-xs btn-square dark:bg-base-100 bg-base-300 rounded-lg"
+                        :aria-label="matchSortDir === 'asc' ? 'Ascendente' : 'Descendente'"
+                    >
+                        {{ matchSortDir === 'asc' ? '↑' : '↓' }}
+                    </button>
+                </div>
+
+                <div v-if="matchRows.length === 0" class="text-center py-10 text-base-content/40 text-sm font-medium">
+                    No se encontraron partidos con esos filtros.
+                </div>
+
+                
+                <div v-else class="hidden md:block overflow-x-auto">
                     <table class="table table-sm w-full">
-                           <thead>
-                               <tr class="text-xs uppercase text-base-content/40 tracking-widest border-b border-base-content/10">
-                                   <th class="font-black">Rival</th>
-                                   <th class="font-black text-center">Fecha</th>
-                                   <th class="font-black text-center">Tipo</th>
-                                   <th class="font-black text-center">Pos</th>
-                                   <th class="font-black text-center">Val</th>
-                                   <th class="font-black text-center">G</th>
-                                   <th class="font-black text-center">A</th>
-                                   <th class="font-black text-center">Min</th>
-                               </tr>
-                           </thead>
-                           <tbody>
-                                <tr v-for="row in visibleMatches" :key="row.matchId"
-                                    class="border-b border-base-content/5 transition-colors duration-150 relative cursor-pointer"
-                                    :class="row.manOfTheMatch
-                                        ? 'bg-amber-400/[0.04] hover:bg-amber-400/[0.08] mvp-row'
-                                        : 'hover:bg-base-100/30'">
-
-                                    <td class="font-semibold py-3">
-                                        <div class="flex items-center gap-2">
-                                            <span v-if="row.manOfTheMatch"
-                                                class="tooltip tooltip-right cursor-default z-10 relative"
-                                                data-tip="MVP del partido"
-                                                @click.stop>
-                                                <span class="text-amber-400 text-sm">★</span>
-                                            </span>
-                                            <a :href="`/partido/${row.matchId}?player=${props.player.member.playerName}`"
-                                            class="after:absolute after:inset-0 after:content-['']">
-                                                {{ row.rivalName }}
-                                            </a>
-                                        </div>
-                                    </td>
-
-                                    <td class="text-center py-3 text-xs tabular-nums text-base-content/60">
-                                        {{ row.date }}
-                                    </td>
-                                   <td class="text-center py-3">
-                                       <span class="badge badge-xs badge-primary font-bold uppercase px-2 py-2.5 rounded-md">
-                                           {{ translateMatchType(row.matchType) }}
-                                       </span>
-                                   </td>
-                                   <td class="text-center py-3 text-xs font-bold text-base-content/70">
-                                       {{ translatePosition(row.position) }}
-                                   </td>
-                                   <td class="text-center font-black tabular-nums py-3"
-                                       :class="getRatingColor(row.rating)">
-                                       {{ row.rating.toFixed(1) }}
-                                   </td>
-                                   <td class="text-center tabular-nums py-3">{{ row.goals }}</td>
-                                   <td class="text-center tabular-nums py-3">{{ row.assists }}</td>
-                                   <td class="text-center tabular-nums py-3 text-base-content/60">{{ row.minutes }}'</td>
-                               </tr>
-                           </tbody>
+                        <thead>
+                            <tr class="text-xs uppercase text-base-content/40 tracking-widest border-b border-base-content/10">
+                                <th class="font-black w-10"></th>
+                                <th class="font-black">Rival</th>
+                                <th class="font-black text-center cursor-pointer select-none hover:text-primary transition-colors" @click="toggleSort('date')">
+                                    Fecha <span v-if="matchSortKey === 'date'">{{ matchSortDir === 'asc' ? '↑' : '↓' }}</span>
+                                </th>
+                                <th class="font-black text-center">Tipo</th>
+                                <th class="font-black text-center">Pos</th>
+                                <th class="font-black text-center cursor-pointer select-none hover:text-primary transition-colors" @click="toggleSort('rating')">
+                                    Val <span v-if="matchSortKey === 'rating'">{{ matchSortDir === 'asc' ? '↑' : '↓' }}</span>
+                                </th>
+                                <th class="font-black text-center cursor-pointer select-none hover:text-primary transition-colors" @click="toggleSort('goals')">
+                                    G <span v-if="matchSortKey === 'goals'">{{ matchSortDir === 'asc' ? '↑' : '↓' }}</span>
+                                </th>
+                                <th class="font-black text-center cursor-pointer select-none hover:text-primary transition-colors" @click="toggleSort('assists')">
+                                    A <span v-if="matchSortKey === 'assists'">{{ matchSortDir === 'asc' ? '↑' : '↓' }}</span>
+                                </th>
+                                <th class="font-black text-center cursor-pointer select-none hover:text-primary transition-colors" @click="toggleSort('minutes')">
+                                    Min <span v-if="matchSortKey === 'minutes'">{{ matchSortDir === 'asc' ? '↑' : '↓' }}</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="row in visibleMatches" :key="row.matchId"
+                                class="border-b border-base-content/5 transition-colors duration-150 relative cursor-pointer"
+                                :class="row.manOfTheMatch
+                                    ? 'bg-amber-400/[0.04] hover:bg-amber-400/[0.08] mvp-row'
+                                    : 'hover:bg-base-100/30'">
+                                <td class="py-3">
+                                    <span
+                                        class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white mx-auto"
+                                        :class="{
+                                            'bg-green-500': row.result === 'win',
+                                            'bg-gray-500 dark:bg-neutral-600': row.result === 'tie',
+                                            'bg-red-500': row.result === 'loss'
+                                        }"
+                                    >
+                                        {{ row.result === 'win' ? 'V' : row.result === 'tie' ? 'E' : 'D' }}
+                                    </span>
+                                </td>
+                                <td class="font-semibold py-3">
+                                    <div class="flex items-center gap-2">
+                                        <span v-if="row.manOfTheMatch" class="tooltip tooltip-right cursor-default z-10 relative" data-tip="MVP del partido" @click.stop>
+                                            <span class="text-amber-400 text-sm">★</span>
+                                        </span>
+                                        <a :href="`/partido/${row.matchId}?player=${props.player.member.playerName}`" class="after:absolute after:inset-0 after:content-['']">
+                                            {{ row.rivalName }}
+                                        </a>
+                                    </div>
+                                </td>
+                                <td class="text-center py-3 text-xs tabular-nums text-base-content/60">{{ row.date }}</td>
+                                <td class="text-center py-3">
+                                    <span class="badge badge-xs badge-primary font-bold uppercase px-2 py-2.5 rounded-md">{{ translateMatchType(row.matchType) }}</span>
+                                </td>
+                                <td class="text-center py-3 text-xs font-bold text-base-content/70">{{ translatePosition(row.position) }}</td>
+                                <td class="text-center font-black tabular-nums py-3" :class="getRatingColor(row.rating)">{{ row.rating.toFixed(1) }}</td>
+                                <td class="text-center tabular-nums py-3">{{ row.goals }}</td>
+                                <td class="text-center tabular-nums py-3">{{ row.assists }}</td>
+                                <td class="text-center tabular-nums py-3 text-base-content/60">{{ row.minutes }}'</td>
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
 
-                <!-- Show All Button -->
+                <div v-if="matchRows.length > 0" class="md:hidden flex flex-col gap-3">
+                    
+                        <a v-for="row in visibleMatches" :key="row.matchId"
+                        :href="`/partido/${row.matchId}?player=${props.player.member.playerName}`"
+                        class="flex items-center gap-3 dark:bg-base-100 bg-base-300 rounded-2xl p-4 border border-base-content/5 active:scale-[0.98] transition-transform">
+                        <!-- Badge de resultado -->
+                        <span
+                            class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black text-white shrink-0"
+                            :class="{
+                                'bg-green-500': row.result === 'win',
+                                'bg-gray-500 dark:bg-neutral-600': row.result === 'tie',
+                                'bg-red-500': row.result === 'loss'
+                            }"
+                        >
+                            {{ row.result === 'win' ? 'V' : row.result === 'tie' ? 'E' : 'D' }}
+                        </span>
+
+                        <!-- Contenido central -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2 mb-1.5">
+                                <div class="flex items-center gap-1.5 min-w-0">
+                                    <span v-if="row.manOfTheMatch" class="text-amber-400 text-sm shrink-0">★</span>
+                                    <span class="font-bold text-sm truncate">{{ row.rivalName }}</span>
+                                </div>
+                                <span class="text-[10px] text-base-content/40 font-medium tabular-nums shrink-0">{{ row.date }}</span>
+                            </div>
+
+                            <div class="flex items-center gap-1.5 mb-2.5">
+                                <span class="badge badge-xs badge-primary font-bold uppercase px-2 py-2 rounded-md">{{ translateMatchType(row.matchType) }}</span>
+                                <span class="badge badge-xs badge-outline font-bold uppercase px-2 py-2 rounded-full">{{ translatePosition(row.position) }}</span>
+                            </div>
+
+                            <div class="grid grid-cols-4 gap-2 text-center">
+                                <div>
+                                    <div class="text-[9px] uppercase font-black text-base-content/40 tracking-wider">Val</div>
+                                    <div class="text-sm font-black tabular-nums" :class="getRatingColor(row.rating)">{{ row.rating.toFixed(1) }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-[9px] uppercase font-black text-base-content/40 tracking-wider">Goles</div>
+                                    <div class="text-sm font-black tabular-nums">{{ row.goals }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-[9px] uppercase font-black text-base-content/40 tracking-wider">Asist.</div>
+                                    <div class="text-sm font-black tabular-nums">{{ row.assists }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-[9px] uppercase font-black text-base-content/40 tracking-wider">Min</div>
+                                    <div class="text-sm font-black tabular-nums">{{ row.minutes }}'</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <svg class="w-4 h-4 text-base-content/25 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </a>
+                </div>
+
                 <button
                     v-if="matchRows.length > initialShowCount"
                     @click="showAll = !showAll"
@@ -380,6 +571,8 @@
                 </button>
             </div>
         </div>
+
+
     </div>
 </template>
 
@@ -725,7 +918,7 @@
     // ── MEJORES REGISTROS (Highlight Stats) ──
     // ═══════════════════════════════════════════
     const highlightStats = computed(() => {
-        const matches = filteredMatches.value
+        const matches = filteredMatchesWithPlayer.value
         if (!matches.length) return []
 
         let bestRating = 0, bestRatingRival = '', bestRatingMatchId: number | null = null
@@ -751,15 +944,22 @@
 
         // Win streak (newest first = natural order from API)
         for (const m of matches) {
+            console.log('result',m.result)
             if (m.result === 'win') currentStreak++
-            else break
+            else{
+                console.log('loosed match -> break',m)
+                break
+            }
         }
+        console.log('currentStreak',currentStreak)
         // Max streak scanning all
         let tmpStreak = 0
         for (const m of [...matches].reverse()) {
             if (m.result === 'win') { tmpStreak++; if (tmpStreak > maxStreak) maxStreak = tmpStreak }
             else tmpStreak = 0
         }
+        console.log('tmpStreak',tmpStreak)
+        console.log('maxStreak',maxStreak)
 
         return [
             { icon: '⭐', label: 'Mejor Valoración', value: bestRating.toFixed(1), sub: `vs ${bestRatingRival}`, matchId: bestRatingMatchId },
@@ -1068,31 +1268,205 @@
         minutes: number
         manOfTheMatch: boolean
         position: string
+        result: 'win' | 'tie' | 'loss'
+        timestamp: number
         date: string
     }
 
-    const matchRows = computed<MatchRow[]>(() => {
-        return filteredMatchesWithPlayer.value
-            .map(m => {
-                const p = findPlayer(m)!
-                return {
-                    matchId: m.matchId,
-                    rivalName: getRivalName(m),
-                    matchType: m.matchType,
-                    rating: p.rating,
-                    goals: p.goals,
-                    assists: p.assists,
-                    minutes: Math.round(p.minutesPlayed ?? 0),
-                    manOfTheMatch: p.manOfTheMatch,
-                    position: p.position,
-                    date: formatDate(m.timestamp)
-                }
-            })
+    
+
+    // Normaliza el resultado: si no es 'win' ni 'tie', se trata como derrota
+    // (consistente con el resto del componente, por si la API no siempre manda 'loss' exacto)
+    const getResultCategory = (result: string): 'win' | 'tie' | 'loss' => {
+        if (result === 'win') return 'win'
+        if (result === 'tie') return 'tie'
+        return 'loss'
+    }
+
+    //Match table
+    const matchSearch = ref('')
+    const matchResultFilter = ref<'all' | 'win' | 'tie' | 'loss'>('all')
+    const matchSortKey = ref<'date' | 'rating' | 'goals' | 'assists' | 'minutes'>('date')
+    const matchSortDir = ref<'asc' | 'desc'>('desc')
+
+    const toggleSort = (key: typeof matchSortKey.value) => {
+        if (matchSortKey.value === key) {
+            matchSortDir.value = matchSortDir.value === 'asc' ? 'desc' : 'asc'
+        } else {
+            matchSortKey.value = key
+            matchSortDir.value = 'desc'
+        }
+    }
+
+    // Guardamos el timestamp original para poder ordenar por fecha real, no por string formateado
+    const matchRowsRaw = computed(() => {
+        return filteredMatchesWithPlayer.value.map(m => {
+            const p = findPlayer(m)!
+            return {
+                matchId: m.matchId,
+                rivalName: getRivalName(m),
+                matchType: m.matchType,
+                rating: p.rating,
+                goals: p.goals,
+                assists: p.assists,
+                minutes: Math.round(p.minutesPlayed ?? 0),
+                manOfTheMatch: p.manOfTheMatch,
+                position: p.position,
+                result: getResultCategory(m.result),
+                timestamp: m.timestamp,
+                date: formatDate(m.timestamp)
+            }
+        })
     })
+
+    // Opciones legibles para el selector de orden (reutilizable en el <select> de móvil)
+    const sortOptions = [
+        { key: 'date', label: 'Fecha' },
+        { key: 'rating', label: 'Valoración' },
+        { key: 'goals', label: 'Goles' },
+        { key: 'assists', label: 'Asistencias' },
+        { key: 'minutes', label: 'Minutos' }
+    ] as const
+
+    const matchRows = computed<MatchRow[]>(() => {
+        let rows = matchRowsRaw.value
+
+        // Búsqueda por rival
+        if (matchSearch.value.trim()) {
+            const q = matchSearch.value.trim().toLowerCase()
+            rows = rows.filter(r => r.rivalName.toLowerCase().includes(q))
+        }
+
+        // Filtro por resultado
+        if (matchResultFilter.value !== 'all') {
+            rows = rows.filter(r => r.result === matchResultFilter.value)
+        }
+
+        // Filtro por tipo de partido
+        if (tableMatchType.value === 'league') {
+            rows = rows.filter(r => r.matchType === 'league' || r.matchType === 'playoff')
+        } else if (tableMatchType.value === 'friendly') {
+            rows = rows.filter(r => r.matchType !== 'league' && r.matchType !== 'playoff')
+        }
+
+        // Filtro por rango de fechas
+        const start = parseTableDate(tableDateFilter.value.startDate)
+        const end = parseTableDate(tableDateFilter.value.endDate)
+        if (end) end.setHours(23, 59, 59, 999)
+        if (start || end) {
+            rows = rows.filter(r => {
+                const d = new Date(r.timestamp * 1000)
+                if (start && d < start) return false
+                if (end && d > end) return false
+                return true
+            })
+        }
+
+        // Orden
+        const dir = matchSortDir.value === 'asc' ? 1 : -1
+        rows = [...rows].sort((a, b) => {
+            let aVal: number, bVal: number
+            switch (matchSortKey.value) {
+                case 'rating': aVal = a.rating; bVal = b.rating; break
+                case 'goals': aVal = a.goals; bVal = b.goals; break
+                case 'assists': aVal = a.assists; bVal = b.assists; break
+                case 'minutes': aVal = a.minutes; bVal = b.minutes; break
+                default: aVal = a.timestamp; bVal = b.timestamp
+            }
+            return (aVal - bVal) * dir
+        })
+
+        return rows
+    })
+
+    // ═══════════════════════════════════════
+    // ── TABLA: Filtro de rango de fechas y tipo de partido ──
+    // ═══════════════════════════════════════
+    const tableDateFilter = ref({ startDate: '', endDate: '' })
+    const tableMatchType = ref<'all' | 'league' | 'friendly'>('all')
+
+    const tableMinDateStr = computed(() => {
+        if (!matchRowsRaw.value.length) return ''
+        const timestamps = matchRowsRaw.value.map(r => r.timestamp)
+        return formatToDatePicker(Math.min(...timestamps))
+    })
+    const tableMaxDateStr = computed(() => {
+        if (!matchRowsRaw.value.length) return ''
+        const timestamps = matchRowsRaw.value.map(r => r.timestamp)
+        return formatToDatePicker(Math.max(...timestamps))
+    })
+
+    const tableActiveQuickRange = ref<'all' | 5 | 10 | 20>('all')
+
+    const setTableQuickRange = (range: 'all' | 5 | 10 | 20) => {
+        tableActiveQuickRange.value = range
+        const rows = matchRowsRaw.value
+        if (!rows.length) return
+
+        if (range === 'all') {
+            tableDateFilter.value = { startDate: tableMinDateStr.value, endDate: tableMaxDateStr.value }
+        } else {
+            // Los N más recientes: ya vienen ordenados newest→oldest desde filteredMatchesWithPlayer
+            const slice = [...rows].sort((a, b) => b.timestamp - a.timestamp).slice(0, range)
+            const timestamps = slice.map(r => r.timestamp)
+            tableDateFilter.value = {
+                startDate: formatToDatePicker(Math.min(...timestamps)),
+                endDate: formatToDatePicker(Math.max(...timestamps))
+            }
+        }
+    }
+
+    // Inicializa el rango al rango completo cuando cambian los datos base
+    watch(matchRowsRaw, (rows) => {
+        if (rows.length && !tableDateFilter.value.startDate) {
+            tableDateFilter.value = { startDate: tableMinDateStr.value, endDate: tableMaxDateStr.value }
+        }
+    }, { immediate: true })
+
+    const parseTableDate = (dateStr: string) => {
+        if (!dateStr) return null
+        const parts = dateStr.split('/')
+        if (parts.length === 3) {
+            return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]))
+        }
+        return null
+    }
 
     const visibleMatches = computed(() => {
         if (showAll.value) return matchRows.value
         return matchRows.value.slice(0, initialShowCount)
+    })
+
+    const resultCounts = computed(() => {
+        let rows = matchRowsRaw.value
+
+        if (matchSearch.value.trim()) {
+            const q = matchSearch.value.trim().toLowerCase()
+            rows = rows.filter(r => r.rivalName.toLowerCase().includes(q))
+        }
+        if (tableMatchType.value === 'league') {
+            rows = rows.filter(r => r.matchType === 'league' || r.matchType === 'playoff')
+        } else if (tableMatchType.value === 'friendly') {
+            rows = rows.filter(r => r.matchType !== 'league' && r.matchType !== 'playoff')
+        }
+        const start = parseTableDate(tableDateFilter.value.startDate)
+        const end = parseTableDate(tableDateFilter.value.endDate)
+        if (end) end.setHours(23, 59, 59, 999)
+        if (start || end) {
+            rows = rows.filter(r => {
+                const d = new Date(r.timestamp * 1000)
+                if (start && d < start) return false
+                if (end && d > end) return false
+                return true
+            })
+        }
+
+        return {
+            all: rows.length,
+            win: rows.filter(r => r.result === 'win').length,
+            tie: rows.filter(r => r.result === 'tie').length,
+            loss: rows.filter(r => r.result === 'loss').length
+        }
     })
 
     const getRatingColor = (rating: number) => {
