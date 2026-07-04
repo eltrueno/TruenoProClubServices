@@ -126,7 +126,7 @@
                 </div>
 
                 <!-- Date Range and Zoom Filter Controls -->
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-3 dark:bg-base-100/40 bg-base-300/30 border border-base-content/5 rounded-2xl mb-6">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-3 dark:bg-base-100/40 bg-base-300/30 border border-base-content/5 rounded-2xl mb-6 sm:mx-0">
                     <div class="flex flex-wrap items-center gap-3 text-xs w-full md:w-auto">
                         <span class="font-black uppercase tracking-wider text-base-content/50 flex items-center gap-1">
                         Selector de rango temporal
@@ -215,6 +215,11 @@
                             Forma Reciente · Últimos {{ recentCount }}
                         </h2>
 
+                        <!-- Recent Form Bar Chart -->
+                        <div class="h-[140px] mt-5">
+                            <Bar v-if="recentBarData" :data="recentBarData" :options="recentBarOptions" />
+                        </div>
+
                         <div class="grid gap-3 grid-cols-1">
                             <!-- Delta de valoración (siempre visible) -->
                             <div class="dark:bg-base-100 bg-base-300 rounded-2xl p-5 flex flex-col justify-center border-l-4"
@@ -235,11 +240,6 @@
                                 <div class="text-xs text-base-content/50 mt-1 font-medium">vs su media en {{ currentMetricMeta.label.toLowerCase() }}</div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Recent Form Bar Chart -->
-                    <div class="h-[140px] mt-5">
-                        <Bar v-if="recentBarData" :data="recentBarData" :options="recentBarOptions" />
                     </div>
 
                     <!-- Additional details to fill the vertical space -->
@@ -863,6 +863,7 @@
     //FIX Chart point detection after data update
     watch(evolutionChartData, async () => {
         await nextTick()
+        ;(window as any).__debugChart = evolutionChart.value?.chart
         detachCanvasListener() // por si ya había uno de una instancia anterior
         attachCanvasListener()
     }, { immediate: true })
@@ -871,6 +872,9 @@
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
+        layout: {
+            padding: { left: 4, right: 4, top: 4, bottom: 0 }
+        },
         onHover: (event, elements) => {
             if (event.native && event.native.target) {
                 const hasPlayerPoint = elements.some(el => el.datasetIndex === 0)
@@ -880,17 +884,22 @@
         },
         scales: {
             x: {
+                offset: false,
+                bounds: 'data',
                 grid: { color: 'rgba(166, 173, 187, 0.08)' },
                 ticks: {
                     color: 'rgba(166, 173, 187, 0.5)',
                     font: { size: 10, weight: 'bold' },
-                    maxTicksLimit: isMobile.value ? 5 : 10
+                    maxTicksLimit: isMobile.value ? 5 : 10,
+                    autoSkipPadding: 8,
                 }
             },
             y: {
                 grid: { color: 'rgba(166, 173, 187, 0.08)' },
                 ticks: {
                     color: 'rgba(166, 173, 187, 0.5)',
+                    padding: 4,             
+                    maxTicksLimit: 6, 
                     font: { size: 11 },
                     stepSize: evolutionMetric.value === 'rating' ? 1 : undefined,
                     callback: (value) => {
@@ -908,48 +917,6 @@
         plugins: {
             legend: { display: false },
             tooltip: {
-                /*backgroundColor: '#1D232A',
-                padding: 12,
-                cornerRadius: 8,
-                displayColors: false,
-                titleFont: { weight: 'bold' },
-                callbacks: {
-                    title: (context) => {
-                        const idx = context[0].dataIndex
-                        const matches = chartMatchesOldestFirst.value
-                        const m = matches[idx]
-                        if (m) {
-                            return `${formatDate(m.timestamp)} · vs ${getRivalName(m)}`
-                        }
-                        return context[0].label
-                    },
-                    label: (context) => {
-                        const isPlayer = context.datasetIndex === 0
-                        const prefix = isPlayer ? 'Partido: ' : 'Su media: '
-
-                        let metricName = currentMetricMeta.value.label
-                        let decimals = currentMetricMeta.value.decimals
-                        let suffix = currentMetricMeta.value.suffix
-
-
-                        const valueStr = context.parsed.y.toFixed(decimals)
-                        return `${prefix}${valueStr}${suffix} (${metricName})`
-                    },
-                    footer: (tooltipItems) => {
-                        const playerItem = tooltipItems.find(item => item.datasetIndex === 0)
-                        if (!playerItem) return ''
-                        
-                        const idx = playerItem.dataIndex
-                        const matches = chartMatchesOldestFirst.value
-                        const m = matches[idx]
-                        if (m) {
-                            const p = findPlayer(m)
-                            const pos = p ? `Posición: ${translatePosition(p.position)}` : ''
-                            return [pos, '', '👉 Clic para ir al partido']
-                        }
-                        return ''
-                    }
-                }*/
                enabled: false,
                external: externalTooltipHandler,
             }
@@ -1015,47 +982,6 @@
 
     const selectedMetricDelta = computed(() => recentSelectedMetricAvg.value - overallSelectedMetricAvg.value)
 
-    /*
-    const handleChartMouseUp = (event: MouseEvent) => {
-        const chartInstance = evolutionChart.value?.chart
-        if (!chartInstance) return
-
-        const elements = chartInstance.getElementsAtEventForMode(event, 'index', { intersect: false }, true)
-
-        if (!elements || elements.length === 0) {
-            pendingPointIndex.value = null
-            return
-        }
-
-        const playerEl = elements.find((el: any) => el.datasetIndex === 0) || elements[0]
-        const dataIndex = playerEl.index
-        const matches = chartMatchesOldestFirst.value
-        const m = matches[dataIndex]
-        if (!m || !m.matchId) return
-
-        const url = `/partido/${m.matchId}?player=${props.player.member.playerName}`
-
-        // Ctrl/Cmd/click central: siempre abre directo
-        if (event.button === 1 || event.ctrlKey || event.metaKey) {
-            window.open(url, '_blank')
-            return
-        }
-
-        if (event.button !== 0) return
-
-        if (isMobile.value) {
-            // Primer toque: solo previsualiza (el tooltip ya se muestra solo)
-            if (pendingPointIndex.value === dataIndex) {
-                window.location.href = url
-                pendingPointIndex.value = null
-            } else {
-                pendingPointIndex.value = dataIndex
-            }
-        } else {
-            // Desktop: el hover ya deja previsualizar, un clic navega directo
-            window.location.href = url
-        }
-    }*/
 
     watch([evolutionMetric, dateFilter], () => {
         pendingPointIndex.value = null
