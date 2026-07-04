@@ -1,6 +1,8 @@
 import { TPlatformType } from '@trueno-proclub-services/eafcapi'
 import { Router, Request, Response } from 'express';
 import { getClubDataCache } from '../controllers/club.controller';
+import dotenv from 'dotenv'
+dotenv.config()
 
 const CLUBID: number = Number(process.env.CLUBID || '2766636');
 const PLATFORM: string = String(process.env.PLATFORM || 'common-gen5')
