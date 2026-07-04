@@ -129,7 +129,7 @@
                 <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-3 dark:bg-base-100/40 bg-base-300/30 border border-base-content/5 rounded-2xl mb-6 sm:mx-0">
                     <div class="flex flex-wrap items-center gap-3 text-xs w-full md:w-auto">
                         <span class="font-black uppercase tracking-wider text-base-content/50 flex items-center gap-1">
-                        Selector de rango temporal
+                        Rango de fechas
                         </span>
 
                         <div class="relative w-full md:w-[260px]">
@@ -332,24 +332,6 @@
                     </div>
                 </div>
 
-
-                <!-- Filtro de tipo de partido -->
-                <div class="join dark:bg-base-100 bg-base-300 p-1 rounded-2xl mb-4 w-full sm:w-auto mx-auto">
-                    <button
-                        v-for="t in [
-                            { val: 'all', label: 'Todos' },
-                            { val: 'league', label: 'Oficiales' },
-                            { val: 'friendly', label: 'Amistosos' }
-                        ]"
-                        :key="t.val"
-                        @click="tableMatchType = t.val as any"
-                        class="btn btn-xs join-item capitalize border-none px-4 flex-1 sm:flex-none"
-                        :class="tableMatchType === t.val ? 'btn-primary shadow-sm' : 'btn-ghost'"
-                    >
-                        {{ t.label }}
-                    </button>
-                </div>
-
                 <!-- Filtro de rango de fechas (mismo patrón que el chart de Evolución) -->
                 <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-3 dark:bg-base-100/40 bg-base-300/30 border border-base-content/5 rounded-2xl mb-4">
                     <div class="flex flex-wrap items-center gap-3 text-xs w-full md:w-auto">
@@ -390,6 +372,7 @@
                         </button>
                     </div>
                 </div>
+                
 
                 <div class="flex items-center gap-2 mb-6 flex-wrap">
                     <button
@@ -1340,13 +1323,6 @@
         // Filtro por resultado
         if (matchResultFilter.value !== 'all') {
             rows = rows.filter(r => r.result === matchResultFilter.value)
-        }
-
-        // Filtro por tipo de partido
-        if (tableMatchType.value === 'league') {
-            rows = rows.filter(r => r.matchType === 'league' || r.matchType === 'playoff')
-        } else if (tableMatchType.value === 'friendly') {
-            rows = rows.filter(r => r.matchType !== 'league' && r.matchType !== 'playoff')
         }
 
         // Filtro por rango de fechas
