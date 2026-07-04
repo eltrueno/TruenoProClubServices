@@ -168,18 +168,38 @@
                     </div>
                 </div>
 
-                <div class="w-full h-[260px] sm:h-[300px] relative">
+                <div ref="mainChartContainer" class="w-full h-[260px] sm:h-[300px] relative">
                     <Line
                         ref="evolutionChart"
                         v-if="evolutionChartData"
                         :data="evolutionChartData"
                         :options="evolutionOptions"
-                        @mouseup="handleChartMouseUp"
+                        @click="handleMainChartClick"
                     />
-                    <div v-if="isMobile && pendingPointIndex !== null"
-                         class="absolute bottom-2 left-1/2 -translate-x-1/2 bg-primary text-primary-content text-[10px] font-black uppercase tracking-wide px-3 py-1.5 rounded-full shadow-lg pointer-events-none whitespace-nowrap">
-                        Toca de nuevo para ir al partido
-                    </div>
+
+                    <MatchChartTooltip
+                        v-if="activeTooltipMatch"
+                        :visible="tooltip.visible"
+                        :pinned="tooltip.pinned"
+                        :x="tooltip.x"
+                        :y="tooltip.y"
+                        :container="mainChartContainer"
+                        :date="activeTooltipMatch.date"
+                        :rival="activeTooltipMatch.rival"
+                        :position="activeTooltipMatch.position"
+                        :result="activeTooltipMatch.result"
+                        :man-of-the-match="activeTooltipMatch.manOfTheMatch"
+                        :match-id="activeTooltipMatch.matchId"
+                        :player-name="props.player.member.playerName"
+                        :metric-label="currentMetricMeta.label"
+                        :value="activeTooltipMatch.value"
+                        :average="activeTooltipMatch.average"
+                        :decimals="currentMetricMeta.decimals"
+                        :suffix="currentMetricMeta.suffix"
+                        @close="closeTooltip"
+                        @hover="setHoveringTooltip"
+                    />
+
                 </div>
             </div>
         </div>
@@ -364,7 +384,7 @@
 </template>
 
 <script setup lang="ts">
-    import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
+    import { computed, ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
     import {
         Chart as ChartJS,
         CategoryScale,
@@ -385,6 +405,11 @@
     import type PlayerProfileEntity from '@/model/PlayerProfileEntity';
     import type PlayerStatsEntity from '@/model/PlayerStatsEntity';
     import type ClubMatchEntity from '@/model/match/ClubMatchEntity';
+
+    import { useChartExternalTooltip } from '@/composables/useChartExternalTooltip'
+    import MatchChartTooltip from '@/components/player/detail/charts/MatchChartTooltip.vue'
+    const mainChartContainer = ref<HTMLElement | null>(null)
+    const { tooltip, externalTooltipHandler, setHoveringTooltip, pinTooltip, closeTooltip } = useChartExternalTooltip()
 
     ChartJS.register(
         CategoryScale, LinearScale, PointElement, LineElement,
@@ -443,8 +468,84 @@
 
     const isMobile = ref(false)
     const updateMobile = () => { isMobile.value = window.innerWidth < 640 }
-    onMounted(() => { updateMobile(); window.addEventListener('resize', updateMobile) })
-    onUnmounted(() => { window.removeEventListener('resize', updateMobile) })
+
+    const handleClickOutside = (event: MouseEvent) => {
+        if (!tooltip.value.pinned) return
+        const target = event.target as HTMLElement
+        if (mainChartContainer.value && !mainChartContainer.value.contains(target)) {
+            closeTooltip()
+        }
+    }
+
+    onMounted(() => { 
+        updateMobile(); 
+        window.addEventListener('resize', updateMobile) 
+        document.addEventListener('click', handleClickOutside)
+    })
+    onUnmounted(() => {
+        window.removeEventListener('resize', updateMobile)
+        document.removeEventListener('click', handleClickOutside) 
+        detachCanvasListener()
+    })
+
+    // FIX: Mantiene el punto activo en el gráfico cuando el tooltip está "pinned"
+    const forceActivePoint = () => {
+        const chartInstance = evolutionChart.value?.chart
+        if (!chartInstance) return
+
+        if (tooltip.value.visible && tooltip.value.dataIndex !== null) {
+            chartInstance.setActiveElements([
+                { datasetIndex: tooltip.value.datasetIndex ?? 0, index: tooltip.value.dataIndex }
+            ])
+        } else {
+            chartInstance.setActiveElements([])
+        }
+        chartInstance.update('none')
+    }
+    let canvasEl: HTMLCanvasElement | null = null
+    const attachCanvasListener = () => {
+        const chartInstance = evolutionChart.value?.chart
+        if (!chartInstance) return
+        canvasEl = chartInstance.canvas
+
+        canvasEl.addEventListener('mouseout', handleCanvasMouseOut)
+    }
+    const detachCanvasListener = () => {
+        canvasEl?.removeEventListener('mouseout', handleCanvasMouseOut)
+    }
+    const handleCanvasMouseOut = () => {
+        // setTimeout(0): se ejecuta DESPUÉS de que Chart.js termine
+        // de procesar su propio reseteo interno del punto activo
+        setTimeout(() => {
+            forceActivePoint()
+        }, 0)
+    }
+    watch(
+        () => [tooltip.value.visible, tooltip.value.dataIndex, tooltip.value.datasetIndex, tooltip.value.pinned],
+        () => {
+            forceActivePoint()
+        },
+        { flush: 'post' }
+    )
+
+
+    const handleMainChartClick = (event: MouseEvent) => {
+        const chartInstance = evolutionChart.value?.chart
+        if (!chartInstance) return
+
+        const elements = chartInstance.getElementsAtEventForMode(event, 'index', { intersect: false }, true)
+        if (!elements || elements.length === 0) return
+
+        const playerEl = elements.find((el: any) => el.datasetIndex === 0) || elements[0]
+        const point = playerEl.element as any
+
+        if (tooltip.value.pinned && tooltip.value.dataIndex === playerEl.index) {
+            closeTooltip()
+            return
+        }
+
+        pinTooltip(playerEl.index, playerEl.datasetIndex, point.x, point.y)
+    }
 
 
     const playerNameLower = computed(() => props.player?.member?.playerName?.toLowerCase() ?? '')
@@ -759,6 +860,13 @@
         }
     })
 
+    //FIX Chart point detection after data update
+    watch(evolutionChartData, async () => {
+        await nextTick()
+        detachCanvasListener() // por si ya había uno de una instancia anterior
+        attachCanvasListener()
+    }, { immediate: true })
+
      const evolutionOptions = computed<ChartOptions<'line'>>(() => ({
         responsive: true,
         maintainAspectRatio: false,
@@ -800,7 +908,7 @@
         plugins: {
             legend: { display: false },
             tooltip: {
-                backgroundColor: '#1D232A',
+                /*backgroundColor: '#1D232A',
                 padding: 12,
                 cornerRadius: 8,
                 displayColors: false,
@@ -841,10 +949,40 @@
                         }
                         return ''
                     }
-                }
+                }*/
+               enabled: false,
+               external: externalTooltipHandler,
             }
         }
     }))
+
+    const activeTooltipMatch = computed(() => {
+        if (tooltip.value.dataIndex === null) return null
+        const matches = chartMatchesOldestFirst.value
+        const m = matches[tooltip.value.dataIndex]
+        if (!m) return null
+        const p = findPlayer(m)
+        if (!p) return null
+
+        // Media de la métrica seleccionada sobre el rango visible en el chart
+        const values = matches
+            .map(mm => findPlayer(mm))
+            .filter(Boolean)
+            .map(pp => getMetricValue(pp, evolutionMetric.value))
+        const average = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0
+
+        return {
+            date: formatDate(m.timestamp),
+            rival: getRivalName(m),
+            position: translatePosition(p.position),
+            result: m.result,
+            manOfTheMatch: p.manOfTheMatch,
+            matchId: m.matchId,
+            value: getMetricValue(p, evolutionMetric.value),
+            average
+        }
+    })
+
 
     // ═══════════════════════════════════════
     // ── FORMA RECIENTE ──
@@ -877,6 +1015,7 @@
 
     const selectedMetricDelta = computed(() => recentSelectedMetricAvg.value - overallSelectedMetricAvg.value)
 
+    /*
     const handleChartMouseUp = (event: MouseEvent) => {
         const chartInstance = evolutionChart.value?.chart
         if (!chartInstance) return
@@ -916,7 +1055,7 @@
             // Desktop: el hover ya deja previsualizar, un clic navega directo
             window.location.href = url
         }
-    }
+    }*/
 
     watch([evolutionMetric, dateFilter], () => {
         pendingPointIndex.value = null
