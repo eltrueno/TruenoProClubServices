@@ -46,10 +46,22 @@ export default class ClubMatchEntity implements IMatch {
         players: MatchPlayerEntity[]
     }
 
+
+
     constructor(match: IMatch) {
         Object.assign(this, match)
 
+
+        function fixEncoding(str: string) {
+            return new TextDecoder("utf-8").decode(
+                new Uint8Array([...str].map(c => c.charCodeAt(0)))
+            );
+        }
+
         if (!(match instanceof ClubMatchEntity)) {
+            this.localClub.name = fixEncoding(this.localClub.name);
+            this.awayClub.name = fixEncoding(this.awayClub.name);
+
             this.localClub.matchStats.shotSuccessRate = (this.localClub.matchStats.goals / this.localClub.matchStats.shots) * 100
             this.localClub.matchStats.passSuccessRate = (this.localClub.matchStats.passesSuccess / this.localClub.matchStats.passesMade) * 100
             this.localClub.matchStats.tackleSuccessRate = (this.localClub.matchStats.tackleSuccess / this.localClub.matchStats.tacklesMade) * 100
@@ -71,5 +83,6 @@ export default class ClubMatchEntity implements IMatch {
             this.awayClub.players = awayPls
         }
     }
+
 }
 
