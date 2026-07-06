@@ -1,4 +1,8 @@
 import MatchModel from "@models/match.model"
+import dotenv from 'dotenv'
+dotenv.config()
+
+const CLUBID: number = Number(process.env.CLUBID || '101456');
 
 const getById = async (id: number) => {
     const response = await MatchModel.find({ matchId: id })
@@ -13,8 +17,14 @@ const getLatestByMatchTypeLimit = async (matchType: "league" | "playoff", limit:
 const getLatestByPlayer = async (playerName: string, limit: number) => {
     const response = await MatchModel.find({
         $or: [
-            { "localClub.players.playername": playerName },
-            { "awayClub.players.playername": playerName }
+            {
+                "localClub.id": CLUBID,
+                "localClub.players.playername": playerName
+            },
+            {
+                "awayClub.id": CLUBID,
+                "awayClub.players.playername": playerName
+            }
         ]
     }).sort({ timestamp: -1 }).limit(limit)
     return response

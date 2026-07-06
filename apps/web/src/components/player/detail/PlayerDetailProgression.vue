@@ -927,23 +927,15 @@
 
         // Win streak (newest first = natural order from API)
         for (const m of matches) {
-            console.log('result',m.result)
             if (m.result === 'win') currentStreak++
-            else{
-                console.log('loosed match -> break',m)
-                break
-            }
+            else break
         }
-        console.log('currentStreak',currentStreak)
         // Max streak scanning all
         let tmpStreak = 0
         for (const m of [...matches].reverse()) {
             if (m.result === 'win') { tmpStreak++; if (tmpStreak > maxStreak) maxStreak = tmpStreak }
             else tmpStreak = 0
         }
-        console.log('tmpStreak',tmpStreak)
-        console.log('maxStreak',maxStreak)
-
         return [
             { icon: '⭐', label: 'Mejor Valoración', value: bestRating.toFixed(1), sub: `vs ${bestRatingRival}`, matchId: bestRatingMatchId },
             { icon: '⚽', label: 'Máx. Goles', value: bestGoals, sub: `vs ${bestGoalsRival}`, matchId: bestGoalsMatchId },

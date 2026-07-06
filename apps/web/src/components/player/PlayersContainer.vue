@@ -1,5 +1,5 @@
 <template>
-    <div role="contentinfo" class="w-full">
+    <div role="contentinfo" class="w-full overflow-hidden">
         <div class="breadcrumbs text-sm w-full flex justify-center text-center ml-4">
             <ul class="flex w-full">
                 <li><a href="/" class="">Inicio</a></li>
@@ -113,7 +113,6 @@
 
 
                 <div v-else-if="finalMembers.length>0" class="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3  content-center justify-center">
-                    <PlayerDetailModal v-if="modalVisible && !isSSR" :player="detailedPlayer" @detailModalClosed="handleClosedModal" />
                     <TransitionGroup name="playerlist">
                         <PlayerField v-for="(member, index) in finalMembers" :key="member.playerName" :player="member" :index="index" @clickedPlayer="handlePlayerClick"/>
                     </TransitionGroup>
@@ -137,13 +136,6 @@
     import ClubMember from '@/model/ClubMemberEntity'
     import PlayerStatsEntity from '@/model/PlayerStatsEntity';
     import PlayerField from '@components/player/PlayerField.vue';
-
-
-    const PlayerDetailModal = defineAsyncComponent(() => 
-        import('@components/player/PlayerDetailModal.vue')
-    )
-
-    const isSSR = ref(import.meta.env.SSR)
 
 
     const props = defineProps<{
