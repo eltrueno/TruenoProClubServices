@@ -7,7 +7,6 @@ const totwSchema = new Schema<ITOTW>({
     bestPlayers: [
         {
             playerName: { type: String, required: true },
-            rankingScore: { type: Number, required: true },
             avgRating: { type: Number, required: true },
             gamesPlayed: { type: Number, required: true },
             minutesPlayed: { type: Number },
@@ -33,7 +32,6 @@ const totwSchema = new Schema<ITOTW>({
     worstPlayers: [
         {
             playerName: { type: String, required: true },
-            rankingScore: { type: Number, required: true },
             avgRating: { type: Number, required: true },
             gamesPlayed: { type: Number, required: true },
             minutesPlayed: { type: Number },

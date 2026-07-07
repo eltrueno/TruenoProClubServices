@@ -2,8 +2,8 @@
     <div class="w-full">
         <header class="w-fit mx-auto">
             <div role="tablist" class="tabs tabs-boxed">
-                <a role="tab" class="tab" :class="{ 'tab-active': isBest }" @click="changeTab(true)">Mejores</a>
-                <a role="tab" class="tab" :class="{ 'tab-active': !isBest }" @click="changeTab(false)">Peores</a>
+                <a role="tab" class="tab" :class="{ 'tab-active': isBest }" @click="changeTab(true)">Hall of Fame (mejores)</a>
+                <a role="tab" class="tab" :class="{ 'tab-active': !isBest }" @click="changeTab(false)">Hall of Shame (peores)</a>
             </div>
         </header>
         <div class="w-full mx-auto flex flex-col justify-center align-middle text-center dark:bg-base-200 bg-base-200 rounded-lg p-2 shadow-md mt-2">

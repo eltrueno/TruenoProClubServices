@@ -1,8 +1,8 @@
 <template>
     <div class="w-full flex flex-col">
         <header class="flex flex-col justify-center align-middle overflow-x-hidden">
-            <TotwTitle v-if="selectedType=='best'" :title="'ONCE DE LA SEMANA'" :subtitle="weekRangeString" :variant="'best'" />
-            <TotwTitle v-else :title="'ONCE DE LA VERGÜENZA'" :subtitle="weekRangeString" :variant="'worst'" />
+            <TotwTitle v-if="selectedType=='best'" :title="'HALL OF FAME'" :subtitle="weekRangeString" :variant="'best'" />
+            <TotwTitle v-else :title="'HALL OF SHAME'" :subtitle="weekRangeString" :variant="'worst'" />
             <div class="w-fit mx-auto flex flex-col justify-center align-middle">
                 <span class="text-center text-2xl">Próximo equipo:</span>
                 <div class="grid auto-cols-max grid-flow-col gap-5 text-center">

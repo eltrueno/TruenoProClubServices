@@ -13,13 +13,13 @@ const TIMEZONE = process.env.TZ || "Europe/Madrid"
 const TOTW_CRON_SCHEDULE = process.env.TOTW_CRON_SCHEDULE || "0 21 * * 0"
 const MIN_GAMES_PLAYED = Number(process.env.TOTW_MIN_GAMES_PLAYED) || 5
 const MIN_GAMES_FLOOR = Number(process.env.TOTW_MIN_GAMES_FLOOR) || 2
-const TOTW_K_FACTOR = Number(process.env.TOTW_K_FACTOR) || 5
+const MIN_GAMES_GOALKEEPER = Number(process.env.TOTW_MIN_GAMES_GOALKEEPER) || 1
 
 const TOTW_SLOTS = {
     goalkeeper: 1,
-    defender: 3,
-    midfielder: 5,
-    forward: 2
+    defender: 1,
+    midfielder: 1,
+    forward: 1
 }
 
 const POSITION_ORDER = ['goalkeeper', 'defender', 'forward', 'midfielder'] as const
@@ -74,7 +74,12 @@ const getTopPlayersByPosition = async (
             }
         },
         { $unwind: '$clubPlayers' },
-        { $match: { 'clubPlayers.position': position } },
+        {
+            $match: {
+                'clubPlayers.position': position,
+                'clubPlayers.secondsPlayed': { $gt: 0 }
+            }
+        },
         {
             $group: {
                 _id: '$clubPlayers.playername',
@@ -128,33 +133,16 @@ const getTopPlayersByPosition = async (
                             100
                         ]
                     }, 2]
-                },
-                rankingScore: descOrder
-                    ?
-                    {
-                        $multiply: [
-                            {
-                                $add: ['$avgRating', {
-                                    $min: [{
-                                        $multiply: [{
-                                            $cond: [{ $gt: ['$gamesPlayed', 0] },
-                                            { $divide: ['$manOfTheMatch', '$gamesPlayed'] }, 0]
-                                        }, 1.0]
-                                    }, 0.25]
-                                }]
-                            },
-                            { $cond: [{ $gt: ['$gamesPlayed', 0] }, { $divide: ['$gamesPlayed', { $add: ['$gamesPlayed', TOTW_K_FACTOR] }] }, 0] }
-                        ]
-                    }
-                    : '$avgRating'
+                }
             }
         },
         {
             $sort: {
-                rankingScore: descOrder ? -1 : 1,
                 avgRating: descOrder ? -1 : 1,
-                gamesPlayed: -1,
-                goals: -1
+                manOfTheMatch: descOrder ? -1 : 1,
+                gamesPlayed: descOrder ? -1 : 1,
+                minutesPlayed: -1,
+                goals: descOrder ? -1 : 1,
             }
         },
         { $limit: limit + fetchExtra },
@@ -162,7 +150,6 @@ const getTopPlayersByPosition = async (
             $project: {
                 _id: 0,
                 playerName: '$_id',
-                rankingScore: { $round: ['$rankingScore', 3] },
                 avgRating: { $round: ['$avgRating', 2] },
                 gamesPlayed: 1,
                 minutesPlayed: 1,
@@ -196,7 +183,8 @@ const fillPositionSlot = async (
     softExcluded: string[],
     descOrder: boolean,
     minGames: number,
-    isFloor: boolean
+    isFloor: boolean,
+    allowHardExcludedFallback: boolean = isFloor // <-- nuevo, por defecto mantiene el comportamiento actual
 ): Promise<ITOTWPlayer[]> => {
 
     const label = `${position} (${descOrder ? 'best' : 'worst'})`
@@ -206,7 +194,7 @@ const fillPositionSlot = async (
         { excluded: [...hardExcluded], desc: 'sin softExcluded' },
     ]
 
-    if (isFloor) {
+    if (allowHardExcludedFallback) { // <-- antes era "if (isFloor)"
         phases.push({ excluded: [], desc: 'último recurso' })
     }
 
@@ -263,9 +251,14 @@ const buildTeam = async (
             .filter(p => p.position === position)
             .map(p => p.playerName)
 
+        const isGoalkeeper = position === 'goalkeeper'
+
         const players = await fillPositionSlot(
             weekStart, weekEnd, position, TOTW_SLOTS[position],
-            hardExclThisSlot, softSelected, descOrder, minGames, isFloor
+            hardExclThisSlot, softSelected, descOrder,
+            isGoalkeeper ? MIN_GAMES_GOALKEEPER : minGames,
+            isGoalkeeper ? true : isFloor,
+            isGoalkeeper ? false : undefined
         )
         players.forEach(p => softSelected.push(p.playerName))
         team.push(...players)
