@@ -1,5 +1,5 @@
 <template>
-    <div role="container" class="w-full lg:px-10 xl:px-16 overflow-hidden">
+    <div role="container" class="w-full overflow-hidden">
         <div class="breadcrumbs text-sm ">
             <ul>
                 <li><a href="/" class="">Inicio</a></li>
