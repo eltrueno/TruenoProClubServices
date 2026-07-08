@@ -190,7 +190,7 @@ const icons = {
             
             <!-- Badge a la derecha -->
             <div class="absolute top-4 right-6">
-              <span class="badge badge-primary badge-outline uppercase tracking-wide font-bold text-[10px]">
+              <span class="badge badge-primary badge-xs uppercase tracking-wide font-bold px-2 py-2.5 text-[10px] rounded-md">
                 {{ translateRole(user?.role || 'visitor') }}
               </span>
             </div>
