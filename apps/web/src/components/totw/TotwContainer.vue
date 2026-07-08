@@ -189,6 +189,13 @@
     onMounted(() => {
         timer = window.setInterval(() => {
             timeLeft.value = getTimeLeft(targetDate.value)
+            if(timeLeft.value.days === "00" 
+            && timeLeft.value.hours === "00" 
+            && timeLeft.value.minutes === "00" 
+            && timeLeft.value.seconds === "00") {
+                clearInterval(timer)
+                window.location.reload()
+            }
         }, 1000)
     })
 
