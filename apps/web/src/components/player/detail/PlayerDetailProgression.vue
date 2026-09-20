@@ -133,19 +133,7 @@
                         </span>
 
                         <div class="relative w-full md:w-[260px]">
-                            <VueTailwindDatepicker
-                                i18n="es"
-                                v-model="dateFilter"
-                                class="w-full text-xs font-bold"
-                                :formatter="dateFormatter"
-                                :options="datePickerOptions"
-                                :shortcuts="false"
-                                as-single
-                                use-range
-                                @keypress.stop.prevent
-                                @keyup.stop.prevent
-                                @keydown.stop.prevent
-                            />
+                            <DateRangePicker v-model="dateFilter" class="text-xs font-bold" />
                         </div>
                     </div>
 
@@ -344,19 +332,7 @@
                             Rango de fechas
                         </span>
                         <div class="relative w-full md:w-[260px]">
-                            <VueTailwindDatepicker
-                                i18n="es"
-                                v-model="tableDateFilter"
-                                class="w-full text-xs font-bold"
-                                :formatter="dateFormatter"
-                                :options="datePickerOptions"
-                                :shortcuts="false"
-                                as-single
-                                use-range
-                                @keypress.stop.prevent
-                                @keyup.stop.prevent
-                                @keydown.stop.prevent
-                            />
+                            <DateRangePicker v-model="tableDateFilter" class="text-xs font-bold" />
                         </div>
                     </div>
 
@@ -588,7 +564,7 @@
     import { Line, Bar } from 'vue-chartjs';
     import { translateMatchType, translatePosition } from '@/i18n/translations';
     import { routes } from '@/lib/query';
-    import VueTailwindDatepicker from 'vue-tailwind-datepicker';
+    import DateRangePicker from '@/components/ui/DateRangePicker.vue';
     import type PlayerProfileEntity from '@/model/PlayerProfileEntity';
     import type PlayerStatsEntity from '@/model/PlayerStatsEntity';
     import type ClubMatchEntity from '@/model/match/ClubMatchEntity';
@@ -626,30 +602,13 @@
             (props.player.playedPositions && props.player.playedPositions['goalkeeper'] > 0)
     })
 
-    // Chart Date Filter State using VueTailwindDatepicker
+    // Filtro de fechas del gráfico (DateRangePicker)
     const dateFilter = ref({
         startDate: '',
         endDate: ''
     })
 
-    const dateFormatter = ref({
-        date: 'DD/MM/YYYY',
-        month: 'MM'
-    })
 
-    const datePickerOptions = ref({
-        shortcuts: {
-            today: "Hoy",
-            yesterday: "Ayer",
-            past: (period: number) => "Hace " + period + " Días",
-            currentMonth: "Este mes",
-            pastMonth: "Mes pasado",
-        },
-        footer: {
-            apply: "Aplicar",
-            cancel: "Cancelar",
-        },
-    })
 
     const activeQuickRange = ref<'all' | 5 | 10 | 20>('all')
 

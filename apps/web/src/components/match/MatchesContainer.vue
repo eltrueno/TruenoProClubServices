@@ -23,9 +23,7 @@
                 </div>
                 <div class="flex flex-col h-full justify-start gap-1">
                     <span class="text-center font-semibold">Filtrar por fechas</span>
-                    <VueTailwindDatepicker i18n="es" v-model="dateFilter" class="w-full"
-                    as-single use-range :formatter="dateFormatter" :options="datePickerOptions" :shortcuts="false" @keypress.stop.prevent
-                    @keyup.stop.prevent @keydown.stop.prevent></VueTailwindDatepicker>
+                    <DateRangePicker v-model="dateFilter" size="md" />
                     <div class="form-control flex flex-col h-full justify-between">
                         <span class="text-center font-semibold">Filtrar por jugadores</span>
                         <div class="dropdown w-full justify-center self-center mt-1" v-if="memberStatus==200 && !isMembersLoading">
@@ -126,7 +124,7 @@
     import ClubMembersService from '@services/ClubMembersService';
     import ClubMember from '@/model/ClubMemberEntity'
     import Paginator from '@components/Paginator.vue';
-    import VueTailwindDatepicker from "vue-tailwind-datepicker";
+    import DateRangePicker from "@/components/ui/DateRangePicker.vue";
     import type MatchPlayerEntity from '@/model/match/MatchPlayerEntity';
     import { getQueryParam, hasQueryParam } from "@/lib/query";
 
@@ -185,23 +183,7 @@
         startDate: props.dateFrom,
         endDate: props.dateTo,
     });
-    const dateFormatter = ref({
-        date: 'DD/MM/YYYY',
-        month: 'MM'
-    })
-    const datePickerOptions = ref({
-    shortcuts: {
-        today: "Hoy",
-        yesterday: "Ayer",
-        past: (period) =>"Hace "+ period + " Días",
-        currentMonth: "Este mes",
-        pastMonth: "Mes pasado",
-    },
-    footer: {
-        apply: "Aplicar",
-        cancel: "Cancelar",
-    },
-    });
+
     const minPlayersFilter = ref(2)
 
     const playersFilter = ref({})
