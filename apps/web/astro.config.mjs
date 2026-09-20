@@ -23,6 +23,8 @@ export default defineConfig({
         transformAssetUrls: {
           includeAbsolute: false,
         },
+        // Web components del calendario (cally): Vue no debe resolverlos como componentes
+        compilerOptions: { isCustomElement: (tag) => tag.startsWith("calendar-") },
       },
     }),
   ],
