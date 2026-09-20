@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue"
+import { ref, onMounted, onUnmounted, watch } from "vue"
 import { useAuth } from "@/composables/useAuth"
 import AuthGuard from "@/components/auth/AuthGuard.vue"
 import LoginWall from "@/components/auth/LoginWall.vue"
@@ -9,7 +9,7 @@ import { playerImage, onPlayerImageError } from "@/lib/playerImage"
 import { ApiError, tpcsApi } from "@/lib/api"
 import type { IClubMember, ILinkRequest } from "@trueno-proclub-services/shared"
 
-const { user, syncTwitch, logout, deleteAccount, isLoggedIn, myMember, loadMyMember } = useAuth()
+const { user, syncTwitch, logout, deleteAccount, isLoggedIn, isPending, myMember, loadMyMember } = useAuth()
 
 // Solicitud de vinculación cuenta ↔ jugador (la aprueba un admin desde /admin)
 const linkRequest = ref<ILinkRequest | null>(null)
@@ -93,7 +93,6 @@ const handleSync = async (silent: boolean = false) => {
 
 onMounted(() => {
   currentTheme.value = (localStorage.getItem('theme') as any) || 'system'
-  loadMyMember().then((m) => { if (!m) loadLinkState() })
   updateCooldown()
   cooldownTimer = setInterval(updateCooldown, 1000)
 })
@@ -101,6 +100,17 @@ onMounted(() => {
 onUnmounted(() => {
   if (cooldownTimer) clearInterval(cooldownTimer)
 })
+
+// Al recargar la página la sesión aún está pendiente cuando se monta el componente:
+// "mi jugador" se pide cuando better-auth la resuelve, no antes
+watch(
+  [isPending, isLoggedIn],
+  ([pending, logged]) => {
+    if (pending || !logged) return
+    loadMyMember(true).then((m) => { if (!m) loadLinkState() })
+  },
+  { immediate: true }
+)
 
 // Gestión de Temas
 const currentTheme = ref<'light' | 'dark' | 'system'>('system')
