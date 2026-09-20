@@ -358,6 +358,15 @@ export interface IMatchClub {
 }
 export interface IMatchClubPlayer {
 	assists: string
+	ballDiveSaves?: string
+	crossSaves?: string
+	goodDirectionSaves?: string
+	parrySaves?: string
+	punchSaves?: string
+	reflexSaves?: string
+	secondsPlayed?: string
+	/** "code:count,code:count,..." — eventos del partido agregados por EA (mapeo de códigos aún sin documentar) */
+	match_event_aggregate_0?: string
 	cleansheetsany: string
 	cleansheetsdef: string
 	cleansheetsgk: string

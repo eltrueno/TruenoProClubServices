@@ -82,7 +82,8 @@ const getTopPlayersByPosition = async (
         },
         {
             $group: {
-                _id: '$clubPlayers.playername',
+                _id: '$clubPlayers.playerId',
+                playerName: { $last: '$clubPlayers.playerName' },
                 avgRating: { $avg: '$clubPlayers.rating' },
                 gamesPlayed: { $sum: 1 },
                 position: { $last: '$clubPlayers.position' },
@@ -149,7 +150,8 @@ const getTopPlayersByPosition = async (
         {
             $project: {
                 _id: 0,
-                playerName: '$_id',
+                playerId: '$_id',
+                playerName: 1,
                 avgRating: { $round: ['$avgRating', 2] },
                 gamesPlayed: 1,
                 minutesPlayed: 1,
@@ -231,7 +233,7 @@ const fillPositionSlot = async (
 }
 
 interface ExcludedProfile {
-    playerName: string;
+    playerId: string;
     position: string;
 }
 
@@ -249,7 +251,7 @@ const buildTeam = async (
     for (const position of POSITION_ORDER) {
         const hardExclThisSlot = hardExcludedProfiles
             .filter(p => p.position === position)
-            .map(p => p.playerName)
+            .map(p => p.playerId)
 
         const isGoalkeeper = position === 'goalkeeper'
 
@@ -260,27 +262,28 @@ const buildTeam = async (
             isGoalkeeper ? true : isFloor,
             isGoalkeeper ? false : undefined
         )
-        players.forEach(p => softSelected.push(p.playerName))
+        players.forEach(p => softSelected.push(p.playerId))
         team.push(...players)
     }
 
     return team
 }
 
-const addTOTWAppearances = async (players: { playerName: string, position: string, avgRating: number }[],
+const addTOTWAppearances = async (players: ITOTWPlayer[],
     isoWeek: string, type: "best" | "worst" = "best") => {
     if (!players.length) return
 
     const uniquePlayers = [];
     const seen = new Set();
     for (const p of players) {
-        if (!seen.has(p.playerName)) {
-            seen.add(p.playerName);
+        if (!seen.has(p.playerId)) {
+            seen.add(p.playerId);
             uniquePlayers.push(p);
         }
     }
 
     const docs = uniquePlayers.map(p => ({
+        playerId: p.playerId,
         playerName: p.playerName,
         position: p.position,
         rating: p.avgRating,
@@ -310,7 +313,7 @@ export const calculateAndSaveTOTW = async (weekKey: string): Promise<void> => {
     try {
         bestPlayers = await buildTeam(weekStart, weekEnd, true, MIN_GAMES_PLAYED, false)
         hardExcludedProfiles = bestPlayers.map(p => ({
-            playerName: p.playerName,
+            playerId: p.playerId,
             position: p.position,
         }))
         worstPlayers = await buildTeam(weekStart, weekEnd, false, MIN_GAMES_PLAYED, false, hardExcludedProfiles)
@@ -319,7 +322,7 @@ export const calculateAndSaveTOTW = async (weekKey: string): Promise<void> => {
             console.warn(`[TOTW] Reiniciando calculo con minGames=${MIN_GAMES_FLOOR}`)
             bestPlayers = await buildTeam(weekStart, weekEnd, true, MIN_GAMES_FLOOR, true)
             hardExcludedProfiles = bestPlayers.map(p => ({
-                playerName: p.playerName,
+                playerId: p.playerId,
                 position: p.position,
             }))
             worstPlayers = await buildTeam(weekStart, weekEnd, false, MIN_GAMES_FLOOR, true, hardExcludedProfiles)
@@ -349,7 +352,7 @@ export const calculateAndSaveTOTW = async (weekKey: string): Promise<void> => {
     await addTOTWAppearances(bestPlayers, weekKey, 'best')
     await addTOTWAppearances(worstPlayers, weekKey, 'worst')
 
-    const affected = [...new Set([...bestPlayers, ...worstPlayers].map(p => p.playerName))]
+    const affected = [...new Map([...bestPlayers, ...worstPlayers].map(p => [p.playerId, { playerId: p.playerId, playerName: p.playerName }])).values()]
     await processTOTWAchievements(affected)
     await getTOTWProducer().publish(totw.toObject())
 

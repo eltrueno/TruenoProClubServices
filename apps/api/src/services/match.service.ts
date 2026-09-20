@@ -14,16 +14,16 @@ const getLatestByMatchTypeLimit = async (matchType: "league" | "playoff", limit:
     return response
 }
 
-const getLatestByPlayer = async (playerName: string, limit: number) => {
+const getLatestByPlayer = async (playerId: string, limit: number) => {
     const response = await MatchModel.find({
         $or: [
             {
                 "localClub.id": CLUBID,
-                "localClub.players.playername": playerName
+                "localClub.players.playerId": playerId
             },
             {
                 "awayClub.id": CLUBID,
-                "awayClub.players.playername": playerName
+                "awayClub.players.playerId": playerId
             }
         ]
     }).sort({ timestamp: -1 }).limit(limit)

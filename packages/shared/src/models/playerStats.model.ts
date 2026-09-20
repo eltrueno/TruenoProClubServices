@@ -27,6 +27,7 @@ const statsFields = {
 
 const playerStatsSchema = new Schema<IPlayerStats>(
     {
+        playerId: { type: String, required: true },
         playerName: { type: String, required: true },
         position: { type: String, required: true, enum: PLAYER_POSITIONS },
         ...statsFields
@@ -34,7 +35,7 @@ const playerStatsSchema = new Schema<IPlayerStats>(
     { timestamps: true, versionKey: false }
 )
 
-playerStatsSchema.index({ playerName: 1, position: 1 }, { unique: true })
+playerStatsSchema.index({ playerId: 1, position: 1 }, { unique: true })
 
 export const PlayerStatsOfficialModel = model<IPlayerStats>("member_stats_officials", playerStatsSchema)
 export const PlayerStatsFriendlyModel = model<IPlayerStats>("member_stats_friendlies", playerStatsSchema)

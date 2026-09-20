@@ -20,7 +20,8 @@ const achievementDefinitionSchema = new Schema<IAchievementDefinition>(
 
 const achievementUnlockedSchema = new Schema<IAchievementUnlocked>(
     {
-        playerName: { type: String, required: true, index: true },
+        playerId: { type: String, required: true, index: true },
+        playerName: { type: String, required: true },
         achievementId: { type: String, required: true, index: true },
         reached: { type: Number },
         unlockedAt: { type: Date, default: Date.now },
@@ -30,7 +31,7 @@ const achievementUnlockedSchema = new Schema<IAchievementUnlocked>(
 )
 
 // Evita duplicar un logro único o un mismo hito
-achievementUnlockedSchema.index({ playerName: 1, achievementId: 1, reached: 1 }, { unique: true })
+achievementUnlockedSchema.index({ playerId: 1, achievementId: 1, reached: 1 }, { unique: true })
 
 export const AchievementDefinitionModel = model<IAchievementDefinition>("achievements_definitions", achievementDefinitionSchema)
 export const AchievementUnlockedModel = model<IAchievementUnlocked>("achievements_unlocked", achievementUnlockedSchema)

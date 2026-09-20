@@ -1,6 +1,7 @@
 import type { PlayerPosition, TotwType } from "../constants.js"
 
 export interface ITOTWPlayer {
+    playerId: string
     playerName: string
     avgRating: number
     gamesPlayed: number
@@ -31,6 +32,7 @@ export interface ITOTW {
 }
 
 export interface IMemberTotwAppearances {
+    playerId: string
     playerName: string
     type: TotwType
     position: PlayerPosition

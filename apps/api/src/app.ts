@@ -6,19 +6,20 @@ import database from "./database/mongo.js"
 
 const app: Express = express();
 
-const DEVMODE = process.env.DEVMODE || false
+const DEVMODE = process.env.DEVMODE === "true"
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(",").map(s => s.trim()).filter(Boolean) ?? ["https://www.casemurocity.org"]
 const PORT = Number(process.env.PORT || 80)
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-if (DEVMODE) {
-    app.use(cors());
-} else {
-    app.use(cors({
-        origin: 'https://www.casemurocity.org'
-    }));
-}
+if (DEVMODE) console.warn("### DEVMODE ACTIVATED ###")
+
+// credentials: la cookie de sesión de auth.casemurocity.org viaja en las rutas protegidas (/admin, /members/me)
+app.use(cors({
+    origin: DEVMODE ? true : ALLOWED_ORIGINS,
+    credentials: true
+}))
 
 /* ROUTES */
 import membersRouter from "./routes/members.js"
@@ -26,12 +27,14 @@ import clubRouter from "./routes/club.js"
 import achievementRouter from "./routes/achievement.js"
 import totwRouter from "./routes/totw.js"
 import playerAveragesRouter from "./routes/playeraverages.js"
+import adminRouter from "./routes/admin.js"
 
 app.use("/club", clubRouter);
 app.use("/members", membersRouter);
 app.use("/achievements", achievementRouter)
 app.use("/totw", totwRouter)
 app.use("/playeraverages", playerAveragesRouter)
+app.use("/admin", adminRouter)
 
 import matchesRouter from "./routes/matches.js"
 app.use("/matches", matchesRouter)
@@ -59,7 +62,7 @@ app.get("/", async function (req, res) {
                     { "/": "List of club members" },
                     { "/stats": "List of all players stats" },
                     { "/stats/{type}": "List of specific type of players stats" },
-                    { "/{playerName}": "Get member profile by name (includes member info, stats, achievements and totw appearances)" }
+                    { "/{playerId}": "Get member profile by EA player id (includes member info, stats, achievements and totw appearances)" }
                 ]
             },
             {
@@ -68,7 +71,7 @@ app.get("/", async function (req, res) {
                     { "/{id}": "Get match by ID" },
                     { "/ordered?limit": "Ordered list of all matches (newer before)" },
                     { "/ordered/{type}?limit": "Ordered list of specific type of matches (newer before)" },
-                    { "/player/{playerName}?limit": "Ordered list of matches by playerName (newer before)" }
+                    { "/player/{playerId}?limit": "Ordered list of matches by EA player id (newer before)" }
                 ]
             },
             {

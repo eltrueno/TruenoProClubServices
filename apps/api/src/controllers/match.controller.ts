@@ -42,9 +42,9 @@ async function getAllMatchesOrdered(req: Request, res: Response, next: NextFunct
 async function getMatchesByPlayer(req: Request, res: Response, next: NextFunction) {
     try {
         const limitFilter: number = Number(req.query.limit)
-        const playerName: string = req.params.playerName
-        if (playerName === null || playerName === undefined || playerName === "") return next(new Error("ERROR_BAD_REQUEST"))
-        const response = await getLatestByPlayer(playerName, limitFilter)
+        const playerId: string = req.params.playerId
+        if (!playerId) return next(new Error("ERROR_BAD_REQUEST"))
+        const response = await getLatestByPlayer(playerId, limitFilter)
         if (!response || response.length === 0) return next(new Error("ERROR_NOT_FOUND"))
         res.json({
             status: {

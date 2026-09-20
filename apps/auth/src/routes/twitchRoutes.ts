@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { twitchService } from "../services/twitchService"
+import { twitchService } from "../services/twitchService.js"
 
 const router = Router()
 

@@ -1,16 +1,16 @@
 const { AttachmentBuilder } = require("discord.js")
 const { render } = require("@trueno-proclub-services/imagerenderer-client")
 require('dotenv').config();
+const WWW_URL = process.env.WWW_URL || "https://www.casemurocity.org"
+const { mention } = require("../utils/players")
 
 async function handle(client, achievement) {
     try {
         console.log("[Event Listener] 'memberachievement' event recieved")
         const announcementsChannel = await client.channels.cache.get("411962391799136266")
 
-        const player = achievement.player
-        const findMatch = client.playerDatabase.players.filter((e) => e.playerName === player.playerName)[0]
-        const discordId = findMatch ? findMatch.discordId : null
-        const playerMention = discordId ? `<@${discordId}>` : player.playerName
+        const player = { playerId: achievement.playerId, playerName: achievement.playerName }
+        const playerMention = mention(client, player)
 
         const encoraugements = ['¡Increible!', '¡Imparable!', '¡Impresionante!', '¡Menudo logro!']
         let achievementType = ""
@@ -42,11 +42,11 @@ async function handle(client, achievement) {
             }
         }
 
-        const filename = `playerachievement_${player.playerName}_${achievement.type}_${achievement.reached}.jpeg`
+        const filename = `playerachievement_${player.playerId}_${achievement.type}_${achievement.reached}.jpeg`
         const imgBuffer = await render({
             type: 'player-achievement',
             data: {
-                playerName: player.playerName,
+                playerId: player.playerId,
                 type: achievement.type,
                 reached: achievement.reached
             }
@@ -59,7 +59,7 @@ async function handle(client, achievement) {
                 "\n\n¡A por más!"
             )
             .setAuthor(
-                { name: 'Ver más en la web', iconURL: 'https://www.caracantosmeaos.club/escudo2024.png', url: 'https://www.caracantosmeaos.club/plantilla/' + player.playerName }
+                { name: 'Ver más en la web', iconURL: WWW_URL + '/escudo2024.png', url: WWW_URL + '/jugador?id=' + player.playerId }
             )
             .setColor(16776960)
             .setImage('attachment://' + filename)

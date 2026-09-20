@@ -4,7 +4,8 @@ import type { IMatch, IMatchClub, IMatchPlayer } from "../types/match.js"
 
 const matchPlayerSchema = new Schema<IMatchPlayer>(
     {
-        playername: { type: String },
+        playerId: { type: String, required: true },
+        playerName: { type: String, required: true },
         rating: { type: Number },
         secondsPlayed: { type: Number },
         redCards: { type: Number },
@@ -25,7 +26,9 @@ const matchPlayerSchema = new Schema<IMatchPlayer>(
         parrySaves: { type: Number },
         punchSaves: { type: Number },
         reflexSaves: { type: Number },
-        saves: { type: Number }
+        saves: { type: Number },
+        matchEventsRaw: { type: String },
+        matchEvents: { type: Schema.Types.Mixed }
     },
     { _id: false }
 )
@@ -43,6 +46,7 @@ const matchClubSchema = new Schema<IMatchClub>(
             tacklesMade: { type: Number, required: true },
             tackleSuccess: { type: Number, required: true }
         },
+        penaltiesScore: { type: Number },
         players: { type: [matchPlayerSchema], required: true }
     },
     { _id: false }

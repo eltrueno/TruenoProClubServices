@@ -13,16 +13,16 @@ const getAllByType = async (type: "official" | "friendly") => {
     return response
 }
 
-const getByName = async (playerName: string, type?: "official" | "friendly") => {
+const getByPlayerId = async (playerId: string, type?: "official" | "friendly") => {
     if (type) {
-        const response = await (type === "official" ? PlayerStatsOfficialModel : PlayerStatsFriendlyModel).find({ playerName }, { _id: 0 })
+        const response = await (type === "official" ? PlayerStatsOfficialModel : PlayerStatsFriendlyModel).find({ playerId }, { _id: 0 })
         return response
     }
     const [official, friendly] = await Promise.all([
-        PlayerStatsOfficialModel.find({ playerName }, { _id: 0 }),
-        PlayerStatsFriendlyModel.find({ playerName }, { _id: 0 })
+        PlayerStatsOfficialModel.find({ playerId }, { _id: 0 }),
+        PlayerStatsFriendlyModel.find({ playerId }, { _id: 0 })
     ])
     return { "official": official, "friendly": friendly }
 }
 
-export { getAll, getAllByType, getByName }
+export { getAll, getAllByType, getByPlayerId }

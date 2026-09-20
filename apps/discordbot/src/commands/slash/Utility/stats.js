@@ -1,4 +1,12 @@
 const { ApplicationCommandOptionType, MessageFlags } = require('discord.js');
+const { findByDiscordId } = require('../../../utils/players');
+require('dotenv').config();
+
+const API_URL = process.env.API_URL || "https://api.casemurocity.org"
+const WWW_URL = process.env.WWW_URL || "https://www.casemurocity.org"
+
+const SUM_FIELDS = ["gamesPlayed", "goals", "assists", "redCards", "manOfTheMatch", "ratingSum"]
+
 module.exports = {
     name: "stats",
     usage: "/stats o /stats [jugador]",
@@ -15,51 +23,58 @@ module.exports = {
     ownerOnly: false,
     run: async (client, interaction) => {
         const jugadorOption = interaction.options.getUser("jugador");
-        const msg = jugadorOption ? await interaction.reply({ content: ":hourglass_flowing_sand: Obteniendo estadísticas del jugador...", ephemeral: true })
-            : await interaction.reply({ content: ":hourglass_flowing_sand: Obteniendo tus estadísticas...", ephemeral: true })
+        await interaction.reply({
+            content: jugadorOption ? ":hourglass_flowing_sand: Obteniendo estadísticas del jugador..." : ":hourglass_flowing_sand: Obteniendo tus estadísticas...",
+            flags: MessageFlags.Ephemeral
+        })
 
         let embedMsg
 
         try {
-            const playerId = jugadorOption ? jugadorOption.id : interaction.user.id
-            const player = client.playerDatabase.players.filter((e) => e.discordId === playerId)[0]
-            const playerName = player ? player.playerName : ""
-            if (!playerName | playerName == "") {
+            const discordId = jugadorOption ? jugadorOption.id : interaction.user.id
+            const entry = findByDiscordId(client, discordId)
+            if (!entry || !entry.playerId) {
                 if (!jugadorOption) throw new Error("¡No eres un jugador del club! Debes especificar un jugador")
-                else throw new Error("Jugador no encontrado, por favor especifica un nombre de jugador que juegue en el club")
-
+                throw new Error("Jugador no encontrado, por favor especifica un jugador que juegue en el club")
             }
-            const apiResponse = await fetch("https://api.caracantosmeaos.club/members")
-            if (!apiResponse.status || apiResponse.status != 200) throw new Error("Error conectando con la API")
 
-            const jsonResponse = await apiResponse.json()
-            const jsonPlayer = jsonResponse.response.filter((e) => e.playerName === playerName)[0]
-            if (!jsonPlayer | jsonPlayer == "") throw new Error("Jugador no encontrado, por favor especifica un nombre de jugador que juegue en el club")
+            const apiResponse = await fetch(`${API_URL}/members/${entry.playerId}`)
+            if (apiResponse.status !== 200) throw new Error("Error conectando con la API")
 
+            const { response: profile } = await apiResponse.json()
+            if (!profile || !profile.member) throw new Error("Jugador no encontrado en la API")
+
+            // Stats oficiales sumando todas las posiciones
+            const totals = Object.fromEntries(SUM_FIELDS.map((f) => [f, 0]))
+            for (const s of profile.stats.official || []) {
+                for (const f of SUM_FIELDS) totals[f] += Number(s[f]) || 0
+            }
+            const ratingAve = totals.gamesPlayed > 0 ? (totals.ratingSum / totals.gamesPlayed).toFixed(2) : "-"
+            const member = profile.member
 
             embedMsg = new client.discord.EmbedBuilder()
-                .setTitle('Estadísticas de ' + playerName)
-                .setDescription(jsonPlayer.proName + " (" + jsonPlayer.proOverall + ")")
+                .setTitle('Estadísticas de ' + member.playerName)
+                .setDescription((member.proName || "Desconocido") + " (" + (member.proOverall || "¿?") + ")")
                 .setAuthor(
-                    { name: 'Ver más en la web', iconURL: 'https://www.caracantosmeaos.club/escudo2024.png', url: 'https://www.caracantosmeaos.club/plantilla/' + playerName }
+                    { name: 'Ver más en la web', iconURL: `${WWW_URL}/escudo2024.png`, url: `${WWW_URL}/jugador?id=${member.playerId}` }
                 )
                 .setColor(16776960)
-                .setThumbnail(`https://www.caracantosmeaos.club/players/${playerName}_full_transp.png`)
                 .addFields(
-                    { name: 'Partidos jugados', value: "" + jsonPlayer.gamesPlayed, inline: true },
-                    { name: 'Goles', value: "" + jsonPlayer.goals, inline: true },
-                    { name: 'Asistencias', value: "" + jsonPlayer.assists, inline: true },
-                    { name: 'Tarjetas Rojas', value: "" + jsonPlayer.redCards, inline: true },
-                    { name: 'Valoración media', value: "" + jsonPlayer.ratingAve, inline: true },
-                    { name: 'Mejor del partido', value: "" + jsonPlayer.manOfTheMatch, inline: true }
+                    { name: 'Partidos jugados', value: "" + totals.gamesPlayed, inline: true },
+                    { name: 'Goles', value: "" + totals.goals, inline: true },
+                    { name: 'Asistencias', value: "" + totals.assists, inline: true },
+                    { name: 'Tarjetas Rojas', value: "" + totals.redCards, inline: true },
+                    { name: 'Valoración media', value: "" + ratingAve, inline: true },
+                    { name: 'Mejor del partido', value: "" + totals.manOfTheMatch, inline: true }
                 )
+            if (member.imageUrl) embedMsg.setThumbnail(member.imageUrl)
         } catch (e) {
             console.error(e)
             embedMsg = new client.discord.EmbedBuilder()
                 .setTitle('Ha ocurrido un error: ')
                 .setDescription(e.message)
                 .setAuthor(
-                    { name: 'Caracantosmeaos C.F', iconURL: 'https://www.caracantosmeaos.club/escudo2024.png' }
+                    { name: 'Casemuro City', iconURL: `${WWW_URL}/escudo2024.png` }
                 )
                 .setColor(15548997)
         } finally {

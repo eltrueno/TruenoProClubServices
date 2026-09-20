@@ -31,6 +31,7 @@ function getMatchStatValue(player: IMatchPlayer, category: string): number {
 const checkMemberAchievements = async (
     stats: Pick<IPlayerStats, "gamesPlayed" | "goals" | "assists" | "redCards"
         | "passesMade" | "passesSuccess" | "manOfTheMatch" | "hattricks" | "pokers" | "cleanSheets" | "saves" | "minutesPlayed"> & {
+            playerId: string;
             playerName: string;
             type: "official" | "friendly";
             matchObj?: IMatch;
@@ -42,7 +43,7 @@ const checkMemberAchievements = async (
 
     // 2. Get already unlocked by this player for these definitions
     const unlocked = await AchievementUnlockedModel.find({
-        playerName: stats.playerName,
+        playerId: stats.playerId,
         achievementId: { $in: definitions.map(d => d._id) }
     }).lean();
 
@@ -51,8 +52,8 @@ const checkMemberAchievements = async (
     // Pre-calculate matchPlayer if matchObj is present
     let matchPlayer: IMatchPlayer | undefined;
     if (stats.matchObj) {
-        matchPlayer = stats.matchObj.localClub.players.find(p => p.playername === stats.playerName)
-            || stats.matchObj.awayClub.players.find(p => p.playername === stats.playerName);
+        matchPlayer = stats.matchObj.localClub.players.find(p => p.playerId === stats.playerId)
+            || stats.matchObj.awayClub.players.find(p => p.playerId === stats.playerId);
     }
 
     for (const def of definitions) {
@@ -67,6 +68,7 @@ const checkMemberAchievements = async (
                 const newReached = Math.floor(statValue / step) * step;
                 newUnlocks.push({
                     unlock: {
+                        playerId: stats.playerId,
                         playerName: stats.playerName,
                         achievementId: def._id,
                         reached: newReached,
@@ -105,6 +107,7 @@ const checkMemberAchievements = async (
 
                     newUnlocks.push({
                         unlock: {
+                            playerId: stats.playerId,
                             playerName: stats.playerName,
                             achievementId: def._id,
                             unlockedAt: unlockDate,
@@ -147,6 +150,7 @@ const checkMemberAchievements = async (
  * Checks and saves new achievements for a member, given their current stats and category.
  */
 const processAchievements = async (
+    playerId: string,
     playerName: string,
     statsForAchievements: any,
     match: { matchType: "official" | "friendly", matchObj?: IMatch },
@@ -155,6 +159,7 @@ const processAchievements = async (
     const statsData = statsForAchievements.toObject ? statsForAchievements.toObject() : statsForAchievements
     const newUnlocks = await checkMemberAchievements({
         ...statsData,
+        playerId,
         playerName,
         type: match.matchType,
         matchObj: match?.matchObj
@@ -166,7 +171,7 @@ const processAchievements = async (
             // Use updateOne with upsert to avoid duplicate key errors during batch processing
             await AchievementUnlockedModel.updateOne(
                 {
-                    playerName: unlock.playerName,
+                    playerId: unlock.playerId,
                     achievementId: unlock.achievementId,
                     reached: unlock.reached // This works for both unique (reached=undefined) and infinite
                 },
@@ -181,7 +186,7 @@ const processAchievements = async (
  * Checks TOTW-related achievements for a list of players.
  * Counts their best/worst appearances and evaluates "general" type definitions.
  */
-const processTOTWAchievements = async (playerNames: string[]) => {
+const processTOTWAchievements = async (players: { playerId: string, playerName: string }[]) => {
     const definitions = await AchievementDefinitionModel.find({
         type: "general",
         category: { $in: ["totwBest", "totwWorst"] }
@@ -189,16 +194,16 @@ const processTOTWAchievements = async (playerNames: string[]) => {
 
     if (definitions.length === 0) return;
 
-    for (const playerName of playerNames) {
+    for (const { playerId, playerName } of players) {
         const [bestCount, worstCount] = await Promise.all([
-            MemberTotwAppearancesModel.countDocuments({ playerName, type: "best" }),
-            MemberTotwAppearancesModel.countDocuments({ playerName, type: "worst" })
+            MemberTotwAppearancesModel.countDocuments({ playerId, type: "best" }),
+            MemberTotwAppearancesModel.countDocuments({ playerId, type: "worst" })
         ]);
 
         const stats = { totwBest: bestCount, totwWorst: worstCount };
 
         const unlocked = await AchievementUnlockedModel.find({
-            playerName,
+            playerId,
             achievementId: { $in: definitions.map(d => d._id) }
         }).lean();
 
@@ -216,6 +221,7 @@ const processTOTWAchievements = async (playerNames: string[]) => {
                     const newReached = Math.floor(statValue / step) * step;
                     newUnlocks.push({
                         unlock: {
+                            playerId,
                             playerName,
                             achievementId: def._id,
                             reached: newReached,
@@ -238,6 +244,7 @@ const processTOTWAchievements = async (playerNames: string[]) => {
                     if (reachedCondition) {
                         newUnlocks.push({
                             unlock: {
+                                playerId,
                                 playerName,
                                 achievementId: def._id,
                                 unlockedAt: new Date()
@@ -254,7 +261,7 @@ const processTOTWAchievements = async (playerNames: string[]) => {
         for (const { unlock, mode, def } of newUnlocks) {
             await AchievementUnlockedModel.updateOne(
                 {
-                    playerName: unlock.playerName,
+                    playerId: unlock.playerId,
                     achievementId: unlock.achievementId,
                     reached: unlock.reached
                 },
@@ -282,7 +289,11 @@ const processTOTWAchievements = async (playerNames: string[]) => {
  */
 const recalculateAllTOTWAchievements = async () => {
     console.info("[Achievements] Recalculating TOTW achievements for all players...")
-    const allPlayers: string[] = await MemberTotwAppearancesModel.distinct("playerName")
+    const allPlayers = await MemberTotwAppearancesModel.aggregate<{ playerId: string, playerName: string }>([
+        { $sort: { createdAt: 1 } },
+        { $group: { _id: "$playerId", playerName: { $last: "$playerName" } } },
+        { $project: { _id: 0, playerId: "$_id", playerName: 1 } }
+    ])
 
     if (allPlayers.length === 0) {
         console.info("[Achievements] No TOTW appearances found, skipping.")

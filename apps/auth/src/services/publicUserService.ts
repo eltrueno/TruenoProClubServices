@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb"
-import { db } from "../db"
+import { db } from "../db/index.js"
 
 export interface PublicUser {
     id: string

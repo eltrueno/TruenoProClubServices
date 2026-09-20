@@ -8,7 +8,7 @@ router.get("/", getAllMatches)
 router.get("/ordered", getAllMatchesOrdered)
 router.get("/ordered/:type", getMatchesByTypeOrdered)
 
-router.get("/player/:playerName", getMatchesByPlayer)
+router.get("/player/:playerId", getMatchesByPlayer)
 
 router.get("/:id", getMatchById)
 

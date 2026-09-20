@@ -2,6 +2,8 @@ import type { AveragePosition, PlayerPosition } from "../constants.js"
 
 /** Acumulado de stats de un jugador en una posición (una colección por tipo: oficial / amistoso) */
 export interface IPlayerStats {
+    playerId: string
+    /** último gamertag visto (desnormalizado para listados) */
     playerName: string
     position: PlayerPosition
     gamesPlayed: number
@@ -27,7 +29,7 @@ export interface IPlayerStats {
 }
 
 /** Medias del club por posición, calculadas por el worker a partir de IPlayerStats */
-export interface IAverageStats extends Omit<IPlayerStats, "playerName" | "position"> {
+export interface IAverageStats extends Omit<IPlayerStats, "playerId" | "playerName" | "position"> {
     position: AveragePosition
     sampleSize: number
     computedAt: Date

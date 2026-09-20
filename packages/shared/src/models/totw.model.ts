@@ -4,6 +4,7 @@ import type { IMemberTotwAppearances, ITOTW, ITOTWPlayer } from "../types/totw.j
 
 const totwPlayerSchema = new Schema<ITOTWPlayer>(
     {
+        playerId: { type: String, required: true },
         playerName: { type: String, required: true },
         avgRating: { type: Number, required: true },
         gamesPlayed: { type: Number, required: true },
@@ -41,6 +42,7 @@ totwSchema.index({ weekIso: 1 }, { unique: true })
 
 const memberTotwAppearancesSchema = new Schema<IMemberTotwAppearances>(
     {
+        playerId: { type: String, required: true },
         playerName: { type: String, required: true },
         type: { type: String, enum: TOTW_TYPES, required: true },
         position: { type: String, enum: PLAYER_POSITIONS, required: true },
@@ -49,7 +51,7 @@ const memberTotwAppearancesSchema = new Schema<IMemberTotwAppearances>(
     },
     { timestamps: true, versionKey: false }
 )
-memberTotwAppearancesSchema.index({ playerName: 1, isoWeek: 1, type: 1 }, { unique: true })
+memberTotwAppearancesSchema.index({ playerId: 1, isoWeek: 1, type: 1 }, { unique: true })
 
 export const TOTWModel = model<ITOTW>("totw", totwSchema)
 export const MemberTotwAppearancesModel = model<IMemberTotwAppearances>("member_totw_appearances", memberTotwAppearancesSchema)

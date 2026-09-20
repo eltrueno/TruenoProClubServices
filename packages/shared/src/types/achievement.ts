@@ -14,6 +14,8 @@ export interface IAchievementDefinition {
 }
 
 export interface IAchievementUnlocked {
+    playerId: string
+    /** gamertag en el momento del desbloqueo */
     playerName: string
     achievementId: string
     reached?: number

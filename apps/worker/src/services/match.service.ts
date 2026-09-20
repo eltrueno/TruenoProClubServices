@@ -1,29 +1,32 @@
 import type { IMatch } from "@trueno-proclub-services/shared"
 import { MatchModel } from "@trueno-proclub-services/shared/models"
 import { accumulateStatsFromMatch } from "./playerStats.service.js"
+import { upsertMembersFromMatch } from "./member.service.js"
 import dotenv from "dotenv"
 
 dotenv.config()
-const CLUBID: number = Number(process.env.CLUBID) || 290776;
+const CLUBID: number = Number(process.env.CLUBID) || 290776
 
 const insertOne = async (match: IMatch) => {
-    var model = new MatchModel(match)
-    model._id = match.matchId
-    const response = await MatchModel.create(model)
+    const response = await MatchModel.create({ ...match, _id: match.matchId })
 
-    // Accumulate stats and process achievements sequentially
+    // Members first (the match is the only source of playerId), then stats + achievements
     try {
-        await accumulateStatsFromMatch(match, CLUBID);
+        await upsertMembersFromMatch(match, CLUBID)
     } catch (err) {
-        console.error("[Stats] Failed to accumulate stats from match:", err);
+        console.error("[Members] Failed to upsert members from match:", err)
+    }
+    try {
+        await accumulateStatsFromMatch(match, CLUBID)
+    } catch (err) {
+        console.error("[Stats] Failed to accumulate stats from match:", err)
     }
 
     return response
 }
 
 const getLatest = async () => {
-    const response = await MatchModel.find().sort({ timestamp: -1 }).limit(1)
-    return response
+    return MatchModel.find().sort({ timestamp: -1 }).limit(1)
 }
 
 export { insertOne, getLatest }

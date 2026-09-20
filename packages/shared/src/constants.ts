@@ -43,3 +43,13 @@ export const EVENT_KEYS = {
     totwNew: "totw.new",
 } as const
 export type EventKey = typeof EVENT_KEYS[keyof typeof EVENT_KEYS]
+
+/** Roles de usuario (Better Auth `user.role`) */
+export enum UserRole {
+    visitor = "visitor",
+    follower = "follower",
+    subscriber = "subscriber",
+    vip = "vip",
+    mod = "mod",
+    admin = "admin"
+}

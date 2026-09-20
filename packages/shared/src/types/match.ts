@@ -1,7 +1,10 @@
 import type { MatchResult, MatchType, PlayerPosition } from "../constants.js"
 
 export interface IMatchPlayer {
-    playername: string
+    /** personaId de EA */
+    playerId: string
+    /** gamertag en el momento del partido */
+    playerName: string
     rating: number
     secondsPlayed: number
     redCards: number
@@ -23,6 +26,10 @@ export interface IMatchPlayer {
     punchSaves: number
     reflexSaves: number
     saves: number
+    /** `match_event_aggregate_0` de EA tal cual ("code:count,...") */
+    matchEventsRaw?: string
+    /** `matchEventsRaw` parseado: código de evento → veces */
+    matchEvents?: Record<string, number>
 }
 
 export interface IMatchClubStats {
@@ -39,6 +46,8 @@ export interface IMatchClub {
     id: number
     name: string
     matchStats: IMatchClubStats
+    /** goles en la tanda de penaltis, solo si `winnerByPen` */
+    penaltiesScore?: number
     players: IMatchPlayer[]
 }
 

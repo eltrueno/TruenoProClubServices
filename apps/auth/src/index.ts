@@ -2,12 +2,14 @@ import "dotenv/config"
 import express from "express"
 import cors from "cors"
 import { toNodeHandler } from "better-auth/node"
-import { connectToDatabase, db } from "./db/index"
-import { createRequireAuth } from "./middleware/requireAuth"
-import twitchRoutes from "./routes/twitchRoutes"
-import { twitchService } from "./services/twitchService"
+import { connectToDatabase, db } from "./db/index.js"
+import { createRequireAuth, requireRole } from "./middleware/requireAuth.js"
+import twitchRoutes from "./routes/twitchRoutes.js"
+import { twitchService } from "./services/twitchService.js"
 import { createAuth, User } from "@trueno-proclub-services/auth"
-import publicRoutes from "./routes/publicRoutes"
+import publicRoutes from "./routes/publicRoutes.js"
+import adminRoutes from "./routes/adminRoutes.js"
+import { UserRole } from "@trueno-proclub-services/shared"
 
 const app = express()
 export const auth = createAuth(db, async (user: User) => {
@@ -38,6 +40,9 @@ app.use("/api/public", publicRoutes)
 
 // Custom API routes protected by middleware
 app.use("/api/twitch", requireAuth, twitchRoutes)
+
+// Admin routes (session + admin role)
+app.use("/api/admin", requireAuth, requireRole(UserRole.admin), adminRoutes)
 
 app.get("/health", (_, res) => {
   res.json({ status: "ok" })

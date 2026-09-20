@@ -1,6 +1,8 @@
 const { AttachmentBuilder } = require("discord.js")
 const { render } = require("@trueno-proclub-services/imagerenderer-client")
 require('dotenv').config();
+const WWW_URL = process.env.WWW_URL || "https://www.casemurocity.org"
+const { mention } = require("../utils/players")
 
 async function handle(client, match) {
     try {
@@ -11,9 +13,7 @@ async function handle(client, match) {
         let playerMentions = ""
         for (p in players) {
             var player = players[p]
-            var findMatch = client.playerDatabase.players.filter((e) => e.playerName === player.playerName)[0]
-            var discordId = findMatch ? findMatch.discordId : null
-            playerMentions += discordId ? `<@${discordId}> ` : player.playerName + " "
+            playerMentions += mention(client, player) + " "
         }
 
         let embedMsg
@@ -32,7 +32,7 @@ async function handle(client, match) {
                         "\n\n*Plantilla: " + playerMentions + "*"
                     )
                     .setAuthor(
-                        { name: 'Ver más en la web', iconURL: 'https://www.caracantosmeaos.club/escudo2024.png', url: 'https://www.caracantosmeaos.club/partido/' + match.matchId }
+                        { name: 'Ver más en la web', iconURL: WWW_URL + '/escudo2024.png', url: WWW_URL + '/partido?id=' + match.matchId }
                     )
                     .setImage(`attachment://match_${match.matchId}.jpeg`)
                     .setColor(9807270)
@@ -48,7 +48,7 @@ async function handle(client, match) {
                         "\n\n*Plantilla: " + playerMentions + "*"
                     )
                     .setAuthor(
-                        { name: 'Ver más en la web', iconURL: 'https://www.caracantosmeaos.club/escudo2024.png', url: 'https://www.caracantosmeaos.club/partido/' + match.matchId }
+                        { name: 'Ver más en la web', iconURL: WWW_URL + '/escudo2024.png', url: WWW_URL + '/partido?id=' + match.matchId }
                     )
                     .setImage(`attachment://match_${match.matchId}.jpeg`)
                     .setColor(15548997)
@@ -64,7 +64,7 @@ async function handle(client, match) {
                         "\n\n*Plantilla: " + playerMentions + "*"
                     )
                     .setAuthor(
-                        { name: 'Ver más en la web', iconURL: 'https://www.caracantosmeaos.club/escudo2024.png', url: 'https://www.caracantosmeaos.club/partido/' + match.matchId }
+                        { name: 'Ver más en la web', iconURL: WWW_URL + '/escudo2024.png', url: WWW_URL + '/partido?id=' + match.matchId }
                     )
                     .setImage(`attachment://match_${match.matchId}.jpeg`)
                     .setColor(5763719)
@@ -77,7 +77,7 @@ async function handle(client, match) {
                     .setTitle('Ha ocurrido un error ')
                     .setDescription("No se ha podido obtener los datos del partido")
                     .setAuthor(
-                        { name: 'Caracantosmeaos C.F', iconURL: 'https://www.caracantosmeaos.club/escudo2024.png' }
+                        { name: 'Casemuro City', iconURL: WWW_URL + '/escudo2024.png' }
                     )
                     .setImage(`attachment://match_${match.matchId}.jpeg`)
                     .setColor(15548997)

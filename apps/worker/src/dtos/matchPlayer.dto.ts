@@ -1,11 +1,19 @@
-import type { IMatchPlayer } from "@trueno-proclub-services/shared"
+import type { IMatchPlayer, PlayerPosition } from "@trueno-proclub-services/shared"
+import { parseMatchEvents, type IMatchClubPlayer } from "@trueno-proclub-services/eafcapi"
 
+const num = (v: unknown) => {
+    const n = Number(v)
+    return Number.isFinite(n) ? n : 0
+}
+
+/** Mapea un jugador crudo de `clubs/matches` (con su id, que es la clave del objeto `players`) → IMatchPlayer */
 export default class MatchPlayerDTO implements IMatchPlayer {
-    playername: string
+    playerId: string
+    playerName: string
     rating: number
     secondsPlayed: number
     redCards: number
-    position: "midfielder" | "forward" | "defender" | "goalkeeper"
+    position: PlayerPosition
     assists: number
     goals: number
     shots: number
@@ -23,31 +31,34 @@ export default class MatchPlayerDTO implements IMatchPlayer {
     punchSaves: number
     reflexSaves: number
     saves: number
+    matchEventsRaw?: string
+    matchEvents?: Record<string, number>
 
-    constructor(rawdata?: any) {
-        this.playername = rawdata.playername,
-            this.rating = Number(rawdata.rating)
-        this.secondsPlayed = Number(rawdata.secondsPlayed)
-        this.redCards = Number(rawdata.redcards)
-        this.position = rawdata.pos
-        this.assists = Number(rawdata.assists)
-        this.goals = Number(rawdata.goals)
-        this.shots = Number(rawdata.shots)
-        this.goalsConceded = Number(rawdata.goalsconceded)
-        this.manOfTheMatch = Boolean(Number(rawdata.mom))
-        this.passesMade = Number(rawdata.passattempts),
-            this.passesSuccess = Number(rawdata.passesmade),
-            this.tacklesMade = Number(rawdata.tackleattempts)
-        this.tacklesSuccess = Number(rawdata.tacklesmade)
-        this.cleanSheet = Boolean(this.goalsConceded === 0)
-        this.ballDiveSaves = Number(rawdata.ballDiveSaves)
-        this.crossSaves = Number(rawdata.crossSaves)
-        this.goodDirectionSaves = Number(rawdata.goodDirectionSaves)
-        this.parrySaves = Number(rawdata.parrySaves)
-        this.punchSaves = Number(rawdata.punchSaves)
-        this.reflexSaves = Number(rawdata.reflexSaves)
-        this.saves = Number(rawdata.saves)
+    constructor(playerId: string, raw: IMatchClubPlayer) {
+        this.playerId = playerId
+        this.playerName = raw.playername
+        this.rating = num(raw.rating)
+        this.secondsPlayed = num(raw.secondsPlayed)
+        this.redCards = num(raw.redcards)
+        this.position = (raw.pos || "midfielder") as PlayerPosition
+        this.assists = num(raw.assists)
+        this.goals = num(raw.goals)
+        this.shots = num(raw.shots)
+        this.goalsConceded = num(raw.goalsconceded)
+        this.manOfTheMatch = raw.mom === "1"
+        this.passesMade = num(raw.passattempts)
+        this.passesSuccess = num(raw.passesmade)
+        this.tacklesMade = num(raw.tackleattempts)
+        this.tacklesSuccess = num(raw.tacklesmade)
+        this.cleanSheet = this.goalsConceded === 0
+        this.ballDiveSaves = num(raw.ballDiveSaves)
+        this.crossSaves = num(raw.crossSaves)
+        this.goodDirectionSaves = num(raw.goodDirectionSaves)
+        this.parrySaves = num(raw.parrySaves)
+        this.punchSaves = num(raw.punchSaves)
+        this.reflexSaves = num(raw.reflexSaves)
+        this.saves = num(raw.saves)
+        this.matchEventsRaw = raw.match_event_aggregate_0 || undefined
+        this.matchEvents = this.matchEventsRaw ? parseMatchEvents(this.matchEventsRaw) : undefined
     }
-
-
 }
