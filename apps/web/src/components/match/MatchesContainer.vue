@@ -96,10 +96,15 @@
                     <MatchField v-for="(match, index) in pagedMatchList" :key="match.matchId" :match="match" :index="index"/>
                 </TransitionGroup>
             </div>
+            <div v-else-if="matches.length === 0" class="w-full flex flex-col items-center gap-2 py-8 text-center">
+                    <h3 class="text-2xl font-bold">Todavía no hay partidos</h3>
+                    <p class="text-base-content/60">Se añaden automáticamente en cuanto el club juega. ¡Vuelve pronto!</p>
+                    <img src="/illustrations/soccer1.svg" class="w-full max-w-xs md:max-w-sm mt-4 select-none pointer-events-none" alt="Balón de fútbol">
+            </div>
             <div v-else class="w-full">
                     <h3 class="text-center text-lg p-3">No existe ningún resultado con los filtros aplicados</h3>
                     <div class="flex place-content-center p-6">
-                        <img src="/illustrations/noresults.svg" class="lg:w-1/4 w-full select-none pointer-events-none" alt="image representing no results with applied filters">
+                        <img src="/illustrations/noresults.svg" class="w-full max-w-xs md:max-w-sm select-none pointer-events-none" alt="image representing no results with applied filters">
                     </div>
             </div>
         </div>
@@ -107,7 +112,7 @@
             <h3 class="text-center text-lg p-3">Ha ocurrido un error. Prueba de nuevo más tarde</h3>
             <h3 class="text-center text-lg px-3 "><i>Más información: <a href="https://status.caracantosmeaos.club/">https://status.caracantosmeaos.club/</a></i></h3>
             <div class="flex place-content-center p-6">
-                <img src="/illustrations/bugfixingsvg.svg" class="lg:w-1/4 w-full select-none pointer-events-none" alt="Image representing error">
+                <img src="/illustrations/bugfixingsvg.svg" class="w-full max-w-xs md:max-w-sm select-none pointer-events-none" alt="Image representing error">
             </div>
         </div>
     </div>

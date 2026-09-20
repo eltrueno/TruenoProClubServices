@@ -1,5 +1,5 @@
 import type {
-    ApiResponse, IAchievementDefinition, IAverageStats, IClub, IClubMember, IClubMemberAdminPatch,
+    ApiResponse, IAchievementDefinition, IAverageStats, IClub, IClubMember, IClubMemberAdminPatch, ILinkRequest,
     IMatch, IPlayerProfile, IPlayerStats, IPublicUser, ITOTW, IMemberTotwAppearances
 } from "@trueno-proclub-services/shared"
 
@@ -64,6 +64,10 @@ export const tpcsApi = {
         getStatsByType: (type: "official" | "friendly") => api<IPlayerStats[]>(`/members/stats/${type}`),
         /** Jugador vinculado a la cuenta con sesión (null si no hay) */
         getMine: () => api<IClubMember | null>("/members/me", { credentials: true }),
+        /** Solicitud de vinculación pendiente de la cuenta con sesión (null si no hay) */
+        getMyLinkRequest: () => api<ILinkRequest | null>("/members/me/link-request", { credentials: true }),
+        requestLink: (playerId: string) => api<ILinkRequest>("/members/me/link-request", { method: "POST", body: { playerId }, credentials: true }),
+        cancelLinkRequest: () => api<{ cancelled: boolean }>("/members/me/link-request", { method: "DELETE", credentials: true }),
     },
 
     matches: {
@@ -94,6 +98,11 @@ export const tpcsApi = {
     admin: {
         patchMember: (playerId: string, patch: IClubMemberAdminPatch) =>
             api<IClubMember>(`/admin/members/${encodeURIComponent(playerId)}`, { method: "PATCH", body: patch, credentials: true }),
+        linkRequests: () => api<ILinkRequest[]>("/admin/link-requests", { credentials: true }),
+        approveLinkRequest: (id: string) =>
+            api<{ request: ILinkRequest; member: IClubMember }>(`/admin/link-requests/${encodeURIComponent(id)}/approve`, { method: "POST", credentials: true }),
+        rejectLinkRequest: (id: string) =>
+            api<ILinkRequest>(`/admin/link-requests/${encodeURIComponent(id)}/reject`, { method: "POST", credentials: true }),
     },
 }
 

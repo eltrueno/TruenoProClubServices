@@ -35,6 +35,10 @@ export type AchievementMode = typeof ACHIEVEMENT_MODES[number]
 export const TOTW_TYPES = ["best", "worst"] as const
 export type TotwType = typeof TOTW_TYPES[number]
 
+/** Estados de una solicitud de vinculación cuenta ↔ jugador */
+export const LINK_REQUEST_STATUS = ["pending", "approved", "rejected"] as const
+export type LinkRequestStatus = typeof LINK_REQUEST_STATUS[number]
+
 /** Routing keys del exchange `events` de RabbitMQ */
 export const EVENT_KEYS = {
     matchNew: "match.new",

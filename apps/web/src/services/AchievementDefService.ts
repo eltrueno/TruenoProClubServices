@@ -1,13 +1,13 @@
 import FetchService from "@services/FetchService"
-import AchievementDefinitionEntity from "@/model/AchievementDefinitionEntity"
+import type { IAchievementDefinition } from "@trueno-proclub-services/shared"
 import { tpcsApi } from "@/lib/api"
 
-export default class AchievementDefService extends FetchService<AchievementDefinitionEntity[]> {
+export default class AchievementDefService extends FetchService<IAchievementDefinition[]> {
     constructor() {
         super([])
     }
 
     protected async load() {
-        return (await tpcsApi.achievements.getDefinitions()).map((d) => new AchievementDefinitionEntity(d))
+        return tpcsApi.achievements.getDefinitions()
     }
 }

@@ -7,12 +7,17 @@ const _userOverride = ref<any>(null)
 // Jugador vinculado a la cuenta (members.userId): se carga bajo demanda y se comparte entre islas
 const _myMember = ref<IClubMember | null>(null)
 const _myMemberLoaded = ref(false)
+// Si el auth no responde (caído, CORS...), better-auth puede quedarse en isPending para siempre:
+// pasado este tiempo se da la sesión por no iniciada para no dejar la UI en skeleton
+const SESSION_PENDING_TIMEOUT_MS = 5000
+const _pendingTimedOut = ref(false)
+if (typeof window !== "undefined") setTimeout(() => { _pendingTimedOut.value = true }, SESSION_PENDING_TIMEOUT_MS)
 
 export function useAuth() {
     const sessionState = authClient.useSession()
 
     const session = computed<any>(() => (sessionState.value as any)?.data ?? null)
-    const isPending = computed(() => sessionState.value?.isPending ?? false)
+    const isPending = computed(() => (sessionState.value?.isPending ?? false) && !_pendingTimedOut.value)
     const isLoggingIn = ref(false)
 
     const user = computed(() => _userOverride.value ?? session.value?.user ?? null)

@@ -120,7 +120,7 @@
                 <div v-else class="w-full">
                     <h3 class="text-center text-lg p-3">No existe ningún resultado con los filtros aplicados</h3>
                     <div class="flex place-content-center p-6">
-                        <img src="/illustrations/noresults.svg" class="lg:w-1/4 w-full select-none pointer-events-none" alt="background decoration">
+                        <img src="/illustrations/noresults.svg" class="w-full max-w-xs md:max-w-sm select-none pointer-events-none" alt="background decoration">
                     </div>
                 </div>
 

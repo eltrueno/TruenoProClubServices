@@ -15,6 +15,7 @@ Los tipos de todas las respuestas están en `packages/shared` (`IClubMember`, `I
 - **`playerName`**: último gamertag visto para ese `playerId`. Solo para mostrar. Los miembros guardan además `nameHistory[]`.
 - **Sesión**: la pone el auth service en una cookie de dominio `.casemurocity.org`. Las rutas protegidas del api la validan reenviándola a `AUTH_URL/api/auth/get-session`; la web tiene que hacer `fetch(..., { credentials: "include" })`.
 - **0 segundos**: un jugador que aparece en un partido con `secondsPlayed: 0` se guarda en el partido pero no cuenta para stats, medias, logros ni TOTW.
+- **Vinculación cuenta ↔ jugador** (`members.userId`): la hace un admin, bien directamente (`PATCH /admin/members/:playerId`), bien aprobando una **solicitud** que el propio usuario crea desde "Mi cuenta" (`POST /members/me/link-request`). Colección `link_requests` (`ILinkRequest`: `id, userId, userName, userImage, playerId, playerName, status: pending|approved|rejected, createdAt, resolvedAt, resolvedBy`). Un usuario solo puede tener una solicitud pendiente y una cuenta solo puede estar vinculada a un jugador.
 
 ---
 
@@ -44,6 +45,9 @@ Excepción: `GET /club` devuelve `{ "status": 200, "response": … }` o `{ "stat
 | `GET` | `/members/stats` | — | `{ official: IPlayerStats[], friendly: IPlayerStats[] }` de todos los jugadores. Un doc por jugador **y posición**. |
 | `GET` | `/members/stats/:type` | — | `type` = `official` \| `friendly`. |
 | `GET` | `/members/me` | sesión | Miembro vinculado a la cuenta con sesión (`IClubMember` o `null`). |
+| `GET` | `/members/me/link-request` | sesión | Solicitud de vinculación pendiente de la cuenta (`ILinkRequest` o `null`). |
+| `POST` | `/members/me/link-request` | sesión | Body `{ "playerId": string }`. Crea la solicitud (sustituye a la pendiente anterior si la había). `404` si el jugador no existe, `409 ALREADY_LINKED` si la cuenta ya tiene jugador, `409 PLAYER_TAKEN` si el jugador ya tiene cuenta. |
+| `DELETE` | `/members/me/link-request` | sesión | Cancela la solicitud pendiente. `{ cancelled: boolean }`. |
 | `GET` | `/members/:playerId` | — | Perfil completo (`IPlayerProfile`): `{ member, stats: { official, friendly }, achievements, totw }`. 404 si no existe. |
 
 `achievements` viene con la definición embebida: `{ playerId, playerName, achievementId, reached?, unlockedAt, matchId?, definition: IAchievementDefinition }`.
@@ -91,6 +95,9 @@ Requieren sesión **y** rol `admin`. Devuelven `401` sin sesión, `403` sin rol,
 | Método | Ruta | Body | Descripción |
 |---|---|---|---|
 | `PATCH` | `/admin/members/:playerId` | `{ "imageUrl"?: string \| null, "userId"?: string \| null }` | Foto y cuenta vinculada del miembro. `null` (o `""`) desvincula; un campo ausente no se toca. `imageUrl` debe ser `http(s)`. Una cuenta solo puede estar vinculada a un jugador: al asignarla se libera del anterior. Devuelve el miembro actualizado. |
+| `GET` | `/admin/link-requests` | — | Solicitudes de vinculación pendientes (`ILinkRequest[]`, más antiguas primero). |
+| `POST` | `/admin/link-requests/:id/approve` | — | Aprueba: vincula la cuenta al jugador (misma regla que el `PATCH`) y descarta las demás pendientes del mismo usuario o jugador. Devuelve `{ request, member }`. 404 si no existe o ya no está pendiente. |
+| `POST` | `/admin/link-requests/:id/reject` | — | Rechaza la solicitud. Devuelve la solicitud actualizada. |
 
 ### Variables de entorno
 

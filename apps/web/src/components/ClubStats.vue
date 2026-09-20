@@ -232,10 +232,6 @@
 
 <style>
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
     @keyframes stats-zoomin-anim {
         from{
             opacity: 0.1;

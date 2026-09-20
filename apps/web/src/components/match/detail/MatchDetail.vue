@@ -1,8 +1,4 @@
-<style scoped>
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-.customscroll::-webkit-scrollbar-track
+<style scoped>.customscroll::-webkit-scrollbar-track
 {
 	display: none;
     border-radius: 10px;

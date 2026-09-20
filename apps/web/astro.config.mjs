@@ -28,5 +28,10 @@ export default defineConfig({
   ],
   vite: {
     plugins: [tailwindcss(), svgLoader({ defaultImport: "url" })],
+    build: {
+      // Lightning CSS mete animation-timeline dentro del shorthand `animation` (inválido en Chrome) y rompe
+      // las animaciones por scroll del index; esbuild no toca esas propiedades.
+      cssMinify: "esbuild",
+    },
   },
 });

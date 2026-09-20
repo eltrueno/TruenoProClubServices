@@ -50,7 +50,7 @@
 </template>
 
 <script lang="ts" setup>
-    import type AchievementDefinitionEntity from "@/model/AchievementDefinitionEntity";
+    import type { IAchievementDefinition as AchievementDefinitionEntity } from "@trueno-proclub-services/shared";
     import AchievementDefService from "@/services/AchievementDefService"
     import { onBeforeMount, computed, watch, reactive, ref, type Ref } from 'vue';
 

@@ -13,6 +13,9 @@
   --color-primary-content: #ffffff;
   --color-secondary: #0037ff;
   --color-secondary-content: #ffffff;
+  /* Sin el relieve/sombra 3D ni el ruido que DaisyUI 5 pone por defecto en botones y campos (igual que en Tourney) */
+  --depth: 0;
+  --noise: 0;
 }
 
 @plugin "daisyui/theme" {
@@ -23,12 +26,16 @@
   --color-primary-content: #ffffff;
   --color-secondary: #0037ff;
   --color-secondary-content: #ffffff;
+  /* Sin el relieve/sombra 3D ni el ruido que DaisyUI 5 pone por defecto en botones y campos (igual que en Tourney) */
+  --depth: 0;
+  --noise: 0;
 }
 
 /* El tema se aplica con data-theme (ver Layout.astro); las clases `dark:` de Tailwind cuelgan de él */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-/* Componentes de terceros que traen sus propias clases de Tailwind */
+/* Fuentes explícitas: src y componentes de terceros con clases de Tailwind */
+@source "../";
 @source "../../node_modules/vue-tailwind-datepicker/**/*.js";
 /* Clases construidas dinámicamente en los componentes */
 @source inline("{bg,text,border}-{base,primary}-{100,200,300}");

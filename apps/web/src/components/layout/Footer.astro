@@ -1,0 +1,109 @@
+---
+import Separator from "./Separator.astro";
+import TwitchIcon from "@/icons/twitch.svg";
+import TiktokIcon from "@/icons/tiktok.svg";
+import InstagramIcon from "@/icons/instagram.svg";
+import YoutubeIcon from "@/icons/youtube.svg";
+import TwitterIcon from "@/icons/x.svg";
+import GithubIcon from "@/icons/github.svg";
+import HeartIcon from "@/icons/heart.svg";
+
+const year = new Date().getFullYear();
+
+const navigation = [
+    { href: "/", label: "Inicio" },
+    { href: "/plantilla", label: "Plantilla" },
+    { href: "/partidos", label: "Partidos" },
+    { href: "/totw", label: "Hall of Fame" },
+    { href: "/logrosdef", label: "Logros" },
+];
+
+const club = [
+    { href: "https://www.twitch.tv/mr_casemuro", label: "Twitch", icon: TwitchIcon },
+    { href: "https://www.youtube.com/channel/UC33K1p2-9FwNclOSbQHFSpA/featured", label: "YouTube", icon: YoutubeIcon },
+    { href: "https://twitter.com/Mr_Casemuro", label: "X / Twitter", icon: TwitterIcon },
+    { href: "https://www.instagram.com/mr.casemuro", label: "Instagram", icon: InstagramIcon },
+    { href: "https://www.tiktok.com/@mr.casemuro", label: "TikTok", icon: TiktokIcon },
+];
+
+const technical = [
+    { href: "https://github.com/eltrueno", label: "GitHub", icon: GithubIcon },
+    { href: "https://x.com/elh_trueno", label: "X / Twitter", icon: TwitterIcon },
+    { href: "https://www.instagram.com/rauljimenezgal/", label: "Instagram", icon: InstagramIcon },
+];
+---
+
+<footer class="mt-10 border-t border-base-300 bg-base-100" transition:name="footer" transition:persist>
+    <Separator height="h-[2px]" />
+
+    <div class="mx-auto max-w-[100rem] 4xl:max-w-[112rem] 5xl:max-w-[125rem] px-6 pt-14 pb-8">
+        <div class="grid gap-14 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+            <section>
+                <div class="leading-1.1 flex flex-col gap-1 w-fit">
+                    <div class="text-lg font-black tracking-tighter text-primary uppercase">Casemuro City</div>
+                    <Separator height="h-[2px]" />
+                    <div class="text-sm font-bold tracking-[0.20em] uppercase opacity-90 text-center">Web oficial</div>
+                </div>
+                <p class="mt-6 max-w-md text-sm leading-relaxed opacity-70">
+                    Toda la información del Casemuro City, el club de Clubes Pro de EA SPORTS FC de la comunidad de Mr Casemuro:
+                    plantilla, partidos, estadísticas, logros y el equipo de la semana, actualizados automáticamente.
+                </p>
+            </section>
+
+            <section>
+                <h3 class="footer-title text-primary">Navegación</h3>
+                <ul class="space-y-2">
+                    {navigation.map((item) => (
+                        <li><a href={item.href} class="opacity-70 transition hover:text-primary hover:opacity-100">{item.label}</a></li>
+                    ))}
+                </ul>
+            </section>
+
+            <section>
+                <h3 class="footer-title text-primary">El club</h3>
+                <p class="font-semibold">Mr Casemuro</p>
+                <p class="mt-2 text-sm opacity-70 leading-relaxed">Creador de contenido y alma del Casemuro City. Cada directo, cada partido.</p>
+                <div class="mt-2 flex md:justify-center flex-wrap w-full">
+                    {club.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <a href={item.href} target="_blank" rel="noopener noreferrer" class="btn btn-link text-base-content/70 hover:text-primary transition" aria-label={item.label}>
+                                <Icon class="size-4" />
+                            </a>
+                        );
+                    })}
+                </div>
+            </section>
+
+            <section>
+                <h3 class="footer-title text-primary">Partner técnico</h3>
+                <p class="font-semibold">el_trueno</p>
+                <p class="mt-2 text-sm opacity-70 leading-relaxed">Desarrollo de la web, sincronización con EA, estadísticas y servicios del club.</p>
+                <div class="mt-2 flex md:justify-center flex-wrap w-full">
+                    {technical.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <a href={item.href} target="_blank" rel="noopener noreferrer" class="btn btn-link text-base-content/70 hover:text-primary transition" aria-label={item.label}>
+                                <Icon class="size-4" />
+                            </a>
+                        );
+                    })}
+                </div>
+            </section>
+        </div>
+
+        <div class="my-10 h-px bg-base-300"></div>
+
+        <div class="flex flex-col gap-3 text-center text-sm opacity-60 lg:flex-row lg:items-center lg:justify-between lg:text-left">
+            <div>© {year} Casemuro City. Todos los derechos reservados.</div>
+            <div class="flex items-center justify-center gap-1">
+                Hecho con mucho <HeartIcon class="size-4 font-semibold text-primary animate-pulse" /> por
+                <a href="https://github.com/eltrueno" class="font-semibold text-primary">R. Jiménez (el_trueno)</a>
+            </div>
+        </div>
+
+        <p class="mt-4 text-center text-[0.70rem] leading-relaxed opacity-40 w-full">
+            Esta web no está afiliada con el Wrexham AFC ni con EA Sports. EA SPORTS FC y Electronic Arts son marcas registradas de sus respectivos propietarios.
+        </p>
+    </div>
+</footer>

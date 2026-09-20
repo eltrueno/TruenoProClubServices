@@ -1,13 +1,13 @@
 import FetchService from "@services/FetchService"
-import TotwEntity from "@/model/totw/TotwEntity"
+import type { ITOTW } from "@trueno-proclub-services/shared"
 import { tpcsApi } from "@/lib/api"
 
-export default class TotwAllService extends FetchService<TotwEntity[]> {
+export default class TotwAllService extends FetchService<ITOTW[]> {
     constructor() {
         super([])
     }
 
     protected async load() {
-        return (await tpcsApi.totw.getAll()).map((t) => new TotwEntity(t))
+        return tpcsApi.totw.getAll()
     }
 }

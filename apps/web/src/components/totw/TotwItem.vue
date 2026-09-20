@@ -117,7 +117,7 @@
 
 <script setup lang="ts">
     import type { ITOTWPlayer } from '@trueno-proclub-services/shared';
-    import type TotwEntity from '@/model/totw/TotwEntity';
+    import type { ITOTW as TotwEntity } from '@trueno-proclub-services/shared';
     import { computed, type ComputedRef, ref } from 'vue';
     import TotwPlayerCard from './TotwPlayerCard.vue';
     import TotwPlayerModal from './TotwPlayerModal.vue';

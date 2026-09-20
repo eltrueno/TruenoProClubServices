@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue"
-import type { IClubMember, IPublicUser } from "@trueno-proclub-services/shared"
+import type { IClubMember, ILinkRequest, IPublicUser } from "@trueno-proclub-services/shared"
 import { useAuth } from "@/composables/useAuth"
 import { ApiError, authApi, tpcsApi } from "@/lib/api"
 import { playerImage, onPlayerImageError } from "@/lib/playerImage"
@@ -23,6 +23,35 @@ const saving = ref<Record<string, boolean>>({})
 const rowMessage = ref<Record<string, { ok: boolean; text: string }>>({})
 
 const usersById = computed(() => new Map(users.value.map((u) => [u.id, u])))
+
+// Solicitudes de vinculación pendientes (las crean los usuarios desde "Mi cuenta")
+const linkRequests = ref<ILinkRequest[]>([])
+const requestBusy = ref<Record<string, boolean>>({})
+const requestError = ref("")
+
+async function resolveRequest(r: ILinkRequest, action: "approve" | "reject") {
+    requestBusy.value[r.id] = true
+    requestError.value = ""
+    try {
+        if (action === "approve") {
+            const { member } = await tpcsApi.admin.approveLinkRequest(r.id)
+            // Misma regla que el PATCH: la cuenta se libera de cualquier otro jugador
+            members.value.forEach((o) => { if (o.userId === member.userId && o.playerId !== member.playerId) o.userId = null })
+            const target = members.value.find((m) => m.playerId === member.playerId)
+            if (target) Object.assign(target, member)
+            drafts.value[member.playerId] = { imageUrl: member.imageUrl ?? "", userId: member.userId ?? "" }
+            // Al aprobar, el api descarta las demás pendientes del mismo usuario/jugador
+            linkRequests.value = linkRequests.value.filter((x) => x.id !== r.id && x.userId !== r.userId && x.playerId !== r.playerId)
+        } else {
+            await tpcsApi.admin.rejectLinkRequest(r.id)
+            linkRequests.value = linkRequests.value.filter((x) => x.id !== r.id)
+        }
+    } catch (e) {
+        requestError.value = e instanceof ApiError ? e.code : "ERROR"
+    } finally {
+        requestBusy.value[r.id] = false
+    }
+}
 
 const filteredMembers = computed(() => {
     const q = search.value.trim().toLowerCase()
@@ -53,9 +82,10 @@ async function load() {
     loading.value = true
     loadError.value = ""
     try {
-        const [m, u] = await Promise.all([tpcsApi.members.getAll(), authApi.admin.users()])
+        const [m, u, r] = await Promise.all([tpcsApi.members.getAll(), authApi.admin.users(), tpcsApi.admin.linkRequests()])
         members.value = m
         users.value = u
+        linkRequests.value = r
         drafts.value = {}
     } catch (e) {
         loadError.value = e instanceof ApiError ? e.code : "Error cargando datos"
@@ -121,7 +151,7 @@ onMounted(() => {
                 <header class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
                     <div>
                         <h1 class="text-3xl lg:text-4xl font-black tracking-tight">Panel admin</h1>
-                        <p class="text-sm text-base-content/60 mt-1">Foto y cuenta vinculada de cada jugador. Los cambios se guardan por fila.</p>
+                        <p class="text-sm text-base-content/60 mt-1">Solicitudes de vinculación, foto y cuenta vinculada de cada jugador. Los cambios de las filas se guardan por fila.</p>
                     </div>
                     <div class="flex items-center gap-2 w-full md:w-auto">
                         <input v-model="search" type="text" placeholder="Buscar jugador o pro" class="input input-bordered input-sm w-full md:w-64" />
@@ -138,6 +168,40 @@ onMounted(() => {
                 </div>
 
                 <div v-else class="flex flex-col gap-3">
+                    <!-- Solicitudes de vinculación -->
+                    <section class="rounded-2xl border border-warning/30 bg-warning/5 p-4 mb-3">
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <h2 class="font-black uppercase tracking-wider text-sm">Solicitudes de vinculación</h2>
+                            <span class="badge badge-sm" :class="linkRequests.length ? 'badge-warning' : 'badge-ghost'">{{ linkRequests.length }}</span>
+                        </div>
+                        <p v-if="linkRequests.length === 0" class="text-xs text-base-content/50">No hay solicitudes pendientes.</p>
+                        <ul v-else class="flex flex-col gap-2">
+                            <li v-for="r in linkRequests" :key="r.id" class="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl bg-base-200 p-3">
+                                <div class="flex items-center gap-2 min-w-0 flex-1">
+                                    <div class="avatar shrink-0">
+                                        <div class="w-8 rounded-full bg-base-300">
+                                            <img v-if="r.userImage" :src="r.userImage" :alt="r.userName" />
+                                        </div>
+                                    </div>
+                                    <p class="text-sm min-w-0 truncate">
+                                        <span class="font-bold">{{ r.userName }}</span>
+                                        <span class="text-base-content/50"> quiere ser </span>
+                                        <a :href="routes.player(r.playerId)" class="font-bold hover:text-primary">{{ r.playerName }}</a>
+                                    </p>
+                                    <span class="text-[10px] text-base-content/40 shrink-0 hidden md:inline">{{ new Date(r.createdAt).toLocaleDateString("es-ES") }}</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button class="btn btn-sm btn-success" :disabled="requestBusy[r.id]" @click="resolveRequest(r, 'approve')">
+                                        <span v-if="requestBusy[r.id]" class="loading loading-spinner loading-xs"></span>
+                                        Aprobar
+                                    </button>
+                                    <button class="btn btn-sm btn-ghost text-error" :disabled="requestBusy[r.id]" @click="resolveRequest(r, 'reject')">Rechazar</button>
+                                </div>
+                            </li>
+                        </ul>
+                        <p v-if="requestError" class="text-xs text-error mt-2">No se ha podido resolver la solicitud ({{ requestError }})</p>
+                    </section>
+
                     <p class="text-xs text-base-content/50">{{ filteredMembers.length }} jugadores · {{ users.length }} cuentas</p>
 
                     <div v-for="m in filteredMembers" :key="m.playerId"

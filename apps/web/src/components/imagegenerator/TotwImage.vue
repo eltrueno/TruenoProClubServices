@@ -24,7 +24,7 @@
 <script setup lang="ts">
     import { onBeforeMount, computed, ref, type Ref, type ComputedRef, onUnmounted, onMounted } from 'vue';
     import TotwService from "@/services/TotwService";
-    import type TotwEntity from "@/model/totw/TotwEntity";
+    import type { ITOTW as TotwEntity } from "@trueno-proclub-services/shared";
     import type { ITOTWPlayer } from '@trueno-proclub-services/shared';
     import TotwPlayerCard from "@components/totw/TotwPlayerCard.vue";
 

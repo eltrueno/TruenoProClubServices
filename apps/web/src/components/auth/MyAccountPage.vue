@@ -6,8 +6,61 @@ import LoginWall from "@/components/auth/LoginWall.vue"
 import { translateRole } from "@/i18n/translations"
 import { routes } from "@/lib/query"
 import { playerImage, onPlayerImageError } from "@/lib/playerImage"
+import { ApiError, tpcsApi } from "@/lib/api"
+import type { IClubMember, ILinkRequest } from "@trueno-proclub-services/shared"
 
 const { user, syncTwitch, logout, deleteAccount, isLoggedIn, myMember, loadMyMember } = useAuth()
+
+// Solicitud de vinculación cuenta ↔ jugador (la aprueba un admin desde /admin)
+const linkRequest = ref<ILinkRequest | null>(null)
+const linkPlayers = ref<IClubMember[]>([])
+const linkPlayerId = ref("")
+const linkBusy = ref(false)
+const linkError = ref("")
+
+const loadLinkState = async () => {
+  try {
+    const [req, members] = await Promise.all([tpcsApi.members.getMyLinkRequest(), tpcsApi.members.getAll()])
+    linkRequest.value = req
+    // Solo se puede pedir un jugador que no tenga ya cuenta
+    linkPlayers.value = members.filter((m) => !m.userId).sort((a, b) => a.playerName.localeCompare(b.playerName))
+  } catch (e) {
+    console.warn("[micuenta] link state unavailable", e)
+  }
+}
+
+const linkErrorText = (code: string) =>
+  code === "ALREADY_LINKED" ? "Tu cuenta ya está vinculada a un jugador"
+    : code === "PLAYER_TAKEN" ? "Ese jugador ya tiene una cuenta vinculada"
+      : code === "ERROR_NOT_FOUND" ? "Ese jugador ya no existe"
+        : "No se ha podido enviar la solicitud"
+
+const requestLink = async () => {
+  if (!linkPlayerId.value || linkBusy.value) return
+  linkBusy.value = true
+  linkError.value = ""
+  try {
+    linkRequest.value = await tpcsApi.members.requestLink(linkPlayerId.value)
+  } catch (e) {
+    linkError.value = linkErrorText(e instanceof ApiError ? e.code : "")
+  } finally {
+    linkBusy.value = false
+  }
+}
+
+const cancelLink = async () => {
+  if (linkBusy.value) return
+  linkBusy.value = true
+  linkError.value = ""
+  try {
+    await tpcsApi.members.cancelLinkRequest()
+    linkRequest.value = null
+  } catch {
+    linkError.value = "No se ha podido cancelar la solicitud"
+  } finally {
+    linkBusy.value = false
+  }
+}
 const deleteModal = ref<HTMLDialogElement | null>(null)
 const twitchSyncing = ref(false)
 
@@ -40,7 +93,7 @@ const handleSync = async (silent: boolean = false) => {
 
 onMounted(() => {
   currentTheme.value = (localStorage.getItem('theme') as any) || 'system'
-  loadMyMember()
+  loadMyMember().then((m) => { if (!m) loadLinkState() })
   updateCooldown()
   cooldownTimer = setInterval(updateCooldown, 1000)
 })
@@ -365,15 +418,33 @@ const icons = {
                 <img :src="playerImage(myMember)" :alt="myMember?.playerName ?? 'Sin vincular'" class="w-full h-full object-cover object-top" @error="onPlayerImageError" />
               </div>
               <div>
-                <p class="font-bold text-base-content text-sm">{{ myMember?.playerName ?? 'Sin vincular' }}</p>
+                <p class="font-bold text-base-content text-sm">{{ myMember?.playerName ?? (linkRequest ? linkRequest.playerName : 'Sin vincular') }}</p>
                 <p class="text-xs text-base-content/50 mt-0.5">
                   <template v-if="myMember">{{ myMember.proName || 'Pro sin nombre' }}<span v-if="myMember.proOverall"> · {{ myMember.proOverall }} OVR</span></template>
-                  <template v-else>Un admin puede vincular tu cuenta a tu jugador del club</template>
+                  <template v-else-if="linkRequest"><span class="badge badge-warning badge-xs mr-1"></span>Solicitud pendiente de que un admin la apruebe</template>
+                  <template v-else>¿Juegas en el club? Pide vincular tu cuenta a tu jugador</template>
                 </p>
               </div>
             </div>
             <a v-if="myMember" :href="routes.player(myMember.playerId)" class="btn btn-sm btn-primary rounded-lg font-bold w-full sm:w-auto transition-all">Ver perfil</a>
+            <button v-else-if="linkRequest" class="btn btn-sm btn-outline rounded-lg font-bold w-full sm:w-auto" :disabled="linkBusy" @click="cancelLink">
+              <span v-if="linkBusy" class="loading loading-spinner loading-xs"></span>
+              Cancelar solicitud
+            </button>
           </div>
+
+          <!-- Sin jugador ni solicitud: elegir jugador y pedir vinculación -->
+          <form v-if="!myMember && !linkRequest" class="mt-4 flex flex-col sm:flex-row gap-2" @submit.prevent="requestLink">
+            <select v-model="linkPlayerId" class="select select-bordered select-sm w-full sm:flex-1" required>
+              <option value="" disabled>Elige tu jugador…</option>
+              <option v-for="m in linkPlayers" :key="m.playerId" :value="m.playerId">{{ m.playerName }}<template v-if="m.proName"> · {{ m.proName }}</template></option>
+            </select>
+            <button type="submit" class="btn btn-sm btn-primary rounded-lg font-bold" :disabled="!linkPlayerId || linkBusy">
+              <span v-if="linkBusy" class="loading loading-spinner loading-xs"></span>
+              Solicitar vinculación
+            </button>
+          </form>
+          <p v-if="linkError" class="text-xs text-error mt-2">{{ linkError }}</p>
         </div>
 
 

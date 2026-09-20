@@ -43,7 +43,7 @@ Puedes ver el sistema en funcionamiento en el despliegue oficial de **Casemuro C
 
 ##### **api** — REST API
 - **Stack**: Express + Mongoose.
-- Club, miembros, partidos, stats, logros, HOF/HOS, medias por posición y panel admin (foto y cuenta vinculada de cada jugador).
+- Club, miembros, partidos, stats, logros, HOF/HOS, medias por posición, solicitudes de vinculación cuenta ↔ jugador y panel admin (foto, cuenta vinculada y aprobación de solicitudes).
 - Rutas protegidas validando la sesión contra el servicio de auth.
 - 📖 **Endpoints: [docs/API.md](docs/API.md)**
 
@@ -60,7 +60,7 @@ Puedes ver el sistema en funcionamiento en el despliegue oficial de **Casemuro C
 - **Stack**: Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5.
 - **100% estática** (`output: "static"`), desplegada en **GitHub Pages** (`.github/workflows/deploy-web.yml`) con dominio `www.casemurocity.org` (`public/CNAME`). Las islas Vue hacen fetch al api y al auth desde el navegador.
 - Las páginas "dinámicas" van por query string y se leen en cliente: `/jugador?id=<playerId>&tab=…`, `/partido?id=<matchId>&player=<playerId>`, `/totw?semana=<iso>&tipo=best|worst`, `/partidos?id=…&desde=…&hasta=…&liga&playoff&amistoso`.
-- Panel admin en `/admin` (foto y cuenta vinculada de cada jugador; solo rol `admin`) y "Mi jugador" en `/micuenta`.
+- Panel admin en `/admin` (solicitudes de vinculación pendientes, foto y cuenta vinculada de cada jugador; solo rol `admin`) y "Mi jugador" en `/micuenta`, desde donde un usuario pide vincular su cuenta a su jugador del club.
 - Config por variables `PUBLIC_*` (ver `apps/web/.env.example`).
 
 ##### **discordbot** — Bot de Discord
@@ -124,7 +124,7 @@ pnpm --filter @trueno-proclub-services/web preview
 pnpm --filter @trueno-proclub-services/web check    # astro check
 ```
 
-Para desarrollar contra un api local, `apps/web/.env` con `PUBLIC_API_URL=http://localhost:3999` (hay un `.claude/launch.json` con `web` y `api`).
+Para desarrollar contra un api local, `apps/web/.env` con `PUBLIC_API_URL=http://localhost:3999`.
 
 ### 🔧 Configuración
 
@@ -288,10 +288,10 @@ This project is an **evolution** of [Caracantosmeaos](https://github.com/Caracan
 
 #### `/apps`
 
-- **api** — Express + Mongoose REST API: club, members, matches, stats, achievements, HOF/HOS, position averages and an admin panel backend (player photo and linked account). Protected routes validate the session against the auth service. 📖 **Endpoints: [docs/API.md](docs/API.md)**
+- **api** — Express + Mongoose REST API: club, members, matches, stats, achievements, HOF/HOS, position averages, account ↔ player link requests and an admin panel backend (player photo, linked account, request approval). Protected routes validate the session against the auth service. 📖 **Endpoints: [docs/API.md](docs/API.md)**
 - **worker** — Every `WORKER_INTERVAL` seconds fetches new matches from EA, normalizes them (`MatchDTO`), registers the members that appear, accumulates stats, evaluates achievements and publishes RabbitMQ events. Weekly team-of-the-week job. Enriches members (`proName`, `proOverall`…) from EA without overwriting good data with empty values.
 - **auth** — Express + Better Auth + MongoDB: Twitch login, follow/sub/role sync, public users endpoint and admin user listing.
-- **web** — Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5 frontend. Fully static, deployed to GitHub Pages (`.github/workflows/deploy-web.yml`, custom domain via `public/CNAME`). Dynamic pages take query params read client-side (`/jugador?id=<playerId>`, `/partido?id=<matchId>`, `/totw?semana=…&tipo=…`). Admin panel at `/admin` (player photo and linked account, `admin` role only). Configured through `PUBLIC_*` env vars (`apps/web/.env.example`).
+- **web** — Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5 frontend. Fully static, deployed to GitHub Pages (`.github/workflows/deploy-web.yml`, custom domain via `public/CNAME`). Dynamic pages take query params read client-side (`/jugador?id=<playerId>`, `/partido?id=<matchId>`, `/totw?semana=…&tipo=…`). Admin panel at `/admin` (pending link requests, player photo and linked account, `admin` role only); users request the link to their player from `/micuenta`. Configured through `PUBLIC_*` env vars (`apps/web/.env.example`).
 - **discordbot** — Consumes RabbitMQ events and announces the team of the week (matches / achievements once their producers are enabled).
 - **imagerenderer** — Captures web pages with puppeteer to render the images the bot posts.
 
