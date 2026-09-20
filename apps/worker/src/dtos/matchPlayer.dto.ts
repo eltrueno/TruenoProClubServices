@@ -1,4 +1,4 @@
-import { IMatchPlayer } from "@interfaces/matchPlayer.interface"
+import type { IMatchPlayer } from "@trueno-proclub-services/shared"
 
 export default class MatchPlayerDTO implements IMatchPlayer {
     playername: string

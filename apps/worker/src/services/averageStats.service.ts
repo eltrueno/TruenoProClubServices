@@ -1,5 +1,5 @@
-import { AverageStatsModel } from "@models/averageStats.model"
-import { PlayerStatsOfficialModel, PlayerStatsFriendlyModel } from "@models/playerstats.model"
+import { AverageStatsModel } from "@trueno-proclub-services/shared/models"
+import { PlayerStatsOfficialModel, PlayerStatsFriendlyModel } from "@trueno-proclub-services/shared/models"
 
 import dotenv from "dotenv"
 dotenv.config()

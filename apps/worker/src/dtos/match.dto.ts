@@ -1,7 +1,7 @@
-import { IMatchPlayer } from "@interfaces/matchPlayer.interface"
-import MatchPlayerDTO from "./matchPlayer.dto"
+import type { IMatchPlayer } from "@trueno-proclub-services/shared"
+import MatchPlayerDTO from "./matchPlayer.dto.js"
 import dotenv from "dotenv"
-import { IMatch } from "srcinterfaces/match.interface";
+import type { IMatch } from "@trueno-proclub-services/shared"
 
 dotenv.config()
 const CLUBID: number = Number(process.env.CLUBID) || 290776;
@@ -11,9 +11,9 @@ export default class MatchDTO implements IMatch {
     matchType: "league" | "playoff" | "friendly" = "league"
     timestamp: number
     result: "loose" | "tie" | "win"
-    winnerByDnf: Boolean
-    winnerByPen?: Boolean = false
-    localTeam?: Boolean
+    winnerByDnf: boolean
+    winnerByPen?: boolean = false
+    localTeam?: boolean
     localClub: {
         id: number
         name: string

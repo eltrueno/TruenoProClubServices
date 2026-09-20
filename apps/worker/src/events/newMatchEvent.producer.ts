@@ -1,5 +1,5 @@
-import { RabbitMQManager } from '@config/rabbitmq.config';
-import { IMatch } from 'srcinterfaces/match.interface';
+import { RabbitMQManager } from "../config/rabbitmq.config.js";
+import type { IMatch } from "@trueno-proclub-services/shared"
 
 export class NewMatchEvent {
     constructor(private mqManager: RabbitMQManager) { }

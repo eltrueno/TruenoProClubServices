@@ -1,9 +1,9 @@
 import { getClubMatchHistory, TPlatformType } from '@trueno-proclub-services/eafcapi';
-import { getLatestMatch, insertMatch } from '@controllers/match.controller';
-import { IMatch } from '@interfaces/match.interface';
-import MatchDTO from '@dtos/match.dto';
-import { getMatchProducer } from "@events/index"
-import { computePlayerStatsAverages } from "@services/averageStats.service"
+import { getLatestMatch, insertMatch } from "../controllers/match.controller.js";
+import type { IMatch } from "@trueno-proclub-services/shared"
+import MatchDTO from "../dtos/match.dto.js";
+import { getMatchProducer } from "../events/index.js"
+import { computePlayerStatsAverages } from "./averageStats.service.js"
 
 /**
  * Fetches recent matches from EA and processes any new ones.

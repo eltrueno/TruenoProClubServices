@@ -1,5 +1,5 @@
-import * as ClubMemberService from "@services/clubMember.service"
-import * as PlayerStatsService from "@services/playerStats.service"
+import * as ClubMemberService from "../services/clubMember.service.js"
+import * as PlayerStatsService from "../services/playerStats.service.js"
 import { NextFunction, Request, Response } from "express"
 
 async function getAllMembers(req: Request, res: Response, next: NextFunction) {

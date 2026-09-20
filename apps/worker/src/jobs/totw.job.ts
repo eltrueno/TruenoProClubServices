@@ -1,6 +1,6 @@
 import cron from "node-cron"
-import { calculateAndSaveTOTW } from "@services/totw.service"
-import { TOTWModel, MemberTotwAppearancesModel } from "@models/totw.model"
+import { calculateAndSaveTOTW } from "../services/totw.service.js"
+import { TOTWModel, MemberTotwAppearancesModel } from "@trueno-proclub-services/shared/models"
 import { getISOWeek, getISOWeekYear, subWeeks, isAfter, setHours, setMinutes, setSeconds, endOfISOWeek } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 import dotenv from "dotenv"

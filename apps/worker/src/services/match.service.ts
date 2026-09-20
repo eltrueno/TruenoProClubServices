@@ -1,6 +1,6 @@
-import { IMatch } from "@interfaces/match.interface"
-import MatchModel from "@models/match.model"
-import { accumulateStatsFromMatch } from "@services/playerStats.service"
+import type { IMatch } from "@trueno-proclub-services/shared"
+import { MatchModel } from "@trueno-proclub-services/shared/models"
+import { accumulateStatsFromMatch } from "./playerStats.service.js"
 import dotenv from "dotenv"
 
 dotenv.config()

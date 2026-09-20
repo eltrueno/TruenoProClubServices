@@ -1,5 +1,5 @@
-import { RabbitMQManager } from '@config/rabbitmq.config';
-import { IAchievementUnlocked, IAchievementDefinition } from '@interfaces/achievement.interface';
+import { RabbitMQManager } from "../config/rabbitmq.config.js";
+import type { IAchievementUnlocked, IAchievementDefinition } from "@trueno-proclub-services/shared"
 
 export interface IAchievementPublishPayload extends IAchievementUnlocked, Omit<IAchievementDefinition, "_id"> { }
 

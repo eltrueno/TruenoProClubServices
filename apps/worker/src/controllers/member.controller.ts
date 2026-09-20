@@ -1,5 +1,5 @@
-import MemberDTO from "@dtos/member.dto"
-import { upsertMemberInfo } from "@services/member.service"
+import MemberDTO from "../dtos/member.dto.js"
+import { upsertMemberInfo } from "../services/member.service.js"
 
 /**
  * Upserts a member's static info from raw EA API data.

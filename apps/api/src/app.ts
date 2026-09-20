@@ -1,8 +1,8 @@
 import express, { Express } from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
-import errorHandler from "src/middleware/errorHandler";
-import database from "src/database/mongo"
+import errorHandler from "./middleware/errorHandler.js";
+import database from "./database/mongo.js"
 
 const app: Express = express();
 
@@ -21,11 +21,11 @@ if (DEVMODE) {
 }
 
 /* ROUTES */
-import membersRouter from './routes/members';
-import clubRouter from './routes/club';
-import achievementRouter from './routes/achievement'
-import totwRouter from './routes/totw'
-import playerAveragesRouter from './routes/playeraverages'
+import membersRouter from "./routes/members.js"
+import clubRouter from "./routes/club.js"
+import achievementRouter from "./routes/achievement.js"
+import totwRouter from "./routes/totw.js"
+import playerAveragesRouter from "./routes/playeraverages.js"
 
 app.use("/club", clubRouter);
 app.use("/members", membersRouter);
@@ -33,7 +33,7 @@ app.use("/achievements", achievementRouter)
 app.use("/totw", totwRouter)
 app.use("/playeraverages", playerAveragesRouter)
 
-import matchesRouter from 'src/routes/matches'
+import matchesRouter from "./routes/matches.js"
 app.use("/matches", matchesRouter)
 
 /* Error middlewere after all routers */

@@ -1,10 +1,6 @@
-import { IPlayerStats } from "@interfaces/playerStats.interface";
-import { IAchievementDefinition, IAchievementUnlocked } from "@interfaces/achievement.interface";
-import { AchievementDefinitionModel, AchievementUnlockedModel } from "@models/achievement.model";
-import { getMilestoneProducer, getAchievementProducer } from "@events/index";
-import { IMatch } from "@interfaces/match.interface"
-import { IMatchPlayer } from "@interfaces/matchPlayer.interface"
-import { MemberTotwAppearancesModel } from "@models/totw.model"
+import type { IPlayerStats, IAchievementDefinition, IAchievementUnlocked, IMatch, IMatchPlayer } from "@trueno-proclub-services/shared"
+import { AchievementDefinitionModel, AchievementUnlockedModel, MemberTotwAppearancesModel } from "@trueno-proclub-services/shared/models"
+import { getMilestoneProducer, getAchievementProducer } from "../events/index.js"
 
 
 function getMatchStatValue(player: IMatchPlayer, category: string): number {

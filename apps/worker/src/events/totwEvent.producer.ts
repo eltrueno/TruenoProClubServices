@@ -1,5 +1,5 @@
-import { RabbitMQManager } from '@config/rabbitmq.config';
-import { ITOTW } from '@interfaces/totw.interface';
+import { RabbitMQManager } from "../config/rabbitmq.config.js";
+import type { ITOTW } from "@trueno-proclub-services/shared"
 
 export class TOTWEvent {
     constructor(private mqManager: RabbitMQManager) { }

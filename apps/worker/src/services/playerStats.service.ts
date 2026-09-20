@@ -1,8 +1,8 @@
-import { IMatch } from "@interfaces/match.interface"
-import { IMatchPlayer } from "@interfaces/matchPlayer.interface"
-import MatchModel from "@models/match.model"
-import { PlayerStatsOfficialModel, PlayerStatsFriendlyModel } from "@models/playerstats.model"
-import { processAchievements, recalculateAllTOTWAchievements } from "@services/achievement.service"
+import type { IMatch } from "@trueno-proclub-services/shared"
+import type { IMatchPlayer } from "@trueno-proclub-services/shared"
+import { MatchModel } from "@trueno-proclub-services/shared/models"
+import { PlayerStatsOfficialModel, PlayerStatsFriendlyModel } from "@trueno-proclub-services/shared/models"
+import { processAchievements, recalculateAllTOTWAchievements } from "./achievement.service.js"
 import { Model } from "mongoose"
 
 /**

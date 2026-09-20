@@ -20,6 +20,9 @@ COPY apps/api/src ./apps/api/src
 COPY packages/eafcapi/package.json ./packages/eafcapi/
 COPY packages/eafcapi/tsconfig.json ./packages/eafcapi/
 COPY packages/eafcapi/src ./packages/eafcapi/src
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/shared/tsconfig.json ./packages/shared/
+COPY packages/shared/src ./packages/shared/src
 
 # Instala dependencias desde la raíz (pnpm detecta workspaces)
 RUN pnpm install
@@ -27,6 +30,7 @@ RUN pnpm install
 
 # Build de los packages compartidos y la app
 RUN pnpm --filter @trueno-proclub-services/eafcapi build
+RUN pnpm --filter @trueno-proclub-services/shared build
 RUN pnpm --filter @trueno-proclub-services/api build
 
 # ===========================
@@ -64,5 +68,5 @@ USER pptruser
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
-# Ejecuta TS directamente con ts-node + tsconfig-paths
+# Ejecuta el build ESM
 CMD ["node", "apps/api/dist/app.js"]

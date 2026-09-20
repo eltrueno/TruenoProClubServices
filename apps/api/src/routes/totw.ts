@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { getLatestTOTW, getTOTWByWeek, getAllTOTWS, getAllAppearances, getAppearancesByWeek, getSchedule } from "@controllers/totw.controller"
+import { getLatestTOTW, getTOTWByWeek, getAllTOTWS, getAllAppearances, getAppearancesByWeek, getSchedule } from "../controllers/totw.controller.js"
 
 const router: Router = Router()
 

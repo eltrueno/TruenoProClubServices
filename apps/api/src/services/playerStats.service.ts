@@ -1,4 +1,4 @@
-import { PlayerStatsOfficialModel, PlayerStatsFriendlyModel } from "@models/playerStats.model"
+import { PlayerStatsOfficialModel, PlayerStatsFriendlyModel } from "@trueno-proclub-services/shared/models"
 
 const getAll = async () => {
     const [official, friendly] = await Promise.all([

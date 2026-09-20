@@ -1,4 +1,4 @@
-import { AchievementDefinitionModel, AchievementUnlockedModel } from "@models/achievement.model"
+import { AchievementDefinitionModel, AchievementUnlockedModel } from "@trueno-proclub-services/shared/models"
 
 const getAllDefinitions = async () => {
     return await AchievementDefinitionModel.find({}, { __v: 0, createdAt: 0, updatedAt: 0 })

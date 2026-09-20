@@ -1,8 +1,8 @@
-import { syncRecentMatches } from '@services/sync.service';
-import { syncMembersFromEA } from '@services/member.service';
-import { recalculateAllPlayerStats } from '@services/playerStats.service';
-import { PlayerStatsOfficialModel } from '@models/playerstats.model';
-import { computePlayerStatsAverages } from '@services/averageStats.service';
+import { syncRecentMatches } from "../services/sync.service.js";
+import { syncMembersFromEA } from "../services/member.service.js";
+import { recalculateAllPlayerStats } from "../services/playerStats.service.js";
+import { PlayerStatsOfficialModel } from "@trueno-proclub-services/shared/models"
+import { computePlayerStatsAverages } from "../services/averageStats.service.js";
 import dotenv from "dotenv"
 
 dotenv.config()

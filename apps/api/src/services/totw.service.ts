@@ -1,4 +1,4 @@
-import { TOTWModel, MemberTotwAppearancesModel } from "src/models/totw.model";
+import { TOTWModel, MemberTotwAppearancesModel } from "@trueno-proclub-services/shared/models"
 import { CronExpressionParser } from "cron-parser";
 
 export const getLatest = async () => {

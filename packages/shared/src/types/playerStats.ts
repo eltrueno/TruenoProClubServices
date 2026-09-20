@@ -1,8 +1,9 @@
-export interface IAverageStats {
-    position: 'goalkeeper' | 'defender' | 'midfielder' | 'forward' | 'general'
-    sampleSize: number
-    computedAt: Date
+import type { AveragePosition, PlayerPosition } from "../constants.js"
 
+/** Acumulado de stats de un jugador en una posición (una colección por tipo: oficial / amistoso) */
+export interface IPlayerStats {
+    playerName: string
+    position: PlayerPosition
     gamesPlayed: number
     minutesPlayed: number
     wins: number
@@ -23,6 +24,13 @@ export interface IAverageStats {
     hattricks: number
     pokers: number
     saves: number
+}
+
+/** Medias del club por posición, calculadas por el worker a partir de IPlayerStats */
+export interface IAverageStats extends Omit<IPlayerStats, "playerName" | "position"> {
+    position: AveragePosition
+    sampleSize: number
+    computedAt: Date
 
     ratingAve: number
     goalsPerMatch: number

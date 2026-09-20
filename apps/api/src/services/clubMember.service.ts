@@ -1,7 +1,7 @@
-import ClubMemberModel from "@models/clubMember.model"
-import * as PlayerStatsService from "@services/playerStats.service"
-import * as AchievementsService from "@services/achievements.service"
-import * as TOTWService from "@services/totw.service"
+import { ClubMemberModel } from "@trueno-proclub-services/shared/models"
+import * as PlayerStatsService from "./playerStats.service.js"
+import * as AchievementsService from "./achievements.service.js"
+import * as TOTWService from "./totw.service.js"
 
 const getProfileByName = async (playername: string) => {
     const [member, playerStats, playerAchievements, totwAppearances] = await Promise.all([

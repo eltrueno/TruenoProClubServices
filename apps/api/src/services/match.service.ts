@@ -1,4 +1,4 @@
-import MatchModel from "@models/match.model"
+import { MatchModel } from "@trueno-proclub-services/shared/models"
 import dotenv from 'dotenv'
 dotenv.config()
 

@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { getAllMatches, getMatchById, getAllMatchesOrdered, getMatchesByTypeOrdered, getMatchesByPlayer } from "@controllers/match.controller"
+import { getAllMatches, getMatchById, getAllMatchesOrdered, getMatchesByTypeOrdered, getMatchesByPlayer } from "../controllers/match.controller.js"
 
 const router: Router = Router()
 

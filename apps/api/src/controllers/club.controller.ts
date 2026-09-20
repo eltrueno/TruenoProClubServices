@@ -1,6 +1,6 @@
 import { TPlatformType } from '@trueno-proclub-services/eafcapi';
 import { getClubStats, getClubInfo } from '@trueno-proclub-services/eafcapi';
-import ClubModel from '../models/club.model';
+import { ClubModel } from "@trueno-proclub-services/shared/models"
 
 const CACHE_TTL_MS = Number(process.env.CLUB_CACHE_MS || 60 * 60 * 1000);
 

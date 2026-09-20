@@ -3,7 +3,7 @@ import {
     getLatestByMatchTypeLimit,
     getLatestByPlayer,
     getLatestLimit, getAll
-} from "@services/match.service"
+} from "../services/match.service.js"
 import { NextFunction, Request, Response } from "express"
 
 async function getAllMatches(req: Request, res: Response, next: NextFunction) {

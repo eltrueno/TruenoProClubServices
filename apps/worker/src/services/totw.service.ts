@@ -1,12 +1,12 @@
-import { TOTWModel, MemberTotwAppearancesModel } from "@models/totw.model"
-import MatchModel from "@models/match.model"
-import { processTOTWAchievements } from "@services/achievement.service"
+import { TOTWModel, MemberTotwAppearancesModel } from "@trueno-proclub-services/shared/models"
+import { MatchModel } from "@trueno-proclub-services/shared/models"
+import { processTOTWAchievements } from "./achievement.service.js"
 import { endOfISOWeek } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 import { CronExpressionParser } from "cron-parser"
 import dotenv from "dotenv"
-import { ITOTWPlayer } from "srcinterfaces/totw.interface"
-import { getTOTWProducer } from "@events/index";
+import type { ITOTWPlayer } from "@trueno-proclub-services/shared"
+import { getTOTWProducer } from "../events/index.js";
 dotenv.config()
 
 const TIMEZONE = process.env.TZ || "Europe/Madrid"

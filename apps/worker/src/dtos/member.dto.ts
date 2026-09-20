@@ -1,10 +1,10 @@
-import { IMember } from "@interfaces/member.interface"
+import type { IClubMember } from "@trueno-proclub-services/shared"
 
 /**
- * Maps raw EA API members endpoint payload → IMember (static fields only).
+ * Maps raw EA API members endpoint payload → IClubMember (static fields only).
  * Called when manually refreshing player info from EA.
  */
-export default class MemberDTO implements IMember {
+export default class MemberDTO implements IClubMember {
     playerName: string
     proName?: string
     proPos?: number

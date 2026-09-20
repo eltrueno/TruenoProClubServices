@@ -1,6 +1,6 @@
-import MemberModel from "@models/member.model"
-import { IMember } from "@interfaces/member.interface"
-import MemberDTO from "@dtos/member.dto"
+import { ClubMemberModel } from "@trueno-proclub-services/shared/models"
+import type { IClubMember } from "@trueno-proclub-services/shared"
+import MemberDTO from "../dtos/member.dto.js"
 import { getClubMembers, TPlatformType } from "@trueno-proclub-services/eafcapi"
 
 /**
@@ -11,11 +11,11 @@ import { getClubMembers, TPlatformType } from "@trueno-proclub-services/eafcapi"
 const cleanObject = (obj: any) =>
     Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined))
 
-const upsertMemberInfo = async (memberInfo: IMember) => {
+const upsertMemberInfo = async (memberInfo: IClubMember) => {
 
     const cleanMember = cleanObject(memberInfo)
 
-    const response = await MemberModel.updateOne(
+    const response = await ClubMemberModel.updateOne(
         { playerName: memberInfo.playerName },
         { $set: cleanMember },
         { upsert: true }
