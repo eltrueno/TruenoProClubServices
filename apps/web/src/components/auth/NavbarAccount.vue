@@ -69,7 +69,7 @@ onUnmounted(() => {
       <li class="px-4 py-3 mb-1 border-b border-base-200 cursor-default pointer-events-none">
         <div class="flex flex-col gap-0.5 p-0 hover:bg-transparent cursor-default">
           <span class="font-bold text-base leading-tight text-base-content">{{ user?.name }}</span>
-          <span class="text-[10px] font-bold tracking-wider opacity-50 uppercase text-base-content">{{ user?.role ? translateRole(user.role) : 'Visitante' }}</span>
+          <span class="badge badge-xs badge-primary font-bold text-[10px] uppercase tracking-wide px-2 py-2.5 rounded-md">{{ user?.role ? translateRole(user.role) : 'Visitante' }}</span>
         </div>
       </li>
       <li>

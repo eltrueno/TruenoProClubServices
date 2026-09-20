@@ -1,6 +1,5 @@
 export interface ITOTWPlayer {
     playerName: string
-    rankingScore: number
     avgRating: number
     gamesPlayed: number
     minutesPlayed: number
