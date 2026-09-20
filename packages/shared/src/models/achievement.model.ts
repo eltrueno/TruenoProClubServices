@@ -15,7 +15,7 @@ const achievementDefinitionSchema = new Schema<IAchievementDefinition>(
         threshold: { type: Number },
         exact: { type: Number }
     },
-    { _id: false, timestamps: true }
+    { _id: false, timestamps: true, collection: "achievements_definitions" }
 )
 
 const achievementUnlockedSchema = new Schema<IAchievementUnlocked>(
@@ -27,7 +27,7 @@ const achievementUnlockedSchema = new Schema<IAchievementUnlocked>(
         unlockedAt: { type: Date, default: Date.now },
         matchId: { type: String }
     },
-    { timestamps: true }
+    { timestamps: true, collection: "achievements_unlocked" }
 )
 
 // Evita duplicar un logro único o un mismo hito

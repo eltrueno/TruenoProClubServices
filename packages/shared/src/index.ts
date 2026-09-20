@@ -1,5 +1,6 @@
 export * from "./constants.js"
 export * from "./helpers.js"
+export * from "./achievements.definitions.js"
 export * from "./types/club.js"
 export * from "./types/member.js"
 export * from "./types/match.js"

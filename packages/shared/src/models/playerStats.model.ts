@@ -37,8 +37,8 @@ const playerStatsSchema = new Schema<IPlayerStats>(
 
 playerStatsSchema.index({ playerId: 1, position: 1 }, { unique: true })
 
-export const PlayerStatsOfficialModel = model<IPlayerStats>("member_stats_officials", playerStatsSchema)
-export const PlayerStatsFriendlyModel = model<IPlayerStats>("member_stats_friendlies", playerStatsSchema)
+export const PlayerStatsOfficialModel = model<IPlayerStats>("member_stats_officials", playerStatsSchema, "member_stats_officials")
+export const PlayerStatsFriendlyModel = model<IPlayerStats>("member_stats_friendlies", playerStatsSchema, "member_stats_friendlies")
 
 const derivedFields = {
     ratingAve: { type: Number, required: true, default: 0 },
@@ -68,7 +68,7 @@ const averageStatsSchema = new Schema<IAverageStats>(
         ...statsFields,
         ...derivedFields
     },
-    { timestamps: false, versionKey: false }
+    { timestamps: false, versionKey: false, collection: "player_average_stats" }
 )
 
 averageStatsSchema.index({ position: 1 }, { unique: true })

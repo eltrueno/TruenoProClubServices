@@ -6,6 +6,9 @@ const num = (v: unknown) => {
     return Number.isFinite(n) ? n : 0
 }
 
+const hasCleanSheetFlags = (raw: IMatchClubPlayer) =>
+    raw.cleansheetsany !== undefined || raw.cleansheetsdef !== undefined || raw.cleansheetsgk !== undefined
+
 /** Mapea un jugador crudo de `clubs/matches` (con su id, que es la clave del objeto `players`) → IMatchPlayer */
 export default class MatchPlayerDTO implements IMatchPlayer {
     playerId: string
@@ -50,7 +53,10 @@ export default class MatchPlayerDTO implements IMatchPlayer {
         this.passesSuccess = num(raw.passesmade)
         this.tacklesMade = num(raw.tackleattempts)
         this.tacklesSuccess = num(raw.tacklesmade)
-        this.cleanSheet = this.goalsConceded === 0
+        // EA marca la portería a cero por jugador (any/def/gk) según minutos y posición; solo si no viene, caemos a goalsConceded === 0
+        this.cleanSheet = hasCleanSheetFlags(raw)
+            ? raw.cleansheetsany === "1" || raw.cleansheetsdef === "1" || raw.cleansheetsgk === "1"
+            : this.goalsConceded === 0
         this.ballDiveSaves = num(raw.ballDiveSaves)
         this.crossSaves = num(raw.crossSaves)
         this.goodDirectionSaves = num(raw.goodDirectionSaves)

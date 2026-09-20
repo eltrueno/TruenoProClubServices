@@ -36,7 +36,7 @@ const totwSchema = new Schema<ITOTW>(
         bestPlayers: [totwPlayerSchema],
         worstPlayers: [totwPlayerSchema]
     },
-    { timestamps: true, versionKey: false }
+    { timestamps: true, versionKey: false, collection: "totw" }
 )
 totwSchema.index({ weekIso: 1 }, { unique: true })
 
@@ -49,7 +49,7 @@ const memberTotwAppearancesSchema = new Schema<IMemberTotwAppearances>(
         rating: { type: Number, required: true },
         isoWeek: { type: String, required: true }
     },
-    { timestamps: true, versionKey: false }
+    { timestamps: true, versionKey: false, collection: "member_totw_appearances" }
 )
 memberTotwAppearancesSchema.index({ playerId: 1, isoWeek: 1, type: 1 }, { unique: true })
 

@@ -1,4 +1,4 @@
-import type { IPlayerStats, IAchievementDefinition, IAchievementUnlocked, IMatch, IMatchPlayer } from "@trueno-proclub-services/shared"
+import { ACHIEVEMENT_DEFINITIONS, type IPlayerStats, type IAchievementDefinition, type IAchievementUnlocked, type IMatch, type IMatchPlayer } from "@trueno-proclub-services/shared"
 import { AchievementDefinitionModel, AchievementUnlockedModel, MemberTotwAppearancesModel } from "@trueno-proclub-services/shared/models"
 import { getMilestoneProducer, getAchievementProducer } from "../events/index.js"
 
@@ -72,7 +72,7 @@ const checkMemberAchievements = async (
                         playerName: stats.playerName,
                         achievementId: def._id,
                         reached: newReached,
-                        unlockedAt: new Date(), // cumulative milestones usually use current time
+                        unlockedAt: stats.matchObj ? new Date(stats.matchObj.timestamp * 1000) : new Date(),
                         matchId: stats.matchObj?.matchId?.toString()
                     },
                     mode: "infinite",
@@ -305,3 +305,19 @@ const recalculateAllTOTWAchievements = async () => {
 }
 
 export { processAchievements, processTOTWAchievements, recalculateAllTOTWAchievements }
+
+/**
+ * Upserta las definiciones del repo (shared) en la DB. Idempotente; se llama al
+ * arrancar para que una DB nueva tenga logros desde el primer partido.
+ */
+const syncAchievementDefinitions = async () => {
+    if (ACHIEVEMENT_DEFINITIONS.length === 0) return
+    const res = await AchievementDefinitionModel.bulkWrite(
+        ACHIEVEMENT_DEFINITIONS.map((def) => ({
+            updateOne: { filter: { _id: def._id }, update: { $set: def }, upsert: true }
+        }))
+    )
+    console.info(`[Achievements] Definitions synced: ${res.upsertedCount} new, ${res.modifiedCount} updated, ${ACHIEVEMENT_DEFINITIONS.length} total`)
+}
+
+export { syncAchievementDefinitions }

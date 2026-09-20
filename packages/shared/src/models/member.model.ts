@@ -14,7 +14,7 @@ const clubMemberSchema = new Schema<IClubMember>(
         userId: { type: String, default: null, index: true },
         lastSeenAt: { type: Number }
     },
-    { timestamps: true, versionKey: false }
+    { timestamps: true, versionKey: false, collection: "members" }
 )
 
 export const ClubMemberModel = model<IClubMember>("members", clubMemberSchema)

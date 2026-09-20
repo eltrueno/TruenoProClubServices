@@ -68,7 +68,7 @@ const matchSchema = new Schema<MatchDocument>(
         localClub: { type: matchClubSchema, required: true },
         awayClub: { type: matchClubSchema, required: true }
     },
-    { timestamps: true, versionKey: false }
+    { timestamps: true, versionKey: false, collection: "matches" }
 )
 
 matchSchema.index({ matchId: 1 }, { unique: true })

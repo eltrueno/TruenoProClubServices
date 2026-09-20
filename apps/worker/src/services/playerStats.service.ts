@@ -110,7 +110,8 @@ const recalculateAllPlayerStats = async (clubId: number) => {
 
     const allMatches = await MatchModel.find({}).sort({ timestamp: 1 }).lean() // Process matches chronologically
     for (const match of allMatches) {
-        await accumulateStatsFromMatch(match as unknown as IMatch, clubId, false, false)
+        // silent: en un recálculo completo no se re-anuncian logros históricos
+        await accumulateStatsFromMatch(match as unknown as IMatch, clubId, false, true)
     }
 
     await recalculateAllTOTWAchievements()
