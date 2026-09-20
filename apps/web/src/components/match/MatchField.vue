@@ -101,7 +101,7 @@
                                         'rounded-b-xl': index+1==match.localClub.players.length
                                     }">
                                         <p class="inline-flex">
-                                            {{ p.playername }}
+                                            {{ p.playerName }}
                                             <div class="tooltip tooltip-right tooltip-primary" data-tip="Mejor del partido" v-if="p.manOfTheMatch">
                                                 <svg class="w-5 h-5 text-primary" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
                                                     <path d="M13.849 4.22c-.684-1.626-3.014-1.626-3.698 0L8.397 8.387l-4.552.361c-1.775.14-2.495 2.331-1.142 3.477l3.468 
@@ -151,7 +151,7 @@
                                                 3.468-2.938c1.353-1.146.633-3.336-1.142-3.477l-4.552-.36-1.754-4.17Z"/>
                                             </svg>
                                         </div>
-                                        {{ p.playername }}
+                                        {{ p.playerName }}
                                     </p>
                                     </td>
                                 </tr>
@@ -176,7 +176,7 @@
                                         'rounded-b-xl': index+1==match.localClub.players.length
                                     }">
                                         <p class="inline-flex truncate">
-                                            {{ p.playername }}
+                                            {{ p.playerName }}
 
                                         </p>
                                         <div class="tooltip tooltip-right tooltip-primary" data-tip="Mejor del partido" v-if="p.manOfTheMatch">
@@ -210,7 +210,7 @@
                                         'rounded-b-xl': index+1==match.awayClub.players.length
                                     }">
                                         <p class="inline-flex  truncate">
-                                            {{ p.playername }}
+                                            {{ p.playerName }}
 
                                         </p>
                                         <div class="tooltip tooltip-right tooltip-primary" data-tip="Mejor del partido" v-if="p.manOfTheMatch">
@@ -242,6 +242,7 @@
     import ClubMatchEntity from '@models/match/ClubMatchEntity'
     import MatchPlayerEntity from '@models/match/MatchPlayerEntity'
     import { translateMatchType  } from '@/i18n/translations'
+    import { routes } from '@/lib/query'
     const props = defineProps<{
         match: ClubMatchEntity,
         index: number
@@ -249,10 +250,10 @@
     }>()
 
 
-    const detailurl = `/partido/${props.match.matchId}`
+    const detailurl = routes.match(props.match.matchId)
 
     function toMatchDetail() {
-        window.location.href = `/partido/${props.match.matchId}`;
+        window.location.href = routes.match(props.match.matchId);
     }
 
     const resultColorLocal = {
@@ -321,12 +322,12 @@
         if(localclub){
             for(var p in props.match.localClub.players){
                 var parsedp:MatchPlayerEntity = props.match.localClub.players[p]
-                if(parsedp.redCards!=0) plist.push(parsedp.playername);
+                if(parsedp.redCards!=0) plist.push(parsedp.playerName);
             }
         }else{
             for(var p in props.match.awayClub.players){
                 var parsedp:MatchPlayerEntity = props.match.awayClub.players[p]
-                if(parsedp.redCards!=0) plist.push(parsedp.playername)
+                if(parsedp.redCards!=0) plist.push(parsedp.playerName)
             }
         }
         return plist
@@ -335,9 +336,9 @@
     function getPlayerNames(localClub:boolean){
         var plist = []
         if(localClub){
-            props.match.localClub.players.forEach((p) => plist.push(p.playername));
+            props.match.localClub.players.forEach((p) => plist.push(p.playerName));
         }else{
-            props.match.awayClub.players.forEach((p) => plist.push(p.playername));
+            props.match.awayClub.players.forEach((p) => plist.push(p.playerName));
         }
         return plist
     }

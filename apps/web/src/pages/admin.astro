@@ -1,0 +1,19 @@
+---
+import AdminPanel from "@/components/admin/AdminPanel.vue";
+import Layout from "@/layouts/Layout.astro";
+---
+
+<Layout
+	title="Casemuro City: Admin"
+	isindex={false}
+	description="Panel de administración de Casemuro City"
+	keywords="casemuro city, admin"
+>
+	<meta slot="metadata" name="robots" content="noindex, nofollow" />
+
+	<section>
+		<container class="flex px-2 py-4 justify-center items-center text-center">
+			<AdminPanel client:only="vue" />
+		</container>
+	</section>
+</Layout>

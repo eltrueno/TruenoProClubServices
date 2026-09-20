@@ -101,7 +101,7 @@
 
                     <div class="w-full max-h-20 overflow-hidden">
                       <img
-                        :src="topImage(pl.playername)"
+                        :src="topImage(pl.playerId)"
                         class="h-full w-full object-contain select-none pointer-events-none scale-[2.3] origin-top"
                         alt="Player ingame top image"
                         @error="defaultTopImage"/>
@@ -111,7 +111,7 @@
                       :class="{
                         'text-primary-content ': props.selectedplayer == players.indexOf(pl)
                       }">
-                      {{ pl.playername }}
+                      {{ pl.playerName }}
                     </span>
                   </div>
 
@@ -127,7 +127,7 @@
                   }">
                     <div class="w-full max-h-20 overflow-hidden">
                       <img
-                        :src="topImage(pl.playername)"
+                        :src="topImage(pl.playerId)"
                         class="h-full w-full object-contain select-none pointer-events-none scale-[2.3] origin-top"
                         alt="Player ingame top image"
                         @error="defaultTopImage"/>
@@ -137,7 +137,7 @@
                       :class="{
                         'text-primary-content ': props.selectedplayer == players.indexOf(pl)
                       }">
-                      {{ pl.playername }}
+                      {{ pl.playerName }}
                     </span>
                   </div>
                 </div>
@@ -152,7 +152,7 @@
                   }">
                       <div class="w-full max-h-20 overflow-hidden">
                         <img
-                          :src="topImage(pl.playername)"
+                          :src="topImage(pl.playerId)"
                           class="h-full w-full object-contain select-none pointer-events-none scale-[2.3] origin-top"
                           alt="Player ingame top image"
                           @error="defaultTopImage"/>
@@ -162,7 +162,7 @@
                         :class="{
                           'text-primary-content ': props.selectedplayer == players.indexOf(pl)
                         }">
-                        {{ pl.playername }}
+                        {{ pl.playerName }}
                       </span>
                     </div>
                 </div>
@@ -177,7 +177,7 @@
                   }">
                       <div class="w-full max-h-20 overflow-hidden">
                         <img
-                          :src="topImage(pl.playername)"
+                          :src="topImage(pl.playerId)"
                           class="h-full w-full object-contain select-none pointer-events-none scale-[2.3] origin-top"
                           alt="Player ingame top image"
                           @error="defaultTopImage"/>
@@ -187,7 +187,7 @@
                         :class="{
                           'text-primary-content ': props.selectedplayer == players.indexOf(pl)
                         }">
-                        {{ pl.playername }}
+                        {{ pl.playerName }}
                       </span>
                   </div>
                 </div>
@@ -205,6 +205,8 @@
   import Atropos from 'atropos';
   import 'atropos/css';
   import MatchPlayerEntity from '@/model/match/MatchPlayerEntity';
+  import { useMembers } from "@/composables/useMembers";
+  import { onPlayerImageError } from "@/lib/playerImage";
 
   const props = defineProps<{
         players: MatchPlayerEntity[],
@@ -225,13 +227,9 @@
   }
 
 
-    function topImage(playername){
-      return `/players/${playername}_top_transp.png`
-    }
-
-    function defaultTopImage(e){
-        e.target.src = '/players/placeholder_top_transp.png'
-    }
+    const { imageFor } = useMembers()
+    const topImage = (playerId: string) => imageFor(playerId)
+    const defaultTopImage = onPlayerImageError
 
   const atroposElement = ref(null);
 

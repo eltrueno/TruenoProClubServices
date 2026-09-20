@@ -1,4 +1,4 @@
-import type { ITOTW, ITOTWPlayer } from "@interfaces/totw.interface";
+import type { ITOTW, ITOTWPlayer } from "@trueno-proclub-services/shared"
 
 export default class TotwEntity implements ITOTW {
     weekNumber: number

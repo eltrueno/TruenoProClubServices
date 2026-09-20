@@ -1,0 +1,9 @@
+---
+import ImageLayout from "@layouts/ImageLayout.astro";
+import MatchSumaryImage from "@components/imagegenerator/MatchSumaryImage.vue";
+// /imagegenerator/matchsummary?id=<matchId>
+---
+
+<ImageLayout>
+	<MatchSumaryImage client:only="vue" />
+</ImageLayout>

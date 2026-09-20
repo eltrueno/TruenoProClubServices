@@ -1,6 +1,9 @@
 ---
 import NavbarAccount from './auth/NavbarAccount.vue';
-import { Icon } from "astro-icon/components";
+import HomeIcon from "../icons/home.svg";
+import UsersIcon from "../icons/usersgroup.svg";
+import CalendarIcon from "../icons/calendar.svg";
+import AwardIcon from "../icons/award.svg";
 
 interface Props {
 	isindex: boolean;
@@ -11,13 +14,13 @@ const {isindex} = Astro.props;
 
 <nav class="navbar bg-primary min-w-full sticky top-0 rounded-b-md shadow-md z-50">
 	<div class="flex-1 flex-grow-0">
-		<a href="/" class="btn btn-ghost text-xl" aria-label="Volver al inicio de la página"><img src="/logo.webp" class="max-h-12" class:list={[{ 'logo-anim': isindex }]} alt="Logo del equipo CaseMuroCity"></img> </a>
+		<a href="/" class="btn btn-ghost text-xl" aria-label="Volver al inicio de la página"><img src="/logo.webp" class="max-h-12" class:list={[{ 'logo-anim': isindex }]} alt="Logo del equipo CaseMuroCity" /></a>
 	</div>
 	<div class="space-x-1 absolute text-[#eeeeee]" class:list={[{ 'links-anim': isindex },{'right-[var(--links-right)]': !isindex}]}>
-		<a href="/" class="btn btn-ghost hidden md:inline-flex uppercase" aria-label="Volver al inicio de la página"><Icon name="home" class="w-6 h-6" /><span class="hidden md:inline">Inicio</span></a>
-		<a href="/plantilla" class="btn btn-ghost uppercase" aria-label="Ver plantilla del equipo CaseMuroCity"><Icon name="usersgroup" class="w-6 h-6" /><span class="hidden md:inline">Plantilla</span></a>
-		<a href="/partidos" class="btn btn-ghost uppercase" aria-label="Ver partidos del equipo CaseMuroCity"><Icon name="calendar" class="w-6 h-6" /><span class="hidden md:inline">Partidos</span></a>
-		<a href="/totw" class="btn btn-ghost uppercase" aria-label="Ver Team Of The Week del equipo CaseMuroCity"><Icon name="award" class="w-6 h-6" /><span class="hidden md:inline">Totw</span></a>
+		<a href="/" class="btn btn-ghost hidden md:inline-flex uppercase" aria-label="Volver al inicio de la página"><HomeIcon class="w-6 h-6" /><span class="hidden md:inline">Inicio</span></a>
+		<a href="/plantilla" class="btn btn-ghost uppercase" aria-label="Ver plantilla del equipo CaseMuroCity"><UsersIcon class="w-6 h-6" /><span class="hidden md:inline">Plantilla</span></a>
+		<a href="/partidos" class="btn btn-ghost uppercase" aria-label="Ver partidos del equipo CaseMuroCity"><CalendarIcon class="w-6 h-6" /><span class="hidden md:inline">Partidos</span></a>
+		<a href="/totw" class="btn btn-ghost uppercase" aria-label="Ver Team Of The Week del equipo CaseMuroCity"><AwardIcon class="w-6 h-6" /><span class="hidden md:inline">Totw</span></a>
 	</div>
 	<div class="ml-auto z-10">
 		<NavbarAccount client:load />

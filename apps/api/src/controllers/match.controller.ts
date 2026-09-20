@@ -82,7 +82,7 @@ async function getMatchById(req: Request, res: Response, next: NextFunction) {
         const id: number = Number(req.params.id);
         if (isNaN(id) || !Number.isInteger(id) || id <= 0) return next(new Error("ERROR_BAD_REQUEST"));
         const response = await getById(id)
-        if (!response || response === null || response === undefined || response.length === 0) return next(new Error("ERROR_NOT_FOUND"))
+        if (!response) return next(new Error("ERROR_NOT_FOUND"))
         res.json({
             status: {
                 code: 200,

@@ -1,6 +1,6 @@
 <template>
     <div v-if="status==200">
-        <div id="to_image" class="relative toimage flex flex-col w-full flex-initial overflow-hidden" v-if="!isLoading">
+        <div id="to_image" class="relative toimage flex flex-col w-full flex-initial overflow-hidden" v-if="!isLoading && profile">
             <div class="flex flex-col w-2/3">
                 <p class="px-2 text-primary font-extrabold leading-none drop-shadow-md" 
                 :class="{
@@ -11,12 +11,12 @@
                 ">{{ formatNumber(achievement.reached) }}</p>
                 <p class="px-2 text-gray-300 font-bold drop-shadow-2xl z-10" 
                 :class="{'text-9xl': achievement.type!='assists','text8-5xl': achievement.type==='assists' }">
-                {{ AchievementType[achievement.type].toLocaleUpperCase() }}</p>
+                {{ translateAchievementCategory(achievement.type).toLocaleUpperCase() }}</p>
             </div>
-            <img :src="'/players/' + player.playerName + '_full_transp.png'" class="absolute bottom-0 right-0 drop-shadow-2xl"  alt="Player ingame photo" @error="defaultFullImage"/>
+            <img :src="playerImage(profile.member)" class="absolute bottom-0 right-0 max-h-full drop-shadow-2xl" alt="Player ingame photo" @error="onPlayerImageError" />
             <div class="flex flex-col w-2/3 h-full justify-end mb-10">
-                <p class="text-primary text-7xl self-center font-semibold drop-shadow-xl">{{ player.playerName }}</p>
-                <p class="text-5xl self-center drop-shadow-lg">{{ translatePosition(player.favoritePositionEnum) }}</p>
+                <p class="text-primary text-7xl self-center font-semibold drop-shadow-xl">{{ profile.member.playerName }}</p>
+                <p class="text-5xl self-center drop-shadow-lg">{{ translatePosition(profile.mostPlayedPosition) }}</p>
             </div>
         </div>
     </div>
@@ -31,48 +31,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, type Ref, computed, onBeforeMount, type ComputedRef } from 'vue';
-import ClubMembersService from '@services/ClubMembersService';
-import ClubMemberEntity from '@/model/ClubMemberEntity'
-import type { IClubMemberAchievement } from '@/interfaces/clubMemberAchievement.interface';
-import { AchievementType, translatePosition } from '@/i18n/translations';
-const props = defineProps<{
-        playerName: string,
-        type: string,
-        reached: number
-    }>()
+import { computed, onBeforeMount } from "vue"
+import PlayerProfileService from "@services/PlayerProfileService"
+import { translateAchievementCategory, translatePosition } from "@/i18n/translations"
+import { getQueryParam } from "@/lib/query"
+import { playerImage, onPlayerImageError } from "@/lib/playerImage"
 
-const memberService = new ClubMembersService()
-const players:Ref<ClubMemberEntity[]> = memberService.getData()
-const isLoading = memberService.isloading
-const status = memberService.getStatus()
+// /imagegenerator/playerachievement?id=<playerId>&type=<categoría>&reached=<n>
+const playerId = getQueryParam("id")
+const achievement = {
+    type: getQueryParam("type", "goals"),
+    reached: Number(getQueryParam("reached", "0")) || 0
+}
 
+const profileService = new PlayerProfileService(playerId)
+const profile = profileService.getData()
+const isLoading = profileService.isloading
+const status = profileService.getStatus()
 
-onBeforeMount(async ()=>{
-     await memberService.fetch()
- })
-
-const formatNumber = (num: number): string => {
-    return new Intl.NumberFormat('es-ES',{ useGrouping: true }).format(num);
-};
-
-const player:ComputedRef<ClubMemberEntity> = computed(() => {
-    return players.value.find(e => e.playerName.toLocaleLowerCase() === props.playerName.toLocaleLowerCase())
+onBeforeMount(async () => {
+    if (playerId) await profileService.fetch()
+    else status.value = 400
 })
 
-const achievement:ComputedRef<IClubMemberAchievement> = computed(() => {
-    const ach:IClubMemberAchievement = {
-        type: props.type as "played" | "goals" | "assists" | "redcards" | "passes" | "motm",
-        reached: props.reached
-    }
-    return ach
-})
-
-function defaultFullImage(e){
-        e.target.src = '/players/placeholder_full_transp.png'
-    }
-
-
+const formatNumber = (num: number): string => new Intl.NumberFormat("es-ES", { useGrouping: true }).format(num)
 </script>
 
 <style scoped>

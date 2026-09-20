@@ -1,7 +1,8 @@
-import type { IPlayerStats } from "@/interfaces/playerStats.interface";
+import type { IPlayerStats } from "@trueno-proclub-services/shared"
 import { Position } from "@/i18n/translations"
 
 export default class PlayerStatsEntity implements IPlayerStats {
+    playerId: string;
     playerName: string;
     position: Position;
     gamesPlayed: number;
@@ -45,6 +46,7 @@ export default class PlayerStatsEntity implements IPlayerStats {
 
     constructor(stats: Partial<IPlayerStats>) {
         // Initialize all numeric fields to 0 to prevent NaN
+        this.playerId = ''
         this.playerName = ''
         this.position = undefined
         this.gamesPlayed = 0
@@ -123,6 +125,7 @@ export default class PlayerStatsEntity implements IPlayerStats {
         const merged = new PlayerStatsEntity({})
         if (!statsArray?.length) return merged
 
+        merged.playerId = statsArray[0].playerId
         merged.playerName = statsArray[0].playerName
 
         for (const s of statsArray) {

@@ -32,7 +32,7 @@
                     </div>
                 </div>
             </div>
-            <div class="join w-fit mx-auto" v-if="!isloading && !hasError">
+            <div class="join w-fit mx-auto" v-if="!isloading && !hasError && selectedTotw">
                 <button class="join-item btn" :class="{ 'btn-disabled': selectedIndex==0 }" @click="selectedIndex--"><</button>
                 <button class="join-item btn">Semana {{selectedTotw?.weekNumber}}</button>
                 <button class="join-item btn" :class="{ 'btn-disabled': selectedIndex==totwSorted.length-1 }" @click="selectedIndex++">></button>
@@ -66,6 +66,11 @@
                 <img src="/illustrations/bugfixingsvg.svg" class="lg:w-2/3 w-full select-none pointer-events-none" alt="Image representing error">
             </div>
         </div>
+        <div v-else-if="!selectedTotw" role="container" class="flex flex-col items-center gap-4 py-12 text-center">
+            <h3 class="text-2xl font-bold">Todavía no hay equipo de la semana</h3>
+            <p class="text-base-content/60">El primero se calcula automáticamente cuando haya partidos suficientes. ¡Vuelve pronto!</p>
+            <img src="/illustrations/podium.svg" class="w-64 select-none pointer-events-none" alt="Podio vacío">
+        </div>
         <div v-else role="container" class="w-full p-4">
             <TotwItem :totw="selectedTotw" v-model:isBest="isBestValue" />
         </div>
@@ -79,19 +84,13 @@
     import type TotwEntity from "@/model/totw/TotwEntity";
     import TotwTitle from './TotwTitle.vue';
     import TotwItem from './TotwItem.vue';
+    import { getQueryParam } from "@/lib/query";
 
-    const props = defineProps({
-        week: {
-            type: String,
-            required: false,
-            default: ""
-        },
-        type: {
-            type: String,
-            required: false,
-            default: "best"
-        }
-    })
+    // /totw?semana=<iso|número>&tipo=best|worst
+    const props = {
+        week: getQueryParam("semana"),
+        type: getQueryParam("tipo", "best")
+    }
 
     const totwAllService = new TotwAllService()
     const totwScheduleService = new TotwScheduleService()

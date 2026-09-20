@@ -1,0 +1,9 @@
+---
+import ImageLayout from "@layouts/ImageLayout.astro";
+import PlayerAchievementImage from "@components/imagegenerator/PlayerAchievementImage.vue";
+// /imagegenerator/playerachievement?id=<playerId>&type=<category>&reached=<n>
+---
+
+<ImageLayout>
+	<PlayerAchievementImage client:only="vue" />
+</ImageLayout>

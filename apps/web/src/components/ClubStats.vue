@@ -1,6 +1,6 @@
 <template>
 <!-- <div role="container" v-if="isloading">Cargando...</div> -->
-<div role="container" v-if="!hasError" class="flex flex-wrap  px-2 py-4 justify-center items-center h-fit">
+<div role="container" v-if="isloading || (!hasError && stats)" class="flex flex-wrap  px-2 py-4 justify-center items-center h-fit">
 
     <div v-if="stats && stats.updatedAt" class="w-full py-0 my-0 font-thin text-xs text-center"><i class="">Datos actualizados el {{new Date(stats.updatedAt).toLocaleDateString()}}</i></div>
     <div role="container" class="flex flex-col justify-between gap-16 items-center p-8  basis-2/2 lg:basis-1/2 h-full w-full statsleft">
@@ -164,7 +164,10 @@
 
 
 </div>
-<div v-else>Error: {{ errorText }}</div>
+<div v-else class="w-full text-center py-8 text-base-content/60">
+    <p class="font-bold">Los datos del club no están disponibles ahora mismo</p>
+    <p class="text-xs">EA no responde y aún no hay datos en caché. Vuelve a intentarlo en unos minutos.</p>
+</div>
 
 </template>
 
@@ -178,7 +181,7 @@
     const stats = statsService.getData()
     const isloading = statsService.isloading
     const errorText = statsService.getError()
-    const hasError:Boolean = (errorText.value=='') ? false : true
+    const hasError = statsService.getHasError()
 
 
     const gamesData = reactive({

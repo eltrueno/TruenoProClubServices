@@ -1,40 +1,16 @@
 {
   "extends": "astro/tsconfigs/base",
-  //"compilerOptions": {
-  //  "jsx": "preserve"
-  //}
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@components/*": [
-        "./src/components/*"
-      ],
-      "@layouts/*": [
-        "./src/layouts/*"
-      ],
-      "@models/*": [
-        "./src/model/*"
-      ],
-      "@services/*": [
-        "./src/services/*"
-      ],
-      "@interfaces/*": [
-        "./src/interfaces/*"
-      ],
-      "@dtos/*": [
-        "./src/dtos/*"
-      ],
-      "@i18n/*": [
-        "./src/i18n/*"
-      ]
-    },
-    "plugins": [
-      {
-        "name": "@astrojs/ts-plugin"
-      },
-    ],
-  }
+      "@/*": ["./src/*"],
+      "@components/*": ["./src/components/*"],
+      "@layouts/*": ["./src/layouts/*"],
+      "@models/*": ["./src/model/*"],
+      "@services/*": ["./src/services/*"],
+      "@i18n/*": ["./src/i18n/*"]
+    }
+  },
+  "include": [".astro/types.d.ts", "src/**/*"],
+  "exclude": ["dist"]
 }

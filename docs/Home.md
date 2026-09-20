@@ -15,7 +15,7 @@ Sistema de gestión para clubes de Pro Clubs (EA FC): miembros, partidos, estad�
 
 | Servicio | URL | Código |
 |---|---|---|
-| Web | https://www.casemurocity.org | `apps/web` |
+| Web (GitHub Pages, estática) | https://www.casemurocity.org | `apps/web` |
 | REST API | https://api.casemurocity.org | `apps/api` |
 | Auth | https://auth.casemurocity.org | `apps/auth` |
 | Worker (sync con EA, stats, logros, TOTW) | — | `apps/worker` |

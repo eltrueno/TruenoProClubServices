@@ -56,7 +56,7 @@ Excepción: `GET /club` devuelve `{ "status": 200, "response": … }` o `{ "stat
 | `GET` | `/matches/ordered?limit=N` | Más recientes primero. |
 | `GET` | `/matches/ordered/:type?limit=N` | `type` = `league` \| `playoff` \| `friendly`. |
 | `GET` | `/matches/player/:playerId?limit=N` | Partidos en los que aparece el jugador (incluye los de 0 segundos). |
-| `GET` | `/matches/:id` | Un partido por `matchId` de EA. |
+| `GET` | `/matches/:id` | Un partido por `matchId` de EA (objeto, 404 si no existe). |
 
 Cada `IMatch` lleva `localClub`/`awayClub` con `matchStats`, `players[]` (`IMatchPlayer`: `playerId`, `playerName`, `secondsPlayed`, `rating`, `matchEvents`…), `penaltiesScore` si hubo tanda, y a nivel de partido `result`, `winnerByDnf`, `winnerByPen`, `localTeam`.
 

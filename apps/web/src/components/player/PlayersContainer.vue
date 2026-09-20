@@ -114,7 +114,7 @@
 
                 <div v-else-if="finalMembers.length>0" class="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3  content-center justify-center">
                     <TransitionGroup name="playerlist">
-                        <PlayerField v-for="(member, index) in finalMembers" :key="member.playerName" :player="member" :index="index" @clickedPlayer="handlePlayerClick"/>
+                        <PlayerField v-for="(member, index) in finalMembers" :key="member.playerId" :player="member" :index="index"/>
                     </TransitionGroup>
 			    </div>
                 <div v-else class="w-full">
@@ -136,12 +136,11 @@
     import ClubMember from '@/model/ClubMemberEntity'
     import PlayerStatsEntity from '@/model/PlayerStatsEntity';
     import PlayerField from '@components/player/PlayerField.vue';
+    import { getQueryParam, routes } from "@/lib/query";
 
 
-    const props = defineProps<{
-        detailPlayerName: string
-    }>()
-    const selectedDetailedPlayer = ref(-1)
+    // /plantilla?id=<playerId> (enlaces antiguos): redirige al perfil
+    const legacyDetailId = getQueryParam("id")
 
     const dropdownContent = ref();
 
@@ -167,13 +166,13 @@
 function aggregatePlayerStats(stats: PlayerStatsEntity[]): PlayerStatsEntity[] {
     const grouped = new Map<string, PlayerStatsEntity[]>()
     for (const s of stats) {
-        if (!grouped.has(s.playerName)) {
-            grouped.set(s.playerName, [])
+        if (!grouped.has(s.playerId)) {
+            grouped.set(s.playerId, [])
         }
-        grouped.get(s.playerName)!.push(s)
+        grouped.get(s.playerId)!.push(s)
     }
     const result: PlayerStatsEntity[] = []
-    for (const [playerName, playerStats] of grouped.entries()) {
+    for (const [, playerStats] of grouped.entries()) {
         result.push(PlayerStatsEntity.aggregate(playerStats))
     }
     return result
@@ -203,17 +202,17 @@ const mergedPlayers = computed(() => {
     // playedPositions sale de los mismos docs filtrados por statsType
     const positionsMap = new Map<string, Record<string, number>>()
     for (const s of raw) {
-        if (!positionsMap.has(s.playerName)) positionsMap.set(s.playerName, {})
-        const pos = positionsMap.get(s.playerName)!
+        if (!positionsMap.has(s.playerId)) positionsMap.set(s.playerId, {})
+        const pos = positionsMap.get(s.playerId)!
         pos[s.position] = (pos[s.position] || 0) + s.gamesPlayed
     }
 
-    const statsMap = new Map(plstats.value.map(s => [s.playerName, s]))
+    const statsMap = new Map(plstats.value.map(s => [s.playerId, s]))
 
     return members.value.map(member => ({
         ...member,
-        stats: statsMap.get(member.playerName),
-        playedPositions: positionsMap.get(member.playerName) ?? {}
+        stats: statsMap.get(member.playerId),
+        playedPositions: positionsMap.get(member.playerId) ?? {}
     }))
 })
 
@@ -344,38 +343,6 @@ const mergedPlayers = computed(() => {
 
     const overallFilter = ref(66)
 
-    const preDetailedPL = ref(null)
-    function handlePlayerClick(edata){
-        preDetailedPL.value = edata.player;
-        modalVisible.value = true
-    }
-
-    const modalVisible = ref(false)
-    function handleClosedModal(){
-        modalVisible.value = false
-        if(props.detailPlayerName!=""){
-            window.location.href = '.';
-        }
-        selectedDetailedPlayer.value = -1;
-    }
-
-    //const preDetailedPL = ref(ClubMember)
-    const detailedPlayer:ComputedRef<ClubMember> = computed(() => {
-        let p = null
-        if(preDetailedPL.value!=null) p = preDetailedPL.value
-        else{
-            if(props.detailPlayerName!=""){
-             p = members.value.filter((el) => el.playerName.toLowerCase() == props.detailPlayerName.toLowerCase() )[0]
-            if(!p){
-                window.location.href = '.';
-            }
-        }else if(selectedDetailedPlayer.value!=-1){
-            p = members.value[selectedDetailedPlayer.value]
-        }
-        }
-        return p;
-    })
-
     onBeforeMount(async ()=>{
         await Promise.all([
             memberService.fetch(),
@@ -385,10 +352,8 @@ const mergedPlayers = computed(() => {
         ])
     })
 
-    onMounted(async ()=>{
-        if(props.detailPlayerName!="" || selectedDetailedPlayer.value!=-1){
-            modalVisible.value = true
-        }
+    onMounted(() => {
+        if (legacyDetailId) window.location.replace(routes.player(legacyDetailId))
     })
 </script>
 

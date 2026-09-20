@@ -5,8 +5,7 @@ dotenv.config()
 const CLUBID: number = Number(process.env.CLUBID || '101456');
 
 const getById = async (id: number) => {
-    const response = await MatchModel.find({ matchId: id })
-    return response
+    return MatchModel.findOne({ matchId: id })
 }
 
 const getLatestByMatchTypeLimit = async (matchType: "league" | "playoff", limit: number) => {

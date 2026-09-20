@@ -47,6 +47,18 @@
                         <p v-if="playerProfile.member.proOverall" class="text-base-content/60 text-sm lg:text-lg">
                             {{ playerProfile.member.proHeight }}cm · {{ playerProfile.member.proOverall }} OVR
                         </p>
+                        <!-- Cuenta vinculada (Twitch) -->
+                        <div v-if="linkedUser" class="mt-2 inline-flex items-center gap-2 rounded-full bg-base-100/60 pl-1 pr-3 py-1 text-xs lg:text-sm">
+                            <div class="avatar">
+                                <div class="w-6 rounded-full ring-1 ring-primary">
+                                    <img v-if="linkedUser.image" :src="linkedUser.image" :alt="linkedUser.name" />
+                                </div>
+                            </div>
+                            <span class="font-semibold">{{ linkedUser.name }}</span>
+                        </div>
+                        <p v-if="playerProfile.member.nameHistory?.length > 1" class="mt-1 text-xs text-base-content/50">
+                            Antes: {{ playerProfile.member.nameHistory.filter(n => n !== playerProfile.member.playerName).join(", ") }}
+                        </p>
                     </div>
                 </div>
 
@@ -187,6 +199,11 @@
     import AverageStatsService from "@/services/AverageStatsService.ts";
     import PlayerStatsEntity from "@/model/PlayerStatsEntity";
     import { Position, translatePosition } from "@/i18n/translations";
+    import { getQueryParam } from "@/lib/query";
+    import { playerImage as memberImage, onPlayerImageError } from "@/lib/playerImage";
+    import { useMembers } from "@/composables/useMembers";
+    import { authApi } from "@/lib/api";
+    import type { IPublicUser } from "@trueno-proclub-services/shared";
 
     // Subcomponents
     import PlayerDetailStats from "./PlayerDetailStats.vue";
@@ -194,18 +211,13 @@
     import PlayerDetailWIP from "./PlayerDetailWIP.vue";
     import PlayerDetailSkeleton from "./PlayerDetailSkeleton.vue";
 
-    const props = defineProps({
-        playerName: {
-            type: String,
-            required: true
-        },
-        initialTab: { type: String, default: 'stats' }
-    })
+    // /jugador?id=<playerId>&tab=stats|form|achievements|compare
+    const playerId = getQueryParam("id")
 
-    const playerProfileService = new PlayerProfileService(props.playerName)
+    const playerProfileService = new PlayerProfileService(playerId)
     const playerProfile = playerProfileService.getData()
 
-    const clubMatchByPlayerService = new ClubMatchByPlayerService(props.playerName)
+    const clubMatchByPlayerService = new ClubMatchByPlayerService(playerId)
     const playerMatches = clubMatchByPlayerService.getData()
 
     const averageStatsService = new AverageStatsService()
@@ -249,21 +261,31 @@
     }
 
     const fetchData = async () => {
-        await playerProfileService.fetch()
-        await clubMatchByPlayerService.fetch()
-        await averageStatsService.fetch()
+        if (!playerId) {
+            playerProfileService.status.value = 400
+            playerProfileService.isloading.value = false
+            return
+        }
+        await Promise.all([playerProfileService.fetch(), clubMatchByPlayerService.fetch(), averageStatsService.fetch(), useMembers().load()])
     }
 
     onBeforeMount(fetchData)
 
-    const playerImage = computed(() => {
-        if (!playerProfile.value) return '/players/placeholder_top_transp.png'
-        return `/players/${playerProfile.value.member.playerName}_top_transp.png`
-    })
+    const playerImage = computed(() => memberImage(playerProfile.value?.member))
+    const handleImageError = onPlayerImageError
 
-    const handleImageError = (e: any) => {
-        e.target.src = '/players/placeholder_top_transp.png'
-    }
+    // Cuenta vinculada al jugador (nombre / avatar de Twitch), si la hay
+    const linkedUser = ref<IPublicUser | null>(null)
+    watch(playerProfile, async (p) => {
+        linkedUser.value = null
+        const userId = p?.member?.userId
+        if (!userId) return
+        try {
+            linkedUser.value = (await authApi.publicUsers([userId]))[0] ?? null
+        } catch (e) {
+            console.warn("[PlayerDetail] linked user unavailable", e)
+        }
+    })
 
     const filteredStats = computed(() => {
         const { official, friendly } = playerProfile.value.stats

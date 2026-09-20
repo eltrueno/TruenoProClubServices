@@ -1,0 +1,25 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import MatchDetail from "@/components/match/detail/MatchDetail.vue";
+import MatchDetailSkeleton from "@/components/match/detail/MatchDetailSkeleton.vue";
+// /partido?id=<matchId>&player=<playerId> — se leen en cliente
+---
+
+<Layout
+	title="Casemuro City: Detalles de Partido"
+	isindex={false}
+	description="Detalles del partido"
+	keywords="fifa, eafc, ea fc, eafc27, club, pro, clubespro, proclubs, casemurocity, eltrueno, el_trueno, partido, stats, detalles, casemuro, mrcasemuro, mr_casemuro"
+>
+	<meta slot="metadata" property="og:image" content="https://www.casemurocity.org/escudo_banner_fondo.webp" />
+	<meta slot="metadata" name="twitter:image" content="https://www.casemurocity.org/escudo_banner_fondo.webp" />
+	<meta slot="metadata" name="robots" content="noindex, nofollow" />
+
+	<section>
+		<container class="flex px-2 py-4 justify-center items-center text-center">
+			<MatchDetail client:only="vue">
+				<MatchDetailSkeleton slot="fallback" />
+			</MatchDetail>
+		</container>
+	</section>
+</Layout>

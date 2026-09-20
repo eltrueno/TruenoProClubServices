@@ -1,10 +1,10 @@
-import type { IAchievementDefinition } from "@/interfaces/achievement.interface";
+import type { IAchievementDefinition, AchievementCategory, AchievementScope, AchievementType, AchievementMode } from "@trueno-proclub-services/shared"
 
 export default class AchievementDefinitionEntity implements IAchievementDefinition {
     _id: string;
     name: string;
     description?: string;
-    category: "gamesPlayed" | "goals" | "assists" | "redCards" | "passesMade" | "passesSuccess" | "manOfTheMatch" | "hattricks" | "pokers" | "cleanSheets" | "saves" | "minutesPlayed" | "pass_accuracy" | "shot_accuracy" | "totwBest" | "totwWorst";
+    category: AchievementCategory;
     scope: "cumulative" | "match";
     type: "official" | "friendly" | "general";
     mode: "infinite" | "unique";

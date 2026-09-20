@@ -1,4 +1,4 @@
-import type { IMatch, IMatchClub, MatchResult, MatchType } from "@trueno-proclub-services/shared"
+import { fixEaEncoding, type IMatch, type IMatchClub, type MatchResult, type MatchType } from "@trueno-proclub-services/shared"
 import {
     detectDnf, detectPenalties, getClubScore, getMatchClubIds, getMatchPlayers,
     type IClubMatches
@@ -59,7 +59,7 @@ export default class MatchDTO implements IMatch {
             const aggregate = raw.aggregate?.[clubId] ?? {}
             return {
                 id: Number(raw.clubs[clubId]?.details?.clubId ?? clubId),
-                name: raw.clubs[clubId]?.details?.name ?? "",
+                name: fixEaEncoding(raw.clubs[clubId]?.details?.name),
                 matchStats: {
                     goals: score,
                     shots: Number(aggregate.shots ?? 0),

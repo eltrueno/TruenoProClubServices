@@ -4,8 +4,10 @@ import { useAuth } from "@/composables/useAuth"
 import AuthGuard from "@/components/auth/AuthGuard.vue"
 import LoginWall from "@/components/auth/LoginWall.vue"
 import { translateRole } from "@/i18n/translations"
+import { routes } from "@/lib/query"
+import { playerImage, onPlayerImageError } from "@/lib/playerImage"
 
-const { user, syncTwitch, logout, deleteAccount, isLoggedIn } = useAuth()
+const { user, syncTwitch, logout, deleteAccount, isLoggedIn, myMember, loadMyMember } = useAuth()
 const deleteModal = ref<HTMLDialogElement | null>(null)
 const twitchSyncing = ref(false)
 
@@ -38,6 +40,7 @@ const handleSync = async (silent: boolean = false) => {
 
 onMounted(() => {
   currentTheme.value = (localStorage.getItem('theme') as any) || 'system'
+  loadMyMember()
   updateCooldown()
   cooldownTimer = setInterval(updateCooldown, 1000)
 })
@@ -353,17 +356,23 @@ const icons = {
         </div>
 
 
-        <!-- Card Cuenta de juego -->
+        <!-- Card Cuenta de juego: jugador vinculado desde el panel admin (members.userId) -->
         <div class="rounded-xl bg-base-200 shadow-md p-6">
-          <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Cuenta de juego</h2>
+          <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Mi jugador</h2>
           <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <p class="font-bold text-base-content text-sm">ID De EA</p>
-              <p class="text-xs text-base-content/50 mt-0.5">{{ user?.eaPlayerName || 'Sin vincular' }}</p>
+            <div class="flex items-center gap-3 text-left">
+              <div class="w-12 h-14 rounded-lg overflow-hidden bg-base-300 shrink-0">
+                <img :src="playerImage(myMember)" :alt="myMember?.playerName ?? 'Sin vincular'" class="w-full h-full object-cover object-top" @error="onPlayerImageError" />
+              </div>
+              <div>
+                <p class="font-bold text-base-content text-sm">{{ myMember?.playerName ?? 'Sin vincular' }}</p>
+                <p class="text-xs text-base-content/50 mt-0.5">
+                  <template v-if="myMember">{{ myMember.proName || 'Pro sin nombre' }}<span v-if="myMember.proOverall"> · {{ myMember.proOverall }} OVR</span></template>
+                  <template v-else>Un admin puede vincular tu cuenta a tu jugador del club</template>
+                </p>
+              </div>
             </div>
-            <button class="btn btn-sm btn-outline btn-disabled rounded-lg font-bold w-full sm:w-auto transition-all">
-              Proximamente...
-            </button>
+            <a v-if="myMember" :href="routes.player(myMember.playerId)" class="btn btn-sm btn-primary rounded-lg font-bold w-full sm:w-auto transition-all">Ver perfil</a>
           </div>
         </div>
 

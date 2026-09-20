@@ -57,7 +57,11 @@ Puedes ver el sistema en funcionamiento en el despliegue oficial de **Casemuro C
 - Login social con Twitch, sincronización de follow/sub/rol, endpoint público de usuarios y listado admin.
 
 ##### **web** — Frontend
-- **Stack**: Astro + Vue + Tailwind + DaisyUI.
+- **Stack**: Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5.
+- **100% estática** (`output: "static"`), desplegada en **GitHub Pages** (`.github/workflows/deploy-web.yml`) con dominio `www.casemurocity.org` (`public/CNAME`). Las islas Vue hacen fetch al api y al auth desde el navegador.
+- Las páginas "dinámicas" van por query string y se leen en cliente: `/jugador?id=<playerId>&tab=…`, `/partido?id=<matchId>&player=<playerId>`, `/totw?semana=<iso>&tipo=best|worst`, `/partidos?id=…&desde=…&hasta=…&liga&playoff&amistoso`.
+- Panel admin en `/admin` (foto y cuenta vinculada de cada jugador; solo rol `admin`) y "Mi jugador" en `/micuenta`.
+- Config por variables `PUBLIC_*` (ver `apps/web/.env.example`).
 
 ##### **discordbot** — Bot de Discord
 - Consume los eventos de RabbitMQ y anuncia el equipo de la semana (y partidos / logros cuando se activen sus productores).
@@ -114,10 +118,13 @@ Sustituye `api` por `worker` o `authservice`. Los packages (`shared`, `auth`, `e
 Web:
 
 ```bash
-pnpm --filter @trueno-proclub-services/web dev
-pnpm --filter @trueno-proclub-services/web build
+pnpm --filter @trueno-proclub-services/web dev      # http://localhost:4321
+pnpm --filter @trueno-proclub-services/web build    # → apps/web/dist (estático)
 pnpm --filter @trueno-proclub-services/web preview
+pnpm --filter @trueno-proclub-services/web check    # astro check
 ```
+
+Para desarrollar contra un api local, `apps/web/.env` con `PUBLIC_API_URL=http://localhost:3999` (hay un `.claude/launch.json` con `web` y `api`).
 
 ### 🔧 Configuración
 
@@ -126,6 +133,7 @@ Cada app tiene un `.env.example` con todas sus variables comentadas:
 - [`apps/api/.env.example`](apps/api/.env.example)
 - [`apps/worker/.env.example`](apps/worker/.env.example)
 - [`apps/auth/.env.example`](apps/auth/.env.example)
+- [`apps/web/.env.example`](apps/web/.env.example) (`PUBLIC_API_URL`, `PUBLIC_AUTH_URL`, `PUBLIC_SITE_URL`; en GitHub Pages se leen de las *repository variables*)
 
 Las más importantes:
 
@@ -182,6 +190,11 @@ apps/
 │   ├── services/  middleware/  models/  db/
 │   └── index.ts
 ├── web/src/
+│   ├── pages/                    # Una página por ruta (sin [params]: query string)
+│   ├── components/  layouts/  composables/
+│   ├── lib/                      # api.ts (cliente tipado), auth.ts, query.ts (rutas), playerImage.ts
+│   ├── services/  model/         # FetchService + entidades de vista
+│   └── styles/global.css         # Tailwind 4 + temas DaisyUI
 ├── discordbot/
 └── imagerenderer/src/
 ```
@@ -228,8 +241,8 @@ docker build -f apps/auth/Dockerfile -t tpcs-auth .
 |-----------|------------|
 | **API / Worker / Auth** | Node ESM, TypeScript, tsx, Express, Mongoose / MongoDB, Better Auth, RabbitMQ |
 | **EA** | puppeteer |
-| **Frontend Web** | Astro, Vue, Tailwind CSS, DaisyUI |
-| **Tooling** | pnpm workspaces, Docker |
+| **Frontend Web** | Astro 7, Vue 3, Tailwind CSS 4, DaisyUI 5, Chart.js, three.js · GitHub Pages |
+| **Tooling** | pnpm workspaces, Docker, GitHub Actions (Pages + wiki) |
 
 ### 👨‍💻 Autor
 
@@ -278,7 +291,7 @@ This project is an **evolution** of [Caracantosmeaos](https://github.com/Caracan
 - **api** — Express + Mongoose REST API: club, members, matches, stats, achievements, HOF/HOS, position averages and an admin panel backend (player photo and linked account). Protected routes validate the session against the auth service. 📖 **Endpoints: [docs/API.md](docs/API.md)**
 - **worker** — Every `WORKER_INTERVAL` seconds fetches new matches from EA, normalizes them (`MatchDTO`), registers the members that appear, accumulates stats, evaluates achievements and publishes RabbitMQ events. Weekly team-of-the-week job. Enriches members (`proName`, `proOverall`…) from EA without overwriting good data with empty values.
 - **auth** — Express + Better Auth + MongoDB: Twitch login, follow/sub/role sync, public users endpoint and admin user listing.
-- **web** — Astro + Vue + Tailwind + DaisyUI frontend.
+- **web** — Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5 frontend. Fully static, deployed to GitHub Pages (`.github/workflows/deploy-web.yml`, custom domain via `public/CNAME`). Dynamic pages take query params read client-side (`/jugador?id=<playerId>`, `/partido?id=<matchId>`, `/totw?semana=…&tipo=…`). Admin panel at `/admin` (player photo and linked account, `admin` role only). Configured through `PUBLIC_*` env vars (`apps/web/.env.example`).
 - **discordbot** — Consumes RabbitMQ events and announces the team of the week (matches / achievements once their producers are enabled).
 - **imagerenderer** — Captures web pages with puppeteer to render the images the bot posts.
 

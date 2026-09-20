@@ -32,3 +32,20 @@ export const finiteNumberOrUndefined = (value: unknown): number | undefined => {
  */
 export const countsForPlayerStats = (player: { secondsPlayed?: number | null }): boolean =>
     Number(player?.secondsPlayed) > 0
+
+/**
+ * EA devuelve los nombres (jugadores, pros, clubes) como UTF-8 leído como
+ * latin1 ("Ã±" en vez de "ñ"). Se corrige en el worker al guardar; la web
+ * nunca debe volver a aplicarlo. Si el texto ya es UTF-8 válido se deja igual.
+ */
+export const fixEaEncoding = (str: string | undefined | null): string => {
+    if (!str) return ""
+    // Si contiene caracteres fuera de latin1 ya no es mojibake
+    if ([...str].some((c) => c.charCodeAt(0) > 255)) return str
+    try {
+        const bytes = Uint8Array.from([...str], (c) => c.charCodeAt(0))
+        return new TextDecoder("utf-8", { fatal: true }).decode(bytes)
+    } catch {
+        return str
+    }
+}

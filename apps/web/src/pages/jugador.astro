@@ -1,0 +1,25 @@
+---
+import Layout from "@layouts/Layout.astro";
+import PlayerDetail from "@components/player/detail/PlayerDetail.vue";
+import PlayerDetailSkeleton from "@components/player/detail/PlayerDetailSkeleton.vue";
+// /jugador?id=<playerId>&tab=stats|form|... — el id y la pestaña se leen en cliente
+---
+
+<Layout
+	title="Casemuro City: Perfil del jugador"
+	isindex={false}
+	description="Perfil y detalles del jugador"
+	keywords="fifa, eafc, ea fc, eafc27, club, pro, clubespro, proclubs, casemurocity, eltrueno, el_trueno, jugador, stats, detalles, casemuro, mrcasemuro, mr_casemuro"
+>
+	<meta slot="metadata" property="og:image" content="https://www.casemurocity.org/escudo_banner_fondo.webp" />
+	<meta slot="metadata" name="twitter:image" content="https://www.casemurocity.org/escudo_banner_fondo.webp" />
+	<meta slot="metadata" name="robots" content="noindex, nofollow" />
+
+	<section>
+		<container class="flex px-2 py-4 justify-center items-center text-center">
+			<PlayerDetail client:only="vue">
+				<PlayerDetailSkeleton slot="fallback" />
+			</PlayerDetail>
+		</container>
+	</section>
+</Layout>

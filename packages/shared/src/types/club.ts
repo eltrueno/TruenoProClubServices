@@ -22,5 +22,5 @@ export interface IClub {
     regionId: number
     name: string
     stats: IClubStats
-    updatedAt?: Date
+    updatedAt?: Date | string
 }

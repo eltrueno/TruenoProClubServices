@@ -1,5 +1,6 @@
 import type { IMatchPlayer, PlayerPosition } from "@trueno-proclub-services/shared"
 import { parseMatchEvents, type IMatchClubPlayer } from "@trueno-proclub-services/eafcapi"
+import { fixEaEncoding } from "@trueno-proclub-services/shared"
 
 const num = (v: unknown) => {
     const n = Number(v)
@@ -39,7 +40,7 @@ export default class MatchPlayerDTO implements IMatchPlayer {
 
     constructor(playerId: string, raw: IMatchClubPlayer) {
         this.playerId = playerId
-        this.playerName = raw.playername
+        this.playerName = fixEaEncoding(raw.playername)
         this.rating = num(raw.rating)
         this.secondsPlayed = num(raw.secondsPlayed)
         this.redCards = num(raw.redcards)
