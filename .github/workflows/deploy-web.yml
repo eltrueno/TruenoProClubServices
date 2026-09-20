@@ -1,0 +1,66 @@
+name: Deploy web to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/web/**"
+      - "packages/shared/**"
+      - "packages/auth/**"
+      - ".github/workflows/deploy-web.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Instalar dependencias
+        # Solo la web y sus dependencias del workspace (shared, auth). No se
+        # instala eafcapi: trae puppeteer y su postinstall descarga Chrome.
+        run: pnpm install --frozen-lockfile --filter @trueno-proclub-services/web...
+
+      - name: Build de packages
+        run: pnpm --filter @trueno-proclub-services/shared build && pnpm --filter @trueno-proclub-services/auth build
+
+      - name: Build de la web
+        run: pnpm --filter @trueno-proclub-services/web build
+        env:
+          PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL || 'https://api.casemurocity.org' }}
+          PUBLIC_AUTH_URL: ${{ vars.PUBLIC_AUTH_URL || 'https://auth.casemurocity.org' }}
+          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL || 'https://www.casemurocity.org' }}
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

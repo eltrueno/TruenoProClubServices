@@ -1,6 +1,8 @@
 const { AttachmentBuilder } = require("discord.js")
 const { render } = require("@trueno-proclub-services/imagerenderer-client")
 require('dotenv').config();
+const WWW_URL = process.env.WWW_URL || "https://www.casemurocity.org"
+const { mention } = require("../utils/players")
 
 async function handle(client, totw) {
     try {
@@ -15,16 +17,12 @@ async function handle(client, totw) {
         const playersBest = totw.bestPlayers.sort((a, b) => b.avgRating - a.avgRating)
         let playerMentionsBest = ""
         var player = playersBest[0]
-        var findMatch = client.playerDatabase.players.filter((e) => e.playerName === player.playerName)[0]
-        var discordId = findMatch ? findMatch.discordId : null
-        playerMentionsBest += discordId ? `<@${discordId}> ` : player.playerName + " "
+        playerMentionsBest += mention(client, player) + " "
 
         const playersWorst = totw.worstPlayers.sort((a, b) => a.avgRating - b.avgRating)
         let playerMentionsWorst = ""
         var player = playersWorst[0]
-        var findMatch = client.playerDatabase.players.filter((e) => e.playerName === player.playerName)[0]
-        var discordId = findMatch ? findMatch.discordId : null
-        playerMentionsWorst += discordId ? `<@${discordId}> ` : player.playerName + " "
+        playerMentionsWorst += mention(client, player) + " "
 
         const imgBufferBest = await render({
             type: 'totw',

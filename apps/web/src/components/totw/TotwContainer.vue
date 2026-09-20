@@ -3,7 +3,7 @@
         <header class="flex flex-col justify-center align-middle overflow-x-hidden">
             <TotwTitle v-if="selectedType=='best'" :title="'HALL OF FAME'" :subtitle="weekRangeString" :variant="'best'" />
             <TotwTitle v-else :title="'HALL OF SHAME'" :subtitle="weekRangeString" :variant="'worst'" />
-            <div class="w-fit mx-auto flex flex-col justify-center align-middle">
+            <div v-if="totwSchedule?.nextDate" class="w-fit mx-auto flex flex-col justify-center align-middle">
                 <span class="text-center text-2xl">Próximo equipo:</span>
                 <div class="grid auto-cols-max grid-flow-col gap-5 text-center">
                     <div class="flex flex-col">
@@ -32,7 +32,7 @@
                     </div>
                 </div>
             </div>
-            <div class="join w-fit mx-auto" v-if="!isloading && !hasError">
+            <div class="join w-fit mx-auto" v-if="!isloading && !hasError && selectedTotw">
                 <button class="join-item btn" :class="{ 'btn-disabled': selectedIndex==0 }" @click="selectedIndex--"><</button>
                 <button class="join-item btn">Semana {{selectedTotw?.weekNumber}}</button>
                 <button class="join-item btn" :class="{ 'btn-disabled': selectedIndex==totwSorted.length-1 }" @click="selectedIndex++">></button>
@@ -63,8 +63,13 @@
         <div v-else-if="hasError" role="container" class="flex flex-col h-full overflow-hidden">
             <h3 class="text-center text-2xl p-3">Ha ocurrido un error al obtener los datos del equipo de la semana :/ {{ errorText }}</h3>
             <div class="flex place-content-center p-6">
-                <img src="/illustrations/bugfixingsvg.svg" class="lg:w-2/3 w-full select-none pointer-events-none" alt="Image representing error">
+                <img src="/illustrations/bugfixingsvg.svg" class="w-full max-w-xs md:max-w-sm select-none pointer-events-none" alt="Image representing error">
             </div>
+        </div>
+        <div v-else-if="!selectedTotw" role="container" class="flex flex-col items-center gap-4 py-12 text-center">
+            <h3 class="text-2xl font-bold">Todavía no hay equipo de la semana</h3>
+            <p class="text-base-content/60">El primero se calcula automáticamente cuando haya partidos suficientes. ¡Vuelve pronto!</p>
+            <img src="/illustrations/podium.svg" class="w-full max-w-xs md:max-w-sm select-none pointer-events-none" alt="Podio vacío">
         </div>
         <div v-else role="container" class="w-full p-4">
             <TotwItem :totw="selectedTotw" v-model:isBest="isBestValue" />
@@ -76,22 +81,16 @@
     import { onBeforeMount, computed, ref, type Ref, type ComputedRef, onUnmounted, onMounted } from 'vue';
     import TotwAllService from "@/services/TotwAllService";
     import TotwScheduleService from "@/services/TotwScheduleService";
-    import type TotwEntity from "@/model/totw/TotwEntity";
+    import type { ITOTW as TotwEntity } from "@trueno-proclub-services/shared";
     import TotwTitle from './TotwTitle.vue';
     import TotwItem from './TotwItem.vue';
+    import { getQueryParam } from "@/lib/query";
 
-    const props = defineProps({
-        week: {
-            type: String,
-            required: false,
-            default: ""
-        },
-        type: {
-            type: String,
-            required: false,
-            default: "best"
-        }
-    })
+    // /totw?semana=<iso|número>&tipo=best|worst
+    const props = {
+        week: getQueryParam("semana"),
+        type: getQueryParam("tipo", "best")
+    }
 
     const totwAllService = new TotwAllService()
     const totwScheduleService = new TotwScheduleService()

@@ -58,6 +58,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import ChartTooltip from '@/components/utils/ChartTooltip.vue'
+import { routes } from '@/lib/query'
 import { Result } from '@/i18n/translations';
 
 const props = defineProps<{
@@ -72,7 +73,7 @@ const props = defineProps<{
     result: Result
     manOfTheMatch?: boolean
     matchId: number | null
-    playerName: string
+    playerId: string
     metricLabel: string
     value: number
     average: number
@@ -83,7 +84,7 @@ const props = defineProps<{
 defineEmits<{ close: []; hover: [value: boolean] }>()
 
 const matchUrl = computed(() =>
-    props.matchId ? `/partido/${props.matchId}?player=${encodeURIComponent(props.playerName)}` : ''
+    props.matchId ? routes.match(props.matchId, props.playerId) : ''
 )
 
 const decimals = computed(() => props.decimals ?? 1)

@@ -1,4 +1,5 @@
 import "dotenv/config"
+import type { IAuthUser } from "@trueno-proclub-services/shared"
 import { betterAuth } from "better-auth"
 import { createAuthMiddleware, APIError } from "better-auth/api"
 import { mongodbAdapter } from "better-auth/adapters/mongodb"
@@ -61,10 +62,6 @@ export const createAuth = (db: any, onTwitchLogin?: (user: any) => Promise<void>
         type: "string",
         required: false
       },
-      eaPlayerName: {
-        type: "string",
-        required: false
-      },
       twitchId: {
         type: "string",
         required: false
@@ -103,20 +100,10 @@ export const createAuth = (db: any, onTwitchLogin?: (user: any) => Promise<void>
 /* TYPE INFERENCE */
 export type AuthType = ReturnType<typeof createAuth>
 export type Session = AuthType["$Infer"]["Session"]
-export interface User {
-  id: string
-  email: string
+export interface User extends IAuthUser {
   emailVerified: boolean
-  name: string
-  image?: string | null
   createdAt: Date
   updatedAt: Date
-  twitchId?: string | null
-  twitchFollowing?: boolean | null
-  twitchSub?: boolean | null
-  role?: string | null
-  discordId?: string | null
-  eaPlayerName?: string | null
 }
 
 export interface Account {

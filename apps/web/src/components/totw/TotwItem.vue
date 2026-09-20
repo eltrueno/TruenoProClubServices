@@ -92,11 +92,9 @@
               <div class="flex flex-wrap justify-center gap-8">
                 <TotwPlayerCard
                   v-for="player in currentPlayers"
-                  :key="player.playerName"
+                  :key="player.playerId"
                   :player="player"
                   :variant="isBest ? 'best' : 'worst'"
-                  :imagePath="`/players/${player.playerName}_top_transp.png`"
-                  :placeholderPath="`/players/placeholder_top_transp.png`"
                   @click="openModal(player)"
                 />
               </div>
@@ -118,8 +116,8 @@
 </template>
 
 <script setup lang="ts">
-    import type { ITOTWPlayer } from '@/interfaces/totw.interface';
-    import type TotwEntity from '@/model/totw/TotwEntity';
+    import type { ITOTWPlayer } from '@trueno-proclub-services/shared';
+    import type { ITOTW as TotwEntity } from '@trueno-proclub-services/shared';
     import { computed, type ComputedRef, ref } from 'vue';
     import TotwPlayerCard from './TotwPlayerCard.vue';
     import TotwPlayerModal from './TotwPlayerModal.vue';

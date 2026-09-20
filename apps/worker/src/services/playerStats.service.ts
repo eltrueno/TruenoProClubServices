@@ -1,8 +1,6 @@
-import { IMatch } from "@interfaces/match.interface"
-import { IMatchPlayer } from "@interfaces/matchPlayer.interface"
-import MatchModel from "@models/match.model"
-import { PlayerStatsOfficialModel, PlayerStatsFriendlyModel } from "@models/playerstats.model"
-import { processAchievements, recalculateAllTOTWAchievements } from "@services/achievement.service"
+import { countsForPlayerStats, type IMatch, type IMatchPlayer, type IPlayerStats } from "@trueno-proclub-services/shared"
+import { MatchModel, PlayerStatsOfficialModel, PlayerStatsFriendlyModel } from "@trueno-proclub-services/shared/models"
+import { processAchievements, recalculateAllTOTWAchievements } from "./achievement.service.js"
 import { Model } from "mongoose"
 
 /**
@@ -10,8 +8,28 @@ import { Model } from "mongoose"
  * league + playoff → official
  * friendly → friendly
  */
-function getStatsModel(matchType: string): Model<any> {
+function getStatsModel(matchType: string): Model<IPlayerStats> {
     return matchType === "friendly" ? PlayerStatsFriendlyModel : PlayerStatsOfficialModel
+}
+
+const SUMMABLE_FIELDS = [
+    "gamesPlayed", "minutesPlayed", "wins", "losses", "ties", "goals", "assists", "shots", "redCards",
+    "passesMade", "passesSuccess", "ratingSum", "tacklesMade", "tacklesSuccess", "cleanSheets",
+    "goalsConceded", "manOfTheMatch", "hattricks", "pokers", "saves"
+] as const
+
+/**
+ * Totales de un jugador sumando todas sus posiciones (los logros acumulativos
+ * son del jugador, no de la posición).
+ */
+async function getPlayerTotals(StatsModel: Model<IPlayerStats>, playerId: string) {
+    const docs = await StatsModel.find({ playerId }).lean()
+    if (docs.length === 0) return null
+    const totals: Record<string, number> = {}
+    for (const field of SUMMABLE_FIELDS) {
+        totals[field] = docs.reduce((acc, d) => acc + (Number(d[field]) || 0), 0)
+    }
+    return totals
 }
 
 /**
@@ -28,6 +46,9 @@ const accumulateStatsFromMatch = async (match: IMatch, clubId: number, skipAchie
     const isTie = match.result === "tie"
 
     for (const player of ourPlayers) {
+        if (!player.playerId) continue
+        // 0 segundos jugados: se guarda en el partido pero no altera stats ni logros
+        if (!countsForPlayerStats(player)) continue
         const isHattrick = player.goals === 3
         const isPoker = player.goals >= 4
 
@@ -54,34 +75,27 @@ const accumulateStatsFromMatch = async (match: IMatch, clubId: number, skipAchie
             pokers: isPoker ? 1 : 0,
         }
 
-
         await StatsModel.updateOne(
-            { playerName: player.playername, position: player.position },
+            { playerId: player.playerId, position: player.position },
             {
-                $inc: {
-                    ...incFields
-                },
-                $setOnInsert: {
-                    playerName: player.playername,
-                    position: player.position,
-                }
+                $inc: incFields,
+                // playerName se refresca en cada partido: siempre el último gamertag visto
+                $set: { playerName: player.playerName },
+                $setOnInsert: { playerId: player.playerId, position: player.position }
             },
             { upsert: true }
         )
 
-        //await recomputeMostPlayedPosition(player.playername, StatsModel)
-
         if (!skipAchievements) {
-            const updatedStats = await StatsModel.findOne({ playerName: player.playername }).lean()
-            if (updatedStats) {
-                await processAchievements(player.playername, updatedStats,
+            const totals = await getPlayerTotals(StatsModel, player.playerId)
+            if (totals) {
+                await processAchievements(player.playerId, player.playerName, totals,
                     { matchType: match.matchType === "friendly" ? "friendly" : "official", matchObj: match },
                     silentAchievements)
             }
         }
     }
 }
-
 
 /**
  * Full recalculation from scratch for ALL players, for both official and friendly.
@@ -94,9 +108,10 @@ const recalculateAllPlayerStats = async (clubId: number) => {
     await PlayerStatsOfficialModel.deleteMany({})
     await PlayerStatsFriendlyModel.deleteMany({})
 
-    const allMatches = await MatchModel.find({}).sort({ timestamp: 1 }) // Process matches chronologically
+    const allMatches = await MatchModel.find({}).sort({ timestamp: 1 }).lean() // Process matches chronologically
     for (const match of allMatches) {
-        await accumulateStatsFromMatch(match as unknown as IMatch, clubId, false, false)
+        // silent: en un recálculo completo no se re-anuncian logros históricos
+        await accumulateStatsFromMatch(match as unknown as IMatch, clubId, false, true)
     }
 
     await recalculateAllTOTWAchievements()

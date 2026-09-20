@@ -24,24 +24,19 @@
 <script setup lang="ts">
     import { onBeforeMount, computed, ref, type Ref, type ComputedRef, onUnmounted, onMounted } from 'vue';
     import TotwService from "@/services/TotwService";
-    import type TotwEntity from "@/model/totw/TotwEntity";
-    import type { ITOTWPlayer } from '@/interfaces/totw.interface';
+    import type { ITOTW as TotwEntity } from "@trueno-proclub-services/shared";
+    import type { ITOTWPlayer } from '@trueno-proclub-services/shared';
     import TotwPlayerCard from "@components/totw/TotwPlayerCard.vue";
 
-    const props = defineProps({
-        week: {
-            type: String,
-            required: true,
-            default: "latest"
-        },
-        type: {
-            type: String,
-            required: false,
-            default: "best"
-        }
-    })
+    import { getQueryParam } from "@/lib/query"
 
-    const totwService = new TotwService(props.week)
+    // /imagegenerator/totw?week=<iso>&type=best|worst (sin week: la última semana)
+    const props = {
+        week: getQueryParam("week"),
+        type: getQueryParam("type", "best")
+    }
+
+    const totwService = new TotwService(props.week || undefined)
     const totw: Ref<TotwEntity> = totwService.getData()
     const isloading:Ref<boolean> = totwService.isloading as Ref<boolean>
     const hasError:Ref<boolean> = totwService.getHasError() as Ref<boolean>

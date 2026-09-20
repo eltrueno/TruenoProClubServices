@@ -1,22 +1,51 @@
-import { authClient } from "@/lib/auth"
+import { authClient, SITE_URL } from "@/lib/auth"
+import { authApi, tpcsApi } from "@/lib/api"
+import { UserRole, type IClubMember } from "@trueno-proclub-services/shared"
 import { computed, ref } from "vue"
 
 const _userOverride = ref<any>(null)
+// Jugador vinculado a la cuenta (members.userId): se carga bajo demanda y se comparte entre islas
+const _myMember = ref<IClubMember | null>(null)
+const _myMemberLoaded = ref(false)
+// Si el auth no responde (caído, CORS...), better-auth puede quedarse en isPending para siempre:
+// pasado este tiempo se da la sesión por no iniciada para no dejar la UI en skeleton
+const SESSION_PENDING_TIMEOUT_MS = 5000
+const _pendingTimedOut = ref(false)
+if (typeof window !== "undefined") setTimeout(() => { _pendingTimedOut.value = true }, SESSION_PENDING_TIMEOUT_MS)
 
 export function useAuth() {
     const sessionState = authClient.useSession()
 
-    const session = computed(() => sessionState.value?.data ?? null)
-    const isPending = computed(() => sessionState.value?.isPending ?? false)
+    const session = computed<any>(() => (sessionState.value as any)?.data ?? null)
+    const isPending = computed(() => (sessionState.value?.isPending ?? false) && !_pendingTimedOut.value)
     const isLoggingIn = ref(false)
 
     const user = computed(() => _userOverride.value ?? session.value?.user ?? null)
     const isLoggedIn = computed(() => !!user.value)
+    const isAdmin = computed(() => user.value?.role === UserRole.admin)
+
+    const myMember = computed(() => _myMember.value)
+    async function loadMyMember(force = false) {
+        if (!isLoggedIn.value) { _myMember.value = null; return null }
+        if (_myMemberLoaded.value && !force) return _myMember.value
+        try {
+            _myMember.value = await tpcsApi.members.getMine()
+        } catch (e) {
+            console.warn("[useAuth] myMember unavailable", e)
+            _myMember.value = null
+        }
+        _myMemberLoaded.value = true
+        return _myMember.value
+    }
 
 
     async function syncTwitch(silent?: boolean) {
-        const syncRes = await fetch(`https://auth.casemurocity.org/api/twitch/sync`, { credentials: "include" })
-        const syncData = await syncRes.json()
+        let syncData: any
+        try {
+            syncData = await authApi.twitchSync()
+        } catch (e: any) {
+            syncData = { code: e?.code }
+        }
         if (syncData.code === "TWITCH_TOKEN_EXPIRED") {
             await loginWithTwitchPopup(true)
             return
@@ -33,14 +62,14 @@ export function useAuth() {
         return syncData
     }
 
-    async function loginWithTwitch(callbackURL = "https://www.casemurocity.org/login") {
+    async function loginWithTwitch(callbackURL = `${SITE_URL}/login`) {
         await authClient.signIn.social({ provider: "twitch", callbackURL })
     }
 
     async function waitForTwitchLogin(): Promise<void> {
         const { data } = await authClient.signIn.social({
             provider: "twitch",
-            callbackURL: "https://www.casemurocity.org/authcallback",
+            callbackURL: `${SITE_URL}/authcallback`,
             scopes: ["user:read:email", "user:read:follows", "user:read:subscriptions"],
             disableRedirect: true
         })
@@ -56,7 +85,7 @@ export function useAuth() {
 
         return new Promise<void>((resolve) => {
             window.addEventListener("message", (e) => {
-                if (e.origin !== "https://www.casemurocity.org") return
+                if (e.origin !== SITE_URL) return
                 if (e.data === "auth-success") resolve()
             }, { once: true })
         })
@@ -67,7 +96,7 @@ export function useAuth() {
         try {
             const { data } = await authClient.signIn.social({
                 provider: "twitch",
-                callbackURL: "https://www.casemurocity.org/authcallback",
+                callbackURL: `${SITE_URL}/authcallback`,
                 scopes: ["user:read:email", "user:read:follows", "user:read:subscriptions"],
                 disableRedirect: true
             })
@@ -86,7 +115,7 @@ export function useAuth() {
 
             // Escucha el mensaje de la página intermedia
             window.addEventListener("message", async (e) => {
-                if (e.origin !== "https://www.casemurocity.org") return
+                if (e.origin !== SITE_URL) return
                 if (e.data === "auth-success") {
                     await authClient.$fetch("/get-session")
                     if (!silent) window.location.href = callbackURL ?? "/micuenta"
@@ -113,7 +142,7 @@ export function useAuth() {
     }
 
     async function deleteAccount(silent?: boolean, callbackURL?: string) {
-        const { error } = await authClient.deleteUser()
+        const { error } = await authClient.deleteUser({})
 
         if (error?.code === "SESSION_EXPIRED") {
             await waitForTwitchLogin()
@@ -134,7 +163,10 @@ export function useAuth() {
         user,
         session,
         isLoggedIn,
+        isAdmin,
         isPending,
+        myMember,
+        loadMyMember,
         syncTwitch,
         loginWithTwitch,
         loginWithTwitchPopup,

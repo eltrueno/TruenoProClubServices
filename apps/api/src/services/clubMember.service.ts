@@ -1,14 +1,15 @@
-import ClubMemberModel from "@models/clubMember.model"
-import * as PlayerStatsService from "@services/playerStats.service"
-import * as AchievementsService from "@services/achievements.service"
-import * as TOTWService from "@services/totw.service"
+import { ClubMemberModel } from "@trueno-proclub-services/shared/models"
+import type { IClubMemberAdminPatch } from "@trueno-proclub-services/shared"
+import * as PlayerStatsService from "./playerStats.service.js"
+import * as AchievementsService from "./achievements.service.js"
+import * as TOTWService from "./totw.service.js"
 
-const getProfileByName = async (playername: string) => {
+const getProfileById = async (playerId: string) => {
     const [member, playerStats, playerAchievements, totwAppearances] = await Promise.all([
-        ClubMemberModel.findOne({ playerName: playername }, { _id: 0 }),
-        PlayerStatsService.getByName(playername),
-        AchievementsService.getUnlockedByPlayerName(playername),
-        TOTWService.getAppearancesByPlayer(playername)
+        ClubMemberModel.findOne({ playerId }, { _id: 0 }),
+        PlayerStatsService.getByPlayerId(playerId),
+        AchievementsService.getUnlockedByPlayerId(playerId),
+        TOTWService.getAppearancesByPlayer(playerId)
     ])
     if (!member) return null
     return {
@@ -19,10 +20,26 @@ const getProfileByName = async (playername: string) => {
     }
 }
 
-
 const getAll = async () => {
-    const response = await ClubMemberModel.find({}, { _id: 0 })
-    return response
+    return ClubMemberModel.find({}, { _id: 0 }).sort({ playerName: 1 })
 }
 
-export { getProfileByName, getAll }
+/** Miembro vinculado a una cuenta (para "mi jugador" en la web) */
+const getByUserId = async (userId: string) => {
+    return ClubMemberModel.findOne({ userId }, { _id: 0 })
+}
+
+/** Solo los campos gestionados desde el panel admin */
+const adminPatch = async (playerId: string, patch: IClubMemberAdminPatch) => {
+    // Una cuenta solo puede estar vinculada a un jugador: si se asigna, se libera de cualquier otro
+    if (patch.userId) {
+        await ClubMemberModel.updateMany({ userId: patch.userId, playerId: { $ne: playerId } }, { $set: { userId: null } })
+    }
+    return ClubMemberModel.findOneAndUpdate(
+        { playerId },
+        { $set: patch },
+        { new: true, projection: { _id: 0 } }
+    )
+}
+
+export { getProfileById, getAll, getByUserId, adminPatch }

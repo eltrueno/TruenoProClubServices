@@ -1,7 +1,7 @@
-import database from "@config/mongodb.config"
-import { startWorker as startNewMatchesFinderWorker } from "./utils/NewMatchesFinder"
-import { setupRabbitmqProducers } from "@events/index"
-import { scheduleTOTWJob } from "@jobs/totw.job"
+import database from "./config/mongodb.config.js"
+import { startWorker as startNewMatchesFinderWorker } from "./utils/NewMatchesFinder.js"
+import { setupRabbitmqProducers } from "./events/index.js"
+import { scheduleTOTWJob } from "./jobs/totw.job.js"
 
 import dotenv from "dotenv"
 dotenv.config()

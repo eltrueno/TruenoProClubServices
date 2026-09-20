@@ -1,0 +1,49 @@
+name: Publish docs to wiki
+
+# La wiki de GitHub es un repo aparte (<repo>.wiki.git): aquí se sincroniza
+# desde docs/ en cada push a main. Requiere que la wiki exista (crear la
+# primera página a mano una vez desde la pestaña Wiki).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - ".github/workflows/wiki.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wiki
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clonar wiki
+        run: |
+          git clone "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git" wiki
+
+      - name: Copiar docs/
+        run: |
+          # Se borra todo lo que no sea .git para que la wiki sea un espejo exacto de docs/
+          find wiki -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -r docs/. wiki/
+
+      - name: Publicar
+        working-directory: wiki
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Wiki sin cambios"
+            exit 0
+          fi
+          git commit -m "Sync docs from ${{ github.sha }}"
+          git push

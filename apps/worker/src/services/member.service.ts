@@ -1,46 +1,68 @@
-import MemberModel from "@models/member.model"
-import { IMember } from "@interfaces/member.interface"
-import MemberDTO from "@dtos/member.dto"
-import { getClubMembers, TPlatformType } from "@trueno-proclub-services/eafcapi"
+import { ClubMemberModel } from "@trueno-proclub-services/shared/models"
+import { compactObject, type IMatch } from "@trueno-proclub-services/shared"
+import MemberInfoDTO from "../dtos/member.dto.js"
+import { getClubMembers, type TPlatformType } from "@trueno-proclub-services/eafcapi"
 
 /**
- * Upserts the static info of a member from EA API data.
- * Does NOT touch stats.
+ * Da de alta / actualiza a los miembros de nuestro club a partir de un partido.
+ * Es la única fuente del `playerId` (EA solo lo da aquí), así que la membresía
+ * la definen los partidos: quien juega, existe. Mantiene el último nombre visto
+ * y el histórico de nombres.
  */
+const upsertMembersFromMatch = async (match: IMatch, clubId: number) => {
+    const isLocal = Number(match.localClub.id) === Number(clubId)
+    const ourPlayers = isLocal ? match.localClub.players : match.awayClub.players
 
-const cleanObject = (obj: any) =>
-    Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined))
-
-const upsertMemberInfo = async (memberInfo: IMember) => {
-
-    const cleanMember = cleanObject(memberInfo)
-
-    const response = await MemberModel.updateOne(
-        { playerName: memberInfo.playerName },
-        { $set: cleanMember },
-        { upsert: true }
-    )
-    return response
-}
-
-/**
- * Syncs all club members' static info from EA API.
- */
-const syncMembersFromEA = async (clubId: number, platform: string) => {
-    try {
-        const EaMembers = await getClubMembers(<TPlatformType>platform, clubId);
-        if (EaMembers) {
-            console.info("[Member Service] Syncing member info from EA...");
-            for (const key in EaMembers) {
-                const dto = new MemberDTO(EaMembers[key]);
-                await upsertMemberInfo(dto);
-            }
-            console.info("[Member Service] Member info sync complete");
-        }
-    } catch (error) {
-        console.error("[Member Service] Error syncing members from EA:", error);
+    for (const player of ourPlayers) {
+        if (!player.playerId) continue
+        await ClubMemberModel.updateOne(
+            { playerId: player.playerId },
+            {
+                $set: { playerName: player.playerName },
+                $max: { lastSeenAt: match.timestamp },
+                $addToSet: { nameHistory: player.playerName },
+                $setOnInsert: { playerId: player.playerId }
+            },
+            { upsert: true }
+        )
     }
 }
 
-export { upsertMemberInfo, syncMembersFromEA }
+/**
+ * Enriquecimiento desde `members/stats` de EA (proName, proOverall, ...).
+ * Este endpoint no trae id: se casa por `playerName`. Solo se escriben los
+ * campos con valor; uno vacío nunca pisa un dato bueno.
+ */
+const upsertMemberInfo = async (info: MemberInfoDTO) => {
+    const { playerName, ...fields } = info
+    const toSet = compactObject({ ...fields })
+    if (Object.keys(toSet).length === 0) return null
 
+    return ClubMemberModel.updateOne(
+        { playerName },
+        { $set: toSet }
+    )
+}
+
+const syncMembersFromEA = async (clubId: number, platform: string) => {
+    try {
+        const eaMembers = await getClubMembers(<TPlatformType>platform, clubId)
+        if (!eaMembers || !Array.isArray(eaMembers) || eaMembers.length === 0) {
+            console.warn("[Member Service] EA returned no members, skipping enrichment")
+            return
+        }
+        console.info("[Member Service] Enriching member info from EA...")
+        let matched = 0
+        for (const raw of eaMembers) {
+            const dto = new MemberInfoDTO(raw)
+            if (!dto.playerName) continue
+            const res = await upsertMemberInfo(dto)
+            if (res?.matchedCount) matched++
+        }
+        console.info(`[Member Service] Member info sync complete (${matched}/${eaMembers.length} matched by name)`)
+    } catch (error) {
+        console.error("[Member Service] Error syncing members from EA:", error)
+    }
+}
+
+export { upsertMembersFromMatch, upsertMemberInfo, syncMembersFromEA }

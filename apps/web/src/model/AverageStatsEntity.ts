@@ -1,4 +1,4 @@
-import type { IAverageStats } from "@interfaces/averageStats.interface";
+import type { IAverageStats } from "@trueno-proclub-services/shared"
 
 export default class AverageStatsEntity implements IAverageStats {
     position: 'goalkeeper' | 'defender' | 'midfielder' | 'forward' | 'general'

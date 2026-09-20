@@ -1,4 +1,4 @@
-import * as AverageStatsService from "@services/averageStats.service"
+import * as AverageStatsService from "../services/averageStats.service.js"
 import { Request, Response, NextFunction } from "express"
 
 export const getAllAverages = async (req: Request, res: Response, next: NextFunction) => {

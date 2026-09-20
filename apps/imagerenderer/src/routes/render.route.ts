@@ -19,10 +19,10 @@ router.post("/", async (req: Request, res: Response) => {
         break;
 
       case 'player-achievement':
-        if (!data.playerName || !data.type || !data.reached) {
-          throw new Error("playerName, type, and reached are required for player-achievement");
+        if (!data.playerId || !data.type || !data.reached) {
+          throw new Error("playerId, type, and reached are required for player-achievement");
         }
-        imageBuffer = await getAchievementImage(data.playerName, data.type as string, Number(data.reached));
+        imageBuffer = await getAchievementImage(data.playerId, data.type as string, Number(data.reached));
         break;
 
       case 'totw':

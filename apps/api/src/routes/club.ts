@@ -1,6 +1,6 @@
 import { TPlatformType } from '@trueno-proclub-services/eafcapi'
 import { Router, Request, Response } from 'express';
-import { getClubDataCache } from '../controllers/club.controller';
+import { getClubDataCache } from "../controllers/club.controller.js";
 import dotenv from 'dotenv'
 dotenv.config()
 

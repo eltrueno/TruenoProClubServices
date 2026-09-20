@@ -79,6 +79,11 @@ const loadSlashCommands = async function (client) {
         for (const file of commandFiles) {
             const command = require(`${client.cwd}/src/commands/slash/${folder}/${file}`);
 
+            if (command.disabled) {
+                console.log(chalk.bgYellowBright.black(` ⏸️  => SlashCommand ${file} disabled, skipping `));
+                continue;
+            }
+
             if (command.name) {
                 client.slash.set(command.name, command);
                 slash.push(command)

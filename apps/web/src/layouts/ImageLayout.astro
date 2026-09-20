@@ -1,0 +1,21 @@
+---
+// Página mínima que captura el imagerenderer con puppeteer (#to_image). Siempre en tema oscuro.
+import "../styles/global.css";
+---
+
+<!doctype html>
+<html lang="es" data-theme="dark">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="robots" content="noindex, nofollow" />
+		<link rel="icon" type="image/webp" href="/logo.webp" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Casemuro City</title>
+	</head>
+	<body>
+		<main>
+			<slot />
+		</main>
+	</body>
+</html>

@@ -1,4 +1,4 @@
-import { AverageStatsModel } from "@models/averageStats.model"
+import { AverageStatsModel } from "@trueno-proclub-services/shared/models"
 
 export const getAll = async () => {
     return AverageStatsModel.find({}, { _id: 0, __v: 0 })

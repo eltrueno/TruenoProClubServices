@@ -178,6 +178,8 @@
         
         // Filter matches based on the current filter mode
         const filteredMatches = props.matches.filter(m => {
+            // Los "últimos N" son partidos jugados de verdad: sin los de 0 segundos
+            if (!m.ourClub.players.find(p => p.playerId === props.profile.member.playerId)?.played) return false;
             if (props.currentFilter === 'all') return true;
             if (props.currentFilter === 'official') return (m.matchType === 'league' || m.matchType === 'playoff');
             if (props.currentFilter === 'friendly') return (m.matchType !== 'league' && m.matchType !== 'playoff');
@@ -211,10 +213,10 @@
         }
 
         recentMatches.forEach(match => {
-            const playerInMatch = match.localClub.players.find(p => p.playername.toLowerCase() === props.stats.playerName.toLowerCase()) 
-                                || match.awayClub.players.find(p => p.playername.toLowerCase() === props.stats.playerName.toLowerCase())
-            
-            if (playerInMatch) {
+            const playerInMatch = match.ourClub.players.find(p => p.playerId === props.profile.member.playerId)
+
+            // Solo partidos que realmente jugó (0 segundos no cuenta)
+            if (playerInMatch?.played) {
                 aggregated.gamesPlayed++
                 aggregated.ratingSum += playerInMatch.rating
                 aggregated.goals += playerInMatch.goals
@@ -226,7 +228,7 @@
                 aggregated.tacklesSuccess += playerInMatch.tacklesSuccess
                 aggregated.saves += playerInMatch.saves
                 aggregated.goalsConceded += playerInMatch.goalsConceded
-                if (playerInMatch.goalsConceded === 0) aggregated.cleanSheets++
+                if (playerInMatch.cleanSheet) aggregated.cleanSheets++
                 if (playerInMatch.manOfTheMatch) aggregated.manOfTheMatch++
                 aggregated.redCards += playerInMatch.redCards
                 aggregated.minutesPlayed += (playerInMatch.minutesPlayed || 0)

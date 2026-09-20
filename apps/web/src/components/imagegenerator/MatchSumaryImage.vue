@@ -9,13 +9,13 @@
                         <div class="backdrop-blur-md bg-base-300/50 rounded-xl w-fit py-2 px-6">
                             <div class="flex w-full text-center self-centeralign-middle place-content-center">
                                 <svg  v-if="p.manOfTheMatch" xmlns="http://www.w3.org/2000/svg" class="mr-1 w-10 h-11 text-primary" width="24" height="24" fill="currentColor" viewBox="0 -960 960 960" ><path d="m363-310 117-71 117 71-31-133 104-90-137-11-53-126-53 126-137 11 104 90-31 133ZM480-28 346-160H160v-186L28-480l132-134v-186h186l134-132 134 132h186v186l132 134-132 134v186H614L480-28Zm0-112 100-100h140v-140l100-100-100-100v-140H580L480-820 380-720H240v140L140-480l100 100v140h140l100 100Zm0-340Z"/></svg>
-                                <p class="text-primary font-semibold text-center">{{ p.playername }}</p>
+                                <p class="text-primary font-semibold text-center">{{ p.playerName }}</p>
                             </div>
                             <p class="text-neutral-content">{{ p.rating }}</p>
                         </div>
-                        <img :src="'/players/' + p.playername + '_full_transp.png'" class="flex-shrink-0 z-0 drop-shadow-xl" 
-                        :class="{'transform scale-115 mt-6 z-10 drop-shadow-2xl': p.manOfTheMatch}" alt="Player ingame photo" 
-                        @error="defaultTopImage"/>
+                        <img :src="imageFor(p.playerId)" class="flex-shrink-0 z-0 drop-shadow-xl"
+                        :class="{'transform scale-115 mt-6 z-10 drop-shadow-2xl': p.manOfTheMatch}" alt="Player ingame photo"
+                        @error="onPlayerImageError" />
                     </div>
                 </div>
             </div>
@@ -30,7 +30,7 @@
                             <div class="w-full flex py-1" v-for="player in match.localClub.players">
                                 <div v-if="player.redCards!=0" class="bg-error w-6 h-10 mr-2 rounded-sm"></div>
                                 <svg  v-if="player.manOfTheMatch" xmlns="http://www.w3.org/2000/svg" class="mr-1 w-10 h-11 text-primary" width="24" height="24" fill="currentColor" viewBox="0 -960 960 960" ><path d="m363-310 117-71 117 71-31-133 104-90-137-11-53-126-53 126-137 11 104 90-31 133ZM480-28 346-160H160v-186L28-480l132-134v-186h186l134-132 134 132h186v186l132 134-132 134v186H614L480-28Zm0-112 100-100h140v-140l100-100-100-100v-140H580L480-820 380-720H240v140L140-480l100 100v140h140l100 100Zm0-340Z"/></svg>
-                                <span class="text-4xl dark:text-primary mr-4">{{ player.playername }}</span>
+                                <span class="text-4xl dark:text-primary mr-4">{{ player.playerName }}</span>
                                 <svg v-for="g in player.goals" xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="m414-168 12-56q3-13 12.5-21.5T462-256l124-10q13-2 24 5t16 19l16 38q39-23 70-55.5t52-72.5l-12-6q-11-8-16-19.5t-2-24.5l28-122q3-12 12.5-20t21.5-10q-5-25-12.5-48.5T764-628q-9 5-19.5 4.5T726-630l-106-64q-11-7-16-19t-2-25l8-34q-31-14-63.5-21t-66.5-7q-14 0-29 1.5t-29 4.5l30 68q5 12 2.5 25T442-680l-94 82q-10 9-23.5 10t-24.5-6l-92-56q-23 38-35.5 81.5T160-480q0 16 4 52l88-8q14-2 25.5 4.5T294-412l48 114q5 12 2.5 25T332-252l-38 32q27 20 57.5 33t62.5 19Zm72-172q-13 2-24-5t-16-19l-54-124q-5-12-1.5-25t13.5-21l102-86q9-9 22-10t24 6l112 66q11 7 17 19t3 25l-32 130q-3 13-12 21.5T618-352l-132 12Zm-6 260q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z"/></svg>
                                 <svg v-for="a in player.assists" class="w-12 h-12 assistsvg" height="24px" width="24px" version="1.1" id="_x32_" fill="currentColor" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
                                     viewBox="0 0 512 512"  xml:space="preserve">
@@ -74,7 +74,7 @@
                             <div class="w-full flex py-1" v-for="player in match.awayClub.players">
                                 <div v-if="player.redCards!=0" class="bg-error w-6 h-10 mr-2 rounded-sm"></div>
                                 <svg  v-if="player.manOfTheMatch" xmlns="http://www.w3.org/2000/svg" class="mr-1 w-10 h-11 text-primary" width="24" height="24" fill="currentColor" viewBox="0 -960 960 960" ><path d="m363-310 117-71 117 71-31-133 104-90-137-11-53-126-53 126-137 11 104 90-31 133ZM480-28 346-160H160v-186L28-480l132-134v-186h186l134-132 134 132h186v186l132 134-132 134v186H614L480-28Zm0-112 100-100h140v-140l100-100-100-100v-140H580L480-820 380-720H240v140L140-480l100 100v140h140l100 100Zm0-340Z"/></svg>
-                                <span class="text-4xl dark:text-primary mr-4">{{ player.playername }}</span>
+                                <span class="text-4xl dark:text-primary mr-4">{{ player.playerName }}</span>
                                 <svg v-for="g in player.goals" xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="m414-168 12-56q3-13 12.5-21.5T462-256l124-10q13-2 24 5t16 19l16 38q39-23 70-55.5t52-72.5l-12-6q-11-8-16-19.5t-2-24.5l28-122q3-12 12.5-20t21.5-10q-5-25-12.5-48.5T764-628q-9 5-19.5 4.5T726-630l-106-64q-11-7-16-19t-2-25l8-34q-31-14-63.5-21t-66.5-7q-14 0-29 1.5t-29 4.5l30 68q5 12 2.5 25T442-680l-94 82q-10 9-23.5 10t-24.5-6l-92-56q-23 38-35.5 81.5T160-480q0 16 4 52l88-8q14-2 25.5 4.5T294-412l48 114q5 12 2.5 25T332-252l-38 32q27 20 57.5 33t62.5 19Zm72-172q-13 2-24-5t-16-19l-54-124q-5-12-1.5-25t13.5-21l102-86q9-9 22-10t24 6l112 66q11 7 17 19t3 25l-32 130q-3 13-12 21.5T618-352l-132 12Zm-6 260q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z"/></svg>
                                 <svg v-for="a in player.assists" class="w-12 h-12 assistsvg" height="24px" width="24px" version="1.1" id="_x32_" fill="currentColor" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
                                     viewBox="0 0 512 512"  xml:space="preserve">
@@ -135,12 +135,15 @@ import { ref, type Ref, computed, onBeforeMount } from 'vue';
 import ClubMatchService from '@services/ClubMatchService';
 import ClubMatchEntity from '@models/match/ClubMatchEntity'
 import { translateMatchResult } from '@/i18n/translations';
+import { getQueryParam } from "@/lib/query"
+import { useMembers } from "@/composables/useMembers"
+import { onPlayerImageError } from "@/lib/playerImage"
 
-const props = defineProps<{
-        matchId: number
-    }>()
+// /imagegenerator/matchsummary?id=<matchId>
+const matchId = Number(getQueryParam("id"))
+const { load: loadMembers, imageFor } = useMembers()
 
-const matchService = new ClubMatchService(props.matchId)
+const matchService = new ClubMatchService(matchId)
 const match:Ref<ClubMatchEntity> = matchService.getData()
 const isLoading = matchService.isloading
 const status = matchService.getStatus()
@@ -159,9 +162,9 @@ const isAnyoneMvp = computed(()=>{
     return sortedPlayers.value.find(i => i.manOfTheMatch)
 })
 
-onBeforeMount(async ()=>{
-     await matchService.fetch()
- })
+onBeforeMount(async () => {
+    await Promise.all([matchService.fetch(), loadMembers()])
+})
 
 const sortedPlayers = computed(() => {
     const plys = match.value.localTeam ? match.value.localClub.players : match.value.awayClub.players
@@ -179,10 +182,6 @@ const sortedPlayers = computed(() => {
         ];
   }else return plys;
 });
-
-function defaultTopImage(e){
-        e.target.src = '/players/placeholder_full_transp.png'
-    }
 
 </script>
 

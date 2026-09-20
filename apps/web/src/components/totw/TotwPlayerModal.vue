@@ -52,7 +52,7 @@
           </div>
           <div v-if="player" class="absolute bottom-0 left-0 right-0 px-4 pb-4 pt-12 card-bottom flex flex-col items-center z-10">
             <h2 class="text-3xl font-black tracking-wider text-white text-center mb-1 drop-shadow truncate w-full px-2" style="text-shadow: 0 4px 10px rgba(0,0,0, 0.9);">
-              {{ player.playerName === "SweetYanira5" ? "SweetIAnira" : player.playerName }}
+              {{ player.playerName }}
             </h2>
             <div class="h-px w-full my-3 divider-gold shrink-0 scale-x-95" />
             <div class="flex flex-wrap justify-center gap-y-4 gap-x-2 w-full px-2">
@@ -115,7 +115,7 @@
            <!-- Botón para ir al perfil del jugador -->
            <div class="w-full flex justify-center pt-2">
              <a 
-               :href="`/jugador/${player.playerName}`"
+               :href="routes.player(player.playerId)"
                class="btn btn-sm btn-outline border-[#FFD700]/30 text-[#FFD700]/80 hover:bg-[#FFD700] hover:text-black hover:border-[#FFD700] transition-all duration-300 font-bold tracking-widest text-[10px] h-auto min-h-0 py-2 px-4"
              >
                VER PERFIL COMPLETO
@@ -135,8 +135,11 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { ITOTWPlayer } from '@/interfaces/totw.interface';
+import type { ITOTWPlayer } from '@trueno-proclub-services/shared';
 import { translatePosition } from '@i18n/translations';
+import { useMembers } from "@/composables/useMembers"
+import { onPlayerImageError } from "@/lib/playerImage"
+import { routes } from "@/lib/query"
 
 const props = defineProps<{
   player?: ITOTWPlayer | null;
@@ -159,7 +162,8 @@ function onClose() {
   emit('close')
 }
 
-const topImage = computed(() => props.player ? `/players/${props.player.playerName}_top_transp.png` : '')
+const { imageFor } = useMembers()
+const topImage = computed(() => props.player ? imageFor(props.player.playerId) : '')
 function defaultTopImage(e: Event) {
   (e.target as HTMLImageElement).src = '/players/placeholder_top_transp.png'
 }

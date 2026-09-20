@@ -1,8 +1,9 @@
-import { syncRecentMatches } from '@services/sync.service';
-import { syncMembersFromEA } from '@services/member.service';
-import { recalculateAllPlayerStats } from '@services/playerStats.service';
-import { PlayerStatsOfficialModel } from '@models/playerstats.model';
-import { computePlayerStatsAverages } from '@services/averageStats.service';
+import { syncRecentMatches } from "../services/sync.service.js";
+import { syncMembersFromEA } from "../services/member.service.js";
+import { recalculateAllPlayerStats } from "../services/playerStats.service.js";
+import { syncAchievementDefinitions } from "../services/achievement.service.js";
+import { PlayerStatsOfficialModel } from "@trueno-proclub-services/shared/models"
+import { computePlayerStatsAverages } from "../services/averageStats.service.js";
 import dotenv from "dotenv"
 
 dotenv.config()
@@ -14,8 +15,8 @@ const FORCE_RECALCULATE = process.env.FORCE_RECALCULATE === 'true';
 function startWorker() {
     console.log("[Match Finder Worker] Started!")
 
-    // On startup: sync static member info from EA and recalculate stats if needed
-    syncMembersFromEA(CLUBID, PLATFORM).then(async () => {
+    // On startup: seed achievement definitions, enrich members from EA and recalculate stats if needed
+    syncAchievementDefinitions().then(() => syncMembersFromEA(CLUBID, PLATFORM)).then(async () => {
         const statsCount = await PlayerStatsOfficialModel.countDocuments();
 
         if (statsCount === 0 || FORCE_RECALCULATE) {
@@ -32,7 +33,7 @@ function startWorker() {
             console.error("[Average Stats] Recalculation error:", err)
         )
         console.info("[Average Stats] Player averages recalculated")
-    }).catch(err => {
+    }).catch((err: unknown) => {
         console.error("[Member Worker] Startup error:", err)
     })
 

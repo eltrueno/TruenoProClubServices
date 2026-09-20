@@ -6,11 +6,11 @@
 
 ## <a id="es"></a> <img src="https://flagcdn.com/w40/es.png" width="24" height="18" alt="ES"> Español
 
-Un sistema integral de gestión para clubes de Pro Clubs.
+Un sistema integral de gestión para clubes de Pro Clubs (EA FC).
 
 ### 📋 Descripción General
 
-Trueno Pro Club Services es una plataforma completa que permite gestionar todos los aspectos de un club de Pro Clubs, incluyendo miembros, logros, partidos, estadísticas de jugadores y más.
+Trueno Pro Club Services es una plataforma completa que permite gestionar todos los aspectos de un club de Pro Clubs: miembros, partidos, estadísticas por jugador y posición, logros, equipo de la semana (HOF / HOS), cuentas de usuario vinculadas a jugadores y anuncios en Discord.
 
 Este proyecto es una **evolución** de [Caracantosmeaos](https://github.com/Caracantosmeaos).
 
@@ -21,46 +21,62 @@ Puedes ver el sistema en funcionamiento en el despliegue oficial de **Casemuro C
 
 ### 🏗️ Arquitectura del Proyecto
 
-Este es un **monorepo** estructurado con [pnpm workspaces](https://pnpm.io/workspaces) que incluye:
-
-#### `/apps`
-
-##### **api** - REST API
-- **Stack**: Express.js + MongoDB
-- **Funcionalidades principales**:
-  - Gestión de clubes (`/club`)
-  - Gestión de miembros (`/members`)
-  - Logros y estadísticas (`/achievements`)
-  - Registro de partidos (`/matches`)
-  - Team of the Week (`/totw`)
-- **Modelos**: Club, Club Members, Matches, Player Stats, Achievements, TOTW
-
-##### **web** - Frontend
-- **Stack**: Astro + Vue + Tailwind
-- **Características**:
-  - Interfaz responsiva
-  - Diseño moderno con DaisyUI
-
-##### **worker** - Background Jobs
-- **Propósito**: Procesamiento asincrónico de events y tareas programadas
-- **Características**: Sistema de eventos y manejo de trabajos en segundo plano
-
-##### **auth** - Authentication Service
-- **Stack**: Express.js + Better Auth + MongoDB
-- **Funcionalidades principales**:
-  - Autenticación social (Twitch)
-  - Gestión de sesiones y tokens
-  - API de autenticación para el frontend
+**Monorepo** con [pnpm workspaces](https://pnpm.io/workspaces). Todos los servicios Node son **ESM** y se ejecutan con `tsx` en desarrollo y con `node dist/` en producción.
 
 #### `/packages`
 
-##### **eafcapi** - API de EA directa
-- Paquete compartido reutilizable
-- Contiene modelos y utilidades comunes
+##### **shared** — Tipos, constantes y modelos
+- Fuente de verdad del dominio: interfaces (`IClubMember`, `IMatch`, `IPlayerStats`, `ITOTW`…), constantes (`PLAYER_POSITIONS`, `MATCH_TYPES`, `EVENT_KEYS`, `UserRole`…), contratos de la API (`ApiResponse`, `IPlayerProfile`), payloads de eventos y helpers puros.
+- `@trueno-proclub-services/shared/models`: esquemas mongoose que comparten api y worker.
+- `achievements.definitions.ts`: definiciones de los logros (el worker las sincroniza a la DB al arrancar).
 
-##### **auth** - Lógica de Autenticación
-- Paquete compartido para la configuración de Better Auth
-- Reutilizable por otras aplicaciones del monorepo
+##### **eafcapi** — Cliente de la API de EA
+- Llamadas a `proclubs.ea.com` vía puppeteer (necesita Chrome).
+- `parse.ts`: helpers puros sobre la respuesta cruda de partidos: id de jugador, eventos del partido, detección de DNF, penaltis y marcador real.
+
+##### **auth** — Configuración de Better Auth
+- Instancia compartida de Better Auth (proveedor Twitch, cookies cross-subdomain, campos extra del usuario).
+
+##### **imagerenderer-client** — Cliente tipado del servicio de imágenes
+
+#### `/apps`
+
+##### **api** — REST API
+- **Stack**: Express + Mongoose.
+- Club, miembros, partidos, stats, logros, HOF/HOS, medias por posición, solicitudes de vinculación cuenta ↔ jugador y panel admin (foto, cuenta vinculada y aprobación de solicitudes).
+- Rutas protegidas validando la sesión contra el servicio de auth.
+- 📖 **Endpoints: [docs/API.md](docs/API.md)**
+
+##### **worker** — Sincronización y cálculo
+- Cada `WORKER_INTERVAL` segundos trae los partidos nuevos de EA, los normaliza (`MatchDTO`), da de alta a los miembros que aparecen, acumula stats, evalúa logros y publica eventos en RabbitMQ.
+- Job semanal del equipo de la semana (HOF / HOS).
+- Enriquecimiento de miembros (`proName`, `proOverall`…) desde `members/stats` de EA sin pisar datos buenos con valores vacíos.
+
+##### **auth** — Servicio de autenticación
+- **Stack**: Express + Better Auth + MongoDB.
+- Login social con Twitch, sincronización de follow/sub/rol, endpoint público de usuarios y listado admin.
+
+##### **web** — Frontend
+- **Stack**: Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5.
+- **100% estática** (`output: "static"`), desplegada en **GitHub Pages** (`.github/workflows/deploy-web.yml`) con dominio `www.casemurocity.org` (`public/CNAME`). Las islas Vue hacen fetch al api y al auth desde el navegador.
+- Las páginas "dinámicas" van por query string y se leen en cliente: `/jugador?id=<playerId>&tab=…`, `/partido?id=<matchId>&player=<playerId>`, `/totw?semana=<iso>&tipo=best|worst`, `/partidos?id=…&desde=…&hasta=…&liga&playoff&amistoso`.
+- Panel admin en `/admin` (solicitudes de vinculación pendientes, foto y cuenta vinculada de cada jugador; solo rol `admin`) y "Mi jugador" en `/micuenta`, desde donde un usuario pide vincular su cuenta a su jugador del club.
+- Config por variables `PUBLIC_*` (ver `apps/web/.env.example`).
+
+##### **discordbot** — Bot de Discord
+- Consume los eventos de RabbitMQ y anuncia el equipo de la semana (y partidos / logros cuando se activen sus productores).
+
+##### **imagerenderer** — Renderizado de imágenes
+- Captura páginas de la web con puppeteer para generar las imágenes que publica el bot.
+
+### 🔑 Identidad de los jugadores
+
+La clave de un jugador es su **`playerId`** (id de EA), no su nombre. Así los datos persisten aunque el jugador cambie de gamertag. El id solo lo da EA en `clubs/matches` (clave del objeto `players[clubId]`), por lo que **los miembros se crean a partir de los partidos**: quien juega, existe. `playerName` es siempre el último nombre visto y cada miembro guarda su `nameHistory`.
+
+Reglas relacionadas:
+- Un jugador con **0 segundos** en un partido se guarda en el partido pero no cuenta para stats, medias, logros ni TOTW.
+- **DNF**: flag de EA + marcador forzado 3-0 + agregado de jugadores discordante.
+- **Penaltis**: solo en playoff / amistoso; `clubs.goals − aggregate.goals > 0` en los dos clubes **y** prórroga jugada. Se guarda el marcador real y `penaltiesScore` por club.
 
 ## 📊 Diagrama de la aplicación
 
@@ -69,265 +85,164 @@ Este es un **monorepo** estructurado con [pnpm workspaces](https://pnpm.io/works
 ### 🚀 Primeros Pasos
 
 #### Requisitos Previos
-- Node.js 18+ 
-- pnpm 8+
+- Node.js 22+ (recomendado 24)
+- pnpm 10+
+- Google Chrome (para `eafcapi` / `imagerenderer`)
+- MongoDB y RabbitMQ
 
 #### Instalación
 
 ```bash
-# Clonar el repositorio
 git clone <repository-url>
 cd TruenoProClubServices
 
-# Instalar dependencias de todo el monorepo
 pnpm install
 
-# Construir todos los proyectos
+# Compila packages y apps (respeta el orden de dependencias: shared → resto)
 pnpm build
 ```
 
-### 📦 Scripts Disponibles
+### 📦 Scripts
 
-#### Monorepo
+Todos los servicios Node (`api`, `worker`, `auth`) comparten los mismos scripts:
+
 ```bash
-# Construir todas las aplicaciones
-pnpm build
+pnpm --filter @trueno-proclub-services/api dev     # tsx watch (recarga en caliente)
+pnpm --filter @trueno-proclub-services/api start   # tsx sin watch
+pnpm --filter @trueno-proclub-services/api build   # tsc → dist/
+pnpm --filter @trueno-proclub-services/api serve   # node dist/…
 ```
 
-#### API
+Sustituye `api` por `worker` o `authservice`. Los packages (`shared`, `auth`, `eafcapi`) se compilan con `build`; si cambias algo en `shared` recuerda recompilarlo (o `pnpm --filter @trueno-proclub-services/shared dev` para watch).
+
+Web:
+
 ```bash
-cd apps/api
-
-# Iniciar en modo desarrollo
-pnpm start
-
-# Construir para producción
-pnpm build
-
-# Ejecutar binario compilado
-pnpm serve
+pnpm --filter @trueno-proclub-services/web dev      # http://localhost:4321
+pnpm --filter @trueno-proclub-services/web build    # → apps/web/dist (estático)
+pnpm --filter @trueno-proclub-services/web preview
+pnpm --filter @trueno-proclub-services/web check    # astro check
 ```
 
-#### Web
-```bash
-cd apps/web
-
-# Iniciar servidor de desarrollo
-pnpm dev
-
-# Construir para producción
-pnpm build
-
-# Previsualizar build de producción
-pnpm preview
-```
-
-#### Auth
-```bash
-cd apps/auth
-
-# Iniciar en modo desarrollo
-pnpm dev
-
-# Construir para producción
-pnpm build
-
-# Iniciar en modo producción
-pnpm start
-```
+Para desarrollar contra un api local, `apps/web/.env` con `PUBLIC_API_URL=http://localhost:3999`.
 
 ### 🔧 Configuración
 
-#### Variables de Entorno
+Cada app tiene un `.env.example` con todas sus variables comentadas:
 
-Las variables de entorno se deben configurar en archivos `.env` (u otro tipo variables de entorno si es en docker por ejemplo) en cada aplicación.
+- [`apps/api/.env.example`](apps/api/.env.example)
+- [`apps/worker/.env.example`](apps/worker/.env.example)
+- [`apps/auth/.env.example`](apps/auth/.env.example)
+- [`apps/web/.env.example`](apps/web/.env.example) (`PUBLIC_API_URL`, `PUBLIC_AUTH_URL`, `PUBLIC_SITE_URL`; en GitHub Pages se leen de las *repository variables*)
 
-##### API (`apps/api/.env`)
+Las más importantes:
 
-| Variable | Tipo | Descripción | Valor por defecto |
-|----------|------|-------------|-------------------|
-| `PORT` | `number` | Puerto en el que escucha la API | `80` |
-| `DEVMODE` | `boolean` | Habilita CORS abierto para desarrollo | `false` |
-| `MONGO_URL` | `string` | URL de conexión a MongoDB | **Requerido** |
-| `CLUBID` | `number` | ID del club en EA Sports | `2766636` |
-| `PLATFORM` | `string` | Plataforma del club (Xbox/PS/PC) | `common-gen5` |
-| `CLUB_CACHE_MS` | `number` | Tiempo de caché para datos del club (ms) | `3600000` (1 hora) |
-| `TOTW_CRON_SCHEDULE` | `string` | Expresión cron para horario del TOTW | `0 21 * * 0` |
-| `TZ` | `string` | Zona horaria para el cron (Huso horario) | `Europe/Madrid` |
-
-**Ejemplo `.env`:**
-```env
-PORT=3000
-DEVMODE=true
-MONGO_URL=mongodb://localhost:27017/tpcs
-CLUBID=2766636
-PLATFORM=common-gen5
-CLUB_CACHE_MS=3600000
-TOTW_CRON_SCHEDULE="0 21 * * 0"
-TZ=Europe/Madrid
-```
-
-##### Worker (`apps/worker/.env`)
-
-| Variable | Tipo | Descripción | Valor por defecto |
-|----------|------|-------------|-------------------|
-| `MONGO_URL` | `string` | URL de conexión a MongoDB | **Requerido** |
-| `CLUBID` | `number` | ID del club para sincronizar | `290776` |
-| `PLATFORM` | `string` | Plataforma del club (Xbox/PS/PC) | `common-gen5` |
-| `WORKER_INTERVAL` | `number` | Intervalo de sincronización en segundos | `300` (5 minutos) |
-| `FORCE_RECALCULATE` | `boolean` | Fuerza recálculo de estadísticas en startup | `false` |
-| `RABBITMQ_URL` | `string` | URL de conexión a RabbitMQ | `amqp://localhost` |
-| `TZ` | `string` | Zona horaria para cálculos de fechas | `Europe/Madrid` |
-| `TOTW_CRON_SCHEDULE` | `string` | Expresión cron para proceso de TOTW | `0 21 * * 0` |
-| `TOTW_MIN_GAMES_PLAYED` | `number` | Mínimo de partidos jugados para ser considerado en el TOTW | `5` |
-
-**Ejemplo `.env`:**
-```env
-MONGO_URL=mongodb://localhost:27017/tpcs
-CLUBID=290776
-PLATFORM=common-gen5
-WORKER_INTERVAL=300
-FORCE_RECALCULATE=false
-RABBITMQ_URL=amqp://localhost
-TZ=Europe/Madrid
-TOTW_CRON_SCHEDULE="0 21 * * 0"
-TOTW_MIN_GAMES_PLAYED=5
-```
-
-##### Auth (`apps/auth/.env`)
-
-| Variable | Tipo | Descripción | Valor por defecto |
-|----------|------|-------------|-------------------|
-| `PORT` | `number` | Puerto en el que escucha el servicio | `3001` |
-| `WWW_URL` | `string` | URL del frontend | `https://www.casemurocity.org` |
-| `API_URL` | `string` | URL de la API principal | `https://api.casemurocity.org` |
-| `COOKIE_DOMAIN` | `string` | Dominio para las cookies | `.casemurocity.org` |
-| `MONGODB_URI` | `string` | URL de conexión a MongoDB | **Requerido** |
-| `DBNAME` | `string` | Nombre de la base de datos | `tpcsauth` |
-| `BETTER_AUTH_SECRET` | `string` | Secreto para Better Auth | **Requerido** |
-| `BETTER_AUTH_URL` | `string` | URL base del servicio de auth | `https://auth.casemurocity.org` |
-| `TWITCH_CLIENT_ID` | `string` | ID de cliente de Twitch | **Requerido** |
-| `TWITCH_CLIENT_SECRET` | `string` | Secreto de cliente de Twitch | **Requerido** |
-| `TWITCH_CHANNEL_ID` | `string` | ID del canal de Twitch a seguir | **Requerido** |
-
-**Ejemplo `.env`:**
-```env
-PORT=3001
-WWW_URL=https://www.casemurocity.org
-API_URL=https://api.casemurocity.org
-COOKIE_DOMAIN=.casemurocity.org
-MONGODB_URI="mongodb://user:pass@host:port/db"
-DBNAME="tpcsauth"
-BETTER_AUTH_SECRET="your-secret"
-BETTER_AUTH_URL=https://auth.casemurocity.org
-TWITCH_CLIENT_ID="your-client-id"
-TWITCH_CLIENT_SECRET="your-client-secret"
-```
+| Variable | Apps | Descripción |
+|---|---|---|
+| `MONGO_URL` / `MONGODB_URI` | api, worker / auth | Conexión a MongoDB |
+| `CLUBID` | api, worker | Id del club en EA. **Cambia con cada entrega** (FC27 = club nuevo) |
+| `PLATFORM` | api, worker | `common-gen5`, `common-gen4` o `nx` |
+| `ALLOWED_ORIGINS` | api, auth | Orígenes permitidos (CORS / trustedOrigins), separados por coma |
+| `AUTH_URL` | api | URL del auth service para validar sesiones en rutas protegidas |
+| `DEVMODE` | api, auth | CORS abierto y cookies sin dominio, solo para desarrollo |
+| `RABBITMQ_URL` | worker, discordbot | Conexión a RabbitMQ |
+| `WORKER_INTERVAL` | worker | Segundos entre sincronizaciones con EA |
+| `FORCE_RECALCULATE` | worker | Recalcula todas las stats y logros desde el histórico al arrancar |
+| `TOTW_CRON_SCHEDULE`, `TZ` | api, worker | Cuándo se calcula el equipo de la semana |
+| `CLUB_CACHE_MS`, `CLUB_RETRY_MS` | api | TTL de la caché de `/club` y espera tras un fallo de EA |
+| `TWITCH_CLIENT_ID/SECRET`, `TWITCH_CHANNEL_ID` | auth | Proveedor Twitch y canal a seguir |
+| `PUPPETEER_EXECUTABLE_PATH` | api, worker, imagerenderer | Ruta a Chrome si no está en la ubicación por defecto |
 
 #### Servicios Externos
 
-**MongoDB:**
 ```bash
-# Usando Docker
-docker run -d -p 27017:27017 --name mongodb mongo:latest
-```
-
-**RabbitMQ:**
-```bash
-# Usando Docker
+docker run -d -p 27017:27017 --name mongodb mongo:7
 docker run -d -p 5672:5672 -p 15672:15672 --name rabbitmq rabbitmq:3-management
 ```
 
 ### 📂 Estructura de Carpetas
 
 ```
+packages/
+├── shared/src/
+│   ├── constants.ts              # Enums / constantes de dominio
+│   ├── helpers.ts                # Helpers puros (validación de datos de EA, 0 segundos…)
+│   ├── achievements.definitions.ts
+│   ├── types/                    # Interfaces
+│   └── models/                   # Esquemas mongoose (api + worker)
+├── eafcapi/src/
+│   ├── core/                     # Llamadas a EA + parse.ts
+│   └── model/                    # Tipos de la respuesta de EA
+├── auth/src/                     # createAuth() de Better Auth
+└── image-renderer-client/
+
 apps/
-├── api/                          # REST API
-│   └── src/
-│       ├── controllers/          # Controladores
-│       ├── models/               # Esquemas MongoDB
-│       ├── interfaces/           # TypeScript interfaces
-│       ├── routes/               # Definición de rutas
-│       ├── services/             # Lógica de negocio
-│       ├── middleware/           # Middlewares
-│       ├── database/             # Configuración DB
-│       └── app.ts                # Punto de entrada
-
-├── web/                          # Frontend Astro
-│   └── src/
-│       ├── components/           # Componentes Vue y Astro
-│       ├── pages/                # Rutas Astro
-│       ├── layouts/              # Layouts
-│       ├── services/             # Servicios HTTP
-│       ├── interfaces/           # TypeScript types
-│       ├── i18n/                 # Traducciones
-│       └── scripts/              # Scripts compartidos
-
-└── worker/                       # Background Jobs
-    └── src/
-        ├── controllers/
-        ├── services/
-        ├── jobs/
-        └── events/
-
-├── auth/                         # Authentication Service
-│   └── src/
-│       ├── db.ts                 # Configuración de base de datos
-│       └── index.ts              # Punto de entrada y middleware
+├── api/src/
+│   ├── controllers/  routes/  services/  middleware/  database/
+│   └── app.ts
+├── worker/src/
+│   ├── dtos/                     # MatchDTO, MatchPlayerDTO, MemberInfoDTO
+│   ├── services/                 # sync, member, playerStats, achievement, totw, averageStats
+│   ├── jobs/  events/  config/  utils/
+│   └── index.ts
+├── auth/src/
+│   ├── routes/                   # twitch, public, admin
+│   ├── services/  middleware/  models/  db/
+│   └── index.ts
+├── web/src/
+│   ├── pages/                    # Una página por ruta (sin [params]: query string)
+│   ├── components/  layouts/  composables/
+│   ├── lib/                      # api.ts (cliente tipado), auth.ts, query.ts (rutas), playerImage.ts
+│   ├── services/  model/         # FetchService + entidades de vista
+│   └── styles/global.css         # Tailwind 4 + temas DaisyUI
+├── discordbot/
+└── imagerenderer/src/
 ```
 
-### 🔌 Endpoints API
+### 🔌 Endpoints
 
-#### Base URL
-- **Desarrollo**: `http://localhost:80`
-
-#### Rutas Disponibles
-- `GET /` - Información general de rutas
+Documentados en **[docs/API.md](docs/API.md)** (REST API, auth service y eventos de RabbitMQ). La API también expone un índice en `GET /`.
 
 ### 🗓️ Base de Datos
 
-**Motor**: MongoDB
+**Motor**: MongoDB. Nombres de colección explícitos en `packages/shared/src/models`:
 
-**Colecciones principales**:
-- `clubs` - Información de clubes
-- `clubmembers` - Integrantes de los clubes
-- `matches` - Registro de partidos
-- `playerstats` - Estadísticas de jugadores
-- `achievements` - Logros desbloqueados
-- `totw` - Equipo de la semana
+| Colección | Contenido |
+|---|---|
+| `clubs` | Caché de info + stats globales del club |
+| `members` | Miembros (`playerId` único, `playerName`, `nameHistory`, `pro*`, `imageUrl`, `userId`) |
+| `matches` | Partidos normalizados (`_id` = `matchId`) |
+| `member_stats_officials` / `member_stats_friendlies` | Stats acumuladas por jugador y posición |
+| `player_average_stats` | Medias del club por posición |
+| `achievements_definitions` / `achievements_unlocked` | Definiciones y desbloqueos de logros |
+| `totw` / `member_totw_appearances` | Equipo de la semana y apariciones |
 
-### 🛓 Docker
+La base de datos de auth (Better Auth) es independiente: `user`, `session`, `account`, `verification`.
 
-Ambas aplicaciones principales incluyen `Dockerfile` para contenerización:
+### 🐳 Docker
+
+`api`, `worker` y `auth` incluyen `Dockerfile` (build multi-stage desde la raíz del repo):
 
 ```bash
-# Construir imagen API
-cd apps/api
-docker build -t tpcs-api .
-
-# Construir imagen Worker
-cd apps/worker
-docker build -t tpcs-worker .
-
-# Construir imagen Auth
-cd apps/auth
-docker build -t tpcs-auth .
+docker build -f apps/api/Dockerfile -t tpcs-api .
+docker build -f apps/worker/Dockerfile -t tpcs-worker .
+docker build -f apps/auth/Dockerfile -t tpcs-auth .
 ```
 
-### 🖱️ Seguridad
+### 🔐 Seguridad
 
-- **CORS**: Configurado para producción (`https://www.casemurocity.org`)
-- **Error Handling**: Middleware centralizado para manejo de errores
-- **Validación**: Schemas y tipos TypeScript fuertes
+- **CORS** con `credentials` y lista de orígenes (`ALLOWED_ORIGINS`).
+- **Sesiones** en cookie de dominio `.casemurocity.org`; las rutas admin del api validan sesión y rol `admin` contra el auth service.
+- **Error handling** centralizado y tipos fuertes desde `shared`.
 
 ### 📝 Tecnologías Principales
 
 | Componente | Tecnologías |
 |-----------|------------|
-| **API Backend** | Express.js, TypeScript, MongoDB, Mongoose |
-| **Auth Service** | Express.js, Better Auth, TypeScript, MongoDB |
-| **Frontend Web** | Astro, Vue.js, Tailwind CSS, DaisyUI |
-| **Build Tools** | TypeScript, pnpm, Webpack |
+| **API / Worker / Auth** | Node ESM, TypeScript, tsx, Express, Mongoose / MongoDB, Better Auth, RabbitMQ |
+| **EA** | puppeteer |
+| **Frontend Web** | Astro 7, Vue 3, Tailwind CSS 4, DaisyUI 5, Chart.js, three.js · GitHub Pages |
+| **Tooling** | pnpm workspaces, Docker, GitHub Actions (Pages + wiki) |
 
 ### 👨‍💻 Autor
 
@@ -339,72 +254,55 @@ Este proyecto está bajo la [Licencia MIT](LICENSE).
 
 ### 🤝 Contribuciones
 
-Las contribuciones son bienvenidas. Por favor:
 1. Fork el repositorio
 2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
+3. Commit tus cambios
+4. Push a la rama y abre un Pull Request
 
 ---
 
 ## <a id="en"></a> <img src="https://flagcdn.com/w40/gb.png" width="24" height="18" alt="GB"> English
 
-A comprehensive management system for Pro Clubs.
+A comprehensive management system for Pro Clubs (EA FC).
 
 ### 📋 Overview
 
-Trueno Pro Club Services is a complete platform that allows you to manage all aspects of a Pro Club, including members, achievements, matches, player statistics, and more.
+Trueno Pro Club Services manages every aspect of a Pro Club: members, matches, per-player and per-position stats, achievements, team of the week (HOF / HOS), user accounts linked to players and Discord announcements.
 
 This project is an **evolution** of [Caracantosmeaos](https://github.com/Caracantosmeaos).
 
 ### 🌐 Live Demo
 
-You can see the system in action at the official **Casemuro City** deployment:
-👉 **[https://www.casemurocity.org](https://www.casemurocity.org)**
+👉 **[https://www.casemurocity.org](https://www.casemurocity.org)** (Casemuro City deployment)
 
 ### 🏗️ Project Architecture
 
-This is a **monorepo** structured with [pnpm workspaces](https://pnpm.io/workspaces) that includes:
-
-#### `/apps`
-
-##### **api** - REST API
-- **Stack**: Express.js + MongoDB
-- **Main functionalities**:
-  - Club management (`/club`)
-  - Member management (`/members`)
-  - Achievements and statistics (`/achievements`)
-  - Match registration (`/matches`)
-  - Team of the Week (`/totw`)
-- **Models**: Club, Club Members, Matches, Player Stats, Achievements, TOTW
-
-##### **web** - Frontend
-- **Stack**: Astro + Vue + Tailwind
-- **Features**:
-  - Responsive interface
-  - Modern design with DaisyUI
-
-##### **worker** - Background Jobs
-- **Purpose**: Asynchronous processing of events and scheduled tasks
-- **Features**: Event system and background job handling
-
-##### **auth** - Authentication Service
-- **Stack**: Express.js + Better Auth + MongoDB
-- **Main functionalities**:
-  - Social Authentication (Twitch)
-  - Session and token management
-  - Authentication API for the frontend
+**Monorepo** with [pnpm workspaces](https://pnpm.io/workspaces). Every Node service is **ESM**, run with `tsx` in development and `node dist/` in production.
 
 #### `/packages`
 
-##### **eafcapi** - Direct EA API
-- Reusable shared package
-- Contains common models and utilities
+- **shared** — Domain source of truth: interfaces, constants (`PLAYER_POSITIONS`, `MATCH_TYPES`, `EVENT_KEYS`, `UserRole`…), API contracts, event payloads, pure helpers, achievement definitions and the mongoose models shared by api and worker (`@trueno-proclub-services/shared/models`).
+- **eafcapi** — EA Pro Clubs API client (puppeteer) plus `parse.ts`: pure helpers over the raw match payload (player id, match events, DNF / penalties detection, real score).
+- **auth** — Shared Better Auth instance (Twitch provider, cross-subdomain cookies, extra user fields).
+- **imagerenderer-client** — Typed client for the image renderer service.
 
-##### **auth** - Authentication Logic
-- Shared package for Better Auth configuration
-- Reusable by other applications in the monorepo
+#### `/apps`
+
+- **api** — Express + Mongoose REST API: club, members, matches, stats, achievements, HOF/HOS, position averages, account ↔ player link requests and an admin panel backend (player photo, linked account, request approval). Protected routes validate the session against the auth service. 📖 **Endpoints: [docs/API.md](docs/API.md)**
+- **worker** — Every `WORKER_INTERVAL` seconds fetches new matches from EA, normalizes them (`MatchDTO`), registers the members that appear, accumulates stats, evaluates achievements and publishes RabbitMQ events. Weekly team-of-the-week job. Enriches members (`proName`, `proOverall`…) from EA without overwriting good data with empty values.
+- **auth** — Express + Better Auth + MongoDB: Twitch login, follow/sub/role sync, public users endpoint and admin user listing.
+- **web** — Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5 frontend. Fully static, deployed to GitHub Pages (`.github/workflows/deploy-web.yml`, custom domain via `public/CNAME`). Dynamic pages take query params read client-side (`/jugador?id=<playerId>`, `/partido?id=<matchId>`, `/totw?semana=…&tipo=…`). Admin panel at `/admin` (pending link requests, player photo and linked account, `admin` role only); users request the link to their player from `/micuenta`. Configured through `PUBLIC_*` env vars (`apps/web/.env.example`).
+- **discordbot** — Consumes RabbitMQ events and announces the team of the week (matches / achievements once their producers are enabled).
+- **imagerenderer** — Captures web pages with puppeteer to render the images the bot posts.
+
+### 🔑 Player identity
+
+A player is keyed by its **`playerId`** (EA id), never by name, so data survives gamertag changes. EA only exposes the id in `clubs/matches` (key of the `players[clubId]` object), so **members are created from matches**: whoever plays, exists. `playerName` is always the last seen name and each member keeps a `nameHistory`.
+
+Related rules:
+- A player with **0 seconds** in a match is stored in the match but does not count for stats, averages, achievements or TOTW.
+- **DNF**: EA flag + forced 3-0 + player aggregate mismatch.
+- **Penalties**: playoff / friendly only; `clubs.goals − aggregate.goals > 0` for both clubs **and** extra time played. Real score and per-club `penaltiesScore` are stored.
 
 ## 📊 Application Diagram
 
@@ -412,266 +310,63 @@ This is a **monorepo** structured with [pnpm workspaces](https://pnpm.io/workspa
 
 ### 🚀 Getting Started
 
-#### Prerequisites
-- Node.js 18+ 
-- pnpm 8+
-
-#### Installation
+- Node.js 22+ (24 recommended), pnpm 10+, Google Chrome (for `eafcapi` / `imagerenderer`), MongoDB and RabbitMQ.
 
 ```bash
-# Clone the repository
 git clone <repository-url>
 cd TruenoProClubServices
-
-# Install dependencies for the entire monorepo
 pnpm install
-
-# Build all projects
-pnpm build
+pnpm build   # builds packages and apps in dependency order (shared first)
 ```
 
-### 📦 Available Scripts
+### 📦 Scripts
 
-#### Monorepo
+All Node services (`api`, `worker`, `authservice`) share the same scripts:
+
 ```bash
-# Build all applications
-pnpm build
+pnpm --filter @trueno-proclub-services/api dev     # tsx watch
+pnpm --filter @trueno-proclub-services/api start   # tsx
+pnpm --filter @trueno-proclub-services/api build   # tsc → dist/
+pnpm --filter @trueno-proclub-services/api serve   # node dist/…
 ```
 
-#### API
-```bash
-cd apps/api
-
-# Start in development mode
-pnpm start
-
-# Build for production
-pnpm build
-
-# Run compiled binary
-pnpm serve
-```
-
-#### Web
-```bash
-cd apps/web
-
-# Start development server
-pnpm dev
-
-# Build for production
-pnpm build
-
-# Preview production build
-pnpm preview
-```
-
-#### Auth
-```bash
-cd apps/auth
-
-# Start in development mode
-pnpm dev
-
-# Build for production
-pnpm build
-
-# Start in production mode
-pnpm start
-```
+Packages (`shared`, `auth`, `eafcapi`) are built with `build`; rebuild `shared` after changing it (or run its `dev` watch).
 
 ### 🔧 Configuration
 
-#### Environment Variables
+Each app ships a commented `.env.example`: [`apps/api`](apps/api/.env.example), [`apps/worker`](apps/worker/.env.example), [`apps/auth`](apps/auth/.env.example). Key variables:
 
-Environment variables should be configured in `.env` files (or other environment variable types if using Docker, for example) in each application.
+| Variable | Apps | Description |
+|---|---|---|
+| `MONGO_URL` / `MONGODB_URI` | api, worker / auth | MongoDB connection |
+| `CLUBID` | api, worker | EA club id. **Changes every game release** (FC27 = new club) |
+| `PLATFORM` | api, worker | `common-gen5`, `common-gen4` or `nx` |
+| `ALLOWED_ORIGINS` | api, auth | Comma-separated allowed origins (CORS / trustedOrigins) |
+| `AUTH_URL` | api | Auth service URL used to validate sessions on protected routes |
+| `DEVMODE` | api, auth | Open CORS and host-only cookies, development only |
+| `RABBITMQ_URL` | worker, discordbot | RabbitMQ connection |
+| `WORKER_INTERVAL` | worker | Seconds between EA syncs |
+| `FORCE_RECALCULATE` | worker | Recompute all stats and achievements from match history on startup |
+| `TOTW_CRON_SCHEDULE`, `TZ` | api, worker | When the team of the week is computed |
+| `CLUB_CACHE_MS`, `CLUB_RETRY_MS` | api | `/club` cache TTL and cooldown after an EA failure |
+| `TWITCH_CLIENT_ID/SECRET`, `TWITCH_CHANNEL_ID` | auth | Twitch provider and channel to follow |
+| `PUPPETEER_EXECUTABLE_PATH` | api, worker, imagerenderer | Chrome path if not in the default location |
 
-##### API (`apps/api/.env`)
+### 🔌 Endpoints
 
-| Variable | Type | Description | Default Value |
-|----------|------|-------------|----------------|
-| `PORT` | `number` | Port on which the API listens | `80` |
-| `DEVMODE` | `boolean` | Enables open CORS for development | `false` |
-| `MONGO_URL` | `string` | MongoDB connection URL | **Required** |
-| `CLUBID` | `number` | Club ID on EA Sports | `2766636` |
-| `PLATFORM` | `string` | Club platform (Xbox/PS/PC) | `common-gen5` |
-| `CLUB_CACHE_MS` | `number` | Cache time for club data (ms) | `3600000` (1 hour) |
-| `TOTW_CRON_SCHEDULE` | `string` | Cron expression for TOTW schedule | `0 21 * * 0` |
-| `TZ` | `string` | Timezone for cron calculates | `Europe/Madrid` |
+See **[docs/API.md](docs/API.md)** (REST API, auth service and RabbitMQ events). The API also serves an index at `GET /`.
 
-**Example `.env`:**
-```env
-PORT=3000
-DEVMODE=true
-MONGO_URL=mongodb://localhost:27017/tpcs
-CLUBID=2766636
-PLATFORM=common-gen5
-CLUB_CACHE_MS=3600000
-TOTW_CRON_SCHEDULE="0 21 * * 0"
-TZ=Europe/Madrid
-```
+### 🗓️ Database
 
-##### Worker (`apps/worker/.env`)
-
-| Variable | Type | Description | Default Value |
-|----------|------|-------------|----------------|
-| `MONGO_URL` | `string` | MongoDB connection URL | **Required** |
-| `CLUBID` | `number` | Club ID to synchronize | `290776` |
-| `PLATFORM` | `string` | Club platform (Xbox/PS/PC) | `common-gen5` |
-| `WORKER_INTERVAL` | `number` | Synchronization interval in seconds | `300` (5 minutes) |
-| `FORCE_RECALCULATE` | `boolean` | Force statistics recalculation on startup | `false` |
-| `RABBITMQ_URL` | `string` | RabbitMQ connection URL | `amqp://localhost` |
-| `TZ` | `string` | Timezone for date calculations | `Europe/Madrid` |
-| `TOTW_CRON_SCHEDULE` | `string` | Cron expression for TOTW process | `0 21 * * 0` |
-| `TOTW_MIN_GAMES_PLAYED` | `number` | Minimum games played to be considered for TOTW | `5` |
-
-**Example `.env`:**
-```env
-MONGO_URL=mongodb://localhost:27017/tpcs
-CLUBID=290776
-PLATFORM=common-gen5
-WORKER_INTERVAL=300
-FORCE_RECALCULATE=false
-RABBITMQ_URL=amqp://localhost
-TZ=Europe/Madrid
-TOTW_CRON_SCHEDULE="0 21 * * 0"
-TOTW_MIN_GAMES_PLAYED=5
-```
-
-##### Auth (`apps/auth/.env`)
-
-| Variable                | Type    | Description                                      | Default Value |
-|-------------------------|---------|--------------------------------------------------|--------------|
-| `PORT`                  | `number` | Port on which the service listens                | `3001` |
-| `WWW_URL`               | `string` | Frontend URL                                     | `https://www.casemurocity.org` |
-| `API_URL`               | `string` | Main API URL                                     | `https://api.casemurocity.org` |
-| `COOKIE_DOMAIN`         | `string` | Cookie domain                                    | `.casemurocity.org` |
-| `MONGODB_URI`           | `string` | MongoDB connection URL                           | **Required** |
-| `DBNAME`                | `string` | Database name                                    | `tpcsauth` |
-| `BETTER_AUTH_SECRET`    | `string` | [Better Auth](https://github.com/better-auth/better-auth) secret | **Required** |
-| `BETTER_AUTH_URL`       | `string` | Auth service base URL                            | `https://auth.casemurocity.org` |
-| `TWITCH_CLIENT_ID`      | `string` | Twitch Client ID                                 | **Required** |
-| `TWITCH_CLIENT_SECRET`  | `string` | Twitch Client Secret                             | **Required** |
-| `TWITCH_CHANNEL_ID`     | `string` | Twitch Channel ID to follow                      | **Required** |
-
-**Example `.env`:**
-```env
-PORT=3001
-WWW_URL=https://www.casemurocity.org
-API_URL=https://api.casemurocity.org
-COOKIE_DOMAIN=.casemurocity.org
-MONGODB_URI="mongodb://user:pass@host:port/db"
-DBNAME="tpcsauth"
-BETTER_AUTH_SECRET="your-secret"
-BETTER_AUTH_URL=https://auth.casemurocity.org
-TWITCH_CLIENT_ID="your-client-id"
-TWITCH_CLIENT_SECRET="your-client-secret"
-```
-
-#### External Services
-
-**MongoDB:**
-```bash
-# Using Docker
-docker run -d -p 27017:27017 --name mongodb mongo:latest
-```
-
-**RabbitMQ:**
-```bash
-# Using Docker
-docker run -d -p 5672:5672 -p 15672:15672 --name rabbitmq rabbitmq:3-management
-```
-
-### 📂 Folder Structure
-
-```
-apps/
-├── api/                          # REST API
-│   └── src/
-│       ├── controllers/          # Controllers
-│       ├── models/               # MongoDB Schemas
-│       ├── interfaces/           # TypeScript interfaces
-│       ├── routes/               # Route definitions
-│       ├── services/             # Business logic
-│       ├── middleware/           # Middlewares
-│       ├── database/             # Database configuration
-│       └── app.ts                # Entry point
-
-├── web/                          # Astro Frontend
-│   └── src/
-│       ├── components/           # Vue and Astro components
-│       ├── pages/                # Astro routes
-│       ├── layouts/              # Layouts
-│       ├── services/             # HTTP services
-│       ├── interfaces/           # TypeScript types
-│       ├── i18n/                 # Translations
-│       └── scripts/              # Shared scripts
-
-└── worker/                       # Background Jobs
-    └── src/
-        ├── controllers/
-        ├── services/
-        ├── jobs/
-        └── events/
-
-├── auth/                         # Authentication Service
-│   └── src/
-│       ├── db.ts                 # Database configuration
-│       └── index.ts              # Entry point and middleware
-```
-
-### 🔌 API Endpoints
-
-#### Base URL
-- **Development**: `http://localhost:80`
-
-#### Available Routes
-- `GET /` - General information about routes
-
-### 🗄️ Database
-
-**Engine**: MongoDB
-
-**Main Collections**:
-- `clubs` - Club information
-- `clubmembers` - Club members
-- `matches` - Match records
-- `playerstats` - Player statistics
-- `achievements` - Unlocked achievements
-- `totw` - Team of the Week
+MongoDB. Explicit collection names live in `packages/shared/src/models`: `clubs`, `members`, `matches`, `member_stats_officials`, `member_stats_friendlies`, `player_average_stats`, `achievements_definitions`, `achievements_unlocked`, `totw`, `member_totw_appearances`. The auth database (Better Auth) is separate.
 
 ### 🐳 Docker
 
-Both main applications include `Dockerfile` for containerization:
-
 ```bash
-# Build API image
-cd apps/api
-docker build -t tpcs-api .
-
-# Build Worker image
-cd apps/worker
-docker build -t tpcs-worker .
-
-# Build Auth image
-cd apps/auth
-docker build -t tpcs-auth .
+docker build -f apps/api/Dockerfile -t tpcs-api .
+docker build -f apps/worker/Dockerfile -t tpcs-worker .
+docker build -f apps/auth/Dockerfile -t tpcs-auth .
 ```
-
-### 🛡️ Security
-
-- **CORS**: Configured for production (`https://www.casemurocity.org`)
-- **Error Handling**: Centralized error handling middleware
-- **Validation**: Strong TypeScript schemas and types
-
-### 📝 Main Technologies
-
-| Component | Technologies |
-|-----------|------------|
-| **API Backend** | Express.js, TypeScript, MongoDB, Mongoose |
-| **Auth Service** | Express.js, Better Auth, TypeScript, MongoDB |
-| **Frontend Web** | Astro, Vue.js, Tailwind CSS, DaisyUI |
-| **Build Tools** | TypeScript, pnpm, Webpack |
 
 ### 👨‍💻 Author
 
@@ -679,13 +374,4 @@ docker build -t tpcs-auth .
 
 ### 📄 License
 
-This project is licensed under the [MIT License](LICENSE).
-
-### 🤝 Contributions
-
-Contributions are welcome. Please:
-1. Fork the repository
-2. Create a branch for your feature (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+[MIT License](LICENSE).

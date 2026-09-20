@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb"
-import { db } from "../db/index"
+import { db } from "../db/index.js"
 
 import { Account } from "@trueno-proclub-services/auth"
 

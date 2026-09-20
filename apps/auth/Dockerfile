@@ -19,11 +19,15 @@ COPY apps/auth/src ./apps/auth/src
 COPY packages/auth/package.json ./packages/auth/
 COPY packages/auth/tsconfig.json ./packages/auth/
 COPY packages/auth/src ./packages/auth/src
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/shared/tsconfig.json ./packages/shared/
+COPY packages/shared/src ./packages/shared/src
 
 # Instala dependencias desde la raíz (pnpm detecta workspaces)
 RUN pnpm install
 
 # Build de la app
+RUN pnpm --filter @trueno-proclub-services/shared build
 RUN pnpm --filter @trueno-proclub-services/auth build
 RUN pnpm --filter @trueno-proclub-services/authservice build
 

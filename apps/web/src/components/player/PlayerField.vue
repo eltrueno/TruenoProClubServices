@@ -2,16 +2,16 @@
     <div class="bg-base-100 text-center rounded-lg shadow-md flex flex-col overflow-hidden">
         <header class="relative">
             <div class="w-full container relative" v-on:mouseover="hovered=true"  v-on:mouseleave="hovered=false" >
-                <img :src=topImage class="relative plimg select-none pointer-events-none w-4/6 h-full m-auto z-10 drop-shadow-lg" alt="Player ingame photo" :class="{
+                <img :src="playerImage(player)" class="relative plimg select-none pointer-events-none w-4/6 h-full m-auto z-10 drop-shadow-lg" alt="Player ingame photo" :class="{
                     'plimghover': hovered
-                }" @error="defaultTopImage"/>
+                }" @error="onPlayerImageError" />
                 <div class="top-0 absolute right-0 p-2 font-semibold text-8xl lg:text-9xl z-0 drop-shadow-lg">{{ player.proOverall? player.proOverall : "¿?" }}</div>
             </div>
             <div class="absolute ploverlay w-full bg-base-100 bg-opacity-70 flex flex-col z-20 " v-on:mouseover="hovered=true" v-on:mouseleave="hovered=false"
             :class="{
                     'plextrainfo-opened': hovered
                 }">
-                <p class="font-bold text-2xl">{{ player.playerName === "SweetYanira5" ? "SweetIAnira" : player.playerName }}
+                <p class="font-bold text-2xl">{{ player.playerName }}
                 
                 <svg class="w-6 fixed top-2 right-0 animate-bounce" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" 
                 :class="{
@@ -40,7 +40,7 @@
                                 </p>
                             </div>
                         </div>
-                        <a class="btn btn-sm btn-primary my-1 md:my-2" :href="`/jugador/${player.playerName}`">Ver perfíl</a>
+                        <a class="btn btn-sm btn-primary my-1 md:my-2" :href="routes.player(player.playerId)">Ver perfíl</a>
                     </div>
                 </div>
             </div>
@@ -51,6 +51,8 @@
     import { computed, ref } from 'vue';
     import { translatePosition } from '@/i18n/translations';
     import { Position } from '@/i18n/translations';
+    import { routes } from "@/lib/query";
+    import { playerImage, onPlayerImageError } from "@/lib/playerImage";
     const props = defineProps<{
         player: any,
         index: number
@@ -82,14 +84,6 @@
             .join(', ')
     }
 
-
-    const topImage = computed(() => {
-        return `/players/${props.player.playerName}_top_transp.png`
-    })
-
-    function defaultTopImage(e){
-        e.target.src = '/players/placeholder_top_transp.png'
-    }
 
 
 </script>

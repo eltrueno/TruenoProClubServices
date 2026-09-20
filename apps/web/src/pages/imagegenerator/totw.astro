@@ -1,0 +1,9 @@
+---
+import ImageLayout from "@layouts/ImageLayout.astro";
+import TotwImage from "@components/imagegenerator/TotwImage.vue";
+// /imagegenerator/totw?week=<iso>&type=best|worst (sin week: la última)
+---
+
+<ImageLayout>
+	<TotwImage client:only="vue" />
+</ImageLayout>

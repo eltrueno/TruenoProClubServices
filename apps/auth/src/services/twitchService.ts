@@ -1,7 +1,7 @@
 import type { User, TwitchSyncResult, TwitchUser } from "@trueno-proclub-services/auth"
-import { UserRole } from "@trueno-proclub-services/auth"
-import { accountModel } from "../models/accountModel"
-import { userModel } from "../models/userModel"
+import { UserRole } from "@trueno-proclub-services/shared"
+import { accountModel } from "../models/accountModel.js"
+import { userModel } from "../models/userModel.js"
 
 const PROTECTED_ROLES: string[] = [UserRole.admin, UserRole.mod, UserRole.vip]
 

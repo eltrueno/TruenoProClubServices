@@ -1,8 +1,4 @@
-<style scoped>
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-.customscroll::-webkit-scrollbar-track
+<style scoped>.customscroll::-webkit-scrollbar-track
 {
 	display: none;
     border-radius: 10px;
@@ -81,7 +77,7 @@
                     <span class="font-light text-lg self-center bg-neutral-900 p-1 rounded-lg" :class="ratingColor(pl.rating)">{{ pl.rating }}</span>
                     <div class="flex flex-col w-full justify-center align-middle px-6 self-center">
                         <div class="inline-flex justify-center align-middle">
-                            <p class="font-semibold self-center">{{ pl.playername }}</p>
+                            <p class="font-semibold self-center">{{ pl.playerName }}</p>
                             <svg  v-if="pl.manOfTheMatch" xmlns="http://www.w3.org/2000/svg" class="mr-1 w-6 h-6  px-1 self-center font-semibold" width="24" height="24" fill="currentColor" viewBox="0 -960 960 960" ><path d="m363-310 117-71 117 71-31-133 104-90-137-11-53-126-53 126-137 11 104 90-31 133ZM480-28 346-160H160v-186L28-480l132-134v-186h186l134-132 134 132h186v186l132 134-132 134v186H614L480-28Zm0-112 100-100h140v-140l100-100-100-100v-140H580L480-820 380-720H240v140L140-480l100 100v140h140l100 100Zm0-340Z"/></svg>
                         </div>
                         <div class="mt-1 inline-flex justify-center align-middle gap-x-2">
@@ -125,13 +121,13 @@
 
             <div class="w-full flex flex-col md:flex-row mt-4 lg:mt-1 gap-4 h-fit" v-if="getSelectedPlayer()">
                 <div class="flex-1 flex align-middle bg-base-200 rounded-lg shadow-md p-4 overflow-hidden">
-                    <img :src="playerImage(getSelectedPlayer().playername)" class="hidden md:flex drop-shadow-xl select-none pointer-events-none max-w-[30%] xl:max-w-[20%] h-auto object-contain mx-2" alt="Player ingame top image" style="aspect-ratio: 40/97;" @error="defaultPlayerImage"/>
+                    <img :src="playerImage(getSelectedPlayer().playerId)" class="hidden md:flex drop-shadow-xl select-none pointer-events-none max-w-[30%] xl:max-w-[20%] h-auto object-contain mx-2" alt="Player ingame top image" style="aspect-ratio: 40/97;" @error="defaultPlayerImage"/>
                     <div class="flex flex-col w-full">
                         <div class="inline-flex gap-2 self-center">
                             <svg  v-if="getSelectedPlayer().manOfTheMatch" xmlns="http://www.w3.org/2000/svg" class="mr-1 w-8 h-8  px-1 self-center font-semibold text-primary" width="24" height="24" fill="currentColor" viewBox="0 -960 960 960" ><path d="m363-310 117-71 117 71-31-133 104-90-137-11-53-126-53 126-137 11 104 90-31 133ZM480-28 346-160H160v-186L28-480l132-134v-186h186l134-132 134 132h186v186l132 134-132 134v186H614L480-28Zm0-112 100-100h140v-140l100-100-100-100v-140H580L480-820 380-720H240v140L140-480l100 100v140h140l100 100Zm0-340Z"/></svg>
-                            <p class="text-primary font-semibold text-lg md:text-xl lg:text-2xl">{{ getSelectedPlayer().playername }}</p>
+                            <p class="text-primary font-semibold text-lg md:text-xl lg:text-2xl">{{ getSelectedPlayer().playerName }}</p>
                             <p class="font-medium text-lg md:text-xl lg:text-2xl">({{ getSelectedPlayer().rating }})</p>
-                            <a :href="`/jugador/${getSelectedPlayer().playername}`" class="btn btn-xs btn-primary self-center ml-2">Ver Perfil</a>
+                            <a :href="routes.player(getSelectedPlayer().playerId)" class="btn btn-xs btn-primary self-center ml-2">Ver Perfil</a>
                             <div class="grid h-6 w-4 place-items-center bg-error rounded-sm self-center" v-if="getSelectedPlayer().redCards>0"></div>
                         </div>
                         <p class="self-center text-lg font-light">{{ translatePosition(getSelectedPlayer().position) }}</p>
@@ -140,7 +136,7 @@
                             <i>{{ getPlayerSummaryText(getSelectedPlayer()) }}</i>
                         </div>
                         <div class="relative overflow-hidden py-1 px-4 w-full bg-base-100 rounded-lg mt-1">
-                            <img :src="playerImage(getSelectedPlayer().playername)" class="absolute block md:hidden top-0 left-1/2 -translate-x-1/2 opacity-30 h-full object-contain pointer-events-none select-none" alt="Player ingame top image" @error="defaultPlayerImage"/>
+                            <img :src="playerImage(getSelectedPlayer().playerId)" class="absolute block md:hidden top-0 left-1/2 -translate-x-1/2 opacity-30 h-full object-contain pointer-events-none select-none" alt="Player ingame top image" @error="defaultPlayerImage"/>
                             <div class="w-full flex my-4 text-lg text-clip text-pretty justify-between" v-for="stat in orderedPlayerStats(getSelectedPlayer())">
                                 <p class="text-start font-medium">{{ stat.name }}</p>
                                 <p class="text-right text-primary"><count-up :end-val="Number.isNaN(stat.stat)?0:stat.stat" class="inline" :decimalPlaces="stat.decimals"></count-up><span v-if="stat.percent">%</span></p>
@@ -202,11 +198,16 @@
     import  MatchPlayerEntity from '@/model/match/MatchPlayerEntity';
     import { translateMatchResult, translatePosition, translateMatchType } from '@/i18n/translations';
     import CountUp from 'vue-countup-v3'
+    import { getQueryParam, routes } from "@/lib/query"
+    import { useMembers } from "@/composables/useMembers"
+    import { onPlayerImageError } from "@/lib/playerImage"
 
-    const props = defineProps<{
-        matchId: number
-        playerName?: string
-    }>()
+    // /partido?id=<matchId>&player=<playerId>
+    const props = {
+        matchId: Number(getQueryParam("id")),
+        playerId: getQueryParam("player")
+    }
+    const { load: loadMembers, imageFor } = useMembers()
 
     const selectedPlayer = ref<number>(0)
 
@@ -225,8 +226,8 @@
     watchEffect(() => {
       // Track isLoading so this effect re-runs once the fetch completes
       const _loading = isLoading.value;
-      if (props.playerName && players.value?.length) {
-        const idx = players.value.findIndex(p => p.playername?.toLowerCase() === props.playerName?.toLowerCase())
+      if (props.playerId && players.value?.length) {
+        const idx = players.value.findIndex(p => p.playerId === props.playerId)
         if (idx !== -1) {
           selectedPlayer.value = idx
         }
@@ -245,13 +246,8 @@
         return players.value?.[selectedPlayer.value] ?? null;
     }
 
-    function playerImage(playername){
-      return `/players/${playername}_top_transp.png`
-    }
-
-    function defaultPlayerImage(e){
-        e.target.src = '/players/placeholder_top_transp.png'
-    }
+    const playerImage = (playerId: string) => imageFor(playerId)
+    const defaultPlayerImage = onPlayerImageError
 
 
     const teamAverageRating = computed(()=>{
@@ -584,19 +580,19 @@ function getPlayerSummaryText(player) {
         if(localclub){
             for(var p in match.value.localClub.players){
                 var parsedp:MatchPlayerEntity = match.value.localClub.players[p]
-                if(parsedp.redCards!=0) plist.push(parsedp.playername);
+                if(parsedp.redCards!=0) plist.push(parsedp.playerName);
             }
         }else{
             for(var p in match.value.awayClub.players){
                 var parsedp:MatchPlayerEntity = match.value.awayClub.players[p]
-                if(parsedp.redCards!=0) plist.push(parsedp.playername)
+                if(parsedp.redCards!=0) plist.push(parsedp.playerName)
             }
         }
         return plist
     }
 
     onBeforeMount(async ()=>{
-        await matchService.fetch()
+        await Promise.all([matchService.fetch(), loadMembers()])
     })
 
 </script>

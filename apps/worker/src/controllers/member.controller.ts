@@ -1,15 +1,14 @@
-import MemberDTO from "@dtos/member.dto"
-import { upsertMemberInfo } from "@services/member.service"
+import MemberInfoDTO from "../dtos/member.dto.js"
+import { upsertMemberInfo } from "../services/member.service.js"
+import type { IClubMemberStats } from "@trueno-proclub-services/eafcapi"
 
 /**
  * Upserts a member's static info from raw EA API data.
  * Safe to call periodically; never touches stats collections.
  */
-async function updateMemberInfo(rawdata: any) {
+async function updateMemberInfo(rawdata: IClubMemberStats) {
     try {
-        const dto = new MemberDTO(rawdata)
-        const response = await upsertMemberInfo(dto)
-        return response
+        return await upsertMemberInfo(new MemberInfoDTO(rawdata))
     } catch (err) {
         console.error(err)
         throw new Error("ERROR_UPDATING_MEMBER")

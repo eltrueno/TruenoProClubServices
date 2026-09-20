@@ -190,7 +190,7 @@
                         :result="activeTooltipMatch.result"
                         :man-of-the-match="activeTooltipMatch.manOfTheMatch"
                         :match-id="activeTooltipMatch.matchId"
-                        :player-name="props.player.member.playerName"
+                        :player-id="playerId"
                         :metric-label="currentMetricMeta.label"
                         :value="activeTooltipMatch.value"
                         :average="activeTooltipMatch.average"
@@ -292,7 +292,7 @@
                             <span class="text-lg font-black tabular-nums mt-0.5">{{ h.value }}</span>
                             
                             <span v-if="h.matchId" class="tooltip tooltip-top w-full before:text-[10px]" data-tip="Ir al partido">
-                                <a :href="`/partido/${h.matchId}?player=${props.player.member.playerName}`"
+                                <a :href="routes.match(h.matchId, playerId)"
                                    class="text-[0.6rem] lg:text-[0.65rem] text-base-content/40 font-medium truncate max-w-full hover:underline hover:text-primary transition-colors after:absolute after:inset-0 after:content-[''] block w-full">
                                     {{ h.sub }}
                                 </a>
@@ -313,6 +313,11 @@
             <div class="card-body p-6">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                     <h2 class="card-title text-xl font-black uppercase border-l-4 border-primary pl-4">Partidos</h2>
+
+                    <label class="label cursor-pointer gap-2 text-xs font-bold uppercase tracking-wider text-base-content/60 tooltip tooltip-bottom" data-tip="Partidos en los que apareció con 0 minutos. Nunca cuentan para las stats ni las medias.">
+                        <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="showUnplayed" />
+                        <span>Mostrar sin jugar</span>
+                    </label>
 
                     <div class="relative w-full sm:w-64">
                         <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -448,9 +453,9 @@
                         <tbody>
                             <tr v-for="row in visibleMatches" :key="row.matchId"
                                 class="border-b border-base-content/5 transition-colors duration-150 relative cursor-pointer"
-                                :class="row.manOfTheMatch
+                                :class="[row.manOfTheMatch
                                     ? 'bg-amber-400/[0.04] hover:bg-amber-400/[0.08] mvp-row'
-                                    : 'hover:bg-base-100/30'">
+                                    : 'hover:bg-base-100/30', !row.played ? 'opacity-50 italic' : '']">
                                 <td class="py-3">
                                     <span
                                         class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white mx-auto"
@@ -468,7 +473,7 @@
                                         <span v-if="row.manOfTheMatch" class="tooltip tooltip-right cursor-default z-10 relative" data-tip="MVP del partido" @click.stop>
                                             <span class="text-amber-400 text-sm">★</span>
                                         </span>
-                                        <a :href="`/partido/${row.matchId}?player=${props.player.member.playerName}`" class="after:absolute after:inset-0 after:content-['']">
+                                        <a :href="routes.match(row.matchId, playerId)" class="after:absolute after:inset-0 after:content-['']">
                                             {{ row.rivalName }}
                                         </a>
                                     </div>
@@ -478,10 +483,13 @@
                                     <span class="badge badge-xs badge-primary font-bold uppercase px-2 py-2.5 rounded-md">{{ translateMatchType(row.matchType) }}</span>
                                 </td>
                                 <td class="text-center py-3 text-xs font-bold text-base-content/70">{{ translatePosition(row.position) }}</td>
-                                <td class="text-center font-black tabular-nums py-3" :class="getRatingColor(row.rating)">{{ row.rating.toFixed(1) }}</td>
-                                <td class="text-center tabular-nums py-3">{{ row.goals }}</td>
-                                <td class="text-center tabular-nums py-3">{{ row.assists }}</td>
-                                <td class="text-center tabular-nums py-3 text-base-content/60">{{ row.minutes }}'</td>
+                                <template v-if="row.played">
+                                    <td class="text-center font-black tabular-nums py-3" :class="getRatingColor(row.rating)">{{ row.rating.toFixed(1) }}</td>
+                                    <td class="text-center tabular-nums py-3">{{ row.goals }}</td>
+                                    <td class="text-center tabular-nums py-3">{{ row.assists }}</td>
+                                    <td class="text-center tabular-nums py-3 text-base-content/60">{{ row.minutes }}'</td>
+                                </template>
+                                <td v-else colspan="4" class="text-center py-3 text-xs font-bold uppercase tracking-wider text-base-content/40">No jugó</td>
                             </tr>
                         </tbody>
                     </table>
@@ -490,8 +498,9 @@
                 <div v-if="matchRows.length > 0" class="md:hidden flex flex-col gap-3">
                     
                         <a v-for="row in visibleMatches" :key="row.matchId"
-                        :href="`/partido/${row.matchId}?player=${props.player.member.playerName}`"
-                        class="flex items-center gap-3 dark:bg-base-100 bg-base-300 rounded-2xl p-4 border border-base-content/5 active:scale-[0.98] transition-transform">
+                        :href="routes.match(row.matchId, playerId)"
+                        class="flex items-center gap-3 dark:bg-base-100 bg-base-300 rounded-2xl p-4 border border-base-content/5 active:scale-[0.98] transition-transform"
+                        :class="{ 'opacity-50': !row.played }">
                         <!-- Badge de resultado -->
                         <span
                             class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black text-white shrink-0"
@@ -519,7 +528,8 @@
                                 <span class="badge badge-xs badge-outline font-bold uppercase px-2 py-2 rounded-full">{{ translatePosition(row.position) }}</span>
                             </div>
 
-                            <div class="grid grid-cols-4 gap-2 text-center">
+                            <div v-if="!row.played" class="text-xs font-bold uppercase tracking-wider text-base-content/40 italic">No jugó</div>
+                            <div v-else class="grid grid-cols-4 gap-2 text-center">
                                 <div>
                                     <div class="text-[9px] uppercase font-black text-base-content/40 tracking-wider">Val</div>
                                     <div class="text-sm font-black tabular-nums" :class="getRatingColor(row.rating)">{{ row.rating.toFixed(1) }}</div>
@@ -577,6 +587,7 @@
     } from 'chart.js';
     import { Line, Bar } from 'vue-chartjs';
     import { translateMatchType, translatePosition } from '@/i18n/translations';
+    import { routes } from '@/lib/query';
     import VueTailwindDatepicker from 'vue-tailwind-datepicker';
     import type PlayerProfileEntity from '@/model/PlayerProfileEntity';
     import type PlayerStatsEntity from '@/model/PlayerStatsEntity';
@@ -724,22 +735,15 @@
     }
 
 
-    const playerNameLower = computed(() => props.player?.member?.playerName?.toLowerCase() ?? '')
+    const playerId = computed(() => props.player?.member?.playerId ?? '')
 
+    /** El jugador en nuestro lado del partido (por playerId) */
+    const findPlayer = (match: ClubMatchEntity) => match.ourClub.players.find(p => p.playerId === playerId.value) ?? null
 
-    //TODO: FIx API
-    const findPlayer = (match: ClubMatchEntity) => {
-        const name = playerNameLower.value
-        if (match.localClub.id == 101456) return match.localClub.players.find(p => p.playername.toLowerCase() === name)
-        else if (match.awayClub.id == 101456) return match.awayClub.players.find(p => p.playername.toLowerCase() === name)
-        else return null
-    }
+    const getRivalName = (match: ClubMatchEntity) => match.opponentClub.name
 
-    const getRivalName = (match: ClubMatchEntity) => {
-        const name = playerNameLower.value
-        const inLocal = match.localClub.players.some(p => p.playername.toLowerCase() === name)
-        return inLocal ? match.awayClub.name : match.localClub.name
-    }
+    // Partidos en los que apareció con 0 segundos: se pueden ver en el historial, pero nunca cuentan para gráficas ni medias
+    const showUnplayed = ref(false)
 
     const formatDate = (timestamp: number) => {
         const date = new Date(timestamp * 1000)
@@ -780,9 +784,17 @@
         return list
     })
 
-    // ── FILTERED LIST (with player entries) ---
+    // ── FILTERED LIST (solo partidos que realmente jugó: base de gráficas, medias y forma reciente) ---
     const filteredMatchesWithPlayer = computed(() => {
-        return filteredMatches.value.filter(m => !!findPlayer(m))
+        return filteredMatches.value.filter(m => !!findPlayer(m)?.played)
+    })
+
+    // ── HISTORIAL (incluye los de 0 segundos si el toggle está activo) ---
+    const historyMatches = computed(() => {
+        return filteredMatches.value.filter(m => {
+            const p = findPlayer(m)
+            return !!p && (p.played || showUnplayed.value)
+        })
     })
 
     // ═══════════════════════════════════════════
@@ -831,7 +843,7 @@
     })
 
     const chartMatchesOldestFirst = computed(() => {
-        return [...chartFilteredMatches.value].reverse().filter(m => !!findPlayer(m))
+        return [...chartFilteredMatches.value].reverse().filter(m => !!findPlayer(m)?.played)
     })
 
     const setQuickRange = (range: 'all' | 5 | 10 | 20) => {
@@ -1235,6 +1247,7 @@
     // ═══════════════════════════════════════
     interface MatchRow {
         matchId: number
+        played: boolean
         rivalName: string
         matchType: string
         rating: number
@@ -1275,10 +1288,11 @@
 
     // Guardamos el timestamp original para poder ordenar por fecha real, no por string formateado
     const matchRowsRaw = computed(() => {
-        return filteredMatchesWithPlayer.value.map(m => {
+        return historyMatches.value.map(m => {
             const p = findPlayer(m)!
             return {
                 matchId: m.matchId,
+                played: p.played,
                 rivalName: getRivalName(m),
                 matchType: m.matchType,
                 rating: p.rating,

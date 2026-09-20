@@ -1,36 +1,37 @@
-import { defineConfig } from 'astro/config';
-import tailwind from "@astrojs/tailwind";
-import node from "@astrojs/node";
-
+// @ts-check
+import { defineConfig } from "astro/config";
 import vue from "@astrojs/vue";
-import icon from "astro-icon";
+import tailwindcss from "@tailwindcss/vite";
+import svgLoader from "vite-svg-loader";
 
-// https://astro.build/config
+// Full static: es lo que necesita GitHub Pages (ni SSR ni API routes).
+// Las islas Vue hacen fetch al api en el navegador; los parámetros de las
+// páginas "dinámicas" (jugador, partido, semana...) van por query string y
+// se leen en cliente.
 export default defineConfig({
-  integrations: [tailwind(), icon(), vue({
-    appEntrypoint: './src/pages/vueapp.ts',
-    template: {
-      transformAssetUrls: {
-        includeAbsolute: false,
-      }
-    },
-  })],
-  output: "hybrid",
-  adapter: node({
-    mode: "middleware"
-  }),
+  site: "https://www.casemurocity.org",
+  output: "static",
+  trailingSlash: "never",
+  build: {
+    // /jugador.html en vez de /jugador/index.html: GitHub Pages sirve /jugador sin redirección con barra final
+    format: "file",
+  },
+  integrations: [
+    vue({
+      appEntrypoint: "./src/vueapp.ts",
+      template: {
+        transformAssetUrls: {
+          includeAbsolute: false,
+        },
+      },
+    }),
+  ],
   vite: {
-    ssr: {
-      noExternal: ['better-auth', '@trueno-proclub-services/auth'],
-      external: ['fs', 'path', 'os', 'url', 'http', 'https', 'zlib', 'stream', 'buffer', 'util']
+    plugins: [tailwindcss(), svgLoader({ defaultImport: "url" })],
+    build: {
+      // Lightning CSS mete animation-timeline dentro del shorthand `animation` (inválido en Chrome) y rompe
+      // las animaciones por scroll del index; esbuild no toca esas propiedades.
+      cssMinify: "esbuild",
     },
-    resolve: {
-      alias: {
-        // Force certain Node.js modules to be treated as external or use absolute node: prefix
-        fs: 'node:fs',
-        path: 'node:path',
-        os: 'node:os'
-      }
-    }
-  }
+  },
 });

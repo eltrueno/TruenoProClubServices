@@ -1,5 +1,5 @@
-import * as ClubMemberService from "@services/clubMember.service"
-import * as PlayerStatsService from "@services/playerStats.service"
+import * as ClubMemberService from "../services/clubMember.service.js"
+import * as PlayerStatsService from "../services/playerStats.service.js"
 import { NextFunction, Request, Response } from "express"
 
 async function getAllMembers(req: Request, res: Response, next: NextFunction) {
@@ -51,11 +51,11 @@ async function getAllPlayerStatsByType(req: Request, res: Response, next: NextFu
     }
 }
 
-async function getMemberProfileByName(req: Request, res: Response, next: NextFunction) {
+async function getMemberProfileById(req: Request, res: Response, next: NextFunction) {
     try {
-        const playername = String(req.params.playername)
-        if (!playername) return next(new Error("ERROR_BAD_REQUEST"))
-        const response = await ClubMemberService.getProfileByName(playername)
+        const playerId = String(req.params.playerId)
+        if (!playerId) return next(new Error("ERROR_BAD_REQUEST"))
+        const response = await ClubMemberService.getProfileById(playerId)
         if (!response) return next(new Error("ERROR_NOT_FOUND"))
         res.json({
             status: {
@@ -70,4 +70,22 @@ async function getMemberProfileByName(req: Request, res: Response, next: NextFun
     }
 }
 
-export { getAllMembers, getMemberProfileByName, getAllPlayerStats, getAllPlayerStatsByType }
+export { getAllMembers, getMemberProfileById, getAllPlayerStats, getAllPlayerStatsByType }
+async function getMyMember(req: Request, res: Response, next: NextFunction) {
+    try {
+        if (!req.user) return next(new Error("ERROR_BAD_REQUEST"))
+        const response = await ClubMemberService.getByUserId(req.user.id)
+        res.json({
+            status: {
+                code: 200,
+                message: "Ok"
+            },
+            response: response ?? null
+        })
+    } catch (err) {
+        console.error(err)
+        next(new Error("ERROR_GETTING_MEMBER"))
+    }
+}
+
+export { getMyMember }

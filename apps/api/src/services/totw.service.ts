@@ -1,4 +1,4 @@
-import { TOTWModel, MemberTotwAppearancesModel } from "src/models/totw.model";
+import { TOTWModel, MemberTotwAppearancesModel } from "@trueno-proclub-services/shared/models"
 import { CronExpressionParser } from "cron-parser";
 
 export const getLatest = async () => {
@@ -25,12 +25,12 @@ export const getAppearancesByWeek = async (isoWeek: string) => {
     return MemberTotwAppearancesModel.find({ isoWeek }, { _id: 0, __v: 0 })
 }
 
-export const getAppearancesByPlayer = async (playerName: string) => {
-    return MemberTotwAppearancesModel.find({ playerName }, { _id: 0, __v: 0 }).sort({ weekNumber: -1 })
+export const getAppearancesByPlayer = async (playerId: string) => {
+    return MemberTotwAppearancesModel.find({ playerId }, { _id: 0, __v: 0 }).sort({ weekNumber: -1 })
 }
 
-export const getAppearancesByPlayerAndWeek = async (playerName: string, isoWeek: string) => {
-    return MemberTotwAppearancesModel.findOne({ playerName, isoWeek }, { _id: 0, __v: 0 })
+export const getAppearancesByPlayerAndWeek = async (playerId: string, isoWeek: string) => {
+    return MemberTotwAppearancesModel.findOne({ playerId, isoWeek }, { _id: 0, __v: 0 })
 }
 
 export const getSchedule = () => {

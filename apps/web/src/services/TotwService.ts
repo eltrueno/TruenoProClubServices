@@ -1,39 +1,15 @@
-import { ref, type Ref } from "vue";
-import FetchService from "@services/FetchService";
-import TotwEntity from "@/model/totw/TotwEntity";
-export default class TotwService extends FetchService {
+import FetchService from "@services/FetchService"
+import type { ITOTW } from "@trueno-proclub-services/shared"
+import { tpcsApi } from "@/lib/api"
 
-    private week?: number | string
-
-    constructor(week?: number | string) {
-        super()
-        this.data = ref<TotwEntity>()
-        this.week = week
+/** Una semana concreta (número o ISO "2026-13") o, sin argumento, la última */
+export default class TotwService extends FetchService<ITOTW | undefined> {
+    constructor(private week?: number | string) {
+        super(undefined)
     }
 
-    getData(): Ref<TotwEntity> {
-        return this.data;
-    }
-
-
-    async fetch(): Promise<void> {
-        try {
-            const url = "https://api.casemurocity.org/totw/" + (this.week ? this.week : "latest")
-            const response = await fetch(url)
-            const json = await response.json()
-            this.status.value = response.status
-
-            if (this.status.value == 200) {
-                this.data.value = new TotwEntity(json.response);
-            } else try {
-                this.error.value = json.status.message;
-            } catch (e) {
-                this.error.value = response.statusText;
-            }
-        } catch (error) {
-            this.error.value = error
-        } finally {
-            this.isloading.value = false;
-        }
+    protected async load() {
+        const totw = this.week ? await tpcsApi.totw.getByWeek(String(this.week)) : await tpcsApi.totw.getLatest()
+        return totw
     }
 }

@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { publicUserService } from "../services/publicUserService"
+import { publicUserService } from "../services/publicUserService.js"
 
 const router = Router()
 

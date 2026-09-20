@@ -3,7 +3,7 @@ import {
     translateFinishGroup,
     translateReputation
 } from '@/i18n/translations';
-import type { IClub } from '@/interfaces/club.interface';
+import type { IClub } from "@trueno-proclub-services/shared"
 
 export default class ClubStats implements IClub {
     clubId: number;
@@ -30,7 +30,7 @@ export default class ClubStats implements IClub {
         reputationtier: number;
         reputationName: string;
     };
-    updatedAt: string;
+    updatedAt?: string | Date;
 
     constructor(json: any) {
         this.clubId = Number(json.clubId)

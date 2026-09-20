@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express"
 import type { AuthType } from "@trueno-proclub-services/auth"
+import { UserRole } from "@trueno-proclub-services/shared"
 
 export const createRequireAuth = (auth: AuthType) => {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -26,5 +27,16 @@ export const createRequireAuth = (auth: AuthType) => {
         message: "Internal server error"
       })
     }
+  }
+}
+
+/** Debe ir después de requireAuth. */
+export const requireRole = (...roles: UserRole[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const role = req.user?.role as UserRole | undefined
+    if (!role || !roles.includes(role)) {
+      return res.status(403).json({ status: "forbidden", message: "Insufficient permissions" })
+    }
+    next()
   }
 }

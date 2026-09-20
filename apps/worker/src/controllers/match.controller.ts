@@ -1,5 +1,5 @@
-import MatchDTO from "@dtos/match.dto"
-import { insertOne, getLatest } from "@services/match.service"
+import MatchDTO from "../dtos/match.dto.js"
+import { insertOne, getLatest } from "../services/match.service.js"
 
 async function insertMatch(rawdata: any) {
     try {

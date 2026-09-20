@@ -3,7 +3,7 @@ import {
     getLatestByMatchTypeLimit,
     getLatestByPlayer,
     getLatestLimit, getAll
-} from "@services/match.service"
+} from "../services/match.service.js"
 import { NextFunction, Request, Response } from "express"
 
 async function getAllMatches(req: Request, res: Response, next: NextFunction) {
@@ -42,9 +42,9 @@ async function getAllMatchesOrdered(req: Request, res: Response, next: NextFunct
 async function getMatchesByPlayer(req: Request, res: Response, next: NextFunction) {
     try {
         const limitFilter: number = Number(req.query.limit)
-        const playerName: string = req.params.playerName
-        if (playerName === null || playerName === undefined || playerName === "") return next(new Error("ERROR_BAD_REQUEST"))
-        const response = await getLatestByPlayer(playerName, limitFilter)
+        const playerId: string = req.params.playerId
+        if (!playerId) return next(new Error("ERROR_BAD_REQUEST"))
+        const response = await getLatestByPlayer(playerId, limitFilter)
         if (!response || response.length === 0) return next(new Error("ERROR_NOT_FOUND"))
         res.json({
             status: {
@@ -82,7 +82,7 @@ async function getMatchById(req: Request, res: Response, next: NextFunction) {
         const id: number = Number(req.params.id);
         if (isNaN(id) || !Number.isInteger(id) || id <= 0) return next(new Error("ERROR_BAD_REQUEST"));
         const response = await getById(id)
-        if (!response || response === null || response === undefined || response.length === 0) return next(new Error("ERROR_NOT_FOUND"))
+        if (!response) return next(new Error("ERROR_NOT_FOUND"))
         res.json({
             status: {
                 code: 200,

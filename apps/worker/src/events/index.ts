@@ -1,8 +1,8 @@
-import { RabbitMQManager } from '@config/rabbitmq.config';
-import { NewMatchEvent } from '@events/newMatchEvent.producer';
-import { MilestoneEvent } from '@events/milestoneEvent.producer';
-import { UniqueAchievementEvent } from '@events/achievementEvent.producer';
-import { TOTWEvent } from '@events/totwEvent.producer';
+import { RabbitMQManager } from "../config/rabbitmq.config.js";
+import { NewMatchEvent } from "./newMatchEvent.producer.js";
+import { MilestoneEvent } from "./milestoneEvent.producer.js";
+import { UniqueAchievementEvent } from "./achievementEvent.producer.js";
+import { TOTWEvent } from "./totwEvent.producer.js";
 
 let mqManager: RabbitMQManager
 let matchProducer: NewMatchEvent

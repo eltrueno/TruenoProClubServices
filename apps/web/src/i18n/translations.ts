@@ -44,13 +44,27 @@ export enum Role {
     subscriber = "subscriber"
 }
 
-export enum AchievementType {
-    played = "partidos jugados",
-    goals = "goles",
-    assists = "asistencias",
-    redcards = "tarjetas rojas",
-    passes = "pases",
-    motm = "mejor del partido"
+/** Nombre legible de la categoría de un logro (claves de shared y las antiguas del bot) */
+export const translateAchievementCategory = (category: string): string => {
+    const map: Record<string, string> = {
+        gamesPlayed: "partidos jugados", played: "partidos jugados",
+        goals: "goles",
+        assists: "asistencias",
+        redCards: "tarjetas rojas", redcards: "tarjetas rojas",
+        passesMade: "pases", passes: "pases",
+        passesSuccess: "pases completados",
+        manOfTheMatch: "mejor del partido", motm: "mejor del partido",
+        hattricks: "hat-tricks",
+        pokers: "pókers",
+        cleanSheets: "porterías a cero",
+        saves: "paradas",
+        minutesPlayed: "minutos jugados",
+        pass_accuracy: "precisión de pase",
+        shot_accuracy: "precisión de tiro",
+        totwBest: "equipos de la semana",
+        totwWorst: "equipos de la vergüenza"
+    }
+    return map[category] ?? category
 }
 
 export enum MatchType {

@@ -1,4 +1,4 @@
-import * as AchievementsService from "@services/achievements.service"
+import * as AchievementsService from "../services/achievements.service.js"
 import { Request, Response, NextFunction } from "express"
 
 const getAllDefinitions = async (req: Request, res: Response, next: NextFunction) => {

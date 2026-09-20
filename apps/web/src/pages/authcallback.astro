@@ -1,6 +1,11 @@
-<script is:inline>
+---
+// Página intermedia del popup de login: avisa a la ventana que lo abrió y se cierra.
+const siteUrl = import.meta.env.PUBLIC_SITE_URL ?? "https://www.casemurocity.org";
+---
+
+<script is:inline define:vars={{ siteUrl }}>
     if (window.opener) {
-        window.opener.postMessage("auth-success", "https://www.casemurocity.org")
+        window.opener.postMessage("auth-success", siteUrl)
         window.close()
     } else {
         window.location.href = "/login"

@@ -1,4 +1,4 @@
-import * as TOTWService from "src/services/totw.service"
+import * as TOTWService from "../services/totw.service.js"
 import { Request, Response, NextFunction } from "express"
 
 export const getLatestTOTW = async (req: Request, res: Response, next: NextFunction) => {
