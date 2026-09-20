@@ -1,4 +1,4 @@
-import type { IMatch, IMatchPlayer, IPlayerStats } from "@trueno-proclub-services/shared"
+import { countsForPlayerStats, type IMatch, type IMatchPlayer, type IPlayerStats } from "@trueno-proclub-services/shared"
 import { MatchModel, PlayerStatsOfficialModel, PlayerStatsFriendlyModel } from "@trueno-proclub-services/shared/models"
 import { processAchievements, recalculateAllTOTWAchievements } from "./achievement.service.js"
 import { Model } from "mongoose"
@@ -47,6 +47,8 @@ const accumulateStatsFromMatch = async (match: IMatch, clubId: number, skipAchie
 
     for (const player of ourPlayers) {
         if (!player.playerId) continue
+        // 0 segundos jugados: se guarda en el partido pero no altera stats ni logros
+        if (!countsForPlayerStats(player)) continue
         const isHattrick = player.goals === 3
         const isPoker = player.goals >= 4
 

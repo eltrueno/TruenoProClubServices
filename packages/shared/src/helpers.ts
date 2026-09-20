@@ -24,3 +24,11 @@ export const finiteNumberOrUndefined = (value: unknown): number | undefined => {
     const n = Number(value)
     return Number.isFinite(n) ? n : undefined
 }
+
+/**
+ * Un jugador que aparece en un partido con 0 segundos (no llegó a entrar) se
+ * guarda en el partido para poder verlo, pero NO cuenta para sus stats,
+ * medias, logros ni TOTW. Mismo criterio en worker y web.
+ */
+export const countsForPlayerStats = (player: { secondsPlayed?: number | null }): boolean =>
+    Number(player?.secondsPlayed) > 0

@@ -20,6 +20,8 @@ module.exports = {
     ],
     category: "Utility",
     description: "Consulta tus estadísticas o las de otro jugador",
+    // Desactivado a propósito: el loader no lo registra mientras esté a true
+    disabled: true,
     ownerOnly: false,
     run: async (client, interaction) => {
         const jugadorOption = interaction.options.getUser("jugador");
