@@ -6,7 +6,7 @@
                 <li><a href="/partidos" class="">Partidos</a></li>
             </ul>
         </div>
-        <header role="container" class="w-full py-4 px-6 h-full rounded-lg shadow-xl dark:shadow dark:bg-base-200">
+        <header role="container" class="w-full py-4 px-6 h-full rounded-lg shadow-xl dark:shadow bg-base-200">
             <div class="p-4 grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-10 justify-around items-center h-full">
                 <div class="flex flex-col h-full justify-between gap-1">
                     <div class="form-control flex flex-col h-full justify-between">
@@ -68,7 +68,7 @@
             />
             <div class="self-center m-1">{{ finalMatchList.length }} resultados</div>
         </div>
-        <div v-if="!hasErrorComputed" role="contentinfo" class="mt-3 w-full p-3 lg:p-4 flex rounded-lg shadow-lg dark:shadow dark:bg-base-200">
+        <div v-if="!hasErrorComputed" role="contentinfo" class="mt-3 w-full p-3 lg:p-4 flex rounded-lg shadow-lg dark:shadow bg-base-200">
             <svg v-if="isLoading" class="footballloader" viewBox="0 0 866 866" xmlns="http://www.w3.org/2000/svg">
                     <svg class="footballloader" id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 164.83 151.5">
                         <path class="path-0 footballloader" d="M117.24,69.24A8,8,0,0,0,115.67,67c-4.88-4-9.8-7.89-14.86-11.62A4.93,4.93,0,0,0,96.93,55c-5.76,1.89-11.4,4.17-17.18,6a4.36,4.36,0,0,0-3.42,4.12c-1,6.89-2.1,13.76-3,20.66a4,4,0,0,0,1,3.07c5.12,4.36,10.39,8.61,15.68,12.76a3.62,3.62,0,0,0,2.92.75c6.29-2.66,12.52-5.47,18.71-8.36a3.49,3.49,0,0,0,1.68-2.19c1.34-7.25,2.54-14.55,3.9-22.58Z"

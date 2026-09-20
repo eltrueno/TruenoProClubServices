@@ -57,7 +57,7 @@
         <div v-if="!isloading" class="flex justify-end w-3/4 ml-auto font-light text-xs"><p>{{ finalMembers.length }} resultados</p></div>  
         <div class="flex flex-wrap w-full mt-4 ">
             <aside class=" basis-4/4 lg:basis-1/4 w-full lg:px-4 min-h-full">
-                <div role="complementary" class="p-4 min-h-full rounded-lg shadow-lg dark:shadow dark:bg-base-200">
+                <div role="complementary" class="p-4 min-h-full rounded-lg shadow-lg dark:shadow bg-base-200">
                     <span class="px-3 justify-center"><strong>Filtrar por posición</strong></span>
                     <div class="form-control flex flex-wrap flex-row">
                             <label class="label cursor-pointer">
@@ -83,7 +83,7 @@
                     </div>
                 </div>
             </aside>
-            <div class="basis-4/4 lg:basis-3/4 w-full p-4 rounded-lg shadow lg:shadow-md dark:shadow dark:bg-base-200">
+            <div class="basis-4/4 lg:basis-3/4 w-full p-4 rounded-lg shadow lg:shadow-md dark:shadow bg-base-200">
                 <!-- Ball loader -->
                 <div v-if="isloading" class="w-full">
                     <svg class="footballloader" viewBox="0 0 866 866" xmlns="http://www.w3.org/2000/svg">

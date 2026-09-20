@@ -9,6 +9,10 @@
   name: "light";
   default: true;
   color-scheme: light;
+  /* Superficies más marcadas que las de DaisyUI (98%/95%): fondo blanco, cards gris claro */
+  --color-base-100: oklch(100% 0 0);
+  --color-base-200: oklch(96% 0.003 250);
+  --color-base-300: oklch(91% 0.005 250);
   --color-primary: #c80d0d;
   --color-primary-content: #ffffff;
   --color-secondary: #0037ff;
@@ -56,6 +60,12 @@
 @source "../";
 /* Clases construidas dinámicamente en los componentes */
 @source inline("{bg,text,border}-{base,primary}-{100,200,300}");
+
+/* Checkbox: sin la animación del tick (clip-path/rotación/desplazamiento) que trae DaisyUI 5.
+   El relieve y el ruido ya van a 0 con --depth/--noise en los temas. */
+.checkbox:before {
+  transition: opacity 0.1s;
+}
 
 @theme {
   /* Breakpoints */

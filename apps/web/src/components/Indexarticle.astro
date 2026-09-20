@@ -12,7 +12,7 @@ const {reverse,id, gradientText, imageUrl} = Astro.props;
 
 ---
 <div id={id} class="flex flex-wrap  p-6 md:p-10 lg:p-12 justify-center items-center"  class:list={[{ 'flex-row-reverse': reverse },{'flex-row': !reverse}]}>
-    <div class="p-8 basis-3/3 md:basis-2/3 dark:bg-base-200 dark:shadow rounded-xl shadow-lg h-fit" class:list={[{'ltr-articlediv':!reverse},{'rtl-articlediv':reverse}]}>
+    <div class="p-8 basis-3/3 md:basis-2/3 bg-base-200 dark:shadow rounded-xl shadow-lg h-fit" class:list={[{'ltr-articlediv':!reverse},{'rtl-articlediv':reverse}]}>
         <article>
             <header>
                 <h1 class="text-5xl font-bold text-transparent bg-clip-text inline-block py-2"

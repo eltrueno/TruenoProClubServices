@@ -71,24 +71,14 @@ const isActive = (href: string) => href === currentPath;
     .btn-ghost {
         --btn-fg: var(--color-primary-content);
         --btn-border: transparent;
+        color: var(--color-primary-content);
     }
     .btn-ghost:hover {
         --btn-bg: color-mix(in oklab, var(--color-primary-content) 25%, transparent);
     }
-    /* Página actual: fondo translúcido + barra inferior */
+    /* Página actual: fondo translúcido */
     .btn-ghost.nav-active {
         --btn-bg: color-mix(in oklab, var(--color-primary-content) 18%, transparent);
-        position: relative;
-    }
-    .btn-ghost.nav-active::after {
-        content: "";
-        position: absolute;
-        left: 0.75rem;
-        right: 0.75rem;
-        bottom: 0.25rem;
-        height: 2px;
-        border-radius: 9999px;
-        background: var(--color-primary-content);
     }
 
     :root {
