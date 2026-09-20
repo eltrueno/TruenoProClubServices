@@ -4,16 +4,23 @@ import { createAuthMiddleware, APIError } from "better-auth/api"
 import { mongodbAdapter } from "better-auth/adapters/mongodb"
 import { ObjectId } from "mongodb"
 
-
+const DEVMODE = process.env.DEVMODE === "true";
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(",") ?? [];
 
 export const createAuth = (db: any, onTwitchLogin?: (user: any) => Promise<void>) => betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:4000",
   database: mongodbAdapter(db),
 
+
   advanced: {
-    crossSubDomainCookies: {
-      enabled: true,
-      domain: process.env.COOKIE_DOMAIN || ".casemurocity.org"
-    }
+    crossSubDomainCookies: DEVMODE
+      ? {
+        enabled: false
+      }
+      : {
+        enabled: true,
+        domain: process.env.COOKIE_DOMAIN || ".casemurocity.org",
+      },
   },
 
   hooks: {
@@ -82,10 +89,7 @@ export const createAuth = (db: any, onTwitchLogin?: (user: any) => Promise<void>
     }
   },
 
-  trustedOrigins: [
-    process.env.WWW_URL || "https://www.casemurocity.org",
-    process.env.API_URL || "https://api.casemurocity.org",
-  ],
+  trustedOrigins: ALLOWED_ORIGINS.length ? ALLOWED_ORIGINS : ["http://localhost:4321"],
 
   socialProviders: {
     twitch: {
