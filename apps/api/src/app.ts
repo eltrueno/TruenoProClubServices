@@ -10,7 +10,10 @@ const DEVMODE = process.env.DEVMODE === "true"
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(",").map(s => s.trim()).filter(Boolean) ?? ["https://www.casemurocity.org"]
 const PORT = Number(process.env.PORT || 80)
 
-app.use(bodyParser.json());
+// Límite por defecto (100kb) en todo menos la subida de fotos del admin, que lleva su propio parser de 8mb
+const jsonParser = bodyParser.json()
+const isImageUpload = (path: string) => /^\/admin\/members\/[^/]+\/image$/.test(path)
+app.use((req, res, next) => (isImageUpload(req.path) ? next() : jsonParser(req, res, next)))
 app.use(bodyParser.urlencoded({ extended: true }));
 
 if (DEVMODE) console.warn("### DEVMODE ACTIVATED ###")

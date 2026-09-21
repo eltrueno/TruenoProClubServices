@@ -95,6 +95,8 @@ Requieren sesión **y** rol `admin`. Devuelven `401` sin sesión, `403` sin rol,
 | Método | Ruta | Body | Descripción |
 |---|---|---|---|
 | `PATCH` | `/admin/members/:playerId` | `{ "imageUrl"?: string \| null, "userId"?: string \| null }` | Foto y cuenta vinculada del miembro. `null` (o `""`) desvincula; un campo ausente no se toca. `imageUrl` debe ser `http(s)`. Una cuenta solo puede estar vinculada a un jugador: al asignarla se libera del anterior. Devuelve el miembro actualizado. |
+| `POST` | `/admin/members/:playerId/image` | `{ "image": "data:image/png;base64,…" }` | Sube la foto del jugador (PNG ≤ 4 MB, la web la manda ya encuadrada a **400×450**) a Cloudflare R2 (`players/<playerId>.png`) y guarda su URL pública en `imageUrl`. Devuelve el miembro. `503 IMAGE_STORAGE_NOT_CONFIGURED` si faltan las variables `R2_*`. |
+| `POST` | `/admin/image-proxy` | `{ "url": string }` | Devuelve los bytes de una imagen remota para que el editor la pinte en canvas sin CORS. Solo `http(s)` en puertos estándar, hosts públicos (se resuelve el DNS y se rechazan IPs privadas/loopback/link-local), ≤ 3 redirecciones revalidadas, ≤ 10 MB, y el tipo se decide por la firma del fichero (png/jpeg/gif/webp; nunca SVG). Es `POST` para que exija preflight de CORS. |
 | `GET` | `/admin/link-requests` | — | Solicitudes de vinculación pendientes (`ILinkRequest[]`, más antiguas primero). |
 | `POST` | `/admin/link-requests/:id/approve` | — | Aprueba: vincula la cuenta al jugador (misma regla que el `PATCH`) y descarta las demás pendientes del mismo usuario o jugador. Devuelve `{ request, member }`. 404 si no existe o ya no está pendiente. |
 | `POST` | `/admin/link-requests/:id/reject` | — | Rechaza la solicitud. Devuelve la solicitud actualizada. |

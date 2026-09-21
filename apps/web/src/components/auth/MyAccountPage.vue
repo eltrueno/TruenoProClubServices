@@ -5,9 +5,11 @@ import AuthGuard from "@/components/auth/AuthGuard.vue"
 import LoginWall from "@/components/auth/LoginWall.vue"
 import { translateRole } from "@/i18n/translations"
 import { routes } from "@/lib/query"
-import { playerImage, onPlayerImageError, PLAYER_PLACEHOLDER } from "@/lib/playerImage"
+import { PLAYER_PLACEHOLDER } from "@/lib/playerImage"
 import { ApiError, tpcsApi } from "@/lib/api"
 import PlayerPickerModal, { type PickerItem } from "@/components/ui/PlayerPickerModal.vue"
+import PlayerCard from "@/components/ui/PlayerCard.vue"
+import PlayerPhoto from "@/components/ui/PlayerPhoto.vue"
 import { usePlayerStats } from "@/composables/usePlayerStats"
 import type { IClubMember, ILinkRequest } from "@trueno-proclub-services/shared"
 
@@ -118,6 +120,7 @@ watch(
   [isPending, isLoggedIn],
   ([pending, logged]) => {
     if (pending || !logged) return
+    loadPositions()
     loadMyMember(true).then((m) => { if (!m) loadLinkState() })
   },
   { immediate: true }
@@ -434,15 +437,21 @@ const icons = {
         <div class="rounded-xl bg-base-200 shadow-md p-6">
           <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Mi jugador</h2>
           <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div class="flex items-center gap-3 text-left">
-              <div class="w-12 h-14 rounded-lg overflow-hidden bg-base-300 shrink-0">
-                <img :src="playerImage(myMember)" :alt="myMember?.playerName ?? 'Sin vincular'" class="w-full h-full object-cover object-top" @error="onPlayerImageError" />
-              </div>
+            <PlayerCard
+              v-if="myMember"
+              :member="myMember"
+              :positions="positionsOf(myMember.playerId)"
+              size="md"
+              link
+              dates
+              class="text-left"
+            />
+            <div v-else class="flex items-center gap-3 text-left">
+              <PlayerPhoto :src="null" size="md" :alt="linkRequest ? linkRequest.playerName : 'Sin vincular'" />
               <div>
-                <p class="font-bold text-base-content text-sm">{{ myMember?.playerName ?? (linkRequest ? linkRequest.playerName : 'Sin vincular') }}</p>
+                <p class="font-bold text-base-content text-sm">{{ linkRequest ? linkRequest.playerName : 'Sin vincular' }}</p>
                 <p class="text-xs text-base-content/50 mt-0.5">
-                  <template v-if="myMember">{{ myMember.proName || 'Pro sin nombre' }}<span v-if="myMember.proOverall"> · {{ myMember.proOverall }} OVR</span></template>
-                  <template v-else-if="linkRequest"><span class="badge badge-warning badge-xs mr-1"></span>Solicitud pendiente de que un admin la apruebe</template>
+                  <template v-if="linkRequest"><span class="badge badge-warning badge-xs mr-1"></span>Solicitud pendiente de que un admin la apruebe</template>
                   <template v-else>¿Juegas en el club? Pide vincular tu cuenta a tu jugador</template>
                 </p>
               </div>

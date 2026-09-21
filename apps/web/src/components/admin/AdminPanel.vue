@@ -3,10 +3,11 @@ import { computed, onMounted, ref } from "vue"
 import type { IClubMember, ILinkRequest, IPublicUser } from "@trueno-proclub-services/shared"
 import { useAuth } from "@/composables/useAuth"
 import { ApiError, authApi, tpcsApi } from "@/lib/api"
-import { playerImage, onPlayerImageError } from "@/lib/playerImage"
 import { routes } from "@/lib/query"
 import AuthGuard from "@/components/auth/AuthGuard.vue"
 import PlayerPickerModal, { type PickerItem } from "@/components/ui/PlayerPickerModal.vue"
+import PlayerCard from "@/components/ui/PlayerCard.vue"
+import PlayerImageEditor from "@/components/admin/PlayerImageEditor.vue"
 
 type AdminUser = IPublicUser & { role: string; twitchId: string | null; discordId: string | null }
 
@@ -24,6 +25,23 @@ const saving = ref<Record<string, boolean>>({})
 const rowMessage = ref<Record<string, { ok: boolean; text: string }>>({})
 
 const usersById = computed(() => new Map(users.value.map((u) => [u.id, u])))
+
+// Editor de foto (un único modal para todas las filas)
+const imageEditor = ref<InstanceType<typeof PlayerImageEditor> | null>(null)
+const editingMember = ref<IClubMember | null>(null)
+function openImageEditor(m: IClubMember, url?: string) {
+    editingMember.value = m
+    imageEditor.value?.open(url || undefined)
+}
+// La foto se sube y asigna al momento: reflejar en la fila y en el borrador
+function onImageUploaded(imageUrl: string) {
+    const m = editingMember.value
+    if (!m) return
+    m.imageUrl = imageUrl
+    if (drafts.value[m.playerId]) drafts.value[m.playerId].imageUrl = imageUrl
+    rowMessage.value[m.playerId] = { ok: true, text: "Foto actualizada" }
+    setTimeout(() => { if (rowMessage.value[m.playerId]?.ok) rowMessage.value[m.playerId] = { ok: true, text: "" } }, 2500)
+}
 
 /** Cuentas para el selector de una fila: aviso si ya están en otro jugador */
 function userItemsFor(playerId: string): PickerItem[] {
@@ -223,22 +241,23 @@ onMounted(() => {
                         class="rounded-2xl bg-base-200 shadow-sm p-4 grid grid-cols-1 lg:grid-cols-[auto_1fr_1fr_auto] gap-4 items-center"
                         :class="{ 'ring-1 ring-primary/40': isDirty(m) }">
                         <!-- Jugador -->
-                        <div class="flex items-center gap-3 min-w-0 lg:w-64">
-                            <div class="w-12 h-14 rounded-lg overflow-hidden bg-base-300 shrink-0">
-                                <img :src="playerImage({ imageUrl: draftFor(m).imageUrl || null })" :alt="m.playerName" class="w-full h-full object-cover object-top" @error="onPlayerImageError" />
-                            </div>
-                            <div class="min-w-0">
-                                <a :href="routes.player(m.playerId)" class="font-bold truncate block hover:text-primary">{{ m.playerName }}</a>
-                                <p class="text-xs text-base-content/50 truncate">{{ m.proName || "—" }}<span v-if="m.proOverall"> · {{ m.proOverall }}</span></p>
-                                <p class="text-[10px] text-base-content/30 font-mono truncate" :title="m.playerId">{{ m.playerId }}</p>
-                            </div>
-                        </div>
+                        <PlayerCard class="lg:w-64" :member="m" :image="draftFor(m).imageUrl || null" size="md" link show-id />
 
-                        <!-- Foto -->
-                        <label class="form-control w-full">
-                            <span class="label-text text-[10px] uppercase font-black tracking-wider text-base-content/50 mb-1">URL de la foto</span>
-                            <input v-model="draftFor(m).imageUrl" type="url" placeholder="https://cdn.casemurocity.org/players/…png" class="input input-bordered input-sm w-full font-mono text-xs" />
-                        </label>
+                        <!-- Foto: cualquier URL pasa por el editor para encuadrarla a 400x450 y subirla al CDN -->
+                        <div class="form-control w-full">
+                            <span class="label-text text-[10px] uppercase font-black tracking-wider text-base-content/50 mb-1">Foto</span>
+                            <div class="join w-full">
+                                <input
+                                    v-model="draftFor(m).imageUrl"
+                                    type="url"
+                                    placeholder="Pega una URL y pulsa Enter, o Cambiar…"
+                                    class="input input-bordered input-sm join-item w-full font-mono text-xs"
+                                    @keydown.enter.prevent="openImageEditor(m, draftFor(m).imageUrl)"
+                                />
+                                <button type="button" class="btn btn-sm join-item" @click="openImageEditor(m, draftFor(m).imageUrl)">Cambiar…</button>
+                            </div>
+                            <span class="text-[10px] text-base-content/40 mt-1">Al pulsar Enter se abre el editor para ajustar la foto a la escala del club. Vacía y guarda para quitarla.</span>
+                        </div>
 
                         <!-- Cuenta -->
                         <label class="form-control w-full">
@@ -277,4 +296,10 @@ onMounted(() => {
             </div>
         </template>
     </AuthGuard>
+    <PlayerImageEditor
+        ref="imageEditor"
+        :player-id="editingMember?.playerId ?? ''"
+        :player-name="editingMember?.playerName ?? ''"
+        @uploaded="onImageUploaded"
+    />
 </template>
