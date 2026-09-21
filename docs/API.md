@@ -115,7 +115,7 @@ Better Auth con proveedor social de **Twitch**. Cookie de sesión con dominio `C
 
 Todo lo que cuelga de `/api/auth/*` lo maneja Better Auth (sign-in social, callback, `get-session`, sign-out, delete-user…). Lo habitual desde la web se hace con el cliente (`better-auth/vue`) apuntando a `PUBLIC_AUTH_URL`. `update-user` está bloqueado (403).
 
-Campos extra del usuario: `role` (`visitor` \| `follower` \| `subscriber` \| `vip` \| `mod` \| `admin`), `twitchId`, `twitchFollowing`, `twitchSub`, `discordId` (solo los escribe el servidor: `input: false`), y los de privacidad `showPublicName` / `showPublicImage` (booleanos, por defecto `true`; el usuario los cambia con `updateUser` desde Mi cuenta).
+Campos extra del usuario: `role` (`visitor` \| `follower` \| `subscriber` \| `vip` \| `mod` \| `admin`), `twitchId`, `twitchFollowing`, `twitchSub`, `discordId` (solo los escribe el servidor: `input: false`), y los de privacidad `showPublicName` / `showPublicImage` (booleanos, por defecto `true`). `POST /api/auth/update-user` solo admite esos dos campos: cualquier otro (nombre, imagen…) devuelve `403 Not allowed`, porque el perfil viene de Twitch.
 
 | Método | Ruta | Descripción |
 |---|---|---|

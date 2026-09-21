@@ -58,7 +58,12 @@ const savePrivacy = async () => {
   privacySaving.value = true
   privacyError.value = ""
   const { error } = await authClient.updateUser({ showPublicName: showPublicName.value, showPublicImage: showPublicImage.value })
-  if (error) privacyError.value = "No se ha podido guardar"
+  if (error) {
+    privacyError.value = error.status === 403 ? "Origen no permitido por el servicio de auth" : "No se ha podido guardar"
+    // volver a lo que hay guardado
+    showPublicName.value = user.value?.showPublicName !== false
+    showPublicImage.value = user.value?.showPublicImage !== false
+  }
   privacySaving.value = false
 }
 
