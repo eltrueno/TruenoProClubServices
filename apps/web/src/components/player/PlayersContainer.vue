@@ -132,7 +132,7 @@
 <script lang="ts" setup>
     import { onBeforeMount, type Ref, ref, watch, computed, type ComputedRef, onMounted, defineAsyncComponent } from 'vue';
     import ClubMembersService from '@services/ClubMembersService';
-    import PlayersStatsService from '@/services/PlayersStatsService';
+    import { usePlayerStats } from '@/composables/usePlayerStats';
     import ClubMember from '@/model/ClubMemberEntity'
     import PlayerStatsEntity from '@/model/PlayerStatsEntity';
     import PlayerField from '@components/player/PlayerField.vue';
@@ -153,13 +153,11 @@
     
 
     const memberService = new ClubMembersService()
-    //const plStatsOfficialService = new PlayersStatsService('official')
-    //const plStatsFriendlyService = new PlayersStatsService('friendly')
-    const plStatsService = new PlayersStatsService()
+    const playerStats = usePlayerStats()
     const members:Ref<ClubMember[]> = memberService.getData()
-    const isloading = memberService.isloading || plStatsService.isloading
+    const isloading = computed(() => memberService.isloading.value || playerStats.loading.value)
     const memberError = ref(memberService.getStatus().value !== 200 )
-    const plstatsError = ref(plStatsService.getStatus().value !== 200 )
+    const plstatsError = playerStats.hasError
     const errorText = memberService.getError()
     const hasError:Boolean = (errorText.value=='') ? false : true
 
@@ -180,7 +178,7 @@ function aggregatePlayerStats(stats: PlayerStatsEntity[]): PlayerStatsEntity[] {
 
 
 const plstats = computed<PlayerStatsEntity[]>(() => {
-    const data = plStatsService.getData().value
+    const data = playerStats.stats.value
     let raw: PlayerStatsEntity[] = []
 
     if (statsType.value === 'official') raw = data.official ?? []
@@ -192,7 +190,7 @@ const plstats = computed<PlayerStatsEntity[]>(() => {
 const mergedPlayers = computed(() => {
     if (!members.value?.length) return []
 
-    const rawData = plStatsService.getData().value
+    const rawData = playerStats.stats.value
     let raw: PlayerStatsEntity[] = []
 
     if (statsType.value === 'official') raw = rawData.official ?? []
@@ -344,12 +342,7 @@ const mergedPlayers = computed(() => {
     const overallFilter = ref(66)
 
     onBeforeMount(async ()=>{
-        await Promise.all([
-            memberService.fetch(),
-            //plStatsOfficialService.fetch(),
-            //plStatsFriendlyService.fetch()
-            plStatsService.fetch()
-        ])
+        await Promise.all([memberService.fetch(), playerStats.load()])
     })
 
     onMounted(() => {

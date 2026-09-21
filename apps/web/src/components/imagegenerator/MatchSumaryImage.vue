@@ -132,7 +132,7 @@
 
 <script setup lang="ts">
 import { ref, type Ref, computed, onBeforeMount } from 'vue';
-import ClubMatchService from '@services/ClubMatchService';
+import { useMatches } from '@/composables/useMatches';
 import ClubMatchEntity from '@models/match/ClubMatchEntity'
 import { translateMatchResult } from '@/i18n/translations';
 import { getQueryParam } from "@/lib/query"
@@ -143,10 +143,10 @@ import { onPlayerImageError } from "@/lib/playerImage"
 const matchId = Number(getQueryParam("id"))
 const { load: loadMembers, imageFor } = useMembers()
 
-const matchService = new ClubMatchService(matchId)
-const match:Ref<ClubMatchEntity> = matchService.getData()
-const isLoading = matchService.isloading
-const status = matchService.getStatus()
+const matchResource = useMatches().match(matchId)
+const match = matchResource.data as Ref<ClubMatchEntity>
+const isLoading = matchResource.loading
+const status = matchResource.status
 
 
 
@@ -163,7 +163,7 @@ const isAnyoneMvp = computed(()=>{
 })
 
 onBeforeMount(async () => {
-    await Promise.all([matchService.fetch(), loadMembers()])
+    await Promise.all([matchResource.load(), loadMembers()])
 })
 
 const sortedPlayers = computed(() => {
