@@ -54,10 +54,10 @@
                         <div v-if="linkedUser" class="mt-2 inline-flex items-center gap-2 rounded-full bg-base-100/60 pl-1 pr-3 py-1 text-xs lg:text-sm">
                             <div class="avatar">
                                 <div class="w-6 rounded-full ring-1 ring-primary">
-                                    <img v-if="linkedUser.image" :src="linkedUser.image" :alt="linkedUser.name" />
+                                    <img v-if="linkedUser.image" :src="linkedUser.image" :alt="linkedUser.name ?? 'Cuenta vinculada'" />
                                 </div>
                             </div>
-                            <span class="font-semibold">{{ linkedUser.name }}</span>
+                            <span class="font-semibold">{{ linkedUser.name ?? "Cuenta vinculada" }}</span>
                         </div>
                         <p v-if="playerProfile.member.nameHistory?.length > 1" class="mt-1 text-xs text-base-content/50">
                             Antes: {{ playerProfile.member.nameHistory.filter(n => n !== playerProfile.member.playerName).join(", ") }}

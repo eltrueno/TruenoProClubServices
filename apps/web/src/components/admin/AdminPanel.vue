@@ -191,8 +191,19 @@ onMounted(() => {
                     </div>
                 </header>
 
-                <div v-if="loading" class="w-full flex justify-center py-16">
-                    <span class="loading loading-ring loading-lg text-primary"></span>
+                <!-- Skeleton: bloque de solicitudes + filas de jugadores -->
+                <div v-if="loading" class="flex flex-col gap-3">
+                    <div class="skeleton h-20 rounded-2xl mb-3"></div>
+                    <div class="skeleton h-3 w-40"></div>
+                    <div v-for="i in 6" :key="i" class="rounded-2xl bg-base-200 p-4 grid grid-cols-1 lg:grid-cols-[auto_1fr_1fr_auto] gap-4 items-center">
+                        <div class="flex items-center gap-3 lg:w-64">
+                            <div class="skeleton w-12 h-14 rounded-lg shrink-0"></div>
+                            <div class="flex-1 space-y-2"><div class="skeleton h-4 w-28"></div><div class="skeleton h-3 w-36"></div></div>
+                        </div>
+                        <div class="skeleton h-8 w-full rounded-lg"></div>
+                        <div class="skeleton h-8 w-full rounded-lg"></div>
+                        <div class="skeleton h-8 w-24 rounded-lg"></div>
+                    </div>
                 </div>
 
                 <div v-else-if="loadError" class="alert alert-error">

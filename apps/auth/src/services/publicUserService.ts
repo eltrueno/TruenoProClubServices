@@ -3,7 +3,9 @@ import { db } from "../db/index.js"
 
 export interface PublicUser {
     id: string
-    name: string
+    /** null si el usuario ha ocultado su nombre */
+    name: string | null
+    /** null si el usuario ha ocultado su avatar */
     image: string | null
 }
 
@@ -28,14 +30,15 @@ export const publicUserService = {
             .collection("user")
             .find(
                 { _id: { $in: validIds.map((id) => new ObjectId(id)) } },
-                { projection: { name: 1, image: 1 } }
+                { projection: { name: 1, image: 1, showPublicName: 1, showPublicImage: 1 } }
             )
             .toArray()
 
+        // Privacidad: si el usuario lo ha ocultado, no se expone (por defecto se muestra)
         const data: PublicUser[] = users.map((u) => ({
             id: u._id.toString(),
-            name: u.name,
-            image: u.image ?? null,
+            name: u.showPublicName === false ? null : u.name,
+            image: u.showPublicImage === false ? null : (u.image ?? null),
         }))
 
         return { ok: true, data }

@@ -11,11 +11,16 @@ export interface IAuthUser {
     discordId?: string | null
     twitchFollowing?: boolean | null
     twitchSub?: boolean | null
+    /** privacidad: mostrar nombre / avatar cuando la cuenta aparece vinculada a un jugador (por defecto sí) */
+    showPublicName?: boolean | null
+    showPublicImage?: boolean | null
 }
 
 /** Datos públicos de un usuario (lo que expone `GET /api/public/users`) */
 export interface IPublicUser {
     id: string
-    name: string
+    /** null si el usuario ha ocultado su nombre */
+    name: string | null
+    /** null si el usuario ha ocultado su avatar (o no tiene) */
     image: string | null
 }

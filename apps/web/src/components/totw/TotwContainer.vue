@@ -186,14 +186,15 @@
 
     let timer: number
     onMounted(() => {
-        timer = window.setInterval(() => {
+        timer = window.setInterval(async () => {
             timeLeft.value = getTimeLeft(targetDate.value)
-            if(timeLeft.value.days === "00" 
-            && timeLeft.value.hours === "00" 
-            && timeLeft.value.minutes === "00" 
-            && timeLeft.value.seconds === "00") {
+            // Cuenta atrás agotada: solo si había una fecha real y en el futuro (si no, se recargaba en bucle)
+            const hadFuture = !!totwSchedule.value?.nextDate && new Date(totwSchedule.value.nextDate).getTime() > Date.now() - 2000
+            if (hadFuture && targetDate.value.getTime() <= Date.now()) {
                 clearInterval(timer)
-                window.location.reload()
+                // Nuevo TOTW: se vuelve a pedir la lista y la siguiente fecha sin recargar la página
+                await Promise.all([totwAllService.fetch(), totwScheduleService.fetch()])
+                selectedIndex.value = totwSorted.value.length - 1
             }
         }, 1000)
     })

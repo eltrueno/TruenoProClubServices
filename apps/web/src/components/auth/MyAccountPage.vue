@@ -7,6 +7,7 @@ import { translateRole } from "@/i18n/translations"
 import { routes } from "@/lib/query"
 import { PLAYER_PLACEHOLDER } from "@/lib/playerImage"
 import { ApiError, tpcsApi } from "@/lib/api"
+import { authClient } from "@/lib/auth"
 import PlayerPickerModal, { type PickerItem } from "@/components/ui/PlayerPickerModal.vue"
 import PlayerCard from "@/components/ui/PlayerCard.vue"
 import PlayerPhoto from "@/components/ui/PlayerPhoto.vue"
@@ -40,6 +41,26 @@ const linkPlayerItems = computed<PickerItem[]>(() => linkPlayers.value.map((m) =
   member: m
 })))
 const linkError = ref("")
+// Hasta que no se sabe si hay jugador vinculado (y solicitud) se enseña un skeleton, no el formulario
+const myPlayerLoading = ref(true)
+
+// Privacidad del perfil vinculado (campos del usuario en Better Auth)
+const showPublicName = ref(true)
+const showPublicImage = ref(true)
+const privacySaving = ref(false)
+const privacyError = ref("")
+watch(user, (u) => {
+  if (!u) return
+  showPublicName.value = u.showPublicName !== false
+  showPublicImage.value = u.showPublicImage !== false
+}, { immediate: true })
+const savePrivacy = async () => {
+  privacySaving.value = true
+  privacyError.value = ""
+  const { error } = await authClient.updateUser({ showPublicName: showPublicName.value, showPublicImage: showPublicImage.value })
+  if (error) privacyError.value = "No se ha podido guardar"
+  privacySaving.value = false
+}
 
 const loadLinkState = async () => {
   try {
@@ -133,7 +154,10 @@ watch(
   ([pending, logged]) => {
     if (pending || !logged) return
     loadPositions()
-    loadMyMember(true).then((m) => { if (!m) loadLinkState() })
+    myPlayerLoading.value = true
+    loadMyMember(true)
+      .then((m) => (m ? undefined : loadLinkState()))
+      .finally(() => { myPlayerLoading.value = false })
   },
   { immediate: true }
 )
@@ -366,7 +390,15 @@ const icons = {
         <!-- Card Cuenta de juego: jugador vinculado desde el panel admin (members.userId) -->
         <div class="rounded-xl bg-base-200 shadow-md p-6">
           <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Mi jugador</h2>
-          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div v-if="myPlayerLoading" class="flex items-center gap-3">
+            <div class="skeleton w-12 h-14 rounded-lg shrink-0"></div>
+            <div class="flex-1 space-y-2">
+              <div class="skeleton h-4 w-32"></div>
+              <div class="skeleton h-3 w-48"></div>
+            </div>
+            <div class="skeleton h-8 w-24 rounded-lg hidden sm:block"></div>
+          </div>
+          <div v-else class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <PlayerCard
               v-if="myMember"
               :member="myMember"
@@ -393,7 +425,7 @@ const icons = {
           </div>
 
           <!-- Sin jugador ni solicitud: elegir jugador y pedir vinculación -->
-          <form v-if="!myMember && !linkRequest" class="mt-4 flex flex-col sm:flex-row gap-2" @submit.prevent="requestLink">
+          <form v-if="!myPlayerLoading && !myMember && !linkRequest" class="mt-4 flex flex-col sm:flex-row gap-2" @submit.prevent="requestLink">
             <div class="w-full sm:flex-1">
               <PlayerPickerModal
                 v-model="linkPlayerId"
@@ -414,6 +446,23 @@ const icons = {
           <p v-if="linkError" class="text-xs text-error mt-2">{{ linkError }}</p>
         </div>
 
+
+        <!-- Card Privacidad: qué se enseña de la cuenta en el perfil del jugador vinculado -->
+        <div class="rounded-xl bg-base-200 shadow-md p-6 text-left">
+          <h2 class="text-xs font-black text-base-content/60 mb-2 uppercase tracking-widest">Privacidad</h2>
+          <p class="text-xs text-base-content/50 mb-4 leading-relaxed">Cuando tu cuenta aparece vinculada a un jugador, elige qué se muestra públicamente en su perfil.</p>
+          <div class="flex flex-col gap-3">
+            <label class="flex items-center justify-between gap-4 cursor-pointer">
+              <span class="text-sm font-medium">Mostrar mi nombre de usuario</span>
+              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="showPublicName" :disabled="privacySaving" @change="savePrivacy" />
+            </label>
+            <label class="flex items-center justify-between gap-4 cursor-pointer">
+              <span class="text-sm font-medium">Mostrar mi imagen de perfil</span>
+              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="showPublicImage" :disabled="privacySaving" @change="savePrivacy" />
+            </label>
+          </div>
+          <p v-if="privacyError" class="text-xs text-error mt-2">{{ privacyError }}</p>
+        </div>
 
         <!-- Card Zona de peligro -->
         <div class="rounded-xl bg-base-200 shadow-md p-6 border border-error/20 text-left">

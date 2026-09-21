@@ -229,7 +229,7 @@ defineExpose({ open, close })
                     >
                         <canvas ref="canvas" :width="FRAME_W" :height="FRAME_H" class="w-full h-full block"></canvas>
                         <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-base-300/70">
-                            <span class="loading loading-ring loading-lg text-primary"></span>
+                            <span class="loading loading-spinner loading-lg text-primary"></span>
                         </div>
                         <p v-else-if="!ready" class="absolute inset-0 flex items-center justify-center text-xs text-base-content/50 text-center px-6">
                             Carga una imagen por URL o desde un fichero
