@@ -1,4 +1,4 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3"
+import { HeadBucketCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3"
 import { lookup } from "node:dns/promises"
 import { isIP } from "node:net"
 
@@ -29,6 +29,20 @@ const getClient = () => {
     return client
 }
 
+/** Comprobación al arrancar: credenciales y bucket accesibles (solo loguea, nunca tumba el api) */
+export const checkConnection = async () => {
+    if (!isConfigured()) {
+        console.warn("[r2] Sin configurar (faltan R2_*): no se podrán subir fotos de jugadores")
+        return
+    }
+    try {
+        await getClient().send(new HeadBucketCommand({ Bucket: BUCKET }))
+        console.log(`[r2] Conexión OK: bucket "${BUCKET}" · público en ${PUBLIC_URL}`)
+    } catch (e) {
+        console.error(`[r2] No se puede acceder al bucket "${BUCKET}":`, e instanceof Error ? e.message : e)
+    }
+}
+
 /** Sube la foto (PNG 400x450) y devuelve su URL pública, con `?v=` para saltarse la caché del CDN */
 export const uploadPlayerImage = async (playerId: string, png: Buffer): Promise<string> => {
     if (!isConfigured()) throw new Error("IMAGE_STORAGE_NOT_CONFIGURED")
@@ -41,6 +55,7 @@ export const uploadPlayerImage = async (playerId: string, png: Buffer): Promise<
         ContentType: "image/png",
         CacheControl: "public, max-age=31536000, immutable"
     }))
+    console.log(`[r2] Subida foto ${key} (${(png.length / 1024).toFixed(0)} kB)`)
     return `${PUBLIC_URL}/${key}?v=${Date.now()}`
 }
 

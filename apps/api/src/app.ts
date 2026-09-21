@@ -26,6 +26,7 @@ app.use(cors({
 
 /* ROUTES */
 import membersRouter from "./routes/members.js"
+import * as ImageStorage from "./services/imageStorage.service.js"
 import clubRouter from "./routes/club.js"
 import achievementRouter from "./routes/achievement.js"
 import totwRouter from "./routes/totw.js"
@@ -105,3 +106,4 @@ app.get("/", async function (req, res) {
 app.set('trust proxy', true);
 app.listen(PORT, '0.0.0.0');
 console.log("Listening on port " + PORT);
+ImageStorage.checkConnection()
