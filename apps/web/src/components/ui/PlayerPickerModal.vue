@@ -6,9 +6,10 @@
  * El disparador es el botón por defecto o lo que se pase en el slot (recibe `open`).
  */
 import { computed, nextTick, ref, watch } from "vue"
-import { PLAYER_POSITIONS, type PlayerPosition } from "@trueno-proclub-services/shared"
+import { PLAYER_POSITIONS, type IClubMember, type PlayerPosition } from "@trueno-proclub-services/shared"
 import { translatePosition } from "@/i18n/translations"
 import PlayerCard from "./PlayerCard.vue"
+import type { PhotoZoom } from "./PlayerPhoto.vue"
 
 export interface PickerItem {
     id: string
@@ -19,6 +20,8 @@ export interface PickerItem {
     hint?: string
     /** posiciones jugadas, la más jugada primero (activa el filtro por posición) */
     positions?: PlayerPosition[]
+    /** miembro completo (modo jugador): PlayerCard muestra alta y último partido */
+    member?: Partial<IClubMember>
     disabled?: boolean
 }
 
@@ -35,6 +38,8 @@ const props = withDefaults(defineProps<{
     emptyText?: string
     /** forma de la imagen: avatar redondo (cuentas) o retrato de jugador */
     imageShape?: "avatar" | "player"
+    /** zoom de la foto en modo jugador (ver PlayerPhoto) */
+    zoom?: PhotoZoom
     /** imagen cuando el item no tiene */
     fallbackImage?: string
     /** en simple, permite deseleccionar (opción "Ninguno") */
@@ -48,6 +53,7 @@ const props = withDefaults(defineProps<{
     searchPlaceholder: "Buscar por nombre…",
     emptyText: "No hay resultados",
     imageShape: "player",
+    zoom: "md",
     fallbackImage: "",
     clearable: true,
     size: "sm",
@@ -186,8 +192,9 @@ defineExpose({ open, close })
                                 size="md"
                                 class="flex-1"
                                 :dates="true"
-                                :member="{ playerId: item.id, playerName: item.name, imageUrl: item.image || fallbackImage || null }"
+                                :member="{ ...item.member, playerId: item.id, playerName: item.name, imageUrl: item.image || fallbackImage || null }"
                                 :positions="item.positions"
+                                :zoom="zoom"
                             >
                                 <p v-if="item.subtitle" class="text-xs text-base-content/60 truncate">{{ item.subtitle }}</p>
                                 <p v-if="item.hint" class="text-[10px] text-warning truncate">{{ item.hint }}</p>

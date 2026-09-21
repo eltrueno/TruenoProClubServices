@@ -16,20 +16,7 @@
                 </div>
                 <div class="basis-2/2 lg:basis-1/2 flex flex-row justify-center align-middle items-center gap-2">
                     <span><strong>Tipo de estadísticas</strong></span>
-                    <div class="form-control flex flex-row flex-wrap">
-                        <label class="label cursor-pointer">
-                            <input type="radio" name="radio-1" class="radio radio-primary" value="friendly" v-model="statsType"/>
-                            <span class="label-text m-1">Amistosos</span>
-                        </label>
-                        <label class="label cursor-pointer">
-                            <input type="radio" name="radio-1" class="radio radio-primary" value="official" v-model="statsType"/>
-                            <span class="label-text m-1">Oficiales</span>
-                        </label>
-                        <label class="label cursor-pointer">
-                            <input type="radio" name="radio-1" class="radio radio-primary" value="all" v-model="statsType"/>
-                            <span class="label-text m-1">Combinados</span>
-                        </label>
-                    </div>
+                    <OptionToggle v-model="statsType" :options="MATCH_SCOPE_OPTIONS" size="md" />
                 </div>
                 <div class="basis-2/2 lg:basis-1/2 flex flex-row justify-center align-middle items-center gap-1">
                     <div class="dropdown"><span><strong>Ordenar por </strong></span>
@@ -136,6 +123,8 @@
     import ClubMember from '@/model/ClubMemberEntity'
     import PlayerStatsEntity from '@/model/PlayerStatsEntity';
     import PlayerField from '@components/player/PlayerField.vue';
+    import OptionToggle from '@/components/ui/OptionToggle.vue';
+    import { MATCH_SCOPE_OPTIONS, type MatchScope } from '@/lib/matchScope';
     import { getQueryParam, routes } from "@/lib/query";
 
 
@@ -148,8 +137,7 @@
         dropdownContent.value.blur()
     }
 
-    type StatsType = 'official' | 'friendly' | 'all'
-    const statsType = ref<StatsType>('all')
+    const statsType = ref<MatchScope>('all')
     
 
     const memberService = new ClubMembersService()

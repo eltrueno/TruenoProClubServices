@@ -10,6 +10,17 @@ import { ApiError, tpcsApi } from "@/lib/api"
 import PlayerPickerModal, { type PickerItem } from "@/components/ui/PlayerPickerModal.vue"
 import PlayerCard from "@/components/ui/PlayerCard.vue"
 import PlayerPhoto from "@/components/ui/PlayerPhoto.vue"
+import OptionToggle, { type ToggleOption } from "@/components/ui/OptionToggle.vue"
+import SunIcon from "@/icons/sun.svg?component"
+import MonitorIcon from "@/icons/monitor.svg?component"
+import MoonIcon from "@/icons/moon.svg?component"
+
+type ThemeChoice = 'light' | 'dark' | 'system'
+const THEME_OPTIONS: ToggleOption<ThemeChoice>[] = [
+  { value: 'light', label: 'Tema claro', icon: SunIcon, iconOnly: true },
+  { value: 'system', label: 'Tema del sistema', icon: MonitorIcon, iconOnly: true },
+  { value: 'dark', label: 'Tema oscuro', icon: MoonIcon, iconOnly: true }
+]
 import { usePlayerStats } from "@/composables/usePlayerStats"
 import type { IClubMember, ILinkRequest } from "@trueno-proclub-services/shared"
 
@@ -24,9 +35,9 @@ const { positionsOf, load: loadPositions } = usePlayerStats()
 const linkPlayerItems = computed<PickerItem[]>(() => linkPlayers.value.map((m) => ({
   id: m.playerId,
   name: m.playerName,
-  subtitle: [m.proName, m.proOverall ? `${m.proOverall} OVR` : ""].filter(Boolean).join(" · "),
   image: m.imageUrl,
-  positions: positionsOf(m.playerId)
+  positions: positionsOf(m.playerId),
+  member: m
 })))
 const linkError = ref("")
 
@@ -93,7 +104,7 @@ const updateCooldown = () => {
   syncCooldown.value = 0
 }
 
-let cooldownTimer: any = null
+let cooldownTimer: ReturnType<typeof setInterval> | null = null
 
 const handleSync = async (silent: boolean = false) => {
   if (!isLoggedIn.value || syncCooldown.value > 0) return
@@ -105,7 +116,8 @@ const handleSync = async (silent: boolean = false) => {
 }
 
 onMounted(() => {
-  currentTheme.value = (localStorage.getItem('theme') as any) || 'system'
+  const stored = localStorage.getItem('theme')
+  currentTheme.value = stored === 'light' || stored === 'dark' ? stored : 'system'
   updateCooldown()
   cooldownTimer = setInterval(updateCooldown, 1000)
 })
@@ -323,89 +335,7 @@ const icons = {
               <p class="text-xs text-base-content/50 mt-0.5">Elige tu tema favorito para la web</p>
             </div>
 <div class="flex justify-center">
-  <div class="relative flex w-44 rounded-full bg-base-300 p-1">
-
-    <!-- Thumb -->
-    <div
-      class="absolute top-1 left-1 h-10 w-[3.5rem] rounded-full bg-base-100 shadow-md dark:shadow-lg transition-transform duration-300"
-      :class="{
-        'translate-x-0': currentTheme === 'light',
-        'translate-x-14': currentTheme === 'system',
-        'translate-x-28': currentTheme === 'dark',
-      }"
-    />
-
-    <!-- Light -->
-    <button
-      class="relative z-10 flex h-10 w-14 items-center justify-center"
-      @click="setTheme('light')"
-      aria-label="Tema claro"
-    >
-      <svg
-        class="h-5 w-5 transition-colors"
-        :class="currentTheme === 'light' ? 'text-primary' : 'text-base-content/60'"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364 6.364l-1.414-1.414M7.05 7.05 5.636 5.636m12.728 0L16.95 7.05M7.05 16.95l-1.414 1.414M12 8a4 4 0 100 8 4 4 0 000-8"
-        />
-      </svg>
-    </button>
-
-    <!-- System -->
-    <button
-      class="relative z-10 flex h-10 w-14 items-center justify-center"
-      @click="setTheme('system')"
-      aria-label="Tema del sistema"
-    >
-      <svg
-        class="h-5 w-5 transition-colors"
-        :class="currentTheme === 'system' ? 'text-primary' : 'text-base-content/60'"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <rect
-          x="3"
-          y="4"
-          width="18"
-          height="12"
-          rx="2"
-          stroke-width="2"
-        />
-        <path
-          d="M8 20h8"
-          stroke-width="2"
-          stroke-linecap="round"
-        />
-      </svg>
-    </button>
-
-    <!-- Dark -->
-    <button
-      class="relative z-10 flex h-10 w-14 items-center justify-center"
-      @click="setTheme('dark')"
-      aria-label="Tema oscuro"
-    >
-    <svg
-      class="h-5 w-5 transition-colors"
-      :class="currentTheme === 'dark' ? 'text-primary' : 'text-base-content/60'"
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-    >
-      <path d="M12.74 2.003a.75.75 0 01.82.98A8.25 8.25 0 0021.017 13.44a.75.75 0 01.98.82A10.5 10.5 0 1112.74 2.003z"/>
-    </svg>
-    </button>
-
-  </div>
+  <OptionToggle :model-value="currentTheme" @update:model-value="setTheme" :options="THEME_OPTIONS" />
 </div>
           </div>
         </div>
@@ -443,7 +373,6 @@ const icons = {
               :positions="positionsOf(myMember.playerId)"
               size="md"
               link
-              dates
               class="text-left"
             />
             <div v-else class="flex items-center gap-3 text-left">

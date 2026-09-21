@@ -53,10 +53,18 @@
     import { Position } from '@/i18n/translations';
     import { routes } from "@/lib/query";
     import { playerImage, onPlayerImageError } from "@/lib/playerImage";
+    import type ClubMember from '@/model/ClubMemberEntity';
+    import type PlayerStatsEntity from '@/model/PlayerStatsEntity';
+
+    /** Miembro + stats agregadas + posiciones jugadas (lo que monta PlayersContainer) */
+    export interface PlayerFieldItem extends ClubMember {
+        stats?: PlayerStatsEntity
+        playedPositions: Record<string, number>
+    }
+
     const props = defineProps<{
-        player: any,
+        player: PlayerFieldItem
         index: number
-        key
     }>()
 
     const hovered = ref(false)

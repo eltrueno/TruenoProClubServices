@@ -13,7 +13,7 @@
             <div class=" mx-auto px-4 py-8 lg:py-12">
                 <div class="flex flex-row items-end gap-5 lg:gap-8">
                     <!-- Avatar/Player Photo -->
-                    <div class="relative shrink-0 w-28 lg:w-44 aspect-[8/9] dark:bg-base-100 bg-base-300 rounded-2xl lg:rounded-3xl overflow-hidden shadow-sm">
+                    <div class="relative shrink-0 w-28 lg:w-44 aspect-8/9 dark:bg-base-100 bg-base-300 rounded-2xl lg:rounded-3xl overflow-hidden shadow-sm">
                         <img 
                             :src="playerImage" 
                             :alt="playerProfile.member.playerName" 
@@ -25,27 +25,30 @@
                     <!-- Info -->
                     <div class="flex-1 text-left pb-1">
                         <div class="mb-2 lg:mb-4">
-                            <span class="text-primary font-bold text-sm lg:text-2xl uppercase tracking-widest block mb-0.5 lg:mb-1">{{ playerProfile.member.proName }}</span>
                             <h1 class="text-2xl lg:text-5xl font-black tracking-tighter leading-none">{{ playerProfile.member.playerName }}</h1>
                         </div>
                         
+                        <!-- Posiciones: como en PlayerCard, la principal en rojo y el resto en gris. Clic = filtrar por esa posición -->
                         <div class="flex flex-wrap gap-2 mb-3 lg:mb-4">
-                            <div v-for="pos in topPositions" :key="pos.name"
-                            :class="[
-                                (isPositionActive(Position[pos.name]) && posFilter !== null)
-                                    ? 'tooltip tooltip-open tooltip-bottom tooltip-neutral'
-                                    : ''
-                            ]" data-tip="Clic para ver todas las posiciones">
-                                 <button class="badge badge-primary badge-sm lg:badge-lg uppercase font-bold py-2 lg:py-3 shadow-sm cursor-pointer select-none"
-                                    :class="isPositionActive(Position[pos.name]) ? '' : 'badge-outline'"
+                            <div v-for="(pos, i) in topPositions" :key="pos.name"
+                            :class="posFilter === Position[pos.name] ? 'tooltip tooltip-open tooltip-bottom tooltip-neutral' : ''"
+                            data-tip="Clic para ver todas las posiciones">
+                                 <!-- color = principal (rojo) / secundaria (gris); selección = anillo y el resto atenuado -->
+                                 <button class="badge badge-sm lg:badge-lg uppercase font-bold py-2 lg:py-3 cursor-pointer select-none transition-all rounded-full"
+                                    :class="[
+                                        i === 0 ? 'badge-primary' : 'badge-soft badge-primary',
+                                        posFilter === null ? '' : posFilter === Position[pos.name] ? 'ring-2 ring-base-content/70 ring-offset-2 ring-offset-base-200' : 'opacity-40 hover:opacity-70'
+                                    ]"
                                     @click="handlePosFilter(Position[pos.name])">
                                     {{ translatePosition(pos.name) }}
-                                    <span class="ml-1.5 font-semibold italic text-[0.95em] bg-base-100/20 rounded">{{ pos.percentage }}%</span>
+                                    <span class="ml-1.5 font-semibold italic text-[0.95em] opacity-80">{{ pos.percentage }}%</span>
                                  </button>
                             </div>
                         </div>
-                        <p v-if="playerProfile.member.proOverall" class="text-base-content/60 text-sm lg:text-lg">
-                            {{ playerProfile.member.proHeight }}cm · {{ playerProfile.member.proOverall }} OVR
+                        <p v-if="memberSince || lastMatchDate" class="text-base-content/60 text-sm lg:text-lg">
+                            <span v-if="memberSince">Desde: {{ memberSince }}</span>
+                            <span v-if="memberSince && lastMatchDate"> · </span>
+                            <span v-if="lastMatchDate">Última vez: {{ lastMatchDate }}</span>
                         </p>
                         <!-- Cuenta vinculada (Twitch) -->
                         <div v-if="linkedUser" class="mt-2 inline-flex items-center gap-2 rounded-full bg-base-100/60 pl-1 pr-3 py-1 text-xs lg:text-sm">
@@ -64,23 +67,14 @@
 
                 <!-- Global Filter -->
                 <div class="mt-6 flex justify-center">
-                    <div class="join dark:bg-base-100 bg-base-300 p-1 rounded-2xl">
-                        <button 
-                            v-for="mode in ['all', 'official', 'friendly']" 
-                            :key="mode"
-                            @click="filterMode = mode"
-                            class="btn btn-xs lg:btn-sm join-item capitalize border-none px-4 lg:px-6"
-                            :class="filterMode === mode ? 'btn-primary shadow-sm' : 'btn-ghost'">
-                            {{ mode === 'all' ? 'Todos' : mode === 'official' ? 'Oficiales' : 'Amistosos' }}
-                        </button>
-                    </div>
+                    <OptionToggle v-model="filterMode" :options="MATCH_SCOPE_OPTIONS" size="md" />
                 </div>
 
                 <!-- KPI Cards -->
                 <div class="flex flex-wrap gap-4 mt-8 lg:mt-12">
                     <div v-for="kpi in kpis" :key="kpi.label" class="kpi-card card dark:bg-base-100 bg-base-300 shadow-sm overflow-hidden group">
                         <div class="card-body p-4 lg:p-6 items-center text-center">
-                            <span class="text-base-content/50 uppercase text-xs font-black text-primary tracking-widest">{{ kpi.label }}</span>
+                            <span class="text-base-content/50 uppercase text-xs font-black tracking-widest">{{ kpi.label }}</span>
                             <span class="text-2xl lg:text-4xl font-black mt-1 tabular-nums">{{ kpi.value }}</span>
                         </div>
                     </div>
@@ -95,7 +89,7 @@
                 <!-- Estadísticas -->
                 <button 
                     @click="activeTab = 'stats'"
-                    class="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl transition-all duration-300 relative overflow-hidden group border"
+                    class="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl transition-all duration-300 relative overflow-hidden group border cursor-pointer"
                     :class="activeTab === 'stats' 
                         ? 'bg-primary text-primary-content shadow-xl scale-[1.02] z-10 border-primary' 
                         : 'bg-base-200/40 dark:bg-base-100/40 text-base-content/60 shadow-sm border-transparent hover:border-primary/30 hover:bg-base-200/60 dark:hover:bg-base-100/60 hover:-translate-y-0.5'">
@@ -109,7 +103,7 @@
                 <!-- Historial -->
                 <button 
                     @click="activeTab = 'form'"
-                    class="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl transition-all duration-300 relative overflow-hidden group border"
+                    class="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl transition-all duration-300 relative overflow-hidden group border cursor-pointer"
                     :class="activeTab === 'form' 
                         ? 'bg-primary text-primary-content shadow-xl scale-[1.02] z-10 border-primary' 
                         : 'bg-base-200/40 dark:bg-base-100/40 text-base-content/60 shadow-sm border-transparent hover:border-primary/30 hover:bg-base-200/60 dark:hover:bg-base-100/60 hover:-translate-y-0.5'">
@@ -123,7 +117,7 @@
                 <!-- Logros -->
                 <button 
                     @click="activeTab = 'achievements'"
-                    class="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl transition-all duration-300 relative overflow-hidden group border"
+                    class="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl transition-all duration-300 relative overflow-hidden group border cursor-pointer"
                     :class="activeTab === 'achievements' 
                         ? 'bg-primary text-primary-content shadow-xl scale-[1.02] z-10 border-primary' 
                         : 'bg-base-200/40 dark:bg-base-100/40 text-base-content/60 shadow-sm border-transparent hover:border-primary/30 hover:bg-base-200/60 dark:hover:bg-base-100/60 hover:-translate-y-0.5'">
@@ -137,7 +131,7 @@
                 <!-- Comparador -->
                 <button 
                     @click="activeTab = 'compare'"
-                    class="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl transition-all duration-300 relative overflow-hidden group border"
+                    class="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl transition-all duration-300 relative overflow-hidden group border cursor-pointer"
                     :class="activeTab === 'compare' 
                         ? 'bg-primary text-primary-content shadow-xl scale-[1.02] z-10 border-primary' 
                         : 'bg-base-200/40 dark:bg-base-100/40 text-base-content/60 shadow-sm border-transparent hover:border-primary/30 hover:bg-base-200/60 dark:hover:bg-base-100/60 hover:-translate-y-0.5'">
@@ -198,6 +192,8 @@
     import { useMatches } from "@/composables/useMatches";
     import AverageStatsService from "@/services/AverageStatsService.ts";
     import PlayerStatsEntity from "@/model/PlayerStatsEntity";
+    import OptionToggle from "@/components/ui/OptionToggle.vue";
+    import { MATCH_SCOPE_OPTIONS, type MatchScope } from "@/lib/matchScope";
     import { Position, translatePosition } from "@/i18n/translations";
     import { getQueryParam } from "@/lib/query";
     import { playerImage as memberImage, onPlayerImageError } from "@/lib/playerImage";
@@ -228,7 +224,7 @@
     const errorText = playerProfileService.getError() || playerMatchesResource.error || averageStatsService.getError() as Ref<string>
 
     // State
-    const filterMode = ref('all') // all, official, friendly
+    const filterMode = ref<MatchScope>('all')
     
     let defaultTab = 'stats'
     if (typeof window !== 'undefined') {
@@ -317,6 +313,15 @@
             )
         )
     })
+
+    // Alta en el club (createdAt del miembro) y último partido (lastSeenAt en segundos)
+    const fmtMonth = (d?: Date | string | number | null) => {
+        if (!d) return ""
+        const date = typeof d === "number" ? new Date(d * 1000) : new Date(d)
+        return isNaN(date.getTime()) ? "" : date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })
+    }
+    const memberSince = computed(() => fmtMonth(playerProfile.value?.member.createdAt))
+    const lastMatchDate = computed(() => fmtMonth(playerProfile.value?.member.lastSeenAt))
 
     const topPositions = computed(() => {
         const stats = filteredStats.value

@@ -30,6 +30,7 @@
                             v-if="memberStatus==200 && !isMembersLoading"
                             v-model="selectedPlayerIds"
                             :items="memberItems"
+                            zoom="2xl"
                             multiple
                             title="Filtrar por jugadores"
                             placeholder="Todos los jugadores"
@@ -185,9 +186,9 @@
     const memberItems = computed<PickerItem[]>(() => members.value.map(m => ({
         id: m.playerId,
         name: m.playerName,
-        subtitle: [m.proName, m.proOverall ? `${m.proOverall} OVR` : ""].filter(Boolean).join(" · "),
         image: m.imageUrl,
-        positions: positionsOf(m.playerId)
+        positions: positionsOf(m.playerId),
+        member: m
     })))
 
 

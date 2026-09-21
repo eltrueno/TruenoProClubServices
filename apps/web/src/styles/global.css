@@ -17,8 +17,8 @@
   --color-primary-content: #ffffff;
   --color-secondary: #0037ff;
   --color-secondary-content: #ffffff;
-  /* Rojo de error más franco (el de DaisyUI tira a rosa) */
-  --color-error: #dc2626;
+  /* Error: un rojo coral, ni el rosa apagado de DaisyUI ni el rojo del club */
+  --color-error: #ef4444;
   --color-error-content: #ffffff;
   /* Redondeos, tamaños y bordes como en Tourney; sin el relieve 3D ni el ruido de DaisyUI 5 */
   --radius-selector: 0.5rem;
@@ -41,8 +41,8 @@
   --color-primary-content: #ffffff;
   --color-secondary: #0037ff;
   --color-secondary-content: #ffffff;
-  /* Rojo de error más franco (el de DaisyUI tira a rosa) */
-  --color-error: #dc2626;
+  /* Error: un rojo coral, ni el rosa apagado de DaisyUI ni el rojo del club */
+  --color-error: #ef4444;
   --color-error-content: #ffffff;
   /* Redondeos, tamaños y bordes como en Tourney; sin el relieve 3D ni el ruido de DaisyUI 5 */
   --radius-selector: 0.5rem;
