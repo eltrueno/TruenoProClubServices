@@ -113,7 +113,7 @@
 
 <script lang="ts" setup>
     import { onBeforeMount, type Ref, ref, computed, watch, type ComputedRef } from 'vue';
-    import ClubMatchesService from '@services/ClubMatchesService';
+    import { useMatches } from '@/composables/useMatches';
     import ClubMatchEntity from '@models/match/ClubMatchEntity'
     import MatchField from './MatchField.vue';
     import ClubMembersService from '@services/ClubMembersService';
@@ -122,19 +122,16 @@
     import DateRangePicker from "@/components/ui/DateRangePicker.vue";
     import PlayerPickerModal, { type PickerItem } from "@/components/ui/PlayerPickerModal.vue";
     import { PLAYER_PLACEHOLDER } from "@/lib/playerImage";
-    import { usePlayerPositions } from "@/composables/usePlayerPositions";
+    import { usePlayerStats } from "@/composables/usePlayerStats";
     import type MatchPlayerEntity from '@/model/match/MatchPlayerEntity';
     import { getQueryParam, hasQueryParam } from "@/lib/query";
 
-    const matchService = new ClubMatchesService()
-    const matches:Ref<ClubMatchEntity[]> = matchService.getData()
-    const isLoading = matchService.isloading
-    const status = matchService.getStatus()
+    const { matches, loading: isLoading, status, load: loadMatches } = useMatches()
 
     const memberService = new ClubMembersService()
     const members:Ref<ClubMember[]> = memberService.getData()
     const isMembersLoading = memberService.isloading
-    const memberStatus = matchService.getStatus()
+    const memberStatus = memberService.getStatus()
 
 
     const paginatorPage = ref(1)
@@ -142,8 +139,7 @@
 
     onBeforeMount(async ()=>{
         loadPositions()
-        await memberService.fetch()
-        await matchService.fetch()
+        await Promise.all([memberService.fetch(), loadMatches()])
         // ?player=<id> preselecciona ese jugador en el filtro
         const preselected = getQueryParam("player")
         if (preselected && members.value.some(m => m.playerId === preselected)) selectedPlayerIds.value = [preselected]
@@ -185,7 +181,7 @@
 
     /** ids de jugador marcados en el filtro (PlayerPickerModal múltiple) */
     const selectedPlayerIds = ref<string[]>([])
-    const { positionsOf, load: loadPositions } = usePlayerPositions()
+    const { positionsOf, load: loadPositions } = usePlayerStats()
     const memberItems = computed<PickerItem[]>(() => members.value.map(m => ({
         id: m.playerId,
         name: m.playerName,
@@ -327,4 +323,4 @@ input[type=number] {
   -moz-appearance: textfield;
 }
 
-</style>ClubMatchesServiceClubMatchesService
+</style>

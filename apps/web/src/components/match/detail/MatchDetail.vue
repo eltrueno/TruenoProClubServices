@@ -192,7 +192,7 @@
 </template>
 <script setup lang="ts">
     import { computed, onBeforeMount, ref, type Ref, watchEffect } from 'vue';
-    import ClubMatchService from '@services/ClubMatchService';
+    import { useMatches } from '@/composables/useMatches';
     import ClubMatchEntity from '@models/match/ClubMatchEntity'
     import FootbalField from './FootbalField.vue';   
     import  MatchPlayerEntity from '@/model/match/MatchPlayerEntity';
@@ -211,11 +211,11 @@
 
     const selectedPlayer = ref<number>(0)
 
-    const matchService = new ClubMatchService(props.matchId);
-    const match: Ref<ClubMatchEntity> = matchService.getData();
-    const isLoading = matchService.isloading;
-    const errorText = matchService.getError();
-    const hasError = matchService.getHasError();
+    const matchResource = useMatches().match(props.matchId)
+    const match = matchResource.data as Ref<ClubMatchEntity>
+    const isLoading = matchResource.loading
+    const errorText = matchResource.error
+    const hasError = matchResource.hasError
 
     const players = computed(() => {
         if (!match.value) return [];
@@ -592,7 +592,7 @@ function getPlayerSummaryText(player) {
     }
 
     onBeforeMount(async ()=>{
-        await Promise.all([matchService.fetch(), loadMembers()])
+        await Promise.all([matchResource.load(), loadMembers()])
     })
 
 </script>

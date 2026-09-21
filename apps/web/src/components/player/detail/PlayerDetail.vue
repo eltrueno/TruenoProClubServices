@@ -195,7 +195,7 @@
 <script setup lang="ts">
     import { ref, computed, onBeforeMount, watch, type Ref } from "vue";
     import PlayerProfileService from "@/services/PlayerProfileService";
-    import ClubMatchByPlayerService from "@/services/ClubMatchByPlayerService";
+    import { useMatches } from "@/composables/useMatches";
     import AverageStatsService from "@/services/AverageStatsService.ts";
     import PlayerStatsEntity from "@/model/PlayerStatsEntity";
     import { Position, translatePosition } from "@/i18n/translations";
@@ -217,15 +217,15 @@
     const playerProfileService = new PlayerProfileService(playerId)
     const playerProfile = playerProfileService.getData()
 
-    const clubMatchByPlayerService = new ClubMatchByPlayerService(playerId)
-    const playerMatches = clubMatchByPlayerService.getData()
+    const playerMatchesResource = useMatches().playerMatches(playerId)
+    const playerMatches = playerMatchesResource.data
 
     const averageStatsService = new AverageStatsService()
     const averageStats = averageStatsService.getData()
 
-    const isloading = playerProfileService.isloading || clubMatchByPlayerService.isloading || averageStatsService.isloading as Ref<boolean>
-    const hasError = playerProfileService.getHasError() || clubMatchByPlayerService.getHasError() || averageStatsService.getHasError() as Ref<boolean>
-    const errorText = playerProfileService.getError() || clubMatchByPlayerService.getError() || averageStatsService.getError() as Ref<string>
+    const isloading = playerProfileService.isloading || playerMatchesResource.loading || averageStatsService.isloading as Ref<boolean>
+    const hasError = playerProfileService.getHasError() || playerMatchesResource.hasError || averageStatsService.getHasError() as Ref<boolean>
+    const errorText = playerProfileService.getError() || playerMatchesResource.error || averageStatsService.getError() as Ref<string>
 
     // State
     const filterMode = ref('all') // all, official, friendly
@@ -266,7 +266,7 @@
             playerProfileService.isloading.value = false
             return
         }
-        await Promise.all([playerProfileService.fetch(), clubMatchByPlayerService.fetch(), averageStatsService.fetch(), useMembers().load()])
+        await Promise.all([playerProfileService.fetch(), playerMatchesResource.load(), averageStatsService.fetch(), useMembers().load()])
     }
 
     onBeforeMount(fetchData)
