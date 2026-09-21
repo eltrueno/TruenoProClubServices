@@ -98,6 +98,24 @@ export const tpcsApi = {
     admin: {
         patchMember: (playerId: string, patch: IClubMemberAdminPatch) =>
             api<IClubMember>(`/admin/members/${encodeURIComponent(playerId)}`, { method: "PATCH", body: patch, credentials: true }),
+        /** Sube la foto ya recortada (PNG 400x450 en data URL) a R2 y la asigna al jugador */
+        uploadMemberImage: (playerId: string, imageDataUrl: string) =>
+            api<IClubMember>(`/admin/members/${encodeURIComponent(playerId)}/image`, { method: "POST", body: { image: imageDataUrl }, credentials: true }),
+        /** Descarga una imagen remota vía api (POST a propósito: exige preflight) para pintarla en canvas sin CORS */
+        fetchImageViaProxy: async (url: string): Promise<Blob> => {
+            const res = await fetch(`${API_URL}/admin/image-proxy`, {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url })
+            })
+            if (!res.ok) {
+                const body = await res.json().catch(() => null)
+                const code = body?.status?.message || `HTTP_${res.status}`
+                throw new ApiError(code, code, res.status)
+            }
+            return res.blob()
+        },
         linkRequests: () => api<ILinkRequest[]>("/admin/link-requests", { credentials: true }),
         approveLinkRequest: (id: string) =>
             api<{ request: ILinkRequest; member: IClubMember }>(`/admin/link-requests/${encodeURIComponent(id)}/approve`, { method: "POST", credentials: true }),

@@ -43,7 +43,7 @@ Puedes ver el sistema en funcionamiento en el despliegue oficial de **Casemuro C
 
 ##### **api** — REST API
 - **Stack**: Express + Mongoose.
-- Club, miembros, partidos, stats, logros, HOF/HOS, medias por posición, solicitudes de vinculación cuenta ↔ jugador y panel admin (foto, cuenta vinculada y aprobación de solicitudes).
+- Club, miembros, partidos, stats, logros, HOF/HOS, medias por posición, solicitudes de vinculación cuenta ↔ jugador y panel admin (foto —editor de encuadre a 400×450 con subida a Cloudflare R2—, cuenta vinculada y aprobación de solicitudes).
 - Rutas protegidas validando la sesión contra el servicio de auth.
 - 📖 **Endpoints: [docs/API.md](docs/API.md)**
 
@@ -288,7 +288,7 @@ This project is an **evolution** of [Caracantosmeaos](https://github.com/Caracan
 
 #### `/apps`
 
-- **api** — Express + Mongoose REST API: club, members, matches, stats, achievements, HOF/HOS, position averages, account ↔ player link requests and an admin panel backend (player photo, linked account, request approval). Protected routes validate the session against the auth service. 📖 **Endpoints: [docs/API.md](docs/API.md)**
+- **api** — Express + Mongoose REST API: club, members, matches, stats, achievements, HOF/HOS, position averages, account ↔ player link requests and an admin panel backend (player photo with a 400×450 crop editor uploading to Cloudflare R2, linked account, request approval). Protected routes validate the session against the auth service. 📖 **Endpoints: [docs/API.md](docs/API.md)**
 - **worker** — Every `WORKER_INTERVAL` seconds fetches new matches from EA, normalizes them (`MatchDTO`), registers the members that appear, accumulates stats, evaluates achievements and publishes RabbitMQ events. Weekly team-of-the-week job. Enriches members (`proName`, `proOverall`…) from EA without overwriting good data with empty values.
 - **auth** — Express + Better Auth + MongoDB: Twitch login, follow/sub/role sync, public users endpoint and admin user listing.
 - **web** — Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5 frontend. Fully static, deployed to GitHub Pages (`.github/workflows/deploy-web.yml`, custom domain via `public/CNAME`). Dynamic pages take query params read client-side (`/jugador?id=<playerId>`, `/partido?id=<matchId>`, `/totw?semana=…&tipo=…`). Admin panel at `/admin` (pending link requests, player photo and linked account, `admin` role only); users request the link to their player from `/micuenta`. Configured through `PUBLIC_*` env vars (`apps/web/.env.example`).

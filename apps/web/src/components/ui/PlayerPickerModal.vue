@@ -8,6 +8,7 @@
 import { computed, nextTick, ref, watch } from "vue"
 import { PLAYER_POSITIONS, type PlayerPosition } from "@trueno-proclub-services/shared"
 import { translatePosition } from "@/i18n/translations"
+import PlayerCard from "./PlayerCard.vue"
 
 export interface PickerItem {
     id: string
@@ -21,7 +22,6 @@ export interface PickerItem {
     disabled?: boolean
 }
 
-const POSITION_SHORT: Record<PlayerPosition, string> = { goalkeeper: "POR", defender: "DEF", midfielder: "MC", forward: "DEL" }
 
 const props = withDefaults(defineProps<{
     items: PickerItem[]
@@ -141,7 +141,7 @@ defineExpose({ open, close })
     </slot>
 
     <dialog ref="dialog" class="modal modal-bottom sm:modal-middle">
-        <div class="modal-box bg-base-200 border border-base-300 shadow-2xl max-w-2xl p-0 flex flex-col max-h-[85vh]">
+        <div class="modal-box bg-base-200 border border-base-300 shadow-2xl max-w-2xl p-0 flex flex-col h-[min(85vh,40rem)] max-h-[85vh]">
             <div class="px-5 py-4 border-b border-base-300 shrink-0 flex flex-col gap-3">
                 <div class="flex items-center justify-between gap-2">
                     <h3 class="font-bold text-lg">{{ title }}</h3>
@@ -179,23 +179,25 @@ defineExpose({ open, close })
                             :disabled="item.disabled"
                             @click="pick(item)"
                         >
-                            <div class="shrink-0 overflow-hidden bg-base-300" :class="imageShape === 'avatar' ? 'size-10 rounded-full' : 'w-10 h-12 rounded-lg'">
-                                <img
-                                    v-if="item.image || fallbackImage"
-                                    :src="item.image || fallbackImage"
-                                    :alt="item.name"
-                                    class="w-full h-full object-cover object-top"
-                                    :class="{ 'scale-[1.6] origin-top': imageShape === 'player' }"
-                                />
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <p class="font-bold text-sm truncate">{{ item.name }}</p>
-                                <p v-if="item.subtitle" class="text-xs opacity-60 truncate">{{ item.subtitle }}</p>
-                                <p v-if="item.positions?.length" class="flex gap-1 mt-0.5">
-                                    <span v-for="(pos, i) in item.positions" :key="pos" class="badge badge-xs font-bold" :class="i === 0 ? 'badge-primary' : 'badge-ghost'" :title="translatePosition(pos)">{{ POSITION_SHORT[pos] }}</span>
-                                </p>
+                            <PlayerCard
+                                v-if="imageShape === 'player'"
+                                class="flex-1"
+                                :member="{ playerId: item.id, playerName: item.name, imageUrl: item.image || fallbackImage || null }"
+                                :positions="item.positions"
+                            >
+                                <p v-if="item.subtitle" class="text-xs text-base-content/60 truncate">{{ item.subtitle }}</p>
                                 <p v-if="item.hint" class="text-[10px] text-warning truncate">{{ item.hint }}</p>
-                            </div>
+                            </PlayerCard>
+                            <template v-else>
+                                <div class="shrink-0 overflow-hidden bg-base-300 size-10 rounded-full">
+                                    <img v-if="item.image || fallbackImage" :src="item.image || fallbackImage" :alt="item.name" class="w-full h-full object-cover" />
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="font-bold text-sm truncate">{{ item.name }}</p>
+                                    <p v-if="item.subtitle" class="text-xs opacity-60 truncate">{{ item.subtitle }}</p>
+                                    <p v-if="item.hint" class="text-[10px] text-warning truncate">{{ item.hint }}</p>
+                                </div>
+                            </template>
                             <input v-if="multiple" type="checkbox" class="checkbox checkbox-primary checkbox-sm pointer-events-none" :checked="isChecked(item.id)" tabindex="-1" />
                             <span v-else-if="isChecked(item.id)" class="text-primary font-bold">✓</span>
                         </button>

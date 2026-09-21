@@ -29,6 +29,8 @@ const getByUserId = async (userId: string) => {
     return ClubMemberModel.findOne({ userId }, { _id: 0 })
 }
 
+const exists = async (playerId: string) => !!(await ClubMemberModel.exists({ playerId }))
+
 /** Solo los campos gestionados desde el panel admin */
 const adminPatch = async (playerId: string, patch: IClubMemberAdminPatch) => {
     // Una cuenta solo puede estar vinculada a un jugador: si se asigna, se libera de cualquier otro
@@ -42,4 +44,4 @@ const adminPatch = async (playerId: string, patch: IClubMemberAdminPatch) => {
     )
 }
 
-export { getProfileById, getAll, getByUserId, adminPatch }
+export { getProfileById, getAll, getByUserId, exists, adminPatch }
