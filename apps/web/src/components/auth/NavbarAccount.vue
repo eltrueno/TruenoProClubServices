@@ -40,16 +40,16 @@ onUnmounted(() => {
         tabindex="0"
         role="button"
         class="btn btn-sm h-9 rounded-full border-none bg-white text-black hover:bg-gray-100 px-2 sm:pr-3 shadow-md gap-2"
-        aria-label="Mi cuenta"
+        aria-label="Mi Cuenta"
       >
         <div class="avatar">
-          <div v-if="isLoggedIn && user?.image" class="size-7 rounded-full ring-1 ring-primary ring-offset-white ring-offset-1">
+          <div v-if="isLoggedIn && user?.image" class="size-7 rounded-full">
             <img :src="user.image" :alt="user.name || 'Usuario'" />
           </div>
           <UserRound v-else class="size-7 opacity-80" />
         </div>
-        <span class="hidden sm:inline font-bold text-xs uppercase max-w-32 truncate">
-          {{ isLoggedIn ? user?.name : 'Cuenta' }}
+        <span class="hidden sm:inline font-semibold text-sm max-w-32 truncate">
+          {{ isLoggedIn ? user?.name : 'Inicia Sesión' }}
         </span>
         <ChevronDown class="size-4 opacity-70" />
       </div>

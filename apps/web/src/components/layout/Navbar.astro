@@ -67,15 +67,18 @@ const isActive = (href: string) => href === currentPath;
 </script>
 
 <style>
-    /* DaisyUI 5 pinta el hover de btn-ghost con base-content (oscuro sobre el rojo); aquí va con el color del texto */
-    .btn-ghost:hover,
-    .btn-ghost.nav-active {
-        --btn-bg: color-mix(in oklab, var(--color-primary-content) 15%, transparent);
-        --btn-border: transparent;
+    /* DaisyUI 5 pinta btn-ghost con base-content (negro en el tema claro): en la nav roja siempre blanco */
+    .btn-ghost {
         --btn-fg: var(--color-primary-content);
+        --btn-border: transparent;
+        color: var(--color-primary-content);
     }
     .btn-ghost:hover {
         --btn-bg: color-mix(in oklab, var(--color-primary-content) 25%, transparent);
+    }
+    /* Página actual: fondo translúcido */
+    .btn-ghost.nav-active {
+        --btn-bg: color-mix(in oklab, var(--color-primary-content) 18%, transparent);
     }
 
     :root {
