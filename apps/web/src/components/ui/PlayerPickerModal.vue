@@ -6,6 +6,8 @@
  * El disparador es el botón por defecto o lo que se pase en el slot (recibe `open`).
  */
 import { computed, nextTick, ref, watch } from "vue"
+import { PLAYER_POSITIONS, type PlayerPosition } from "@trueno-proclub-services/shared"
+import { translatePosition } from "@/i18n/translations"
 
 export interface PickerItem {
     id: string
@@ -14,8 +16,12 @@ export interface PickerItem {
     image?: string | null
     /** aviso pequeño bajo el nombre (p. ej. "ya vinculada a X") */
     hint?: string
+    /** posiciones jugadas, la más jugada primero (activa el filtro por posición) */
+    positions?: PlayerPosition[]
     disabled?: boolean
 }
+
+const POSITION_SHORT: Record<PlayerPosition, string> = { goalkeeper: "POR", defender: "DEF", midfielder: "MC", forward: "DEL" }
 
 const props = withDefaults(defineProps<{
     items: PickerItem[]
@@ -50,6 +56,8 @@ const emit = defineEmits<{ (e: "update:modelValue", value: string | string[] | n
 const dialog = ref<HTMLDialogElement | null>(null)
 const searchInput = ref<HTMLInputElement | null>(null)
 const search = ref("")
+const positionFilter = ref<PlayerPosition | null>(null)
+const hasPositions = computed(() => props.items.some((i) => i.positions?.length))
 // En múltiple se trabaja sobre una copia y se aplica al cerrar con "Aplicar"
 const draft = ref<string[]>([])
 
@@ -70,7 +78,8 @@ const filtered = computed(() => {
     const q = normalize(search.value.trim())
     // Sin id no se puede seleccionar (p. ej. datos antiguos sin playerId)
     const valid = props.items.filter((i) => !!i.id)
-    const list = q ? valid.filter((i) => normalize(i.name).includes(q) || normalize(i.subtitle ?? "").includes(q)) : valid
+    let list = q ? valid.filter((i) => normalize(i.name).includes(q) || normalize(i.subtitle ?? "").includes(q)) : valid
+    if (positionFilter.value) list = list.filter((i) => i.positions?.includes(positionFilter.value!))
     // Seleccionados primero para verlos sin buscar
     const current = props.multiple ? draft.value : selectedIds.value
     return [...list].sort((a, b) => Number(current.includes(b.id)) - Number(current.includes(a.id)))
@@ -81,6 +90,7 @@ const isChecked = (id: string) => (props.multiple ? draft.value : selectedIds.va
 const open = async () => {
     if (props.disabled) return
     search.value = ""
+    positionFilter.value = null
     draft.value = [...selectedIds.value]
     dialog.value?.showModal()
     await nextTick()
@@ -142,6 +152,17 @@ defineExpose({ open, close })
                     <input ref="searchInput" v-model="search" type="text" class="grow" :placeholder="searchPlaceholder" />
                     <kbd v-if="search" class="kbd kbd-xs cursor-pointer" @click="search = ''">✕</kbd>
                 </label>
+                <div v-if="hasPositions" class="flex flex-wrap gap-1">
+                    <button type="button" class="btn btn-xs" :class="positionFilter === null ? 'btn-primary' : 'btn-ghost'" @click="positionFilter = null">Todas</button>
+                    <button
+                        v-for="pos in PLAYER_POSITIONS"
+                        :key="pos"
+                        type="button"
+                        class="btn btn-xs"
+                        :class="positionFilter === pos ? 'btn-primary' : 'btn-ghost'"
+                        @click="positionFilter = positionFilter === pos ? null : pos"
+                    >{{ translatePosition(pos) }}</button>
+                </div>
             </div>
 
             <div class="overflow-y-auto flex-1 min-h-0 p-3">
@@ -159,11 +180,20 @@ defineExpose({ open, close })
                             @click="pick(item)"
                         >
                             <div class="shrink-0 overflow-hidden bg-base-300" :class="imageShape === 'avatar' ? 'size-10 rounded-full' : 'w-10 h-12 rounded-lg'">
-                                <img v-if="item.image || fallbackImage" :src="item.image || fallbackImage" :alt="item.name" class="w-full h-full object-cover object-top" />
+                                <img
+                                    v-if="item.image || fallbackImage"
+                                    :src="item.image || fallbackImage"
+                                    :alt="item.name"
+                                    class="w-full h-full object-cover object-top"
+                                    :class="{ 'scale-[1.6] origin-top': imageShape === 'player' }"
+                                />
                             </div>
                             <div class="min-w-0 flex-1">
                                 <p class="font-bold text-sm truncate">{{ item.name }}</p>
                                 <p v-if="item.subtitle" class="text-xs opacity-60 truncate">{{ item.subtitle }}</p>
+                                <p v-if="item.positions?.length" class="flex gap-1 mt-0.5">
+                                    <span v-for="(pos, i) in item.positions" :key="pos" class="badge badge-xs font-bold" :class="i === 0 ? 'badge-primary' : 'badge-ghost'" :title="translatePosition(pos)">{{ POSITION_SHORT[pos] }}</span>
+                                </p>
                                 <p v-if="item.hint" class="text-[10px] text-warning truncate">{{ item.hint }}</p>
                             </div>
                             <input v-if="multiple" type="checkbox" class="checkbox checkbox-primary checkbox-sm pointer-events-none" :checked="isChecked(item.id)" tabindex="-1" />

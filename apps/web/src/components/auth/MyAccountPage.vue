@@ -8,6 +8,7 @@ import { routes } from "@/lib/query"
 import { playerImage, onPlayerImageError, PLAYER_PLACEHOLDER } from "@/lib/playerImage"
 import { ApiError, tpcsApi } from "@/lib/api"
 import PlayerPickerModal, { type PickerItem } from "@/components/ui/PlayerPickerModal.vue"
+import { usePlayerPositions } from "@/composables/usePlayerPositions"
 import type { IClubMember, ILinkRequest } from "@trueno-proclub-services/shared"
 
 const { user, syncTwitch, logout, deleteAccount, isLoggedIn, isPending, myMember, loadMyMember } = useAuth()
@@ -17,16 +18,19 @@ const linkRequest = ref<ILinkRequest | null>(null)
 const linkPlayers = ref<IClubMember[]>([])
 const linkPlayerId = ref<string | null>(null)
 const linkBusy = ref(false)
+const { positionsOf, load: loadPositions } = usePlayerPositions()
 const linkPlayerItems = computed<PickerItem[]>(() => linkPlayers.value.map((m) => ({
   id: m.playerId,
   name: m.playerName,
   subtitle: [m.proName, m.proOverall ? `${m.proOverall} OVR` : ""].filter(Boolean).join(" · "),
-  image: m.imageUrl
+  image: m.imageUrl,
+  positions: positionsOf(m.playerId)
 })))
 const linkError = ref("")
 
 const loadLinkState = async () => {
   try {
+    loadPositions()
     const [req, members] = await Promise.all([tpcsApi.members.getMyLinkRequest(), tpcsApi.members.getAll()])
     linkRequest.value = req
     // Solo se puede pedir un jugador que no tenga ya cuenta

@@ -35,6 +35,8 @@
   name: "dark";
   prefersdark: true;
   color-scheme: dark;
+  /* Texto gris claro como en DaisyUI 4 (v5 lo pone casi blanco) */
+  --color-base-content: #a6adbb;
   --color-primary: #c80d0d;
   --color-primary-content: #ffffff;
   --color-secondary: #0037ff;
