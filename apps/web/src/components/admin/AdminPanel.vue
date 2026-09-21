@@ -6,6 +6,7 @@ import { ApiError, authApi, tpcsApi } from "@/lib/api"
 import { playerImage, onPlayerImageError } from "@/lib/playerImage"
 import { routes } from "@/lib/query"
 import AuthGuard from "@/components/auth/AuthGuard.vue"
+import PlayerPickerModal, { type PickerItem } from "@/components/ui/PlayerPickerModal.vue"
 
 type AdminUser = IPublicUser & { role: string; twitchId: string | null; discordId: string | null }
 
@@ -23,6 +24,20 @@ const saving = ref<Record<string, boolean>>({})
 const rowMessage = ref<Record<string, { ok: boolean; text: string }>>({})
 
 const usersById = computed(() => new Map(users.value.map((u) => [u.id, u])))
+
+/** Cuentas para el selector de una fila: aviso si ya están en otro jugador */
+function userItemsFor(playerId: string): PickerItem[] {
+    return users.value.map((u) => {
+        const other = linkedElsewhere(u.id, playerId)
+        return {
+            id: u.id,
+            name: u.name,
+            subtitle: u.role !== "visitor" ? u.role : undefined,
+            image: u.image,
+            hint: other ? `Ya vinculada a ${other.playerName}` : undefined
+        }
+    })
+}
 
 // Solicitudes de vinculación pendientes (las crean los usuarios desde "Mi cuenta")
 const linkRequests = ref<ILinkRequest[]>([])
@@ -228,12 +243,15 @@ onMounted(() => {
                         <!-- Cuenta -->
                         <label class="form-control w-full">
                             <span class="label-text text-[10px] uppercase font-black tracking-wider text-base-content/50 mb-1">Cuenta vinculada</span>
-                            <select v-model="draftFor(m).userId" class="select select-bordered select-sm w-full">
-                                <option value="">— Sin vincular —</option>
-                                <option v-for="u in users" :key="u.id" :value="u.id">
-                                    {{ u.name }}{{ u.role !== "visitor" ? ` (${u.role})` : "" }}{{ linkedElsewhere(u.id, m.playerId) ? ` · ya en ${linkedElsewhere(u.id, m.playerId)!.playerName}` : "" }}
-                                </option>
-                            </select>
+                            <PlayerPickerModal
+                                :model-value="draftFor(m).userId || null"
+                                @update:model-value="(v) => (draftFor(m).userId = (v as string | null) ?? '')"
+                                :items="userItemsFor(m.playerId)"
+                                :title="`Cuenta para ${m.playerName}`"
+                                placeholder="— Sin vincular —"
+                                search-placeholder="Buscar cuenta…"
+                                image-shape="avatar"
+                            />
                             <span v-if="draftFor(m).userId && linkedElsewhere(draftFor(m).userId, m.playerId)" class="text-[10px] text-warning mt-1">
                                 Esta cuenta está vinculada a {{ linkedElsewhere(draftFor(m).userId, m.playerId)!.playerName }}; al guardar pasará a este jugador.
                             </span>

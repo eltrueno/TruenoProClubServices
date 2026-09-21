@@ -26,23 +26,18 @@
                     <DateRangePicker v-model="dateFilter" size="md" />
                     <div class="form-control flex flex-col h-full justify-between">
                         <span class="text-center font-semibold">Filtrar por jugadores</span>
-                        <div class="dropdown w-full justify-center self-center mt-1" v-if="memberStatus==200 && !isMembersLoading">
-                            <div tabindex="0" role="button" class="btn btn-block btn-outline" v-if="filteredPlayerIds.length>0">{{ filteredPlayerNamesPretty }}</div>
-                            <div tabindex="0" role="button" class="btn btn-block btn-outline" v-else>Desplegar lista de jugadores</div>
-                            <ul tabindex="0" class="dropdown-content menu  bg-base-200 dark:bg-base-300 rounded-md z-20 w-full p-2 shadow-sm dark:shadow-md max-h-96 overflow-y-auto flex-nowrap">
-                                <li>
-                                    <input type="text" placeholder="Buscar por nombre de jugador" class="input input-bordered w-full" v-model="playerNameFilter"/>
-                                </li>
-                                <li v-for="pl in members.filter(m => normalize(m.playerName).includes(normalize(playerNameFilter)))" :key="pl.playerId" class="">
-                                    <a class="flex flex-row w-full justify-between p-0" >
-                                        <label class="label cursor-pointer h-full flex flex-row w-full justify-between">
-                                            <span class="label-text">{{ pl.playerName }}</span> 
-                                            <input type="checkbox" class="checkbox checkbox-sm" v-model="playersFilter[pl.playerId]" /> 
-                                        </label>
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
+                        <PlayerPickerModal
+                            v-if="memberStatus==200 && !isMembersLoading"
+                            v-model="selectedPlayerIds"
+                            :items="memberItems"
+                            multiple
+                            title="Filtrar por jugadores"
+                            placeholder="Todos los jugadores"
+                            search-placeholder="Buscar jugador…"
+                            :fallback-image="PLAYER_PLACEHOLDER"
+                            size="md"
+                            class="mt-1"
+                        />
                     </div>
                 </div>
                 <div class="form-control flex flex-col h-full justify-between ">
@@ -125,6 +120,8 @@
     import ClubMember from '@/model/ClubMemberEntity'
     import Paginator from '@components/Paginator.vue';
     import DateRangePicker from "@/components/ui/DateRangePicker.vue";
+    import PlayerPickerModal, { type PickerItem } from "@/components/ui/PlayerPickerModal.vue";
+    import { PLAYER_PLACEHOLDER } from "@/lib/playerImage";
     import type MatchPlayerEntity from '@/model/match/MatchPlayerEntity';
     import { getQueryParam, hasQueryParam } from "@/lib/query";
 
@@ -145,10 +142,9 @@
     onBeforeMount(async ()=>{
         await memberService.fetch()
         await matchService.fetch()
-        members.value.forEach(e => { playersFilter.value[e.playerId] = false })
         // ?player=<id> preselecciona ese jugador en el filtro
         const preselected = getQueryParam("player")
-        if (preselected && preselected in playersFilter.value) playersFilter.value[preselected] = true
+        if (preselected && members.value.some(m => m.playerId === preselected)) selectedPlayerIds.value = [preselected]
     })
 
     // Filtros iniciales por query: ?id, ?desde, ?hasta, ?liga, ?playoff, ?amistoso, ?player (si no se indica ningún tipo, todos)
@@ -168,7 +164,6 @@
     }
 
     const IDFilter = ref(props.matchId)
-    const playerNameFilter = ref("")
     const leagueFilter = ref(props.matchTypeLeague);
     const playoffFilter = ref(props.matchTypePlayoff);
     const friendlyFilter = ref(props.matchTypeFriendly);
@@ -186,29 +181,22 @@
 
     const minPlayersFilter = ref(2)
 
-    const playersFilter = ref({})
+    /** ids de jugador marcados en el filtro (PlayerPickerModal múltiple) */
+    const selectedPlayerIds = ref<string[]>([])
+    const memberItems = computed<PickerItem[]>(() => members.value.map(m => ({
+        id: m.playerId,
+        name: m.playerName,
+        subtitle: [m.proName, m.proOverall ? `${m.proOverall} OVR` : ""].filter(Boolean).join(" · "),
+        image: m.imageUrl
+    })))
 
-    function togglePlayerFilter(player){
-        console.log(player)
-        console.log(playersFilter.value)
-    }
 
-    const normalize = (str:string) =>
-                str
-                    ?.toLowerCase()
-                    .normalize("NFD")
-                    .replace(/[\u0300-\u036f]/g, "") ?? "";
-
-    /** ids de jugador marcados en el filtro */
-    const filteredPlayerIds = computed(() => Object.entries(playersFilter.value).filter(([, v]) => v).map(([id]) => id))
-    const filteredPlayerNamesPretty = computed(() =>
-        filteredPlayerIds.value.map(id => members.value.find(m => m.playerId === id)?.playerName ?? id).join(", ")
-    )
+    const filteredPlayerIds = selectedPlayerIds
     const playerIds = (players: MatchPlayerEntity[]) => players.map(p => p.playerId)
     
     //watch for filter changes and reset pagination
     watch(
-        [IDFilter,dateFilter,matchTypeFilter,minPlayersFilter,playersFilter],
+        [IDFilter,dateFilter,matchTypeFilter,minPlayersFilter,selectedPlayerIds],
         () =>{
             paginatorPage.value = 1
         }

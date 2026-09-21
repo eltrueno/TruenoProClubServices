@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from "vue"
+import { ref, computed, onMounted, onUnmounted, watch } from "vue"
 import { useAuth } from "@/composables/useAuth"
 import AuthGuard from "@/components/auth/AuthGuard.vue"
 import LoginWall from "@/components/auth/LoginWall.vue"
 import { translateRole } from "@/i18n/translations"
 import { routes } from "@/lib/query"
-import { playerImage, onPlayerImageError } from "@/lib/playerImage"
+import { playerImage, onPlayerImageError, PLAYER_PLACEHOLDER } from "@/lib/playerImage"
 import { ApiError, tpcsApi } from "@/lib/api"
+import PlayerPickerModal, { type PickerItem } from "@/components/ui/PlayerPickerModal.vue"
 import type { IClubMember, ILinkRequest } from "@trueno-proclub-services/shared"
 
 const { user, syncTwitch, logout, deleteAccount, isLoggedIn, isPending, myMember, loadMyMember } = useAuth()
@@ -14,8 +15,14 @@ const { user, syncTwitch, logout, deleteAccount, isLoggedIn, isPending, myMember
 // Solicitud de vinculación cuenta ↔ jugador (la aprueba un admin desde /admin)
 const linkRequest = ref<ILinkRequest | null>(null)
 const linkPlayers = ref<IClubMember[]>([])
-const linkPlayerId = ref("")
+const linkPlayerId = ref<string | null>(null)
 const linkBusy = ref(false)
+const linkPlayerItems = computed<PickerItem[]>(() => linkPlayers.value.map((m) => ({
+  id: m.playerId,
+  name: m.playerName,
+  subtitle: [m.proName, m.proOverall ? `${m.proOverall} OVR` : ""].filter(Boolean).join(" · "),
+  image: m.imageUrl
+})))
 const linkError = ref("")
 
 const loadLinkState = async () => {
@@ -445,10 +452,18 @@ const icons = {
 
           <!-- Sin jugador ni solicitud: elegir jugador y pedir vinculación -->
           <form v-if="!myMember && !linkRequest" class="mt-4 flex flex-col sm:flex-row gap-2" @submit.prevent="requestLink">
-            <select v-model="linkPlayerId" class="select select-bordered select-sm w-full sm:flex-1" required>
-              <option value="" disabled>Elige tu jugador…</option>
-              <option v-for="m in linkPlayers" :key="m.playerId" :value="m.playerId">{{ m.playerName }}<template v-if="m.proName"> · {{ m.proName }}</template></option>
-            </select>
+            <div class="w-full sm:flex-1">
+              <PlayerPickerModal
+                v-model="linkPlayerId"
+                :items="linkPlayerItems"
+                title="¿Quién eres en el club?"
+                placeholder="Elige tu jugador…"
+                search-placeholder="Buscar por nombre o pro…"
+                empty-text="Ningún jugador libre coincide"
+                :fallback-image="PLAYER_PLACEHOLDER"
+                :clearable="false"
+              />
+            </div>
             <button type="submit" class="btn btn-sm btn-primary rounded-lg font-bold" :disabled="!linkPlayerId || linkBusy">
               <span v-if="linkBusy" class="loading loading-spinner loading-xs"></span>
               Solicitar vinculación
