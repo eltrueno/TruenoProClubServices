@@ -122,6 +122,7 @@
     import DateRangePicker from "@/components/ui/DateRangePicker.vue";
     import PlayerPickerModal, { type PickerItem } from "@/components/ui/PlayerPickerModal.vue";
     import { PLAYER_PLACEHOLDER } from "@/lib/playerImage";
+    import { usePlayerPositions } from "@/composables/usePlayerPositions";
     import type MatchPlayerEntity from '@/model/match/MatchPlayerEntity';
     import { getQueryParam, hasQueryParam } from "@/lib/query";
 
@@ -140,6 +141,7 @@
     const paginatorItemsPerPage = 5
 
     onBeforeMount(async ()=>{
+        loadPositions()
         await memberService.fetch()
         await matchService.fetch()
         // ?player=<id> preselecciona ese jugador en el filtro
@@ -183,11 +185,13 @@
 
     /** ids de jugador marcados en el filtro (PlayerPickerModal múltiple) */
     const selectedPlayerIds = ref<string[]>([])
+    const { positionsOf, load: loadPositions } = usePlayerPositions()
     const memberItems = computed<PickerItem[]>(() => members.value.map(m => ({
         id: m.playerId,
         name: m.playerName,
         subtitle: [m.proName, m.proOverall ? `${m.proOverall} OVR` : ""].filter(Boolean).join(" · "),
-        image: m.imageUrl
+        image: m.imageUrl,
+        positions: positionsOf(m.playerId)
     })))
 
 

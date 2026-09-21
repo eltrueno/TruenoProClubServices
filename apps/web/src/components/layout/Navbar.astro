@@ -30,7 +30,7 @@ const isActive = (href: string) => href === currentPath;
         </a>
     </div>
 
-    <div class="space-x-1 absolute" class:list={[{ "links-anim": isindex }, { "right-[var(--links-right)]": !isindex }]}>
+    <div class="space-x-1 absolute" class:list={[{ "links-anim": isindex }, { "right-(--links-right)": !isindex }]}>
         {links.map((link) => {
             const Icon = link.icon;
             return (
