@@ -1,6 +1,6 @@
 // composables/useChartExternalTooltip.ts
 import { ref } from 'vue'
-import type { Chart, TooltipModel } from 'chart.js'
+import type { Chart, ChartType, TooltipModel } from 'chart.js'
 
 export interface TooltipPosition {
     visible: boolean
@@ -42,7 +42,7 @@ export function useChartExternalTooltip() {
         }, HIDE_DELAY)
     }
 
-    const externalTooltipHandler = (context: { chart: Chart; tooltip: TooltipModel<any> }) => {
+    const externalTooltipHandler = <TType extends ChartType = ChartType>(context: { chart: Chart<TType>; tooltip: TooltipModel<TType> }) => {
         if (tooltip.value.pinned) return
 
         const { tooltip: tooltipModel } = context

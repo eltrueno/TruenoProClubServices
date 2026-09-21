@@ -1,9 +1,16 @@
-import { authClient, SITE_URL } from "@/lib/auth"
-import { authApi, tpcsApi } from "@/lib/api"
+import { authClient, SITE_URL, type User } from "@/lib/auth"
+import { ApiError, authApi, tpcsApi, type ITwitchSyncResult } from "@/lib/api"
 import { UserRole, type IClubMember } from "@trueno-proclub-services/shared"
 import { computed, ref } from "vue"
 
-const _userOverride = ref<any>(null)
+/** Sesión de Better Auth (lo que devuelve `useSession().data`): usuario + datos de la sesión */
+export interface Session {
+    user: User
+    session: { id: string; userId: string; expiresAt: Date | string; token?: string }
+}
+
+// Tras sincronizar con Twitch se sobreescriben los campos del usuario sin esperar a la sesión nueva
+const _userOverride = ref<User | null>(null)
 // Jugador vinculado a la cuenta (members.userId): se carga bajo demanda y se comparte entre islas
 const _myMember = ref<IClubMember | null>(null)
 const _myMemberLoaded = ref(false)
@@ -16,11 +23,11 @@ if (typeof window !== "undefined") setTimeout(() => { _pendingTimedOut.value = t
 export function useAuth() {
     const sessionState = authClient.useSession()
 
-    const session = computed<any>(() => (sessionState.value as any)?.data ?? null)
+    const session = computed<Session | null>(() => (sessionState.value?.data as Session | null | undefined) ?? null)
     const isPending = computed(() => (sessionState.value?.isPending ?? false) && !_pendingTimedOut.value)
     const isLoggingIn = ref(false)
 
-    const user = computed(() => _userOverride.value ?? session.value?.user ?? null)
+    const user = computed<User | null>(() => _userOverride.value ?? session.value?.user ?? null)
     const isLoggedIn = computed(() => !!user.value)
     const isAdmin = computed(() => user.value?.role === UserRole.admin)
 
@@ -39,24 +46,27 @@ export function useAuth() {
     }
 
 
-    async function syncTwitch(silent?: boolean) {
-        let syncData: any
+    /** Sincroniza follow/sub/rol con Twitch. Devuelve el resultado, o `null` si hubo que relanzar el login. */
+    async function syncTwitch(silent?: boolean): Promise<ITwitchSyncResult | null> {
+        let syncData: ITwitchSyncResult
         try {
             syncData = await authApi.twitchSync()
-        } catch (e: any) {
-            syncData = { code: e?.code }
-        }
-        if (syncData.code === "TWITCH_TOKEN_EXPIRED") {
-            await loginWithTwitchPopup(true)
-            return
+        } catch (e) {
+            if (e instanceof ApiError && e.code === "TWITCH_TOKEN_EXPIRED") {
+                await loginWithTwitchPopup(true)
+                return null
+            }
+            throw e
         }
         //refresh session
         await authClient.$fetch("/get-session", { method: "GET" })
-        _userOverride.value = {
-            ...user.value,
-            twitchFollowing: syncData.twitchFollowing,
-            twitchSub: syncData.twitchSub,
-            role: syncData.role,
+        if (user.value) {
+            _userOverride.value = {
+                ...user.value,
+                twitchFollowing: syncData.twitchFollowing,
+                twitchSub: syncData.twitchSub,
+                role: syncData.role,
+            }
         }
         if (!silent) window.location.reload()
         return syncData

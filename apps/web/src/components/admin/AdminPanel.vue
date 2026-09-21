@@ -2,19 +2,18 @@
 import { computed, onMounted, ref } from "vue"
 import type { IClubMember, ILinkRequest, IPublicUser } from "@trueno-proclub-services/shared"
 import { useAuth } from "@/composables/useAuth"
-import { ApiError, authApi, tpcsApi } from "@/lib/api"
+import { ApiError, authApi, tpcsApi, type IAdminUser } from "@/lib/api"
 import { routes } from "@/lib/query"
 import AuthGuard from "@/components/auth/AuthGuard.vue"
 import PlayerPickerModal, { type PickerItem } from "@/components/ui/PlayerPickerModal.vue"
 import PlayerCard from "@/components/ui/PlayerCard.vue"
 import PlayerImageEditor from "@/components/admin/PlayerImageEditor.vue"
 
-type AdminUser = IPublicUser & { role: string; twitchId: string | null; discordId: string | null }
 
 const { isAdmin, isLoggedIn, isPending } = useAuth()
 
 const members = ref<IClubMember[]>([])
-const users = ref<AdminUser[]>([])
+const users = ref<IAdminUser[]>([])
 const loading = ref(true)
 const loadError = ref("")
 const search = ref("")
