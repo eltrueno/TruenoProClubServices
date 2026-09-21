@@ -26,10 +26,16 @@ export const createAuth = (db: any, onTwitchLogin?: (user: any) => Promise<void>
 
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
+      // El perfil (nombre, imagen…) viene de Twitch y no se edita a mano: por /update-user
+      // solo se admiten los ajustes de privacidad. El resto de campos ya llevan `input: false`.
       if (ctx.path === "/update-user") {
-        throw new APIError("FORBIDDEN", {
-          message: "Not allowed"
-        })
+        const allowed = new Set(["showPublicName", "showPublicImage"])
+        const keys = Object.keys((ctx.body ?? {}) as Record<string, unknown>)
+        if (keys.length === 0 || keys.some((k) => !allowed.has(k))) {
+          throw new APIError("FORBIDDEN", {
+            message: "Not allowed"
+          })
+        }
       }
     }),
   },
