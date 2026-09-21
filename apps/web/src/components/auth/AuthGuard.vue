@@ -20,7 +20,7 @@ onMounted(() => {
       <div class="w-full min-h-[80vh] flex flex-col items-center justify-center gap-6">
     <div class="relative">
       <div class="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-150"></div>
-      <span class="loading loading-ring loading-lg text-primary scale-150 relative z-10"></span>
+      <span class="loading loading-spinner loading-lg text-primary relative z-10"></span>
     </div>
     <div class="space-y-2 text-center animate-pulse">
       <p class="text-sm font-black tracking-[0.3em] uppercase opacity-70 text-base-content">Verificando sesión</p>

@@ -58,27 +58,44 @@ export const createAuth = (db: any, onTwitchLogin?: (user: any) => Promise<void>
 
   user: {
     additionalFields: {
+      // input: false => solo los pone el servidor (sync de Twitch / admin), nunca `updateUser` desde el cliente
       discordId: {
         type: "string",
-        required: false
+        required: false,
+        input: false
       },
       twitchId: {
         type: "string",
-        required: false
+        required: false,
+        input: false
       },
       twitchFollowing: {
         type: "boolean",
         required: false,
-        defaultValue: false
+        defaultValue: false,
+        input: false
       },
       twitchSub: {
         type: "boolean",
         required: false,
-        defaultValue: false
+        defaultValue: false,
+        input: false
       },
       role: {
         type: "string",
-        defaultValue: "visitor"
+        defaultValue: "visitor",
+        input: false
+      },
+      // Privacidad: qué se enseña de la cuenta cuando aparece vinculada a un jugador (lo cambia el propio usuario)
+      showPublicName: {
+        type: "boolean",
+        required: false,
+        defaultValue: true
+      },
+      showPublicImage: {
+        type: "boolean",
+        required: false,
+        defaultValue: true
       }
     },
     deleteUser: {

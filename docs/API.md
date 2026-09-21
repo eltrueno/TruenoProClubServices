@@ -115,7 +115,7 @@ Better Auth con proveedor social de **Twitch**. Cookie de sesión con dominio `C
 
 Todo lo que cuelga de `/api/auth/*` lo maneja Better Auth (sign-in social, callback, `get-session`, sign-out, delete-user…). Lo habitual desde la web se hace con el cliente (`better-auth/vue`) apuntando a `PUBLIC_AUTH_URL`. `update-user` está bloqueado (403).
 
-Campos extra del usuario: `role` (`visitor` \| `follower` \| `subscriber` \| `vip` \| `mod` \| `admin`), `twitchId`, `twitchFollowing`, `twitchSub`, `discordId`.
+Campos extra del usuario: `role` (`visitor` \| `follower` \| `subscriber` \| `vip` \| `mod` \| `admin`), `twitchId`, `twitchFollowing`, `twitchSub`, `discordId` (solo los escribe el servidor: `input: false`), y los de privacidad `showPublicName` / `showPublicImage` (booleanos, por defecto `true`; el usuario los cambia con `updateUser` desde Mi cuenta).
 
 | Método | Ruta | Descripción |
 |---|---|---|
@@ -127,7 +127,7 @@ Formato: `{ "status": "success", "data": … }` o `{ "status": "error", "message
 
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
-| `GET` | `/api/public/users?ids=a,b,c` | — | Datos públicos de usuarios (`IPublicUser[]`: `id`, `name`, `image`). Máx. 50 ids; 400 si ninguno es válido. Para mostrar la cuenta vinculada a un jugador. |
+| `GET` | `/api/public/users?ids=a,b,c` | — | Datos públicos de usuarios (`IPublicUser[]`: `id`, `name`, `image`). `name` / `image` vienen a `null` si el usuario los ha ocultado (`showPublicName` / `showPublicImage`). Máx. 50 ids; 400 si ninguno es válido. Para mostrar la cuenta vinculada a un jugador. |
 | `GET` | `/api/twitch/sync` | sesión | Re-sincroniza follow / sub / rol del usuario con Twitch. Errores: `NO_TWITCH_ACCOUNT` (404), `TWITCH_TOKEN_EXPIRED` (401), `MISSING_CHANNEL_ID` (500). |
 | `GET` | `/api/admin/users?q=texto` | sesión + `admin` | Lista de usuarios (`id`, `name`, `image`, `role`, `twitchId`, `discordId`) filtrada por nombre, máx. 200. Para el selector del panel admin. |
 | `GET` | `/health` | — | `{ "status": "ok" }`. |

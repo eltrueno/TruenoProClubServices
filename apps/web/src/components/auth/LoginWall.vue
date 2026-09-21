@@ -14,7 +14,7 @@ const privacyModal = ref(null)
         
         <!-- Estado de carga -->
         <div v-if="isPending" class="flex flex-col items-center gap-6 py-8">
-           <span class="loading loading-ring loading-lg text-primary scale-125"></span>
+           <span class="loading loading-spinner loading-lg text-primary"></span>
            <div class="space-y-2">
              <p class="text-sm font-black tracking-widest uppercase opacity-70 animate-pulse">Verificando sesión</p>
              <p class="text-xs opacity-40">Por favor, espera un momento...</p>
