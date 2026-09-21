@@ -17,8 +17,11 @@ export interface IClubMember {
     imageUrl?: string | null
     /** id del user de Better Auth vinculado (gestionado desde el panel admin) */
     userId?: string | null
-    /** timestamp del último partido en el que apareció */
+    /** timestamp (segundos) del último partido en el que apareció */
     lastSeenAt?: number
+    /** fecha de alta del doc (timestamps de mongoose): primera vez que se le vio en el club */
+    createdAt?: Date | string
+    updatedAt?: Date | string
 }
 
 /** Campos editables desde el panel admin */

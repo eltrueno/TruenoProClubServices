@@ -18,7 +18,8 @@ const links = [
     { href: "/totw", label: "Hall of Fame", icon: AwardIcon, aria: "Ver el Hall of Fame del Casemuro City" },
 ];
 
-const normalize = (path: string) => path.replace(/\/+$/, "") || "/";
+// En build estático con `format: "file"` la ruta llega como "/plantilla.html" (o "/index.html")
+const normalize = (path: string) => path.replace(/\.html$/, "").replace(/\/index$/, "").replace(/\/+$/, "") || "/";
 const currentPath = normalize(Astro.url.pathname);
 const isActive = (href: string) => href === currentPath;
 ---
@@ -30,7 +31,7 @@ const isActive = (href: string) => href === currentPath;
         </a>
     </div>
 
-    <div class="space-x-1 absolute" class:list={[{ "links-anim": isindex }, { "right-(--links-right)": !isindex }]}>
+    <div id="navbar-links" class="space-x-1 absolute" class:list={[{ "links-anim": isindex }, { "right-(--links-right)": !isindex }]}>
         {links.map((link) => {
             const Icon = link.icon;
             return (
@@ -64,6 +65,18 @@ const isActive = (href: string) => href === currentPath;
     }
     placeLinks();
     document.addEventListener("astro:after-swap", placeLinks);
+
+    // Sección activa en cliente: cubre las páginas hijas (/jugador -> Plantilla, /partido -> Partidos)
+    const SECTION_OF: Record<string, string> = { "/jugador": "/plantilla", "/partido": "/partidos", "/logrosdef": "/totw" };
+    function markActive() {
+        const path = location.pathname.replace(/\.html$/, "").replace(/\/+$/, "") || "/";
+        const section = SECTION_OF[path] ?? path;
+        document.querySelectorAll<HTMLAnchorElement>("#navbar-links a[href]").forEach((a) => {
+            a.classList.toggle("nav-active", a.getAttribute("href") === section);
+        });
+    }
+    markActive();
+    document.addEventListener("astro:page-load", markActive);
 </script>
 
 <style>

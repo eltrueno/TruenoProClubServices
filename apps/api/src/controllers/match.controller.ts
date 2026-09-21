@@ -44,8 +44,8 @@ async function getMatchesByPlayer(req: Request, res: Response, next: NextFunctio
         const limitFilter: number = Number(req.query.limit)
         const playerId: string = req.params.playerId
         if (!playerId) return next(new Error("ERROR_BAD_REQUEST"))
+        // Sin partidos no es un error: lista vacía (el jugador puede existir y no haber jugado aún)
         const response = await getLatestByPlayer(playerId, limitFilter)
-        if (!response || response.length === 0) return next(new Error("ERROR_NOT_FOUND"))
         res.json({
             status: {
                 code: 200,

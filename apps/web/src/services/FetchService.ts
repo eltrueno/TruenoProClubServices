@@ -5,7 +5,7 @@ import { ApiError } from "@/lib/api"
  * Estado reactivo de una carga de datos (loading / status / error / data).
  * Las subclases solo definen `load()`; el resto (errores, estados) es común.
  */
-export default abstract class FetchService<T = any> {
+export default abstract class FetchService<T> {
     protected data: Ref<T>
     public status: Ref<number>
     protected error: Ref<string>

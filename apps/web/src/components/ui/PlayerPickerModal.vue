@@ -6,9 +6,10 @@
  * El disparador es el botón por defecto o lo que se pase en el slot (recibe `open`).
  */
 import { computed, nextTick, ref, watch } from "vue"
-import { PLAYER_POSITIONS, type PlayerPosition } from "@trueno-proclub-services/shared"
+import { PLAYER_POSITIONS, type IClubMember, type PlayerPosition } from "@trueno-proclub-services/shared"
 import { translatePosition } from "@/i18n/translations"
 import PlayerCard from "./PlayerCard.vue"
+import type { PhotoZoom } from "./PlayerPhoto.vue"
 
 export interface PickerItem {
     id: string
@@ -19,9 +20,13 @@ export interface PickerItem {
     hint?: string
     /** posiciones jugadas, la más jugada primero (activa el filtro por posición) */
     positions?: PlayerPosition[]
+    /** miembro completo (modo jugador): PlayerCard muestra alta y último partido */
+    member?: Partial<IClubMember>
     disabled?: boolean
 }
 
+
+defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(defineProps<{
     items: PickerItem[]
@@ -33,6 +38,8 @@ const props = withDefaults(defineProps<{
     emptyText?: string
     /** forma de la imagen: avatar redondo (cuentas) o retrato de jugador */
     imageShape?: "avatar" | "player"
+    /** zoom de la foto en modo jugador (ver PlayerPhoto) */
+    zoom?: PhotoZoom
     /** imagen cuando el item no tiene */
     fallbackImage?: string
     /** en simple, permite deseleccionar (opción "Ninguno") */
@@ -46,6 +53,7 @@ const props = withDefaults(defineProps<{
     searchPlaceholder: "Buscar por nombre…",
     emptyText: "No hay resultados",
     imageShape: "player",
+    zoom: "md",
     fallbackImage: "",
     clearable: true,
     size: "sm",
@@ -124,7 +132,7 @@ defineExpose({ open, close })
 
 <template>
     <slot :open="open" :selected="selectedItems" :label="label">
-        <button type="button" class="btn btn-outline w-full justify-between font-normal" :class="size === 'sm' ? 'btn-sm' : ''" :disabled="disabled" @click="open">
+        <button type="button" class="btn btn-outline w-full justify-between font-normal" :class="[size === 'sm' ? 'btn-sm' : '', $attrs.class]" :disabled="disabled" @click="open">
             <span class="flex items-center gap-2 min-w-0">
                 <template v-if="!multiple && selectedItems[0]">
                     <img
@@ -141,7 +149,7 @@ defineExpose({ open, close })
     </slot>
 
     <dialog ref="dialog" class="modal modal-bottom sm:modal-middle">
-        <div class="modal-box bg-base-200 border border-base-300 shadow-2xl max-w-2xl p-0 flex flex-col h-[min(85vh,40rem)] max-h-[85vh]">
+        <div class="modal-box bg-base-200 border border-base-300 shadow-2xl w-11/12 max-w-5xl p-0 flex flex-col h-[90vh] max-h-[90vh]">
             <div class="px-5 py-4 border-b border-base-300 shrink-0 flex flex-col gap-3">
                 <div class="flex items-center justify-between gap-2">
                     <h3 class="font-bold text-lg">{{ title }}</h3>
@@ -167,7 +175,7 @@ defineExpose({ open, close })
 
             <div class="overflow-y-auto flex-1 min-h-0 p-3">
                 <p v-if="filtered.length === 0" class="text-center text-sm opacity-50 py-10">{{ emptyText }}</p>
-                <ul v-else class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <ul v-else class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
                     <li v-for="item in filtered" :key="item.id">
                         <button
                             type="button"
@@ -181,9 +189,12 @@ defineExpose({ open, close })
                         >
                             <PlayerCard
                                 v-if="imageShape === 'player'"
+                                size="md"
                                 class="flex-1"
-                                :member="{ playerId: item.id, playerName: item.name, imageUrl: item.image || fallbackImage || null }"
+                                :dates="true"
+                                :member="{ ...item.member, playerId: item.id, playerName: item.name, imageUrl: item.image || fallbackImage || null }"
                                 :positions="item.positions"
+                                :zoom="zoom"
                             >
                                 <p v-if="item.subtitle" class="text-xs text-base-content/60 truncate">{{ item.subtitle }}</p>
                                 <p v-if="item.hint" class="text-[10px] text-warning truncate">{{ item.hint }}</p>

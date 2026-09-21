@@ -8,27 +8,25 @@ import { computed } from "vue"
 import type { IClubMember, PlayerPosition } from "@trueno-proclub-services/shared"
 import { translatePosition } from "@/i18n/translations"
 import { routes } from "@/lib/query"
-import PlayerPhoto from "./PlayerPhoto.vue"
+import PlayerPhoto, { type PhotoZoom } from "./PlayerPhoto.vue"
 
 const POSITION_SHORT: Record<PlayerPosition, string> = { goalkeeper: "POR", defender: "DEF", midfielder: "MC", forward: "DEL" }
 
 const props = withDefaults(defineProps<{
-    member: Partial<IClubMember> & { createdAt?: Date | string }
+    member: Partial<IClubMember>
     positions?: PlayerPosition[]
     /** foto a mostrar en vez de la del miembro (p. ej. borrador del admin) */
     image?: string | null
     size?: "sm" | "md"
+    /** zoom de la foto (ver PlayerPhoto): none | sm | md | lg */
+    zoom?: PhotoZoom
     /** el nombre enlaza al perfil */
     link?: boolean
-    /** muestra "en el club desde" y "último partido" */
-    dates?: boolean
+    /** oculta la línea "En el club desde… · Último partido…" */
+    noDates?: boolean
     /** id de EA en pequeño (panel admin) */
     showId?: boolean
-}>(), { positions: () => [], image: undefined, size: "sm", link: false, dates: false, showId: false })
-
-const subtitle = computed(() =>
-    [props.member.proName, props.member.proOverall ? `${props.member.proOverall} OVR` : ""].filter(Boolean).join(" · ")
-)
+}>(), { positions: () => [], image: undefined, size: "sm", zoom: "md", link: false, noDates: false, showId: false })
 
 const fmt = (d?: Date | string | number | null) => {
     if (!d) return ""
@@ -41,7 +39,7 @@ const lastSeen = computed(() => fmt(props.member.lastSeenAt))
 
 <template>
     <div class="flex items-center gap-3 min-w-0">
-        <PlayerPhoto :src="image !== undefined ? image : member.imageUrl" :alt="member.playerName" :size="size === 'md' ? 'md' : 'sm'" />
+        <PlayerPhoto :src="image !== undefined ? image : member.imageUrl" :alt="member.playerName" :size="size === 'md' ? 'md' : 'sm'" :zoom="zoom" />
         <div class="min-w-0 flex-1">
             <component
                 :is="link && member.playerId ? 'a' : 'p'"
@@ -49,7 +47,6 @@ const lastSeen = computed(() => fmt(props.member.lastSeenAt))
                 class="font-bold truncate block leading-tight"
                 :class="[size === 'md' ? 'text-base' : 'text-sm', link ? 'hover:text-primary' : '']"
             >{{ member.playerName || "—" }}</component>
-            <p v-if="subtitle" class="text-xs text-base-content/60 truncate">{{ subtitle }}</p>
             <p v-if="positions.length" class="flex gap-1 mt-0.5">
                 <span
                     v-for="(pos, i) in positions"
@@ -59,10 +56,10 @@ const lastSeen = computed(() => fmt(props.member.lastSeenAt))
                     :title="translatePosition(pos)"
                 >{{ POSITION_SHORT[pos] }}</span>
             </p>
-            <p v-if="dates && (since || lastSeen)" class="text-[10px] text-base-content/40 truncate mt-0.5">
+            <p v-if="!noDates && (since || lastSeen)" class="text-xs text-base-content/60 truncate">
                 <span v-if="since">Desde {{ since }}</span>
                 <span v-if="since && lastSeen"> · </span>
-                <span v-if="lastSeen">Último partido {{ lastSeen }}</span>
+                <span v-if="lastSeen">Última vez {{ lastSeen }}</span>
             </p>
             <p v-if="showId && member.playerId" class="text-[10px] text-base-content/30 font-mono truncate" :title="member.playerId">{{ member.playerId }}</p>
             <slot />

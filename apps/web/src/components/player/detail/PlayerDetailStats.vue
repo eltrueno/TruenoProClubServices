@@ -151,7 +151,7 @@
         stats: PlayerStatsEntity,
         matches: ClubMatchEntity[] | undefined,
         currentFilter: string,
-        positionFilter: string
+        positionFilter: string | null
     }>()
 
 

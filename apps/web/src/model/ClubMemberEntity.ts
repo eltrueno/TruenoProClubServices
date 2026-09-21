@@ -11,6 +11,8 @@ export default class ClubMemberEntity implements IClubMember {
     imageUrl?: string | null
     userId?: string | null
     lastSeenAt?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
 
     constructor(member: IClubMember) {
         Object.assign(this, member)
