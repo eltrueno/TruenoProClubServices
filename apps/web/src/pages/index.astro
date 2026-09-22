@@ -1,8 +1,10 @@
 ---
 import Indexarticle from "@components/Indexarticle.astro";
-import KitContainer from "@components/KitContainer.astro";
 import Layout from "@layouts/Layout.astro";
 import ClubStats from "@components/ClubStats.vue";
+import ClubHighlights from "@components/home/ClubHighlights.vue";
+import LastMatches from "@components/home/LastMatches.vue";
+import ClubRecords from "@components/home/ClubRecords.vue";
 ---
 
 <Layout
@@ -32,32 +34,47 @@ import ClubStats from "@components/ClubStats.vue";
 		content="https://www.casemurocity.org/escudo_banner_fondo.webp"
 	/>
 
-	<header class="container mx-auto mb-10">
-		<h2 class="font-bold text-2xl text-center my-8 p-8">
-			PÁGINA WEB OFICIAL ✅
-			<br />
-			Toda la información sobre el Casemuro City.
-		</h2>
-		<h3 class="font-bold text-xl text-center my-8 p-8">
-			Si te gusta Clubes Pro, has llegado al lugar indicado.
-			<br />
-			Bienvenido al equipo donde todo puede pasar✨
-		</h3>
-	</header>
-
-	<section>
-		<header>
-			<h3
-				class="mt-8 py-8 px-8 md:px-16 ml-8 text-primary font-bold text-4xl text-center"
-				id="equipaciones"
-			>
-				DATOS, NO OPINIONES 😳⬇️
-			</h3>
+	<div class="w-full max-w-[100rem] mx-auto px-4 lg:px-8 flex flex-col gap-12 lg:gap-16 py-8 lg:py-12">
+		<!-- Hero -->
+		<header class="text-center reveal-stagger">
+			<p class="text-xs lg:text-sm uppercase tracking-[0.3em] font-black text-primary">Web oficial</p>
+			<h1 class="text-4xl lg:text-6xl font-black tracking-tighter mt-2">Casemuro City</h1>
+			<p class="mt-4 text-base lg:text-lg text-base-content/70 max-w-2xl mx-auto leading-relaxed">
+				El club de Clubes Pro de la comunidad de Mr Casemuro. Plantilla, partidos, estadísticas y logros,
+				actualizados automáticamente después de cada partido.
+			</p>
+			<div class="mt-6 flex flex-wrap gap-3 justify-center items-center">
+				<!-- aura: el anillo giratorio de DaisyUI 5, solo en la llamada principal -->
+				<span class="aura aura-dual text-primary">
+					<a href="/plantilla" class="btn btn-primary rounded-xl font-bold">Ver plantilla</a>
+				</span>
+				<a href="/partidos" class="btn btn-outline rounded-xl font-bold">Últimos partidos</a>
+			</div>
 		</header>
-		<content>
+
+		<!-- Datos del club -->
+		<section>
+			<h2 class="text-2xl lg:text-4xl font-black tracking-tighter text-center mb-6 reveal" id="datos">Datos, no opiniones</h2>
+			<ClubHighlights client:only="vue" />
+		</section>
+
+		<!-- Último partido y jugador del momento -->
+		<section>
+			<LastMatches client:only="vue" />
+		</section>
+
+		<!-- Récords del club -->
+		<section>
+			<h2 class="text-2xl lg:text-4xl font-black tracking-tighter text-center mb-6 reveal">Récords del club</h2>
+			<ClubRecords client:only="vue" />
+		</section>
+
+		<!-- Todos los números (stats completas de EA) -->
+		<section>
+			<h2 class="text-2xl lg:text-4xl font-black tracking-tighter text-center mb-6 reveal">Todos los números</h2>
 			<ClubStats client:only="vue" class="overflow-clip" />
-		</content>
-	</section>
+		</section>
+	</div>
 
 	<section class="overflow-x-clip">
 		<Indexarticle
@@ -89,5 +106,18 @@ import ClubStats from "@components/ClubStats.vue";
 			el club siga vivo y que este sueño tenga sentido. ¿Lo conseguiremos? Estoy
 			convencido de que sí.
 		</Indexarticle>
+	</section>
+
+	<!-- CTA: vincular cuenta -->
+	<section class="w-full max-w-[100rem] mx-auto px-4 lg:px-8 py-12 lg:py-16">
+		<div class="reveal-zoom rounded-2xl bg-base-200 p-6 lg:p-10 flex flex-col lg:flex-row items-center gap-6 text-center lg:text-left">
+			<div class="flex-1">
+				<h2 class="text-2xl lg:text-3xl font-black tracking-tighter">¿Juegas en el club?</h2>
+				<p class="mt-2 text-base-content/70 leading-relaxed">
+					Vincula tu cuenta de Twitch con tu jugador y consulta tus estadísticas, tu progresión y tus logros.
+				</p>
+			</div>
+			<a href="/micuenta" class="btn btn-primary rounded-xl font-bold">Vincular mi cuenta</a>
+		</div>
 	</section>
 </Layout>

@@ -24,6 +24,21 @@
  
                     <!-- Info -->
                     <div class="flex-1 text-left pb-1">
+                        <!-- Cuenta vinculada (Twitch). El nombre/avatar pueden estar ocultos por privacidad -->
+                        <div class="mb-1.5 inline-flex items-center gap-2 rounded-full bg-base-100/60 pl-1 pr-3 py-1 text-xs lg:text-sm"
+                            :class="{ 'text-base-content/50': !linkedUser }">
+                            <template v-if="linkedUser">
+                                <div v-if="linkedUser.image" class="avatar">
+                                    <div class="w-6 rounded-full"><img :src="linkedUser.image" :alt="linkedUser.name ?? 'Usuario Anónimo'" /></div>
+                                </div>
+                                <LinkIcon v-else class="size-4 ml-1.5 text-primary" />
+                                <span class="font-semibold">{{ linkedUser.name ?? "Usuario Anónimo" }}</span>
+                            </template>
+                            <template v-else>
+                                <UnlinkIcon class="size-4 ml-1.5" />
+                                <span class="font-semibold">Cuenta no vinculada</span>
+                            </template>
+                        </div>
                         <div class="mb-2 lg:mb-4">
                             <h1 class="text-2xl lg:text-5xl font-black tracking-tighter leading-none">{{ playerProfile.member.playerName }}</h1>
                         </div>
@@ -50,15 +65,6 @@
                             <span v-if="memberSince && lastMatchDate"> · </span>
                             <span v-if="lastMatchDate">Última vez: {{ lastMatchDate }}</span>
                         </p>
-                        <!-- Cuenta vinculada (Twitch) -->
-                        <div v-if="linkedUser" class="mt-2 inline-flex items-center gap-2 rounded-full bg-base-100/60 pl-1 pr-3 py-1 text-xs lg:text-sm">
-                            <div class="avatar">
-                                <div class="w-6 rounded-full ring-1 ring-primary">
-                                    <img v-if="linkedUser.image" :src="linkedUser.image" :alt="linkedUser.name ?? 'Cuenta vinculada'" />
-                                </div>
-                            </div>
-                            <span class="font-semibold">{{ linkedUser.name ?? "Cuenta vinculada" }}</span>
-                        </div>
                         <p v-if="playerProfile.member.nameHistory?.length > 1" class="mt-1 text-xs text-base-content/50">
                             Antes: {{ playerProfile.member.nameHistory.filter(n => n !== playerProfile.member.playerName).join(", ") }}
                         </p>
@@ -193,6 +199,8 @@
     import AverageStatsService from "@/services/AverageStatsService.ts";
     import PlayerStatsEntity from "@/model/PlayerStatsEntity";
     import OptionToggle from "@/components/ui/OptionToggle.vue";
+    import LinkIcon from "@/icons/link.svg?component";
+    import UnlinkIcon from "@/icons/unlink.svg?component";
     import { MATCH_SCOPE_OPTIONS, type MatchScope } from "@/lib/matchScope";
     import { Position, translatePosition } from "@/i18n/translations";
     import { getQueryParam } from "@/lib/query";

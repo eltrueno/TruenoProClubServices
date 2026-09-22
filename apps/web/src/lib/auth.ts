@@ -10,4 +10,17 @@ export const authClient = createAuthClient({
     plugins: [inferAdditionalFields<AuthType>()]
 })
 
+/** Ajustes de privacidad: los únicos campos que el usuario puede escribir (el resto van con `input: false`) */
+export interface PrivacySettings {
+    showPublicName: boolean
+    showPublicImage: boolean
+}
+
+/**
+ * `updateUser` tipa su payload a partir de la inferencia del servidor, que no llega a ver
+ * los campos extra; aquí se llama con el tipo acotado a los ajustes de privacidad.
+ */
+export const updatePrivacySettings = (settings: PrivacySettings) =>
+    (authClient.updateUser as (values: PrivacySettings) => ReturnType<typeof authClient.updateUser>)(settings)
+
 export type { User } from "@trueno-proclub-services/auth"
