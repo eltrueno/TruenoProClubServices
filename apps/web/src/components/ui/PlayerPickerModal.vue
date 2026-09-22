@@ -149,7 +149,7 @@ defineExpose({ open, close })
     </slot>
 
     <dialog ref="dialog" class="modal modal-bottom sm:modal-middle">
-        <div class="modal-box bg-base-200 border border-base-300 shadow-2xl w-11/12 max-w-5xl p-0 flex flex-col h-[90vh] max-h-[90vh]">
+        <div class="modal-box bg-base-200 border border-base-300 shadow-2xl w-full sm:w-11/12 max-w-none sm:max-w-5xl p-0 flex flex-col h-[85dvh] sm:h-[min(90dvh,48rem)] max-h-[85dvh] sm:max-h-[90dvh]">
             <div class="px-5 py-4 border-b border-base-300 shrink-0 flex flex-col gap-3">
                 <div class="flex items-center justify-between gap-2">
                     <h3 class="font-bold text-lg">{{ title }}</h3>

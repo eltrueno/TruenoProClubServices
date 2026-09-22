@@ -70,7 +70,7 @@ const privacyModal = ref(null)
 
    <!-- Modal de Política de Privacidad -->
    <dialog ref="privacyModal" id="privacy_modal" class="modal modal-bottom sm:modal-middle">
-     <div class="modal-box bg-base-200 border border-base-300 shadow-2xl max-w-2xl text-left p-0 flex flex-col max-h-[85vh]">
+     <div class="modal-box bg-base-200 border border-base-300 shadow-2xl w-full sm:w-11/12 max-w-none sm:max-w-2xl text-left p-0 flex flex-col max-h-[85dvh] sm:max-h-[90dvh]">
        <h3 class="font-bold text-xl text-primary px-6 py-4 border-b border-base-300 shrink-0">Política de Privacidad</h3>
        <div class="prose dark:prose-invert prose-sm max-w-none overflow-y-auto px-6 py-4 space-y-4 flex-1 min-h-0">
          

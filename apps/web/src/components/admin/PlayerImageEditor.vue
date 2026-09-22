@@ -205,7 +205,7 @@ defineExpose({ open, close })
 
 <template>
     <dialog ref="dialog" class="modal modal-bottom sm:modal-middle" @close="reset">
-        <div class="modal-box bg-base-200 border border-base-300 shadow-2xl max-w-3xl p-0 flex flex-col max-h-[90vh]">
+        <div class="modal-box bg-base-200 border border-base-300 shadow-2xl w-full sm:w-11/12 max-w-none sm:max-w-3xl p-0 flex flex-col max-h-[85dvh] sm:max-h-[90dvh]">
             <div class="px-5 py-4 border-b border-base-300 shrink-0 flex items-center justify-between gap-2">
                 <div class="min-w-0">
                     <h3 class="font-bold text-lg truncate">Foto de {{ playerName }}</h3>

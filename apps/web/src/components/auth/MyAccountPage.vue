@@ -7,7 +7,7 @@ import { translateRole } from "@/i18n/translations"
 import { routes } from "@/lib/query"
 import { PLAYER_PLACEHOLDER } from "@/lib/playerImage"
 import { ApiError, tpcsApi } from "@/lib/api"
-import { authClient } from "@/lib/auth"
+import { updatePrivacySettings } from "@/lib/auth"
 import PlayerPickerModal, { type PickerItem } from "@/components/ui/PlayerPickerModal.vue"
 import PlayerCard from "@/components/ui/PlayerCard.vue"
 import PlayerPhoto from "@/components/ui/PlayerPhoto.vue"
@@ -48,21 +48,34 @@ const myPlayerLoading = ref(true)
 const showPublicName = ref(true)
 const showPublicImage = ref(true)
 const privacySaving = ref(false)
+const privacyStatus = ref<"" | "saved" | "error">("")
 const privacyError = ref("")
+const privacyDirty = computed(() =>
+  showPublicName.value !== (user.value?.showPublicName !== false) ||
+  showPublicImage.value !== (user.value?.showPublicImage !== false)
+)
 watch(user, (u) => {
   if (!u) return
   showPublicName.value = u.showPublicName !== false
   showPublicImage.value = u.showPublicImage !== false
 }, { immediate: true })
 const savePrivacy = async () => {
+  if (!privacyDirty.value || privacySaving.value) return
   privacySaving.value = true
+  privacyStatus.value = ""
   privacyError.value = ""
-  const { error } = await authClient.updateUser({ showPublicName: showPublicName.value, showPublicImage: showPublicImage.value })
+  const { error } = await updatePrivacySettings({ showPublicName: showPublicName.value, showPublicImage: showPublicImage.value })
   if (error) {
-    privacyError.value = error.status === 403 ? "Origen no permitido por el servicio de auth" : "No se ha podido guardar"
+    privacyStatus.value = "error"
+    privacyError.value = error.status === 403 ? "El servicio de auth ha rechazado el cambio" : "No se ha podido guardar"
     // volver a lo que hay guardado
     showPublicName.value = user.value?.showPublicName !== false
     showPublicImage.value = user.value?.showPublicImage !== false
+  } else {
+    // reflejar el cambio en la sesión en memoria para que no "vuelva atrás" al recargar los computed
+    if (user.value) Object.assign(user.value, { showPublicName: showPublicName.value, showPublicImage: showPublicImage.value })
+    privacyStatus.value = "saved"
+    setTimeout(() => { if (privacyStatus.value === "saved") privacyStatus.value = "" }, 2500)
   }
   privacySaving.value = false
 }
@@ -459,14 +472,22 @@ const icons = {
           <div class="flex flex-col gap-3">
             <label class="flex items-center justify-between gap-4 cursor-pointer">
               <span class="text-sm font-medium">Mostrar mi nombre de usuario</span>
-              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="showPublicName" :disabled="privacySaving" @change="savePrivacy" />
+              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="showPublicName" />
             </label>
             <label class="flex items-center justify-between gap-4 cursor-pointer">
               <span class="text-sm font-medium">Mostrar mi imagen de perfil</span>
-              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="showPublicImage" :disabled="privacySaving" @change="savePrivacy" />
+              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="showPublicImage" />
             </label>
           </div>
-          <p v-if="privacyError" class="text-xs text-error mt-2">{{ privacyError }}</p>
+          <div class="flex items-center justify-end gap-3 mt-4">
+            <span v-if="privacySaving" class="text-xs text-base-content/60">Guardando…</span>
+            <span v-else-if="privacyStatus === 'saved'" class="text-xs font-bold text-success">Guardado</span>
+            <span v-else-if="privacyStatus === 'error'" class="text-xs font-bold text-error">{{ privacyError }}</span>
+            <button class="btn btn-sm btn-primary rounded-lg font-bold" :disabled="!privacyDirty || privacySaving" @click="savePrivacy">
+              <span v-if="privacySaving" class="loading loading-spinner loading-xs"></span>
+              Guardar
+            </button>
+          </div>
         </div>
 
         <!-- Card Zona de peligro -->
