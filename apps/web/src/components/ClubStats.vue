@@ -172,16 +172,16 @@
 </template>
 
 <script lang="ts" setup>
-    import ClubStatsService from '@services/ClubStatsService';
+    import { useClub } from '@/composables/useClub';
     import { onBeforeMount, computed, watch, reactive, ref } from 'vue';
     import CountUp from 'vue-countup-v3'
 
 
-    const statsService = new ClubStatsService()
-    const stats = statsService.getData()
-    const isloading = statsService.isloading
-    const errorText = statsService.getError()
-    const hasError = statsService.getHasError()
+    const clubResource = useClub()
+    const stats = clubResource.club
+    const isloading = clubResource.loading
+    const errorText = clubResource.error
+    const hasError = clubResource.hasError
 
 
     const gamesData = reactive({
@@ -226,7 +226,7 @@
     }
 
     onBeforeMount(async ()=>{
-        await statsService.fetch()
+        await clubResource.load()
     })
 </script>
 

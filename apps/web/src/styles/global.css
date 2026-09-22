@@ -69,6 +69,64 @@
   transition: opacity 0.1s;
 }
 
+/* ── Animaciones de scroll (scroll-driven, sin JS) ───────────────────────────
+   .reveal        → sube, escala y se desenfoca al entrar en pantalla
+   .reveal-left/-right → entra deslizando desde un lado (artículos)
+   .reveal-zoom   → entra escalando desde el centro (fotos, tarjetas grandes)
+   .reveal-stagger→ en un contenedor, cada hijo entra un poco después
+   Requieren animation-timeline (Chrome/Edge). Donde no exista, el contenido se
+   ve normal. Se desactivan con prefers-reduced-motion.                        */
+@keyframes reveal-up {
+  from { opacity: 0; translate: 0 4rem; scale: 0.94; filter: blur(10px); }
+  60% { filter: blur(0); }
+  to { opacity: 1; translate: 0 0; scale: 1; filter: blur(0); }
+}
+@keyframes reveal-left {
+  from { opacity: 0; translate: -4rem 0; rotate: -1.5deg; filter: blur(10px); }
+  60% { filter: blur(0); }
+  to { opacity: 1; translate: 0 0; rotate: 0deg; filter: blur(0); }
+}
+@keyframes reveal-right {
+  from { opacity: 0; translate: 4rem 0; rotate: 1.5deg; filter: blur(10px); }
+  60% { filter: blur(0); }
+  to { opacity: 1; translate: 0 0; rotate: 0deg; filter: blur(0); }
+}
+@keyframes reveal-in {
+  from { opacity: 0; scale: 0.7; filter: blur(12px); }
+  70% { filter: blur(0); }
+  to { opacity: 1; scale: 1; filter: blur(0); }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal,
+    .reveal-left,
+    .reveal-right,
+    .reveal-zoom {
+      animation: reveal-up linear both;
+      animation-timeline: view();
+      animation-range: entry 5% cover 35%;
+    }
+    .reveal-left { animation-name: reveal-left; }
+    .reveal-right { animation-name: reveal-right; }
+    .reveal-zoom { animation-name: reveal-in; }
+
+    /* Escalonado: cada hijo entra un poco después que el anterior */
+    .reveal-stagger > * {
+      animation: reveal-up linear both;
+      animation-timeline: view();
+    }
+    .reveal-stagger > *:nth-child(1) { animation-range: entry 5% cover 30%; }
+    .reveal-stagger > *:nth-child(2) { animation-range: entry 5% cover 36%; }
+    .reveal-stagger > *:nth-child(3) { animation-range: entry 5% cover 42%; }
+    .reveal-stagger > *:nth-child(4) { animation-range: entry 5% cover 48%; }
+    .reveal-stagger > *:nth-child(5) { animation-range: entry 5% cover 54%; }
+    .reveal-stagger > *:nth-child(6) { animation-range: entry 5% cover 60%; }
+    .reveal-stagger > *:nth-child(7) { animation-range: entry 5% cover 66%; }
+    .reveal-stagger > *:nth-child(8) { animation-range: entry 5% cover 72%; }
+  }
+}
+
 @theme {
   /* Breakpoints */
   --breakpoint-3xl: 1600px;
