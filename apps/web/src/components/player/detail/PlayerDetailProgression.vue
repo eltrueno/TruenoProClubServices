@@ -1,8 +1,8 @@
 <template>
-    <div class="flex flex-col gap-8 animate-in mt-1">
+    <div class="flex flex-col gap-8 mt-1">
 
         <!-- ═══ EVOLUCIÓN (Line Chart) ═══ -->
-        <div class="card bg-base-200 shadow-md relative">
+        <div ref="chartCard" class="reveal card bg-base-200 shadow-md relative">
             <div class="card-body p-6">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                     <h2 class="card-title text-xl font-black uppercase border-l-4 border-primary pl-4">Evolución</h2>
@@ -193,10 +193,10 @@
         </div>
 
         <!-- ═══ FORMA RECIENTE + MEJORES REGISTROS (Side-by-side on desktop) ═══ -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 reveal-stagger">
 
             <!-- Forma Reciente -->
-            <div class="card bg-base-200 shadow-md relative">
+            <div ref="formCard" class="card bg-base-200 shadow-md relative">
                 <div class="card-body p-6 flex flex-col justify-between gap-5">
                     <div>
                         <h2 class="card-title text-xl font-black uppercase border-l-4 border-primary pl-4 mb-6 tracking-widest">
@@ -297,7 +297,7 @@
         <!-- ═══ PARTIDOS (Table) ═══ -->
 
         <!-- ═══ PARTIDOS ═══ -->
-        <div class="card bg-base-200 shadow-md relative">
+        <div class="reveal card bg-base-200 shadow-md relative">
             <div class="card-body p-6">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                     <h2 class="card-title text-xl font-black uppercase border-l-4 border-primary pl-4">Partidos</h2>
@@ -547,6 +547,7 @@
 
 <script setup lang="ts">
     import { computed, ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
+    import { useInView } from '@/composables/useInView';
     import {
         Chart as ChartJS,
         CategoryScale,
@@ -1014,7 +1015,13 @@
         attachCanvasListener()
     }, { immediate: true })
 
+    // Las gráficas se dibujan animadas al entrar en pantalla
+    const { target: chartCard, inView: chartInView } = useInView()
+    // Las barras de forma reciente están en otra tarjeta: se animan cuando esa entra en pantalla
+    const { target: formCard, inView: formInView } = useInView()
+
      const evolutionOptions = computed<ChartOptions<'line'>>(() => ({
+        animation: chartInView.value ? { duration: 900, easing: 'easeOutQuart' as const } : { duration: 0 },
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
@@ -1179,6 +1186,7 @@
     })
 
     const recentBarOptions = computed<ChartOptions<'bar'>>(() => ({
+        animation: formInView.value ? { duration: 700, easing: 'easeOutQuart' as const } : { duration: 0 },
         responsive: true,
         maintainAspectRatio: false,
         scales: {

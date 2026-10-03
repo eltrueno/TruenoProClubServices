@@ -175,7 +175,7 @@ defineExpose({ open, close })
 
             <div class="overflow-y-auto flex-1 min-h-0 p-3">
                 <p v-if="filtered.length === 0" class="text-center text-sm opacity-50 py-10">{{ emptyText }}</p>
-                <ul v-else class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
+                <TransitionGroup v-else tag="ul" name="list-fade" class="relative grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
                     <li v-for="item in filtered" :key="item.id">
                         <button
                             type="button"
@@ -213,7 +213,7 @@ defineExpose({ open, close })
                             <span v-else-if="isChecked(item.id)" class="text-primary font-bold">✓</span>
                         </button>
                     </li>
-                </ul>
+                </TransitionGroup>
             </div>
 
             <div class="px-5 py-3 border-t border-base-300 shrink-0 flex items-center justify-between gap-2">

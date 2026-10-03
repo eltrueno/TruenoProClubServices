@@ -2,7 +2,7 @@
     <div class="bg-base-100 text-center rounded-lg shadow-md flex flex-col overflow-hidden">
         <header class="relative">
             <div class="w-full container relative" v-on:mouseover="hovered=true"  v-on:mouseleave="hovered=false" >
-                <img :src="playerImage(player)" class="relative plimg select-none pointer-events-none w-4/6 h-full m-auto z-10 drop-shadow-lg" alt="Player ingame photo" :class="{
+                <img :src="playerImage(player)" :style="`view-transition-name: player-photo-${player.playerId}`" class="relative plimg select-none pointer-events-none w-4/6 h-full m-auto z-10 drop-shadow-lg" alt="Player ingame photo" :class="{
                     'plimghover': hovered
                 }" @error="onPlayerImageError" />
                 <div class="top-0 absolute right-0 p-2 font-semibold text-8xl lg:text-9xl z-0 drop-shadow-lg">{{ player.proOverall? player.proOverall : "¿?" }}</div>

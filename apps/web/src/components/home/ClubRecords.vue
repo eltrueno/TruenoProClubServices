@@ -12,6 +12,7 @@ import { usePlayerStats } from "@/composables/usePlayerStats"
 import { useClub } from "@/composables/useClub"
 import { routes } from "@/lib/query"
 import PlayerCard from "@/components/ui/PlayerCard.vue"
+import AnimatedNumber from "@/components/ui/AnimatedNumber.vue"
 
 /** Partidos mínimos del club para que los récords signifiquen algo */
 const MIN_CLUB_MATCHES = 10
@@ -185,7 +186,7 @@ const curiosities = computed(() => {
                     :class="r.href ? 'hover:bg-base-300/60 hover:-translate-y-1' : ''"
                 >
                     <p class="text-[11px] uppercase tracking-widest font-black text-base-content/50">{{ r.label }}</p>
-                    <p class="text-2xl lg:text-3xl font-black tracking-tight mt-1">{{ r.value }}</p>
+                    <AnimatedNumber class="text-2xl lg:text-3xl font-black tracking-tight mt-1 block" :value="r.value" :decimals="typeof r.value === 'number' ? 0 : 1" />
                     <p class="text-xs text-base-content/50 mt-1 truncate">{{ r.sub }}</p>
                 </component>
             </div>

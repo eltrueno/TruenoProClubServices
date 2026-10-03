@@ -173,7 +173,7 @@
 
 <script lang="ts" setup>
     import { useClub } from '@/composables/useClub';
-    import { onBeforeMount, computed, watch, reactive, ref } from 'vue';
+    import { onBeforeMount, computed } from 'vue';
     import CountUp from 'vue-countup-v3'
 
 
@@ -184,42 +184,31 @@
     const hasError = clubResource.hasError
 
 
-    const gamesData = reactive({
-        wins: 0,
-        losses: 0,
-        ties: 0,
-        played: 0
-    })
-
-
-    watch(stats, (newStats) =>{
-        if(newStats && (newStats.stats.wins!=null || newStats.stats.wins!=undefined)){
-            gamesData.wins = newStats.stats.wins
-            gamesData.played = newStats.stats.gamesPlayed
-            gamesData.losses = newStats.stats.losses
-            gamesData.ties = newStats.stats.ties
-            donutsections.value = [
-                {label:`Victorias:  ${gamesData.wins} (${trimDecimal(winsPercent.value)}%)`, value: winsPercent.value, color: '#00A96E'},
-                {label:`Derrotas:  ${gamesData.losses} (${trimDecimal(lossesPercent.value)}%)`, value: lossesPercent.value, color: '#FF5861'},
-                {label:`Empates:  ${gamesData.ties} (${trimDecimal(tiesPercent.value)}%)`, value: tiesPercent.value, color: '#A6ADBB'}
-            ]
+    // Derivado de las stats, no con un watch: con la caché de useClub los datos pueden
+    // estar ya cargados al montar (navegación con ClientRouter) y el watch no dispararía.
+    const gamesData = computed(() => {
+        const s = stats.value?.stats
+        return {
+            wins: s?.wins ?? 0,
+            losses: s?.losses ?? 0,
+            ties: s?.ties ?? 0,
+            played: s?.gamesPlayed ?? 0
         }
     })
 
+    const percentOf = (value: number) => (gamesData.value.played > 0 ? (value / gamesData.value.played) * 100 : 0)
+    const winsPercent = computed(() => percentOf(gamesData.value.wins))
+    const lossesPercent = computed(() => percentOf(gamesData.value.losses))
+    const tiesPercent = computed(() => percentOf(gamesData.value.ties))
 
-    const winsPercent = computed( ()=>{
-        return (gamesData.wins / gamesData.played) * 100
+    const donutsections = computed(() => {
+        if (gamesData.value.played === 0) return []
+        return [
+            { label: `Victorias:  ${gamesData.value.wins} (${trimDecimal(winsPercent.value)}%)`, value: winsPercent.value, color: '#00A96E' },
+            { label: `Derrotas:  ${gamesData.value.losses} (${trimDecimal(lossesPercent.value)}%)`, value: lossesPercent.value, color: '#FF5861' },
+            { label: `Empates:  ${gamesData.value.ties} (${trimDecimal(tiesPercent.value)}%)`, value: tiesPercent.value, color: '#A6ADBB' }
+        ]
     })
-
-    const lossesPercent = computed( ()=>{
-        return (gamesData.losses / gamesData.played) * 100
-    })
-
-    const tiesPercent = computed( ()=>{
-        return (gamesData.ties / gamesData.played) * 100
-    })
-
-    const donutsections = ref([])
 
     function trimDecimal(decimal:number){
         return decimal.toFixed(0)

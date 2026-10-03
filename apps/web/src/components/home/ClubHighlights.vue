@@ -3,6 +3,7 @@
 import { computed, onBeforeMount } from "vue"
 import { useClub } from "@/composables/useClub"
 import { translateDivision } from "@/i18n/translations"
+import AnimatedNumber from "@/components/ui/AnimatedNumber.vue"
 
 const { club, loading, hasError, load } = useClub()
 onBeforeMount(load)
@@ -18,12 +19,12 @@ const items = computed(() => {
     if (!s) return []
     return [
         { label: "División", value: translateDivision(s.bestDivision) },
-        { label: "Partidos", value: s.gamesPlayed.toLocaleString("es-ES") },
-        { label: "Victorias", value: `${winrate.value}%` },
-        { label: "Goles", value: s.goals.toLocaleString("es-ES") },
+        { label: "Partidos", value: s.gamesPlayed },
+        { label: "Victorias", value: winrate.value, suffix: "%" },
+        { label: "Goles", value: s.goals },
         { label: "Racha", value: s.winstreak },
         { label: "Habilidad", value: s.skill }
-    ]
+    ] as Array<{ label: string; value: number | string; suffix?: string }>
 })
 </script>
 
@@ -45,7 +46,7 @@ const items = computed(() => {
             class="rounded-xl bg-base-200 p-4 transition-transform duration-300 hover:-translate-y-1"
         >
             <p class="text-[11px] uppercase tracking-widest font-black text-base-content/50">{{ item.label }}</p>
-            <p class="text-2xl lg:text-3xl font-black tracking-tight mt-1">{{ item.value }}</p>
+            <AnimatedNumber class="text-2xl lg:text-3xl font-black tracking-tight mt-1 block" :value="item.value" :suffix="item.suffix ?? ''" />
         </div>
     </div>
 </template>
