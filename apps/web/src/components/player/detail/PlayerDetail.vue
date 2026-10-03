@@ -13,7 +13,7 @@
             <div class=" mx-auto px-4 py-8 lg:py-12">
                 <div class="flex flex-row items-end gap-5 lg:gap-8">
                     <!-- Avatar/Player Photo -->
-                    <div class="relative shrink-0 w-28 lg:w-44 aspect-8/9 dark:bg-base-100 bg-base-300 rounded-2xl lg:rounded-3xl overflow-hidden shadow-sm">
+                    <div :style="`view-transition-name: player-photo-${playerProfile.member.playerId}`" class="relative shrink-0 w-28 lg:w-44 aspect-8/9 dark:bg-base-100 bg-base-300 rounded-2xl lg:rounded-3xl overflow-hidden shadow-sm">
                         <img 
                             :src="playerImage" 
                             :alt="playerProfile.member.playerName" 
@@ -77,11 +77,11 @@
                 </div>
 
                 <!-- KPI Cards -->
-                <div class="flex flex-wrap gap-4 mt-8 lg:mt-12">
+                <div class="flex flex-wrap gap-4 mt-8 lg:mt-12 reveal-stagger">
                     <div v-for="kpi in kpis" :key="kpi.label" class="kpi-card card dark:bg-base-100 bg-base-300 shadow-sm overflow-hidden group">
                         <div class="card-body p-4 lg:p-6 items-center text-center">
                             <span class="text-base-content/50 uppercase text-xs font-black tracking-widest">{{ kpi.label }}</span>
-                            <span class="text-2xl lg:text-4xl font-black mt-1 tabular-nums">{{ kpi.value }}</span>
+                            <AnimatedNumber class="text-2xl lg:text-4xl font-black mt-1" :value="kpi.value" :decimals="kpi.decimals ?? 0" :suffix="kpi.suffix ?? ''" />
                         </div>
                     </div>
                 </div>
@@ -151,25 +151,30 @@
             </div>
 
             <!-- Tab Content (rounded bottom only, no gap) -->
-            <div class="bg-base-200/50 rounded-b-2xl p-2">
-                <PlayerDetailStats
-                    v-if="activeTab === 'stats'"
-                    :profile="playerProfile"
-                    :stats="activeStats" 
-                    :matches="playerMatches"
-                    :currentFilter="filterMode"
-                    :positionFilter="posFilter"
-                />
-                <PlayerDetailProgression
-                    v-else-if="activeTab === 'form'"
-                    :player="playerProfile"
-                    :stats="activeStats"
-                    :matches="playerMatches"
-                    :currentFilter="filterMode"
-                    :positionFilter="posFilter"
-                />
-                <PlayerDetailWIP v-else-if="activeTab === 'achievements'" title="Logros y Premios" icon="🏆" />
-                <PlayerDetailWIP v-else-if="activeTab === 'compare'" title="Comparador" icon="⚔️" />
+            <div class="bg-base-200/50 rounded-b-2xl p-2 overflow-x-clip">
+                <!-- La pestaña saliente se va a un lado y la entrante llega del otro -->
+                <Transition name="tab-slide" mode="out-in">
+                    <PlayerDetailStats
+                        v-if="activeTab === 'stats'"
+                        key="stats"
+                        :profile="playerProfile"
+                        :stats="activeStats"
+                        :matches="playerMatches"
+                        :currentFilter="filterMode"
+                        :positionFilter="posFilter"
+                    />
+                    <PlayerDetailProgression
+                        v-else-if="activeTab === 'form'"
+                        key="form"
+                        :player="playerProfile"
+                        :stats="activeStats"
+                        :matches="playerMatches"
+                        :currentFilter="filterMode"
+                        :positionFilter="posFilter"
+                    />
+                    <PlayerDetailWIP v-else-if="activeTab === 'achievements'" key="achievements" title="Logros y Premios" icon="🏆" />
+                    <PlayerDetailWIP v-else key="compare" title="Comparador" icon="⚔️" />
+                </Transition>
             </div>
         </section>
     </div>
@@ -199,6 +204,7 @@
     import AverageStatsService from "@/services/AverageStatsService.ts";
     import PlayerStatsEntity from "@/model/PlayerStatsEntity";
     import OptionToggle from "@/components/ui/OptionToggle.vue";
+    import AnimatedNumber from "@/components/ui/AnimatedNumber.vue";
     import LinkIcon from "@/icons/link.svg?component";
     import UnlinkIcon from "@/icons/unlink.svg?component";
     import { MATCH_SCOPE_OPTIONS, type MatchScope } from "@/lib/matchScope";
@@ -358,9 +364,9 @@
         { label: 'Partidos', value: activeStats.value.gamesPlayed ?? 0 },
         { label: 'Goles', value: activeStats.value.goals ?? 0 },
         { label: 'Asistencias', value: activeStats.value.assists ?? 0 },
-        { label: 'Valoración', value: (activeStats.value.ratingAve ?? 0).toFixed(1) },
+        { label: 'Valoración', value: activeStats.value.ratingAve ?? 0, decimals: 1 },
         { label: 'Rojas', value: activeStats.value.redCards ?? 0 },
-        { label: 'Winrate', value: (activeStats.value.winRate ?? 0).toFixed(1)+"%" },
+        { label: 'Winrate', value: activeStats.value.winRate ?? 0, decimals: 1, suffix: "%" },
         { label: 'MVP', value: activeStats.value.manOfTheMatch ?? 0 }
     ])
 </script>

@@ -1,7 +1,7 @@
 <template>
-    <div class="flex flex-col gap-8 animate-in mt-1">
+    <div class="flex flex-col gap-8 mt-1">
         <!-- Radar Card -->
-        <div class="card bg-base-200 shadow-md relative">
+        <div ref="chartCard" class="reveal card bg-base-200 shadow-md relative">
             <div class="card-body p-6">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
                     <h2 class="card-title text-xl font-black uppercase border-l-4 border-primary pl-4">Desempeño</h2>
@@ -98,7 +98,7 @@
         </div>
 
         <!-- Detailed Stats Panels -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 reveal-stagger">
             <div v-for="group in statGroups" :key="group.title" class="group h-full">
                 <div class="card h-full bg-base-200 border border-base-300 shadow-md transition-all duration-300">
                     <div class="card-body p-6">
@@ -140,6 +140,7 @@
     } from 'chart.js';
     import { Radar } from 'vue-chartjs';
     import { translatePosition, Position } from '@/i18n/translations';
+    import { useInView } from '@/composables/useInView';
     import PlayerStatsEntity from '@/model/PlayerStatsEntity';
     import ClubMatchEntity from '@/model/match/ClubMatchEntity';
     import type PlayerProfileEntity from '@/model/PlayerProfileEntity';
@@ -470,8 +471,12 @@ const getRadarDataPoints = (s: PlayerStatsEntity): number[] => {
 }
 
 
+    // La gráfica se dibuja animada cuando la tarjeta entra en pantalla, no al montarse fuera de vista
+    const { target: chartCard, inView: chartInView } = useInView()
+
     const radarOptions = computed<ChartOptions<'radar'>>(() => ({
         responsive: true,
+        animation: chartInView.value ? { duration: 900, easing: 'easeOutQuart' as const } : { duration: 0 },
         maintainAspectRatio: false,
         interaction: {
             mode: 'nearest' as const,

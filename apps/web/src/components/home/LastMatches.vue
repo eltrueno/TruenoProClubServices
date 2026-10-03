@@ -7,6 +7,7 @@ import { usePlayerStats } from "@/composables/usePlayerStats"
 import { routes } from "@/lib/query"
 import { translateMatchType } from "@/i18n/translations"
 import PlayerCard from "@/components/ui/PlayerCard.vue"
+import AnimatedNumber from "@/components/ui/AnimatedNumber.vue"
 
 const { latest, loading, hasError, load } = useMatches()
 const { members, load: loadMembers, memberFor } = useMembers()
@@ -20,6 +21,15 @@ onBeforeMount(() => {
 
 const lastMatch = computed(() => latest.value[0])
 const form = computed(() => latest.value.slice(0, 5))
+
+/** El partido es de hoy: el marcador late suavemente */
+const isToday = computed(() => {
+    const ts = lastMatch.value?.timestamp
+    if (!ts) return false
+    const d = new Date(ts * 1000)
+    const now = new Date()
+    return d.toDateString() === now.toDateString()
+})
 
 const fmtDate = (ts: number) =>
     new Date(ts * 1000).toLocaleDateString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
@@ -63,8 +73,8 @@ const playerOfTheMoment = computed(() => {
             <template v-else>
                 <a :href="routes.match(lastMatch.matchId)" class="group flex items-center gap-3 rounded-xl bg-base-100 p-4 hover:bg-base-300/40 transition-colors">
                     <span class="flex-1 min-w-0 truncate font-bold text-sm lg:text-base">{{ lastMatch.ourClub.name }}</span>
-                    <span class="text-2xl lg:text-4xl font-black tracking-tight tabular-nums transition-transform duration-300 group-hover:scale-110" :class="RESULT_CLASS[lastMatch.result]">
-                        {{ lastMatch.ourClub.matchStats.goals }} : {{ lastMatch.opponentClub.matchStats.goals }}
+                    <span class="text-2xl lg:text-4xl font-black tracking-tight tabular-nums transition-transform duration-300 group-hover:scale-110" :class="[RESULT_CLASS[lastMatch.result], { 'animate-pulse': isToday }]">
+                        <AnimatedNumber :value="lastMatch.ourClub.matchStats.goals" /> : <AnimatedNumber :value="lastMatch.opponentClub.matchStats.goals" />
                     </span>
                     <span class="flex-1 min-w-0 truncate text-right text-sm lg:text-base text-base-content/70">{{ lastMatch.opponentClub.name }}</span>
                 </a>
@@ -109,15 +119,15 @@ const playerOfTheMoment = computed(() => {
                 <div class="flex gap-4 mt-4">
                     <div>
                         <p class="text-[11px] uppercase tracking-widest font-black text-base-content/50">Media</p>
-                        <p class="text-2xl font-black tracking-tight">{{ playerOfTheMoment.avg.toFixed(1) }}</p>
+                        <AnimatedNumber class="text-2xl font-black tracking-tight block" :value="playerOfTheMoment.avg" :decimals="1" />
                     </div>
                     <div>
                         <p class="text-[11px] uppercase tracking-widest font-black text-base-content/50">Goles</p>
-                        <p class="text-2xl font-black tracking-tight">{{ playerOfTheMoment.goals }}</p>
+                        <AnimatedNumber class="text-2xl font-black tracking-tight block" :value="playerOfTheMoment.goals" />
                     </div>
                     <div>
                         <p class="text-[11px] uppercase tracking-widest font-black text-base-content/50">Partidos</p>
-                        <p class="text-2xl font-black tracking-tight">{{ playerOfTheMoment.games }}</p>
+                        <AnimatedNumber class="text-2xl font-black tracking-tight block" :value="playerOfTheMoment.games" />
                     </div>
                 </div>
                 <p class="text-xs text-base-content/40 mt-2">En los últimos {{ form.length }} partidos</p>

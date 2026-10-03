@@ -77,24 +77,20 @@
    Requieren animation-timeline (Chrome/Edge). Donde no exista, el contenido se
    ve normal. Se desactivan con prefers-reduced-motion.                        */
 @keyframes reveal-up {
-  from { opacity: 0; translate: 0 4rem; scale: 0.94; filter: blur(10px); }
-  60% { filter: blur(0); }
-  to { opacity: 1; translate: 0 0; scale: 1; filter: blur(0); }
+  from { opacity: 0; translate: 0 4rem; scale: 0.94; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
 }
 @keyframes reveal-left {
-  from { opacity: 0; translate: -4rem 0; rotate: -1.5deg; filter: blur(10px); }
-  60% { filter: blur(0); }
-  to { opacity: 1; translate: 0 0; rotate: 0deg; filter: blur(0); }
+  from { opacity: 0; translate: -4rem 0; rotate: -1.5deg; }
+  to { opacity: 1; translate: 0 0; rotate: 0deg; }
 }
 @keyframes reveal-right {
-  from { opacity: 0; translate: 4rem 0; rotate: 1.5deg; filter: blur(10px); }
-  60% { filter: blur(0); }
-  to { opacity: 1; translate: 0 0; rotate: 0deg; filter: blur(0); }
+  from { opacity: 0; translate: 4rem 0; rotate: 1.5deg; }
+  to { opacity: 1; translate: 0 0; rotate: 0deg; }
 }
 @keyframes reveal-in {
-  from { opacity: 0; scale: 0.7; filter: blur(12px); }
-  70% { filter: blur(0); }
-  to { opacity: 1; scale: 1; filter: blur(0); }
+  from { opacity: 0; scale: 0.8; }
+  to { opacity: 1; scale: 1; }
 }
 
 @supports (animation-timeline: view()) {
@@ -124,6 +120,61 @@
     .reveal-stagger > *:nth-child(6) { animation-range: entry 5% cover 60%; }
     .reveal-stagger > *:nth-child(7) { animation-range: entry 5% cover 66%; }
     .reveal-stagger > *:nth-child(8) { animation-range: entry 5% cover 72%; }
+  }
+}
+
+/* Parallax: el elemento se desplaza despacio mientras se recorre la página */
+@keyframes parallax-slow {
+  from { translate: 0 -2.5rem; }
+  to { translate: 0 2.5rem; }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .parallax {
+      animation: parallax-slow linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+  }
+}
+
+/* ── Transiciones reutilizables de Vue ───────────────────────────────────────
+   <Transition name="tab-slide" mode="out-in">  → cambio de pestaña
+   <TransitionGroup name="list-fade">           → listas que se filtran/reordenan */
+.tab-slide-enter-active { transition: opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1), translate 0.3s cubic-bezier(0.22, 1, 0.36, 1); will-change: opacity, translate; }
+/* La saliente se va de golpe: animar su salida con gráficas y canvas dentro provoca parpadeos */
+.tab-slide-leave-active { transition: none; display: none; }
+.tab-slide-enter-from { opacity: 0; translate: 0 0.75rem; }
+.tab-slide-leave-to { opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-slide-enter-active,
+  .tab-slide-leave-active { transition: opacity 0.15s linear; }
+  .tab-slide-enter-from,
+  .tab-slide-leave-to { translate: none; scale: none; }
+}
+
+.list-fade-move,
+.list-fade-enter-active,
+.list-fade-leave-active { transition: opacity 0.3s ease, translate 0.3s ease, scale 0.3s ease; }
+.list-fade-enter-from,
+.list-fade-leave-to { opacity: 0; translate: 0 0.75rem; scale: 0.97; }
+.list-fade-leave-active { position: absolute; }
+
+/* Skeletons con brillo que recorre la pieza (DaisyUI los deja planos) */
+@keyframes skeleton-shimmer {
+  to { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton {
+    background-image: linear-gradient(
+      100deg,
+      transparent 25%,
+      color-mix(in oklab, var(--color-base-content) 8%, transparent) 45%,
+      transparent 65%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.6s linear infinite;
   }
 }
 
