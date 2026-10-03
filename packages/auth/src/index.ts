@@ -20,7 +20,7 @@ export const createAuth = (db: any, onTwitchLogin?: (user: any) => Promise<void>
       }
       : {
         enabled: true,
-        domain: process.env.COOKIE_DOMAIN || ".casemurocity.org",
+        domain: process.env.COOKIE_DOMAIN || ".casemuro.stream",
       },
   },
 

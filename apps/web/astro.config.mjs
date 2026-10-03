@@ -9,7 +9,7 @@ import svgLoader from "vite-svg-loader";
 // páginas "dinámicas" (jugador, partido, semana...) van por query string y
 // se leen en cliente.
 export default defineConfig({
-  site: "https://www.casemurocity.org",
+  site: process.env.PUBLIC_SITE_URL,
   output: "static",
   trailingSlash: "never",
   build: {

@@ -3,8 +3,8 @@ import type {
     IMatch, IPlayerProfile, IPlayerStats, IPublicUser, ITOTW, IMemberTotwAppearances, UserRole
 } from "@trueno-proclub-services/shared"
 
-export const API_URL = import.meta.env.PUBLIC_API_URL ?? "https://api.casemurocity.org"
-export const AUTH_URL = import.meta.env.PUBLIC_AUTH_URL ?? "https://auth.casemurocity.org"
+export const API_URL = "/api"
+export const AUTH_URL = "https://auth.casemuro.stream"
 
 /** Error tipado de cualquier llamada: `code` estable (ERROR_NOT_FOUND, UNAUTHORIZED…) + `httpStatus` */
 export class ApiError extends Error {
@@ -21,7 +21,7 @@ export class ApiError extends Error {
 interface RequestOptions<TBody = unknown> {
     method?: "GET" | "POST" | "PATCH" | "DELETE"
     body?: TBody
-    /** Envía la cookie de sesión (.casemurocity.org). Solo para rutas protegidas. */
+    /** Envía la cookie de sesión*/
     credentials?: boolean
 }
 

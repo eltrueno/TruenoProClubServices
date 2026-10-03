@@ -1,13 +1,14 @@
 ---
 import AdminPanel from "@/components/admin/AdminPanel.vue";
 import Layout from "@/layouts/Layout.astro";
+import { CLUB } from "@/config/club";
 ---
 
 <Layout
-	title="Casemuro City: Admin"
+	title={`${CLUB.name}: Admin`}
 	isindex={false}
-	description="Panel de administración de Casemuro City"
-	keywords="casemuro city, admin"
+	description={`Panel de administración de ${CLUB.name}`}
+	keywords={`${CLUB.name}, admin`}
 >
 	<meta slot="metadata" name="robots" content="noindex, nofollow" />
 

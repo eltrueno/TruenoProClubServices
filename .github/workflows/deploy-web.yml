@@ -46,10 +46,6 @@ jobs:
 
       - name: Build de la web
         run: pnpm --filter @trueno-proclub-services/web build
-        env:
-          PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL || 'https://api.casemurocity.org' }}
-          PUBLIC_AUTH_URL: ${{ vars.PUBLIC_AUTH_URL || 'https://auth.casemurocity.org' }}
-          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL || 'https://www.casemurocity.org' }}
 
       - uses: actions/upload-pages-artifact@v3
         with:

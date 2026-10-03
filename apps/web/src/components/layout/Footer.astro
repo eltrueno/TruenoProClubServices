@@ -7,6 +7,7 @@ import YoutubeIcon from "@/icons/youtube.svg";
 import TwitterIcon from "@/icons/x.svg";
 import GithubIcon from "@/icons/github.svg";
 import HeartIcon from "@/icons/heart.svg";
+import { CLUB } from "@/config/club";
 
 const year = new Date().getFullYear();
 
@@ -18,13 +19,17 @@ const navigation = [
     { href: "/logrosdef", label: "Logros" },
 ];
 
-const club = [
-    { href: "https://www.twitch.tv/mr_casemuro", label: "Twitch", icon: TwitchIcon },
-    { href: "https://www.youtube.com/channel/UC33K1p2-9FwNclOSbQHFSpA/featured", label: "YouTube", icon: YoutubeIcon },
-    { href: "https://twitter.com/Mr_Casemuro", label: "X / Twitter", icon: TwitterIcon },
-    { href: "https://www.instagram.com/mr.casemuro", label: "Instagram", icon: InstagramIcon },
-    { href: "https://www.tiktok.com/@mr.casemuro", label: "TikTok", icon: TiktokIcon },
-];
+const socialMap = [
+    { key: "twitch", label: "Twitch", icon: TwitchIcon },
+    { key: "youtube", label: "YouTube", icon: YoutubeIcon },
+    { key: "twitter", label: "X / Twitter", icon: TwitterIcon },
+    { key: "instagram", label: "Instagram", icon: InstagramIcon },
+    { key: "tiktok", label: "TikTok", icon: TiktokIcon },
+] as const;
+
+const clubSocials = socialMap
+    .filter((s) => Boolean(CLUB.socials[s.key]))
+    .map((s) => ({ href: CLUB.socials[s.key]!, label: s.label, icon: s.icon }));
 
 const technical = [
     { href: "https://github.com/eltrueno", label: "GitHub", icon: GithubIcon },
@@ -41,12 +46,12 @@ const technical = [
         <div class="grid gap-14 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
             <section>
                 <div class="leading-1.1 flex flex-col gap-1 w-fit">
-                    <div class="text-lg font-black tracking-tighter text-primary uppercase">Casemuro City</div>
+                    <div class="text-lg font-black tracking-tighter text-primary uppercase">{CLUB.name}</div>
                     <Separator height="h-[2px]" />
                     <div class="text-sm font-bold tracking-[0.20em] uppercase opacity-90 text-center">Web oficial</div>
                 </div>
                 <p class="mt-6 max-w-md text-sm leading-relaxed opacity-70">
-                    Toda la información del Casemuro City, el club de Clubes Pro de EA SPORTS FC de la comunidad de Mr Casemuro:
+                    Toda la información de {CLUB.name}, el club de Clubes Pro de EA SPORTS FC de la comunidad de Mr Casemuro:
                     plantilla, partidos, estadísticas, logros y el equipo de la semana, actualizados automáticamente.
                 </p>
             </section>
@@ -63,9 +68,9 @@ const technical = [
             <section>
                 <h3 class="footer-title text-primary">El club</h3>
                 <p class="font-semibold">Mr Casemuro</p>
-                <p class="mt-2 text-sm opacity-70 leading-relaxed">Creador de contenido y alma del Casemuro City. Cada directo, cada partido.</p>
+                <p class="mt-2 text-sm opacity-70 leading-relaxed">Creador de contenido y alma de {CLUB.name}. Cada directo, cada partido.</p>
                 <div class="mt-2 flex md:justify-center flex-wrap w-full">
-                    {club.map((item) => {
+                    {clubSocials.map((item) => {
                         const Icon = item.icon;
                         return (
                             <a href={item.href} target="_blank" rel="noopener noreferrer" class="btn btn-link text-base-content/70 hover:text-primary transition" aria-label={item.label}>
@@ -96,7 +101,7 @@ const technical = [
         <div class="my-10 h-px bg-base-300"></div>
 
         <div class="flex flex-col gap-3 text-center text-sm opacity-60 lg:flex-row lg:items-center lg:justify-between lg:text-left">
-            <div>© {year} Casemuro City. Todos los derechos reservados.</div>
+            <div>© {year} {CLUB.name}. Todos los derechos reservados.</div>
             <div class="flex items-center justify-center gap-1">
                 Hecho con mucho <HeartIcon class="size-4 font-semibold text-primary animate-pulse" /> por
                 <a href="https://github.com/eltrueno" class="font-semibold text-primary">R. Jiménez (el_trueno)</a>

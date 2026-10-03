@@ -4,6 +4,7 @@ import HomeIcon from "@/icons/home.svg";
 import UsersIcon from "@/icons/usersgroup.svg";
 import CalendarIcon from "@/icons/calendar.svg";
 import AwardIcon from "@/icons/award.svg";
+import { CLUB } from "@/config/club";
 
 interface Props {
     isindex?: boolean;
@@ -13,9 +14,9 @@ const { isindex = false } = Astro.props;
 
 const links = [
     { href: "/", label: "Inicio", icon: HomeIcon, aria: "Volver al inicio de la página", homeOnly: true },
-    { href: "/plantilla", label: "Plantilla", icon: UsersIcon, aria: "Ver plantilla del Casemuro City" },
-    { href: "/partidos", label: "Partidos", icon: CalendarIcon, aria: "Ver partidos del Casemuro City" },
-    { href: "/totw", label: "Hall of Fame", icon: AwardIcon, aria: "Ver el Hall of Fame del Casemuro City" },
+    { href: "/plantilla", label: "Plantilla", icon: UsersIcon, aria: `Ver plantilla de ${CLUB.name}` },
+    { href: "/partidos", label: "Partidos", icon: CalendarIcon, aria: `Ver partidos de ${CLUB.name}` },
+    { href: "/totw", label: "Hall of Fame", icon: AwardIcon, aria: `Ver el Hall of Fame de ${CLUB.name}` },
 ];
 
 // En build estático con `format: "file"` la ruta llega como "/plantilla.html" (o "/index.html")
@@ -27,7 +28,7 @@ const isActive = (href: string) => href === currentPath;
 <nav class="navbar bg-primary text-primary-content min-w-full sticky top-0 rounded-b-md shadow-md z-50">
     <div class="shrink-0">
         <a href="/" class="btn btn-ghost px-1" aria-label="Volver al inicio de la página">
-            <img src="/logo.webp" class="h-12 w-auto" class:list={[{ "logo-anim": isindex }]} alt="Escudo del Casemuro City" />
+            <img src={CLUB.logo} class="h-12 w-auto" class:list={[{ "logo-anim": isindex }]} alt={`Escudo de ${CLUB.name}`} />
         </a>
     </div>
 
