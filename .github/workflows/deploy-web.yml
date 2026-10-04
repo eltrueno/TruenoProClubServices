@@ -45,7 +45,23 @@ jobs:
         run: pnpm --filter @trueno-proclub-services/shared build && pnpm --filter @trueno-proclub-services/auth build
 
       - name: Build de la web
+        # Un repo de GitHub Pages sirve un único sitio: aquí se compila un club.
+        # El segundo club se publica desde otro repo con su propio Pages.
         run: pnpm --filter @trueno-proclub-services/web build
+        env:
+          PUBLIC_CLUB: ${{ vars.PUBLIC_CLUB || 'city' }}
+          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL || 'https://city.casemuro.stream' }}
+          # api y auth salen de config/club.ts salvo que se definan aquí
+          PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL }}
+          PUBLIC_AUTH_URL: ${{ vars.PUBLIC_AUTH_URL }}
+
+      - name: Dominio personalizado (CNAME)
+        # Pages lee el dominio del artefacto; el host sale de PUBLIC_SITE_URL para que cada club publique en el suyo
+        run: |
+          host="${SITE#https://}"
+          echo "${host%%/*}" > apps/web/dist/CNAME
+        env:
+          SITE: ${{ vars.PUBLIC_SITE_URL || 'https://city.casemuro.stream' }}
 
       - uses: actions/upload-pages-artifact@v3
         with:

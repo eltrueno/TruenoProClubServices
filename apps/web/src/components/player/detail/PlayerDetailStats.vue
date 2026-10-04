@@ -18,8 +18,8 @@
                                 :class="visibleDatasets[0] ? 'border-primary/30 bg-primary/5 shadow-sm hover:border-primary/50' : 'border-base-content/5 bg-base-100 hover:bg-base-200 opacity-60 grayscale'"
                             >
                                 <div class="relative flex items-center justify-center w-6 h-4">
-                                    <div class="absolute w-full h-[3px] bg-[#C80D0D] rounded-full"></div>
-                                    <div class="absolute w-2.5 h-2.5 rounded-full bg-[#C80D0D] border-[2px] border-white z-10 box-content shadow-sm"></div>
+                                    <div class="absolute w-full h-[3px] bg-primary rounded-full"></div>
+                                    <div class="absolute w-2.5 h-2.5 rounded-full bg-primary border-[2px] border-white z-10 box-content shadow-sm"></div>
                                 </div>
                                 <span class="text-xs font-black uppercase tracking-wider text-base-content">Histórico</span>
                                 <div class="relative w-4 h-4 ml-1">
@@ -40,8 +40,8 @@
                                 :class="visibleDatasets[1] ? 'border-primary/30 bg-primary/5 shadow-sm hover:border-primary/50' : 'border-base-content/5 bg-base-100 hover:bg-base-200 opacity-60 grayscale'"
                             >
                                 <div class="relative flex items-center justify-center w-6 h-4">
-                                    <div class="absolute w-full h-0 border-t-[2.5px] border-dashed border-[rgba(200,13,13,0.5)]"></div>
-                                    <div class="absolute w-2 h-2 rounded-full bg-[rgba(200,13,13,0.4)] border-[1.5px] border-[rgba(200,13,13,0.6)] z-10 box-content"></div>
+                                    <div class="absolute w-full h-0 border-t-[2.5px] border-dashed border-primary/50"></div>
+                                    <div class="absolute w-2 h-2 rounded-full bg-primary/40 border-[1.5px] border-primary/60 z-10 box-content"></div>
                                 </div>
                                 <span class="text-xs font-black uppercase tracking-wider text-base-content">{{ recentLabelComputed }}</span>
                                 <div class="relative w-4 h-4 ml-1">
@@ -144,6 +144,8 @@
     import PlayerStatsEntity from '@/model/PlayerStatsEntity';
     import ClubMatchEntity from '@/model/match/ClubMatchEntity';
     import type PlayerProfileEntity from '@/model/PlayerProfileEntity';
+    import { CLUB } from '@/config/club';
+    import { hexToRgba } from '@/lib/color';
 
     ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, RadarController);
 
@@ -409,13 +411,13 @@
         
         const colors = {
             highlight: {
-                bg: 'rgba(200, 13, 13, 0.45)',
-                border: '#C80D0D',
-                point: '#C80D0D'
+                bg: hexToRgba(CLUB.colors.primary, 0.45),
+                border: CLUB.colors.primary,
+                point: CLUB.colors.primary
             },
             faded: {
-                bg: 'rgba(200, 13, 13, 0.1)',
-                border: 'rgba(200, 13, 13, 0.5)',
+                bg: hexToRgba(CLUB.colors.primary, 0.1),
+                border: hexToRgba(CLUB.colors.primary, 0.5),
                 point: 'transparent'
             }
         }
@@ -444,8 +446,8 @@
                     borderColor: colors.faded.border,
                     borderWidth: 2,
                     borderDash: [5, 5],
-                    pointBackgroundColor: 'rgba(200, 13, 13, 0.4)',
-                    pointBorderColor: 'rgba(200, 13, 13, 0.6)',
+                    pointBackgroundColor: hexToRgba(CLUB.colors.primary, 0.4),
+                    pointBorderColor: hexToRgba(CLUB.colors.primary, 0.6),
                     pointRadius: 3,
                     order: 2
                 }

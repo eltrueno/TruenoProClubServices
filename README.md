@@ -17,7 +17,7 @@ Este proyecto es una **evolución** de [Caracantosmeaos](https://github.com/Cara
 ### 🌐 Vista Previa (Live Demo)
 
 Puedes ver el sistema en funcionamiento en el despliegue oficial de **Casemuro City**:
-👉 **[https://www.casemurocity.org](https://www.casemurocity.org)**
+👉 **[https://city.casemuro.stream](https://city.casemuro.stream)**
 
 ### 🏗️ Arquitectura del Proyecto
 
@@ -58,7 +58,7 @@ Puedes ver el sistema en funcionamiento en el despliegue oficial de **Casemuro C
 
 ##### **web** — Frontend
 - **Stack**: Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5.
-- **100% estática** (`output: "static"`), desplegada en **GitHub Pages** (`.github/workflows/deploy-web.yml`) con dominio `www.casemurocity.org` (`public/CNAME`). Las islas Vue hacen fetch al api y al auth desde el navegador.
+- **100% estática** (`output: "static"`) y **multi-club**: el club se elige en tiempo de build con `PUBLIC_CLUB` (`city` | `united`, ver [`src/config/club.ts`](apps/web/src/config/club.ts)), que define nombre, logo, colores, redes y metadatos. Se despliega en **GitHub Pages** (`.github/workflows/deploy-web.yml`), que publica **un club por repositorio**: el dominio sale de `PUBLIC_SITE_URL` y el workflow genera el `CNAME`. Las islas Vue llaman al api (`PUBLIC_API_URL`) y al auth (`PUBLIC_AUTH_URL`) desde el navegador.
 - Las páginas "dinámicas" van por query string y se leen en cliente: `/jugador?id=<playerId>&tab=…`, `/partido?id=<matchId>&player=<playerId>`, `/totw?semana=<iso>&tipo=best|worst`, `/partidos?id=…&desde=…&hasta=…&liga&playoff&amistoso`.
 - Panel admin en `/admin` (solicitudes de vinculación pendientes, foto y cuenta vinculada de cada jugador; solo rol `admin`) y "Mi jugador" en `/micuenta`, desde donde un usuario pide vincular su cuenta a su jugador del club.
 - Config por variables `PUBLIC_*` (ver `apps/web/.env.example`).
@@ -133,7 +133,7 @@ Cada app tiene un `.env.example` con todas sus variables comentadas:
 - [`apps/api/.env.example`](apps/api/.env.example)
 - [`apps/worker/.env.example`](apps/worker/.env.example)
 - [`apps/auth/.env.example`](apps/auth/.env.example)
-- [`apps/web/.env.example`](apps/web/.env.example) (`PUBLIC_API_URL`, `PUBLIC_AUTH_URL`, `PUBLIC_SITE_URL`; en GitHub Pages se leen de las *repository variables*)
+- [`apps/web/.env.example`](apps/web/.env.example) (`PUBLIC_CLUB`, `PUBLIC_SITE_URL`, `PUBLIC_API_URL`, `PUBLIC_AUTH_URL`; en el deploy se leen de las *repository variables*)
 
 Las más importantes:
 
@@ -232,7 +232,7 @@ docker build -f apps/auth/Dockerfile -t tpcs-auth .
 ### 🔐 Seguridad
 
 - **CORS** con `credentials` y lista de orígenes (`ALLOWED_ORIGINS`).
-- **Sesiones** en cookie de dominio `.casemurocity.org`; las rutas admin del api validan sesión y rol `admin` contra el auth service.
+- **Sesiones** en cookie de dominio `.casemuro.stream`; las rutas admin del api validan sesión y rol `admin` contra el auth service.
 - **Error handling** centralizado y tipos fuertes desde `shared`.
 
 ### 📝 Tecnologías Principales
@@ -273,7 +273,7 @@ This project is an **evolution** of [Caracantosmeaos](https://github.com/Caracan
 
 ### 🌐 Live Demo
 
-👉 **[https://www.casemurocity.org](https://www.casemurocity.org)** (Casemuro City deployment)
+👉 **[https://city.casemuro.stream](https://city.casemuro.stream)** (Casemuro City deployment)
 
 ### 🏗️ Project Architecture
 

@@ -1,7 +1,7 @@
 const { AttachmentBuilder } = require("discord.js")
 const { render } = require("@trueno-proclub-services/imagerenderer-client")
 require('dotenv').config();
-const WWW_URL = process.env.WWW_URL || "https://www.casemurocity.org"
+const WWW_URL = process.env.WWW_URL || "https://city.casemuro.stream"
 const { mention } = require("../utils/players")
 
 async function handle(client, totw) {
@@ -39,7 +39,7 @@ async function handle(client, totw) {
                 }
             )
             .setAuthor(
-                { name: 'Ver más en la web', iconURL: 'https://www.casemurocity.org/logo.webp', url: 'https://www.casemurocity.org/totw?semana=' + totw.weekIso }
+                { name: 'Ver más en la web', iconURL: 'https://city.casemuro.stream/logo.webp', url: 'https://city.casemuro.stream/totw?semana=' + totw.weekIso }
             )
             .setColor(13110541)
             .setImage('attachment://' + filenameBest)
@@ -66,7 +66,7 @@ async function handle(client, totw) {
                 }
             )
             .setAuthor(
-                { name: 'Ver más en la web', iconURL: 'https://www.casemurocity.org/logo.webp', url: 'https://www.casemurocity.org/totw?semana=' + totw.weekIso }
+                { name: 'Ver más en la web', iconURL: 'https://city.casemuro.stream/logo.webp', url: 'https://city.casemuro.stream/totw?semana=' + totw.weekIso }
             )
             .setColor(13110541)
             .setImage('attachment://' + filenameWorst)

@@ -18,6 +18,9 @@ export interface ClubColors {
 export interface ClubData {
     id: ClubId;
     name: string;
+    /** api del club: por defecto `/api` del propio dominio (Cloudflare lo enruta a su instancia).
+     *  `PUBLIC_API_URL` lo sobreescribe (p. ej. en local). */
+    apiUrl: string;
     logo: string;
     ogImage: string;
     themeColor: string;
@@ -28,12 +31,15 @@ export interface ClubData {
 
 export interface ClubConfig extends ClubData {
     siteUrl: string;
+    /** servicio de auth, común a todos los clubes */
+    authUrl: string;
 }
 
 const clubs: Record<ClubId, ClubData> = {
     city: {
         id: "city",
         name: "Casemuro City",
+        apiUrl: "/api",
         logo: "/club/city/logo.webp",
         ogImage: "/club/city/escudo_banner_fondo.webp",
         themeColor: "#C80D0D",
@@ -55,18 +61,23 @@ const clubs: Record<ClubId, ClubData> = {
     united: {
         id: "united",
         name: "Casemuro United",
-        logo: "/clubs/united/logo.png", // TODO: asset pendiente de proporcionar
-        ogImage: "/clubs/united/og.webp", // TODO: asset pendiente de proporcionar
-        themeColor: "#000000", // TODO: color pendiente de confirmar
+        apiUrl: "/api",
+        logo: "/club/city/logo.webp",
+        ogImage: "/club/city/escudo_banner_fondo.webp",
+        themeColor: "#C80D0D",
         colors: {
-            primary: "#000000", // TODO: color pendiente de confirmar
+            primary: "#c80d0d",
             primaryContent: "#ffffff",
-            secondary: "#000000", // TODO: color pendiente de confirmar
+            secondary: "#0037ff",
             secondaryContent: "#ffffff",
         },
-        keywords: ["casemuro united"], // TODO: keywords SEO pendientes de confirmar
+        keywords: ["casemuro united", "casemuro city", "casemurocity"],
         socials: {
-            // TODO: redes sociales de United pendientes de proporcionar
+            twitch: "https://www.twitch.tv/mr_casemuro",
+            youtube: "https://www.youtube.com/channel/UC33K1p2-9FwNclOSbQHFSpA/featured",
+            twitter: "https://twitter.com/Mr_Casemuro",
+            instagram: "https://www.instagram.com/mr.casemuro",
+            tiktok: "https://www.tiktok.com/@mr.casemuro",
         },
     },
 };
@@ -81,7 +92,12 @@ if (!clubId || !(clubId in clubs)) {
 const rawSiteUrl = import.meta.env.PUBLIC_SITE_URL || "";
 const siteUrl = rawSiteUrl.replace(/\/+$/, "");
 
+const stripSlash = (url: string) => url.replace(/\/+$/, "");
+
 export const CLUB: ClubConfig = {
     ...clubs[clubId],
     siteUrl,
+    // Las env mandan sobre los valores del club (útil en local y para entornos de prueba)
+    apiUrl: stripSlash(import.meta.env.PUBLIC_API_URL || clubs[clubId].apiUrl),
+    authUrl: stripSlash(import.meta.env.PUBLIC_AUTH_URL || "https://auth.casemuro.stream"),
 };

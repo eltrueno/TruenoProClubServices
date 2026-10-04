@@ -9,11 +9,11 @@ declare global {
     }
 }
 
-const AUTH_URL = process.env.AUTH_URL || "https://auth.casemurocity.org"
+const AUTH_URL = process.env.AUTH_URL || "https://auth.casemuro.stream"
 
 /**
  * Valida la sesión contra el servicio de auth reenviando la cookie
- * (las cookies de `.casemurocity.org` llegan al api sin más) y exige rol admin.
+ * (las cookies de `.casemuro.stream` llegan al api sin más) y exige rol admin.
  */
 async function fetchSessionUser(cookieHeader: string): Promise<User | null> {
     const res = await fetch(`${AUTH_URL}/api/auth/get-session`, {

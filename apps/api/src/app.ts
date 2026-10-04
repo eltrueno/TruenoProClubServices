@@ -7,7 +7,7 @@ import database from "./database/mongo.js"
 const app: Express = express();
 
 const DEVMODE = process.env.DEVMODE === "true"
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(",").map(s => s.trim()).filter(Boolean) ?? ["https://www.casemurocity.org"]
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(",").map(s => s.trim()).filter(Boolean) ?? ["https://city.casemuro.stream"]
 const PORT = Number(process.env.PORT || 80)
 
 // Límite por defecto (100kb) en todo menos la subida de fotos del admin, que lleva su propio parser de 8mb
@@ -18,7 +18,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 if (DEVMODE) console.warn("### DEVMODE ACTIVATED ###")
 
-// credentials: la cookie de sesión de auth.casemurocity.org viaja en las rutas protegidas (/admin, /members/me)
+// credentials: la cookie de sesión de auth.casemuro.stream viaja en las rutas protegidas (/admin, /members/me)
 app.use(cors({
     origin: DEVMODE ? true : ALLOWED_ORIGINS,
     credentials: true

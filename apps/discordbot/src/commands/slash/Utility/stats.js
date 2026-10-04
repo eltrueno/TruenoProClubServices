@@ -2,8 +2,8 @@ const { ApplicationCommandOptionType, MessageFlags } = require('discord.js');
 const { findByDiscordId } = require('../../../utils/players');
 require('dotenv').config();
 
-const API_URL = process.env.API_URL || "https://api.casemurocity.org"
-const WWW_URL = process.env.WWW_URL || "https://www.casemurocity.org"
+const API_URL = process.env.API_URL || "https://api.casemuro.stream"
+const WWW_URL = process.env.WWW_URL || "https://city.casemuro.stream"
 
 const SUM_FIELDS = ["gamesPlayed", "goals", "assists", "redCards", "manOfTheMatch", "ratingSum"]
 

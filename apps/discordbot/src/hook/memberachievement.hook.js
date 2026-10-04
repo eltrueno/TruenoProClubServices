@@ -1,7 +1,7 @@
 const { AttachmentBuilder } = require("discord.js")
 const { render } = require("@trueno-proclub-services/imagerenderer-client")
 require('dotenv').config();
-const WWW_URL = process.env.WWW_URL || "https://www.casemurocity.org"
+const WWW_URL = process.env.WWW_URL || "https://city.casemuro.stream"
 const { mention } = require("../utils/players")
 
 async function handle(client, achievement) {

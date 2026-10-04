@@ -2,9 +2,11 @@ import type {
     ApiResponse, IAchievementDefinition, IAverageStats, IClub, IClubMember, IClubMemberAdminPatch, ILinkRequest,
     IMatch, IPlayerProfile, IPlayerStats, IPublicUser, ITOTW, IMemberTotwAppearances, UserRole
 } from "@trueno-proclub-services/shared"
+import { CLUB } from "@/config/club"
 
-export const API_URL = "/api"
-export const AUTH_URL = "https://auth.casemuro.stream"
+// Cada club tiene su propio api; el auth es común. Ambos salen de la config del club (ver config/club.ts)
+export const API_URL = CLUB.apiUrl
+export const AUTH_URL = CLUB.authUrl
 
 /** Error tipado de cualquier llamada: `code` estable (ERROR_NOT_FOUND, UNAUTHORIZED…) + `httpStatus` */
 export class ApiError extends Error {

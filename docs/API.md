@@ -2,8 +2,8 @@
 
 Referencia de los dos servicios HTTP del monorepo:
 
-- **REST API** (`apps/api`) — `https://api.casemurocity.org`
-- **Auth service** (`apps/auth`) — `https://auth.casemurocity.org`
+- **REST API** (`apps/api`) — `https://api.casemuro.stream`
+- **Auth service** (`apps/auth`) — `https://auth.casemuro.stream`
 
 Los tipos de todas las respuestas están en `packages/shared` (`IClubMember`, `IMatch`, `IPlayerStats`, `ITOTW`, `IAchievementUnlocked`, `IPlayerProfile`, `ApiResponse<T>`…).
 
@@ -13,7 +13,7 @@ Los tipos de todas las respuestas están en `packages/shared` (`IClubMember`, `I
 
 - **`playerId`**: id del jugador en EA (personaId). Es la clave de todo lo relacionado con un jugador y no cambia aunque cambie de nombre. Sale de `clubs/matches` de EA (clave del objeto `players[clubId]`).
 - **`playerName`**: último gamertag visto para ese `playerId`. Solo para mostrar. Los miembros guardan además `nameHistory[]`.
-- **Sesión**: la pone el auth service en una cookie de dominio `.casemurocity.org`. Las rutas protegidas del api la validan reenviándola a `AUTH_URL/api/auth/get-session`; la web tiene que hacer `fetch(..., { credentials: "include" })`.
+- **Sesión**: la pone el auth service en una cookie de dominio `.casemuro.stream`. Las rutas protegidas del api la validan reenviándola a `AUTH_URL/api/auth/get-session`; la web tiene que hacer `fetch(..., { credentials: "include" })`.
 - **0 segundos**: un jugador que aparece en un partido con `secondsPlayed: 0` se guarda en el partido pero no cuenta para stats, medias, logros ni TOTW.
 - **Vinculación cuenta ↔ jugador** (`members.userId`): la hace un admin, bien directamente (`PATCH /admin/members/:playerId`), bien aprobando una **solicitud** que el propio usuario crea desde "Mi cuenta" (`POST /members/me/link-request`). Colección `link_requests` (`ILinkRequest`: `id, userId, userName, userImage, playerId, playerName, status: pending|approved|rejected, createdAt, resolvedAt, resolvedBy`). Un usuario solo puede tener una solicitud pendiente y una cuenta solo puede estar vinculada a un jugador.
 
@@ -109,7 +109,7 @@ Ver [`apps/api/.env.example`](../apps/api/.env.example).
 
 ## Auth service (`apps/auth`)
 
-Better Auth con proveedor social de **Twitch**. Cookie de sesión con dominio `COOKIE_DOMAIN` (`.casemurocity.org`).
+Better Auth con proveedor social de **Twitch**. Cookie de sesión con dominio `COOKIE_DOMAIN` (`.casemuro.stream`).
 
 ### Better Auth
 
