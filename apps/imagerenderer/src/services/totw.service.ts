@@ -5,7 +5,7 @@ import dotenv from "dotenv"
 dotenv.config()
 
 const DEVMODE = process.env.DEVMODE || false;
-const BASE_URL = process.env.BASE_URL || (DEVMODE ? "http://localhost:4321" : "https://www.casemurocity.org")
+const BASE_URL = process.env.BASE_URL || (DEVMODE ? "http://localhost:4321" : "https://city.casemuro.stream")
 
 const getTotwByWeekImage = async (week: number | string, type: "best" | "worst") => {
     const dir = path.join(__dirname, "../../imagescache");

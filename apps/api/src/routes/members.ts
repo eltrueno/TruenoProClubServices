@@ -9,7 +9,7 @@ router.get("/", getAllMembers)
 router.get("/stats/:type", getAllPlayerStatsByType)
 router.get("/stats", getAllPlayerStats)
 
-// Jugador vinculado a la cuenta con sesión (cookie de auth.casemurocity.org)
+// Jugador vinculado a la cuenta con sesión (cookie de auth.casemuro.stream)
 router.get("/me", requireAuth, getMyMember)
 // Solicitud de vinculacion cuenta <-> jugador (la aprueba un admin)
 router.get("/me/link-request", requireAuth, getMyLinkRequest)

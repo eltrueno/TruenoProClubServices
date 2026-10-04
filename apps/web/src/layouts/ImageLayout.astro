@@ -1,6 +1,7 @@
 ---
 // Página mínima que captura el imagerenderer con puppeteer (#to_image). Siempre en tema oscuro.
 import "../styles/global.css";
+import { CLUB } from "../config/club";
 ---
 
 <!doctype html>
@@ -9,9 +10,9 @@ import "../styles/global.css";
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="robots" content="noindex, nofollow" />
-		<link rel="icon" type="image/webp" href="/logo.webp" />
+		<link rel="icon" type="image/webp" href={CLUB.logo} />
 		<meta name="generator" content={Astro.generator} />
-		<title>Casemuro City</title>
+		<title>{CLUB.name}</title>
 	</head>
 	<body>
 		<main>

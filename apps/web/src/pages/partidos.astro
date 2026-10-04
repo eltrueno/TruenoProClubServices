@@ -1,36 +1,17 @@
 ---
 import MatchesContainer from "@/components/match/MatchesContainer.vue";
 import Layout from "@layouts/Layout.astro";
+import { CLUB } from "@/config/club";
 
 // Filtros por query (?id, ?desde, ?hasta, ?liga, ?playoff, ?amistoso): los lee MatchesContainer en cliente
 ---
 
 <Layout
-	title="Casemuro City: Partidos"
+	title={`${CLUB.name}: Partidos`}
 	isindex={false}
 	description="Historial y estadísticas de nuestros últimos partidos"
-	keywords="fifa, eafc, fifa23, fifa24, eafc24, club, pro, clubespro, proclubs, casemurocity, eltrueno, el_trueno, inicio, partidos, estadísticas, stats, casemuro, mrcasemuro, mr_casemuro"
+	keywords={[...CLUB.keywords, "fifa", "eafc", "fifa23", "fifa24", "eafc24", "club", "pro", "clubespro", "proclubs", "inicio", "partidos", "estadísticas", "stats"].join(", ")}
 >
-	<meta
-		slot="metadata"
-		property="og:url"
-		content="https://www.casemurocity.org/partidos"
-	/>
-	<meta
-		slot="metadata"
-		property="og:image"
-		content="https://www.casemurocity.org/escudo_banner_fondo.webp"
-	/>
-	<meta
-		slot="metadata"
-		name="twitter:url"
-		content="https://www.casemurocity.org/partidos"
-	/>
-	<meta
-		slot="metadata"
-		name="twitter:image"
-		content="https://www.casemurocity.org/escudo_banner_fondo.webp"
-	/>
 
 	<header class="container mx-auto mb-10">
 		<h1 class="text-primary font-bold text-3xl text-center mt-8 p-8">

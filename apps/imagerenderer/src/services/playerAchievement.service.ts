@@ -5,7 +5,7 @@ import dotenv from "dotenv"
 dotenv.config()
 
 const DEVMODE = false;
-const BASE_URL = process.env.BASE_URL || (DEVMODE ? "http://localhost:4321" : "https://www.casemurocity.org")
+const BASE_URL = process.env.BASE_URL || (DEVMODE ? "http://localhost:4321" : "https://city.casemuro.stream")
 
 const getAchievementImage = async (playerId: string, type: string, reached: number) => {
     const dir = path.join(__dirname, "../../imagescache");

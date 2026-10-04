@@ -89,7 +89,7 @@ defineProps({
 .glitch {
   position: relative;
   display: inline-block;
-  color: #C80D0D;
+  color: var(--color-primary);
   /* Ciclo de 4s, bursts más largos y frecuentes */
   animation: glitchBase 4s steps(1) infinite;
 }

@@ -1,11 +1,12 @@
 ---
+import { CLUB } from "@/config/club";
 ---
 
 <header class="p-6 bg-primary text-primary-content">
     <div class="flex flex-col justify-center items-center px-6">
-        <img src="/logo.webp" class="w-1/4 md:w-1/12 escudo" alt="Escudo del Casemuro City" />
+        <img src={CLUB.logo} class="w-1/4 md:w-1/12 escudo" alt={`Escudo de ${CLUB.name}`} />
     </div>
-    <p class="text-3xl mt-4 font-bold text-center uppercase">Casemuro City</p>
+    <p class="text-3xl mt-4 font-bold text-center uppercase">{CLUB.name}</p>
 </header>
 
 <style>

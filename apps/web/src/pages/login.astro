@@ -1,35 +1,15 @@
 ---
-import LoginWall from "@/components/auth/LoginWall.vue"
-import Layout from "@/layouts/Layout.astro"
+import LoginWall from "@/components/auth/LoginWall.vue";
+import Layout from "@/layouts/Layout.astro";
+import { CLUB } from "@/config/club";
 ---
 
 <Layout
-	title="Casemuro City: Inicio de sesión"
+	title={`${CLUB.name}: Inicio de sesión`}
 	isindex={false}
-	description="Inicio de sesión en Casemuro City"
-	keywords="fifa, eafc, fifa23, fifa24, eafc24, club, pro, clubespro, proclubs, casemurocity, eltrueno, el_trueno, inicio, jugador, login, cuenta, casemuro, mrcasemuro, mr_casemuro"
+	description={`Inicio de sesión en ${CLUB.name}`}
+	keywords={[...CLUB.keywords, "fifa", "eafc", "fifa23", "fifa24", "eafc24", "club", "pro", "clubespro", "proclubs", "inicio", "jugador", "login", "cuenta"].join(", ")}
 >
-	<meta
-		slot="metadata"
-		property="og:url"
-		content={`https://www.casemurocity.org/login`}
-	/>
-	<meta
-		slot="metadata"
-		property="og:image"
-		content="https://www.casemurocity.org/escudo_banner_fondo.webp"
-	/>
-	<meta
-		slot="metadata"
-		name="twitter:url"
-		content={`https://www.casemurocity.org/login`}
-	/>
-	<meta
-		slot="metadata"
-		name="twitter:image"
-		content="https://www.casemurocity.org/escudo_banner_fondo.webp"
-	/>
-
 	<meta slot="metadata" name="robots" content="noindex, nofollow" />
 
 	<section>

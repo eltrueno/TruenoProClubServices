@@ -2,9 +2,11 @@ import type {
     ApiResponse, IAchievementDefinition, IAverageStats, IClub, IClubMember, IClubMemberAdminPatch, ILinkRequest,
     IMatch, IPlayerProfile, IPlayerStats, IPublicUser, ITOTW, IMemberTotwAppearances, UserRole
 } from "@trueno-proclub-services/shared"
+import { CLUB } from "@/config/club"
 
-export const API_URL = import.meta.env.PUBLIC_API_URL ?? "https://api.casemurocity.org"
-export const AUTH_URL = import.meta.env.PUBLIC_AUTH_URL ?? "https://auth.casemurocity.org"
+// Cada club tiene su propio api; el auth es común. Ambos salen de la config del club (ver config/club.ts)
+export const API_URL = CLUB.apiUrl
+export const AUTH_URL = CLUB.authUrl
 
 /** Error tipado de cualquier llamada: `code` estable (ERROR_NOT_FOUND, UNAUTHORIZED…) + `httpStatus` */
 export class ApiError extends Error {
@@ -21,7 +23,7 @@ export class ApiError extends Error {
 interface RequestOptions<TBody = unknown> {
     method?: "GET" | "POST" | "PATCH" | "DELETE"
     body?: TBody
-    /** Envía la cookie de sesión (.casemurocity.org). Solo para rutas protegidas. */
+    /** Envía la cookie de sesión*/
     credentials?: boolean
 }
 

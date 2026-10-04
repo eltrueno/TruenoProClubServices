@@ -166,6 +166,6 @@ const privacyModal = ref(null)
 
 <style scoped>
 .card {
-  background-image: radial-gradient(circle at top right, rgba(200, 13, 13, 0.05), transparent 40%);
+  background-image: radial-gradient(circle at top right, color-mix(in srgb, var(--color-primary) 5%, transparent), transparent 40%);
 }
 </style>

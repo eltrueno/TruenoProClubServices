@@ -11,7 +11,7 @@
                         <!-- Legend -->
                         <div class="hidden sm:flex items-center gap-4 text-xs text-base-content/60 mr-2">
                             <span class="flex items-center gap-1.5">
-                                <span class="w-5 h-0.5 bg-[#C80D0D] rounded-full inline-block"></span>
+                                <span class="w-5 h-0.5 bg-primary rounded-full inline-block"></span>
                                 Partido
                             </span>
                             <span class="flex items-center gap-1.5">
@@ -569,6 +569,8 @@
     import type PlayerProfileEntity from '@/model/PlayerProfileEntity';
     import type PlayerStatsEntity from '@/model/PlayerStatsEntity';
     import type ClubMatchEntity from '@/model/match/ClubMatchEntity';
+    import { CLUB } from '@/config/club';
+    import { hexToRgba } from '@/lib/color';
 
     import { useChartExternalTooltip } from '@/composables/useChartExternalTooltip'
     import MatchChartTooltip from '@/components/player/detail/charts/MatchChartTooltip.vue'
@@ -983,10 +985,10 @@
                 {
                     label: 'Partido',
                     data: dataPoints,
-                    borderColor: '#C80D0D',
-                    backgroundColor: 'rgba(200, 13, 13, 0.08)',
+                    borderColor: CLUB.colors.primary,
+                    backgroundColor: hexToRgba(CLUB.colors.primary, 0.08),
                     borderWidth: 3,
-                    pointBackgroundColor: '#C80D0D',
+                    pointBackgroundColor: CLUB.colors.primary,
                     pointBorderColor: '#fff',
                     pointRadius: 4,
                     pointHoverRadius: 6,
@@ -1177,7 +1179,7 @@
             labels: ratings.map(r => r.toFixed(1)),
             datasets: [{
                 data: ratings,
-                backgroundColor: ratings.map(r => r >= avg ? '#C80D0D' : 'rgba(200, 13, 13, 0.4)'),
+                backgroundColor: ratings.map(r => r >= avg ? CLUB.colors.primary : hexToRgba(CLUB.colors.primary, 0.4)),
                 borderRadius: 4,
                 barThickness: isMobile.value ? 28 : 40,
                 maxBarThickness: 50
