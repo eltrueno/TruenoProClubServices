@@ -1,0 +1,19 @@
+---
+/**
+ * Título de sección de la landing. En los clubes con cabecera sobre el fondo del tema
+ * (headerStyle "base") lleva debajo una línea corta del color del club: sin la navbar
+ * de color, son estas líneas las que dan el toque de marca.
+ */
+import Separator from "./Separator.astro";
+import { CLUB } from "@/config/club";
+
+interface Props {
+    id?: string;
+}
+const { id } = Astro.props;
+---
+
+<div class="mb-6 flex flex-col items-center gap-3 reveal">
+    <h2 id={id} class="text-2xl lg:text-4xl font-black tracking-tighter text-center"><slot /></h2>
+    {CLUB.headerStyle === "base" && <div class="w-24 lg:w-32"><Separator height="h-[3px]" /></div>}
+</div>

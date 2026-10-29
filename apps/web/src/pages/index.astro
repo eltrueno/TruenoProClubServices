@@ -6,6 +6,7 @@ import ClubHighlights from "@components/home/ClubHighlights.vue";
 import LastMatches from "@components/home/LastMatches.vue";
 import ClubRecords from "@components/home/ClubRecords.vue";
 import ClubPulse from "@components/home/ClubPulse.vue";
+import SectionTitle from "@components/layout/SectionTitle.astro";
 import { CLUB } from "@/config/club";
 ---
 
@@ -35,7 +36,7 @@ import { CLUB } from "@/config/club";
 
 		<!-- Datos del club -->
 		<section>
-			<h2 class="text-2xl lg:text-4xl font-black tracking-tighter text-center mb-6 reveal" id="datos">Datos, no opiniones</h2>
+			<SectionTitle id="datos">Datos, no opiniones</SectionTitle>
 			<ClubHighlights client:only="vue" />
 		</section>
 
@@ -46,19 +47,19 @@ import { CLUB } from "@/config/club";
 
 		<!-- El club en datos -->
 		<section>
-			<h2 class="text-2xl lg:text-4xl font-black tracking-tighter text-center mb-6 reveal">El club en cifras</h2>
+			<SectionTitle>El club en cifras</SectionTitle>
 			<ClubPulse client:only="vue" />
 		</section>
 
 		<!-- Récords del club -->
 		<section>
-			<h2 class="text-2xl lg:text-4xl font-black tracking-tighter text-center mb-6 reveal">Récords del club</h2>
+			<SectionTitle>Récords del club</SectionTitle>
 			<ClubRecords client:only="vue" />
 		</section>
 
 		<!-- Todos los números (stats completas de EA) -->
 		<section>
-			<h2 class="text-2xl lg:text-4xl font-black tracking-tighter text-center mb-6 reveal">Todos los números</h2>
+			<SectionTitle>Todos los números</SectionTitle>
 			<ClubStats client:only="vue" class="overflow-clip" />
 		</section>
 	</div>

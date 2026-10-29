@@ -36,7 +36,8 @@ export interface ClubData {
     ogImage: string;
     themeColor: string;
     colors: ClubColors;
-    /** Fondo de la cabecera y la navbar: el color principal o el fondo del tema (como el footer) */
+    /** Fondo de la cabecera y la navbar: el color principal o el fondo del tema. Con "base" se
+     *  añaden líneas del color del club (bajo la navbar y en los títulos) para no perder la marca */
     headerStyle: "primary" | "base";
     /** Fondos propios por tema; sin ellos, los de global.css */
     surfaces?: { light?: ClubThemeSurfaces; dark?: ClubThemeSurfaces };

@@ -99,9 +99,10 @@ const playerOfTheMoment = computed(() => {
             </template>
         </div>
 
-        <!-- Jugador del momento -->
+        <!-- Jugador del momento. El aura toma el color del texto (text-primary/40), así que el
+             contenido recupera el suyo: si no, todo lo de dentro sale en primary al 40% -->
         <div class="reveal-zoom aura aura-glow text-primary/40 rounded-2xl w-full">
-        <div class="rounded-2xl bg-base-200 p-5 h-full">
+        <div class="rounded-2xl bg-base-200 p-5 h-full text-base-content">
             <h3 class="text-[11px] uppercase tracking-widest font-black text-base-content/50 mb-3">Jugador del momento</h3>
             <div v-if="loading" class="flex items-center gap-3">
                 <div class="skeleton w-12 h-14 rounded-lg shrink-0"></div>
