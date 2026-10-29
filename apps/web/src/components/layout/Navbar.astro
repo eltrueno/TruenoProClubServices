@@ -4,6 +4,7 @@ import HomeIcon from "@/icons/home.svg";
 import UsersIcon from "@/icons/usersgroup.svg";
 import CalendarIcon from "@/icons/calendar.svg";
 import AwardIcon from "@/icons/award.svg";
+import Separator from "./Separator.astro";
 import { CLUB } from "@/config/club";
 
 interface Props {
@@ -24,8 +25,11 @@ const normalize = (path: string) => path.replace(/\.html$/, "").replace(/\/index
 const currentPath = normalize(Astro.url.pathname);
 const isActive = (href: string) => href === currentPath;
 
-// Fondo de la nav según el club: su color principal o el del tema, como el footer (ver headerStyle)
-const navTheme = CLUB.headerStyle === "base" ? "nav-base bg-base-200 text-base-content border-b border-base-300" : "nav-primary bg-primary text-primary-content";
+// Fondo de la nav según el club: su color principal o el del tema (ver headerStyle). Sobre el fondo del
+// tema se despega de la página con un tono más marcado (más oscuro en claro, más claro en oscuro)
+// y una línea del color del club debajo
+const isBase = CLUB.headerStyle === "base";
+const navTheme = isBase ? "nav-base bg-base-300 dark:bg-base-100 text-base-content" : "nav-primary bg-primary text-primary-content";
 ---
 
 <nav class:list={["navbar min-w-full sticky top-0 rounded-b-md shadow-md z-50", navTheme]}>
@@ -55,6 +59,8 @@ const navTheme = CLUB.headerStyle === "base" ? "nav-base bg-base-200 text-base-c
     <div id="navbar-account" class="ml-auto z-10" data-astro-prefetch="false">
         <NavbarAccount client:only="vue" />
     </div>
+
+    {isBase && <div class="absolute inset-x-0 bottom-0 pointer-events-none"><Separator height="h-[2px]" /></div>}
 </nav>
 
 <script>
