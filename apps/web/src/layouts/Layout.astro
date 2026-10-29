@@ -19,23 +19,22 @@ const pathname = Astro.url.pathname.replace(/\/+$/, "") || "";
 const canonicalUrl = `${CLUB.siteUrl}${pathname}`;
 const ogImageUrl = CLUB.ogImage.startsWith("http") ? CLUB.ogImage : `${CLUB.siteUrl}${CLUB.ogImage}`;
 
-// Variables de marca por tema. `primaryDark` solo se define en clubes cuyo color
-// principal necesita invertirse en oscuro (ver ClubColors en config/club.ts).
+// Variables del club por tema: colores de marca y, si el club los define, sus fondos (ver config/club.ts)
 const c = CLUB.colors;
-const clubThemeCss = [
-	':root[data-theme="light"]{',
-	`--color-primary:${c.primary};`,
-	`--color-primary-content:${c.primaryContent};`,
-	`--color-secondary:${c.secondary};`,
-	`--color-secondary-content:${c.secondaryContent};`,
-	"}",
-	':root[data-theme="dark"]{',
-	`--color-primary:${c.primaryDark ?? c.primary};`,
-	`--color-primary-content:${c.primaryContentDark ?? c.primaryContent};`,
-	`--color-secondary:${c.secondary};`,
-	`--color-secondary-content:${c.secondaryContent};`,
-	"}",
-].join("");
+const themeVars = (theme: "light" | "dark") => {
+	const s = CLUB.surfaces?.[theme];
+	return [
+		`--color-primary:${c.primary};`,
+		`--color-primary-content:${c.primaryContent};`,
+		`--color-secondary:${c.secondary};`,
+		`--color-secondary-content:${c.secondaryContent};`,
+		s?.base100 && `--color-base-100:${s.base100};`,
+		s?.base200 && `--color-base-200:${s.base200};`,
+		s?.base300 && `--color-base-300:${s.base300};`,
+		s?.baseContent && `--color-base-content:${s.baseContent};`,
+	].filter(Boolean).join("");
+};
+const clubThemeCss = `:root[data-theme="light"]{${themeVars("light")}}:root[data-theme="dark"]{${themeVars("dark")}}`;
 let twitterDomain = "";
 try {
 	if (CLUB.siteUrl) {

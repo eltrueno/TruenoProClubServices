@@ -91,6 +91,10 @@ jobs:
           GH_TOKEN: ${{ secrets.CLUB_PAGES_DISPATCH_TOKEN }}
           REPOS: ${{ vars.CLUB_PAGES_REPOS }}
         run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::CLUB_PAGES_DISPATCH_TOKEN llega vacío: tiene que ser un *repository* secret de Actions (no de environment, Codespaces ni Dependabot)"
+            exit 1
+          fi
           for repo in ${REPOS//,/ }; do
             echo "-> $repo ($GITHUB_SHA)"
             gh api "repos/$repo/dispatches" -f event_type=web-updated -f "client_payload[sha]=$GITHUB_SHA"

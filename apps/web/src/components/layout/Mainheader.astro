@@ -2,7 +2,7 @@
 import { CLUB } from "@/config/club";
 ---
 
-<header class="p-6 bg-primary text-primary-content">
+<header class:list={["p-6", CLUB.headerStyle === "base" ? "bg-base-200 text-base-content" : "bg-primary text-primary-content"]}>
     <div class="flex flex-col justify-center items-center px-6">
         <img src={CLUB.logo} class="w-1/4 md:w-1/12 escudo" alt={`Escudo de ${CLUB.name}`} />
     </div>
