@@ -5,6 +5,7 @@
  * resolución y escala que tenían todas las fotos del club— y sube el PNG resultante.
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue"
+import type { IClubMember, ImageScope } from "@trueno-proclub-services/shared"
 import { ApiError, tpcsApi } from "@/lib/api"
 import { PLAYER_PLACEHOLDER } from "@/lib/playerImage"
 
@@ -12,8 +13,13 @@ import { PLAYER_PLACEHOLDER } from "@/lib/playerImage"
 const FRAME_W = 400
 const FRAME_H = 450
 
-const props = defineProps<{ playerId: string; playerName: string }>()
-const emit = defineEmits<{ (e: "uploaded", imageUrl: string): void }>()
+const props = withDefaults(defineProps<{
+    playerId: string
+    playerName: string
+    /** dónde se guarda la foto: la de todos los clubes o solo la de este */
+    scope?: ImageScope
+}>(), { scope: "global" })
+const emit = defineEmits<{ (e: "uploaded", member: IClubMember): void }>()
 
 const dialog = ref<HTMLDialogElement | null>(null)
 const canvas = ref<HTMLCanvasElement | null>(null)
@@ -61,6 +67,14 @@ const draw = () => {
         ctx.drawImage(guide, 0, 0, FRAME_W, FRAME_H)
         ctx.globalAlpha = 1
     }
+}
+
+// Arrastrar y la rueda disparan eventos más rápido que la pantalla (120-240/s con ratones
+// de alta frecuencia): se acumulan y se pinta una vez por fotograma
+let frame = 0
+const scheduleDraw = () => {
+    if (frame) return
+    frame = requestAnimationFrame(() => { frame = 0; draw() })
 }
 
 /** Encuadre inicial: la imagen cubre el marco a lo ancho y se pega arriba (los bustos) */
@@ -112,22 +126,24 @@ const onFile = async (ev: Event) => {
 let dragging = false
 let lastX = 0
 let lastY = 0
+// px del marco por px de pantalla; se mide al empezar a arrastrar, no en cada movimiento
+let dragScale = 1
 const displayScale = () => (canvas.value ? FRAME_W / canvas.value.getBoundingClientRect().width : 1)
 const onPointerDown = (e: PointerEvent) => {
     if (!img.value) return
     dragging = true
+    dragScale = displayScale()
     lastX = e.clientX
     lastY = e.clientY
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
 }
 const onPointerMove = (e: PointerEvent) => {
     if (!dragging) return
-    const k = displayScale()
-    offsetX.value += (e.clientX - lastX) * k
-    offsetY.value += (e.clientY - lastY) * k
+    offsetX.value += (e.clientX - lastX) * dragScale
+    offsetY.value += (e.clientY - lastY) * dragScale
     lastX = e.clientX
     lastY = e.clientY
-    draw()
+    scheduleDraw()
 }
 const onPointerUp = () => { dragging = false }
 
@@ -139,13 +155,13 @@ const zoomTo = (next: number, cx = FRAME_W / 2, cy = FRAME_H / 2) => {
     offsetX.value = cx - (cx - offsetX.value) * ratio
     offsetY.value = cy - (cy - offsetY.value) * ratio
     scale.value = s
-    draw()
+    scheduleDraw()
 }
 const onWheel = (e: WheelEvent) => {
     if (!img.value) return
     e.preventDefault()
     const rect = canvas.value!.getBoundingClientRect()
-    const k = displayScale()
+    const k = FRAME_W / rect.width
     zoomTo(scale.value * (e.deltaY < 0 ? 1.08 : 1 / 1.08), (e.clientX - rect.left) * k, (e.clientY - rect.top) * k)
 }
 const sliderValue = computed({
@@ -165,8 +181,8 @@ const upload = async () => {
         const dataUrl = canvas.value.toDataURL("image/png")
         showGuide.value = wasGuide
         draw()
-        const member = await tpcsApi.admin.uploadMemberImage(props.playerId, dataUrl)
-        emit("uploaded", member.imageUrl || "")
+        const member = await tpcsApi.admin.uploadMemberImage(props.playerId, dataUrl, props.scope)
+        emit("uploaded", member)
         close()
     } catch (e) {
         setError(e, "No se ha podido subir la foto")
@@ -198,7 +214,10 @@ const close = () => dialog.value?.close()
 
 watch(showGuide, draw)
 guide.onload = draw
-onBeforeUnmount(() => { if (objectUrl) URL.revokeObjectURL(objectUrl) })
+onBeforeUnmount(() => {
+    cancelAnimationFrame(frame)
+    if (objectUrl) URL.revokeObjectURL(objectUrl)
+})
 
 defineExpose({ open, close })
 </script>

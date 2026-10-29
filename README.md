@@ -139,7 +139,8 @@ Las más importantes:
 
 | Variable | Apps | Descripción |
 |---|---|---|
-| `MONGO_URL` / `MONGODB_URI` | api, worker / auth | Conexión a MongoDB |
+| `MONGO_URL` / `MONGODB_URI` | api, worker / auth | Conexión a MongoDB (en api y worker, la base del club) |
+| `SHARED_DB_NAME` | api, worker | Base común a todos los clubes (vínculos, fotos globales, solicitudes). Por defecto `tpcs27_shared`. El usuario de `MONGO_URL` necesita `readWrite` también sobre ella |
 | `CLUBID` | api, worker | Id del club en EA. **Cambia con cada entrega** (FC27 = club nuevo) |
 | `PLATFORM` | api, worker | `common-gen5`, `common-gen4` o `nx` |
 | `ALLOWED_ORIGINS` | api, auth | Orígenes permitidos (CORS / trustedOrigins), separados por coma |
@@ -210,12 +211,21 @@ Documentados en **[docs/API.md](docs/API.md)** (REST API, auth service y eventos
 | Colección | Contenido |
 |---|---|
 | `clubs` | Caché de info + stats globales del club |
-| `members` | Miembros (`playerId` único, `playerName`, `nameHistory`, `pro*`, `imageUrl`, `userId`) |
+| `members` | Miembros (`playerId` único, `playerName`, `nameHistory`, `pro*`, `imageUrl` = foto propia del club) |
 | `matches` | Partidos normalizados (`_id` = `matchId`) |
 | `member_stats_officials` / `member_stats_friendlies` | Stats acumuladas por jugador y posición |
 | `player_average_stats` | Medias del club por posición |
 | `achievements_definitions` / `achievements_unlocked` | Definiciones y desbloqueos de logros |
 | `totw` / `member_totw_appearances` | Equipo de la semana y apariciones |
+
+Cada club tiene su base (la de `MONGO_URL`). Además hay una **base compartida** entre clubes (`SHARED_DB_NAME`, por defecto `tpcs27_shared`) para lo que es de la persona y no del club:
+
+| Colección | Contenido |
+|---|---|
+| `players` | Identidad global por `playerId`: cuenta vinculada (`userId`, una cuenta = un jugador en todos los clubes) y foto por defecto (`imageUrl`) |
+| `link_requests` | Solicitudes de vinculación cuenta ↔ jugador |
+
+La foto que ve la web es la del club si la tiene y, si no, la global. El api migra solo (una vez por base de club, al arrancar) el vínculo y las fotos que antes vivían en `members`; ver [docs/API.md](docs/API.md).
 
 La base de datos de auth (Better Auth) es independiente: `user`, `session`, `account`, `verification`.
 
@@ -338,7 +348,8 @@ Each app ships a commented `.env.example`: [`apps/api`](apps/api/.env.example), 
 
 | Variable | Apps | Description |
 |---|---|---|
-| `MONGO_URL` / `MONGODB_URI` | api, worker / auth | MongoDB connection |
+| `MONGO_URL` / `MONGODB_URI` | api, worker / auth | MongoDB connection (for api and worker, the club's database) |
+| `SHARED_DB_NAME` | api, worker | Database shared by all clubs (links, global photos, link requests). Defaults to `tpcs27_shared`. The `MONGO_URL` user also needs `readWrite` on it |
 | `CLUBID` | api, worker | EA club id. **Changes every game release** (FC27 = new club) |
 | `PLATFORM` | api, worker | `common-gen5`, `common-gen4` or `nx` |
 | `ALLOWED_ORIGINS` | api, auth | Comma-separated allowed origins (CORS / trustedOrigins) |
@@ -358,7 +369,7 @@ See **[docs/API.md](docs/API.md)** (REST API, auth service and RabbitMQ events).
 
 ### 🗓️ Database
 
-MongoDB. Explicit collection names live in `packages/shared/src/models`: `clubs`, `members`, `matches`, `member_stats_officials`, `member_stats_friendlies`, `player_average_stats`, `achievements_definitions`, `achievements_unlocked`, `totw`, `member_totw_appearances`. The auth database (Better Auth) is separate.
+MongoDB. Explicit collection names live in `packages/shared/src/models`: `clubs`, `members`, `matches`, `member_stats_officials`, `member_stats_friendlies`, `player_average_stats`, `achievements_definitions`, `achievements_unlocked`, `totw`, `member_totw_appearances`. Each club has its own database; a **shared database** (`SHARED_DB_NAME`, default `tpcs27_shared`) holds what belongs to the person rather than the club: `players` (global identity per `playerId`: linked account and default photo) and `link_requests`. A club can override a player's photo with its own (`members.imageUrl`). The api migrates the legacy link and photos out of `members` once per club database on startup. The auth database (Better Auth) is separate.
 
 ### 🐳 Docker
 

@@ -3,6 +3,7 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import errorHandler from "./middleware/errorHandler.js";
 import database from "./database/mongo.js"
+import { migrateToSharedIdentity } from "./services/identityMigration.service.js"
 
 const app: Express = express();
 
@@ -46,8 +47,11 @@ app.use("/matches", matchesRouter)
 /* Error middlewere after all routers */
 app.use(errorHandler)
 
-database().then(() => {
+database().then(async () => {
     console.log("Connection to database: OK")
+    // Una sola vez por base de club; si falla se reintenta al reiniciar (ver el servicio)
+    await migrateToSharedIdentity().catch((e) =>
+        console.error("[identity] Migración a la base compartida fallida, se reintentará al reiniciar:", e instanceof Error ? e.message : e))
 })
     .catch((e) => console.log("An error ocurred while trying to connect to database:  " + e))
 

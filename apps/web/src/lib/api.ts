@@ -1,5 +1,5 @@
 import type {
-    ApiResponse, IAchievementDefinition, IAverageStats, IClub, IClubMember, IClubMemberAdminPatch, ILinkRequest,
+    ApiResponse, IAchievementDefinition, IAverageStats, IClub, IClubMember, IClubMemberAdminPatch, ILinkRequest, ImageScope,
     IMatch, IPlayerProfile, IPlayerStats, IPublicUser, ITOTW, IMemberTotwAppearances, UserRole
 } from "@trueno-proclub-services/shared"
 import { CLUB } from "@/config/club"
@@ -100,9 +100,10 @@ export const tpcsApi = {
     admin: {
         patchMember: (playerId: string, patch: IClubMemberAdminPatch) =>
             api<IClubMember>(`/admin/members/${encodeURIComponent(playerId)}`, { method: "PATCH", body: patch, credentials: true }),
-        /** Sube la foto ya recortada (PNG 400x450 en data URL) a R2 y la asigna al jugador */
-        uploadMemberImage: (playerId: string, imageDataUrl: string) =>
-            api<IClubMember>(`/admin/members/${encodeURIComponent(playerId)}/image`, { method: "POST", body: { image: imageDataUrl }, credentials: true }),
+        /** Sube la foto ya recortada (PNG 400x450 en data URL) a R2 y la asigna al jugador:
+         *  como foto global (todos los clubes) o solo de este club */
+        uploadMemberImage: (playerId: string, imageDataUrl: string, scope: ImageScope = "global") =>
+            api<IClubMember>(`/admin/members/${encodeURIComponent(playerId)}/image`, { method: "POST", body: { image: imageDataUrl, scope }, credentials: true }),
         /** Descarga una imagen remota vía api (POST a propósito: exige preflight) para pintarla en canvas sin CORS */
         fetchImageViaProxy: async (url: string): Promise<Blob> => {
             const res = await fetch(`${API_URL}/admin/image-proxy`, {

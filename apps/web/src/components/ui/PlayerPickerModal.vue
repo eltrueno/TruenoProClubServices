@@ -4,6 +4,8 @@
  * con foto, nombre y subtítulo. Uno o varios (`multiple`).
  * v-model: id (string) en simple, ids (string[]) en múltiple.
  * El disparador es el botón por defecto o lo que se pase en el slot (recibe `open`).
+ * Con `:trigger="false"` no pinta disparador: se abre desde fuera con `open()` (ref),
+ * útil para usar un único selector en listas largas en vez de uno por fila.
  */
 import { computed, nextTick, ref, watch } from "vue"
 import { PLAYER_POSITIONS, type IClubMember, type PlayerPosition } from "@trueno-proclub-services/shared"
@@ -46,6 +48,8 @@ const props = withDefaults(defineProps<{
     clearable?: boolean
     size?: "sm" | "md"
     disabled?: boolean
+    /** pinta el botón disparador (o el slot); false = solo se abre con `open()` */
+    trigger?: boolean
 }>(), {
     multiple: false,
     title: "Seleccionar",
@@ -57,12 +61,15 @@ const props = withDefaults(defineProps<{
     fallbackImage: "",
     clearable: true,
     size: "sm",
-    disabled: false
+    disabled: false,
+    trigger: true
 })
 const emit = defineEmits<{ (e: "update:modelValue", value: string | string[] | null): void }>()
 
 const dialog = ref<HTMLDialogElement | null>(null)
 const searchInput = ref<HTMLInputElement | null>(null)
+// La lista solo existe mientras el modal está abierto: cerrado no cuesta nada aunque haya muchos selectores
+const isOpen = ref(false)
 const search = ref("")
 const positionFilter = ref<PlayerPosition | null>(null)
 const hasPositions = computed(() => props.items.some((i) => i.positions?.length))
@@ -100,6 +107,7 @@ const open = async () => {
     search.value = ""
     positionFilter.value = null
     draft.value = [...selectedIds.value]
+    isOpen.value = true
     dialog.value?.showModal()
     await nextTick()
     searchInput.value?.focus()
@@ -131,7 +139,7 @@ defineExpose({ open, close })
 </script>
 
 <template>
-    <slot :open="open" :selected="selectedItems" :label="label">
+    <slot v-if="trigger" :open="open" :selected="selectedItems" :label="label">
         <button type="button" class="btn btn-outline w-full justify-between font-normal" :class="[size === 'sm' ? 'btn-sm' : '', $attrs.class]" :disabled="disabled" @click="open">
             <span class="flex items-center gap-2 min-w-0">
                 <template v-if="!multiple && selectedItems[0]">
@@ -148,7 +156,8 @@ defineExpose({ open, close })
         </button>
     </slot>
 
-    <dialog ref="dialog" class="modal modal-bottom sm:modal-middle">
+    <!-- `close` salta también con Esc y con el fondo: ahí se desmonta la lista -->
+    <dialog ref="dialog" class="modal modal-bottom sm:modal-middle" @close="isOpen = false">
         <div class="modal-box bg-base-200 border border-base-300 shadow-2xl w-full sm:w-11/12 max-w-none sm:max-w-5xl p-0 flex flex-col h-[85dvh] sm:h-[min(90dvh,48rem)] max-h-[85dvh] sm:max-h-[90dvh]">
             <div class="px-5 py-4 border-b border-base-300 shrink-0 flex flex-col gap-3">
                 <div class="flex items-center justify-between gap-2">
@@ -173,7 +182,7 @@ defineExpose({ open, close })
                 </div>
             </div>
 
-            <div class="overflow-y-auto flex-1 min-h-0 p-3">
+            <div v-if="isOpen" class="overflow-y-auto flex-1 min-h-0 p-3">
                 <p v-if="filtered.length === 0" class="text-center text-sm opacity-50 py-10">{{ emptyText }}</p>
                 <TransitionGroup v-else tag="ul" name="list-fade" class="relative grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
                     <li v-for="item in filtered" :key="item.id">
@@ -201,7 +210,7 @@ defineExpose({ open, close })
                             </PlayerCard>
                             <template v-else>
                                 <div class="shrink-0 overflow-hidden bg-base-300 size-10 rounded-full">
-                                    <img v-if="item.image || fallbackImage" :src="item.image || fallbackImage" :alt="item.name" class="w-full h-full object-cover" />
+                                    <img v-if="item.image || fallbackImage" :src="item.image || fallbackImage" :alt="item.name" class="w-full h-full object-cover" loading="lazy" />
                                 </div>
                                 <div class="min-w-0 flex-1">
                                     <p class="font-bold text-sm truncate">{{ item.name }}</p>

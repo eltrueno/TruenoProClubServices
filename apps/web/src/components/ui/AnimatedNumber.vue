@@ -26,12 +26,14 @@ const displayed = ref(0)
 let frame = 0
 let from = 0
 
-const format = (n: number) =>
-    n.toLocaleString("es-ES", {
-        minimumFractionDigits: props.decimals,
-        maximumFractionDigits: props.decimals,
-        useGrouping: props.grouping
-    })
+// toLocaleString con opciones crea un Intl.NumberFormat en cada llamada, y aquí se llama
+// en cada fotograma de cada número animado: se crea uno y se reutiliza
+const formatter = computed(() => new Intl.NumberFormat("es-ES", {
+    minimumFractionDigits: props.decimals,
+    maximumFractionDigits: props.decimals,
+    useGrouping: props.grouping
+}))
+const format = (n: number) => formatter.value.format(n)
 
 // easing suave al final (out-cubic)
 const ease = (t: number) => 1 - Math.pow(1 - t, 3)

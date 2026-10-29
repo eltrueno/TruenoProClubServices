@@ -18,6 +18,24 @@ const { title, isindex, description, keywords } = Astro.props;
 const pathname = Astro.url.pathname.replace(/\/+$/, "") || "";
 const canonicalUrl = `${CLUB.siteUrl}${pathname}`;
 const ogImageUrl = CLUB.ogImage.startsWith("http") ? CLUB.ogImage : `${CLUB.siteUrl}${CLUB.ogImage}`;
+
+// Variables de marca por tema. `primaryDark` solo se define en clubes cuyo color
+// principal necesita invertirse en oscuro (ver ClubColors en config/club.ts).
+const c = CLUB.colors;
+const clubThemeCss = [
+	':root[data-theme="light"]{',
+	`--color-primary:${c.primary};`,
+	`--color-primary-content:${c.primaryContent};`,
+	`--color-secondary:${c.secondary};`,
+	`--color-secondary-content:${c.secondaryContent};`,
+	"}",
+	':root[data-theme="dark"]{',
+	`--color-primary:${c.primaryDark ?? c.primary};`,
+	`--color-primary-content:${c.primaryContentDark ?? c.primaryContent};`,
+	`--color-secondary:${c.secondary};`,
+	`--color-secondary-content:${c.secondaryContent};`,
+	"}",
+].join("");
 let twitterDomain = "";
 try {
 	if (CLUB.siteUrl) {
@@ -64,6 +82,11 @@ try {
 
 		<meta name="theme-color" content={CLUB.themeColor} />
 		<meta name="color-scheme" content="dark light" />
+
+		<!-- Colores de marca del club sobre los temas de global.css: club.ts es la
+		     única fuente de verdad, así cada build sale con los suyos. La
+		     especificidad de :root[data-theme] gana a la que genera DaisyUI. -->
+		<style set:html={clubThemeCss}></style>
 
 		<!-- Facebook / Open Graph Meta Tags -->
 		<meta property="og:type" content="website" />

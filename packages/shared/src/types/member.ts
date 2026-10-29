@@ -13,9 +13,13 @@ export interface IClubMember {
     proPos?: number
     proHeight?: number
     proOverall?: number
-    /** link a la foto del jugador (gestionado desde el panel admin) */
+    /** Foto efectiva del jugador en este club: la propia del club si la hay y,
+     *  si no, la global (ver IPlayerIdentity). La resuelve el api. */
     imageUrl?: string | null
-    /** id del user de Better Auth vinculado (gestionado desde el panel admin) */
+    /** De dónde sale `imageUrl` (para el panel admin) */
+    imageSource?: ImageScope | null
+    /** id del user de Better Auth vinculado. El vínculo es global (IPlayerIdentity):
+     *  la misma cuenta es el mismo jugador en todos los clubes. */
     userId?: string | null
     /** timestamp (segundos) del último partido en el que apareció */
     lastSeenAt?: number
@@ -24,5 +28,14 @@ export interface IClubMember {
     updatedAt?: Date | string
 }
 
-/** Campos editables desde el panel admin */
-export type IClubMemberAdminPatch = Partial<Pick<IClubMember, "imageUrl" | "userId">>
+/**
+ * Alcance de una foto de jugador:
+ * - `global`: la de todos los clubes (IPlayerIdentity)
+ * - `club`: solo la de este club; tapa a la global mientras exista
+ */
+export type ImageScope = "global" | "club"
+
+/** Campos editables desde el panel admin. `imageScope` dice dónde va `imageUrl` (por defecto global). */
+export type IClubMemberAdminPatch = Partial<Pick<IClubMember, "imageUrl" | "userId">> & {
+    imageScope?: ImageScope
+}

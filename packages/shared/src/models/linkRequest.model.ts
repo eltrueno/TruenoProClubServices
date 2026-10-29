@@ -1,6 +1,7 @@
-import { Schema, model } from "mongoose"
+import { Schema } from "mongoose"
 import { LINK_REQUEST_STATUS } from "../constants.js"
 import type { ILinkRequest } from "../types/linkRequest.js"
+import { sharedDb } from "./sharedDb.js"
 
 const linkRequestSchema = new Schema<ILinkRequest>(
     {
@@ -24,4 +25,5 @@ const linkRequestSchema = new Schema<ILinkRequest>(
     }
 )
 
-export const LinkRequestModel = model<ILinkRequest>("link_requests", linkRequestSchema)
+// En la base compartida: el vínculo es global, así que la solicitud también
+export const LinkRequestModel = sharedDb.model<ILinkRequest>("link_requests", linkRequestSchema)

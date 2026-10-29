@@ -1,6 +1,7 @@
 import { HeadBucketCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3"
 import { lookup } from "node:dns/promises"
 import { isIP } from "node:net"
+import type { ImageScope } from "@trueno-proclub-services/shared"
 
 /**
  * Fotos de jugadores en Cloudflare R2 (API S3). Si no hay credenciales el api sigue
@@ -16,6 +17,9 @@ export const isConfigured = () => !!(ACCOUNT_ID && ACCESS_KEY_ID && SECRET_ACCES
 
 /** Los playerId de EA son numéricos; se acota para que nunca formen rutas raras en el bucket */
 export const PLAYER_ID_RE = /^[A-Za-z0-9_-]{1,64}$/
+// El bucket es común a todos los clubes: las fotos propias de un club van en su carpeta
+const CLUB_ID = process.env.CLUBID
+const CLUB_ID_RE = /^[0-9]{1,20}$/
 
 let client: S3Client | null = null
 const getClient = () => {
@@ -44,10 +48,15 @@ export const checkConnection = async () => {
 }
 
 /** Sube la foto (PNG 400x450) y devuelve su URL pública, con `?v=` para saltarse la caché del CDN */
-export const uploadPlayerImage = async (playerId: string, png: Buffer): Promise<string> => {
+/**
+ * Sube la foto (PNG ya validado) y devuelve su URL pública.
+ * `global` -> players/{playerId}.png · `club` -> players/club-{CLUBID}/{playerId}.png
+ */
+export const uploadPlayerImage = async (playerId: string, png: Buffer, scope: ImageScope = "global"): Promise<string> => {
     if (!isConfigured()) throw new Error("IMAGE_STORAGE_NOT_CONFIGURED")
     if (!PLAYER_ID_RE.test(playerId)) throw new Error("ERROR_BAD_REQUEST")
-    const key = `players/${playerId}.png`
+    if (scope === "club" && !(CLUB_ID && CLUB_ID_RE.test(CLUB_ID))) throw new Error("ERROR_BAD_REQUEST")
+    const key = scope === "club" ? `players/club-${CLUB_ID}/${playerId}.png` : `players/${playerId}.png`
     await getClient().send(new PutObjectCommand({
         Bucket: BUCKET,
         Key: key,

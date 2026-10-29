@@ -10,8 +10,9 @@ const clubMemberSchema = new Schema<IClubMember>(
         proPos: { type: Number },
         proHeight: { type: Number },
         proOverall: { type: Number },
+        // Foto propia de este club: tapa a la global (PlayerIdentityModel) mientras exista.
+        // El vínculo con la cuenta ya no vive aquí, es global (ver PlayerIdentityModel).
         imageUrl: { type: String, default: null },
-        userId: { type: String, default: null, index: true },
         lastSeenAt: { type: Number }
     },
     { timestamps: true, versionKey: false, collection: "members" }
