@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-preview",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@trueno-proclub-services/web", "preview", "--port", "4322"],
+      "port": 4322
+    }
+  ]
+}
