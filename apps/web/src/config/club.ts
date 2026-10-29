@@ -13,11 +13,14 @@ export interface ClubColors {
     primaryContent: string;
     secondary: string;
     secondaryContent: string;
-    /** Variante para el tema oscuro. Solo hace falta cuando el color principal
-     *  es tan oscuro (o tan claro) que se perdería contra el fondo del tema.
-     *  Si no se indica, se usa el mismo color en ambos temas. */
-    primaryDark?: string;
-    primaryContentDark?: string;
+}
+
+/** Fondos y texto de un tema (cualquier color CSS). Lo que no se indique sale de global.css */
+export interface ClubThemeSurfaces {
+    base100?: string;
+    base200?: string;
+    base300?: string;
+    baseContent?: string;
 }
 
 export interface ClubData {
@@ -26,10 +29,17 @@ export interface ClubData {
     /** api del club: por defecto `/api` del propio dominio (Cloudflare lo enruta a su instancia).
      *  `PUBLIC_API_URL` lo sobreescribe (p. ej. en local). */
     apiUrl: string;
+    /** Web pública del club. La usan las webs de los otros clubes para enlazarla (footer);
+     *  la URL canónica del build actual sigue saliendo de PUBLIC_SITE_URL (siteUrl). */
+    webUrl: string;
     logo: string;
     ogImage: string;
     themeColor: string;
     colors: ClubColors;
+    /** Fondo de la cabecera y la navbar: el color principal o el fondo del tema (como el footer) */
+    headerStyle: "primary" | "base";
+    /** Fondos propios por tema; sin ellos, los de global.css */
+    surfaces?: { light?: ClubThemeSurfaces; dark?: ClubThemeSurfaces };
     keywords: string[];
     socials: ClubSocials;
 }
@@ -45,6 +55,7 @@ const clubs: Record<ClubId, ClubData> = {
         id: "city",
         name: "Casemuro City",
         apiUrl: "/api",
+        webUrl: "https://city.casemuro.stream",
         logo: "/club/city/logo.webp",
         ogImage: "/club/city/escudo_banner_fondo.webp",
         themeColor: "#C80D0D",
@@ -54,6 +65,7 @@ const clubs: Record<ClubId, ClubData> = {
             secondary: "#0037ff",
             secondaryContent: "#ffffff",
         },
+        headerStyle: "primary",
         keywords: ["casemuro city", "casemurocity"],
         socials: {
             twitch: "https://www.twitch.tv/mr_casemuro",
@@ -67,18 +79,26 @@ const clubs: Record<ClubId, ClubData> = {
         id: "united",
         name: "Casemuro United",
         apiUrl: "/api",
+        webUrl: "https://united.casemuro.stream",
         logo: "/club/city/logo.webp",
         ogImage: "/club/city/escudo_banner_fondo.webp",
-        themeColor: "#0A0A0A",
+        themeColor: "#B90A34",
         colors: {
-            // Negro de marca. En oscuro se aclara lo justo para despegarse del
-            // fondo del tema (base-100 es un gris azulado, no negro puro).
-            primary: "#0a0a0a",
+            primary: "#b90a34",
             primaryContent: "#ffffff",
-            primaryDark: "#111111",
-            primaryContentDark: "#ffffff",
-            secondary: "#c80d0d",
+            secondary: "#b90a34",
             secondaryContent: "#ffffff",
+        },
+        headerStyle: "base",
+        surfaces: {
+            // Marfil de la tercera equipación (Wrexham 26/27): mismos saltos de luminosidad
+            // que el tema claro por defecto, con tono cálido. El oscuro se queda como está.
+            light: {
+                base100: "oklch(98.5% 0.012 90)",
+                base200: "oklch(95% 0.02 88)",
+                base300: "oklch(90% 0.028 86)",
+                baseContent: "oklch(24% 0.012 60)",
+            },
         },
         keywords: ["casemuro united", "casemuro city", "casemurocity"],
         socials: {
@@ -110,3 +130,6 @@ export const CLUB: ClubConfig = {
     apiUrl: stripSlash(import.meta.env.PUBLIC_API_URL || clubs[clubId].apiUrl),
     authUrl: stripSlash(import.meta.env.PUBLIC_AUTH_URL || "https://auth.casemuro.stream"),
 };
+
+/** Los demás clubes de la comunidad, para que cada web enlace a las otras */
+export const OTHER_CLUBS: ClubData[] = Object.values(clubs).filter((c) => c.id !== clubId);
