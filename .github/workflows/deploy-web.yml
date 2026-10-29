@@ -76,3 +76,22 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # Pages sirve un sitio por repo: los demás clubes se publican desde sus propios repos.
+  # Si este despliegue sale bien, se les avisa para que compilen este mismo commit.
+  # Repos en la variable CLUB_PAGES_REPOS ("eltrueno/repo1,eltrueno/repo2") y un PAT
+  # con permiso Contents: Read and write sobre ellos en el secret CLUB_PAGES_DISPATCH_TOKEN.
+  deploy-other-clubs:
+    needs: deploy
+    if: ${{ vars.CLUB_PAGES_REPOS != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Avisar a los repos de los otros clubes
+        env:
+          GH_TOKEN: ${{ secrets.CLUB_PAGES_DISPATCH_TOKEN }}
+          REPOS: ${{ vars.CLUB_PAGES_REPOS }}
+        run: |
+          for repo in ${REPOS//,/ }; do
+            echo "-> $repo ($GITHUB_SHA)"
+            gh api "repos/$repo/dispatches" -f event_type=web-updated -f "client_payload[sha]=$GITHUB_SHA"
+          done
