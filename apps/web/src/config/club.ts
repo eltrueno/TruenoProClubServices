@@ -33,7 +33,11 @@ export interface ClubData {
      *  la URL canónica del build actual sigue saliendo de PUBLIC_SITE_URL (siteUrl). */
     webUrl: string;
     logo: string;
-    ogImage: string;
+    /** Imagen propia para las vistas previas de enlaces. Sin ella se genera /og.png
+     *  en el build: el escudo sobre ogBackground (ver pages/og.png.ts) */
+    ogImage?: string;
+    /** Fondo (hex) de la imagen generada; por defecto, el color principal */
+    ogBackground?: string;
     themeColor: string;
     colors: ClubColors;
     /** Fondo de la cabecera y la navbar: el color principal o el fondo del tema. Con "base" se
@@ -58,7 +62,6 @@ const clubs: Record<ClubId, ClubData> = {
         apiUrl: "/api",
         webUrl: "https://city.casemuro.stream",
         logo: "/club/city/logo.webp",
-        ogImage: "/club/city/escudo_banner_fondo.webp",
         themeColor: "#C80D0D",
         colors: {
             primary: "#c80d0d",
@@ -81,8 +84,10 @@ const clubs: Record<ClubId, ClubData> = {
         name: "Casemuro United",
         apiUrl: "/api",
         webUrl: "https://united.casemuro.stream",
-        logo: "/club/city/logo.webp",
-        ogImage: "/club/city/escudo_banner_fondo.webp",
+        // El escudo del City en monocolor, con el granate del club
+        logo: "/club/united/logo.webp",
+        // Fondo de la navbar en el tema oscuro (base-100 de DaisyUI)
+        ogBackground: "#1d232a",
         themeColor: "#B90A34",
         colors: {
             primary: "#b90a34",
