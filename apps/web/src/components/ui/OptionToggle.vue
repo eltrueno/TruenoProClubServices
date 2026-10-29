@@ -4,7 +4,7 @@
  * de tema de Mi cuenta: pista redondeada y un "pulgar" que se desliza hasta la opción activa.
  * Cada opción puede llevar icono, texto o ambos. v-model: el `value` de la opción activa.
  */
-import { computed, nextTick, onMounted, ref, watch, type Component } from "vue"
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type Component } from "vue"
 
 export interface ToggleOption<V extends string = string> {
     value: V
@@ -39,10 +39,15 @@ const place = async () => {
     thumb.value = { left: btn.offsetLeft, width: btn.offsetWidth, ready: true }
 }
 watch(() => [props.modelValue, props.options], place, { deep: true })
+let resizeObserver: ResizeObserver | null = null
 onMounted(() => {
     place()
-    if (track.value) new ResizeObserver(place).observe(track.value)
+    if (track.value) {
+        resizeObserver = new ResizeObserver(place)
+        resizeObserver.observe(track.value)
+    }
 })
+onBeforeUnmount(() => resizeObserver?.disconnect())
 
 const select = (o: ToggleOption<T>) => { if (!o.disabled && o.value !== props.modelValue) emit("update:modelValue", o.value) }
 

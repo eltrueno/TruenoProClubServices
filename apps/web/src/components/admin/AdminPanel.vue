@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue"
-import type { IClubMember, ILinkRequest, IPublicUser } from "@trueno-proclub-services/shared"
+import { computed, nextTick, onMounted, ref } from "vue"
+import type { IClubMember, IClubMemberAdminPatch, ILinkRequest, IPublicUser, ImageScope } from "@trueno-proclub-services/shared"
 import { useAuth } from "@/composables/useAuth"
 import { ApiError, authApi, tpcsApi, type IAdminUser } from "@/lib/api"
 import { routes } from "@/lib/query"
@@ -8,6 +8,8 @@ import AuthGuard from "@/components/auth/AuthGuard.vue"
 import PlayerPickerModal, { type PickerItem } from "@/components/ui/PlayerPickerModal.vue"
 import PlayerCard from "@/components/ui/PlayerCard.vue"
 import PlayerImageEditor from "@/components/admin/PlayerImageEditor.vue"
+import OptionToggle, { type ToggleOption } from "@/components/ui/OptionToggle.vue"
+import { CLUB } from "@/config/club"
 
 
 const { isAdmin, isLoggedIn, isPending } = useAuth()
@@ -25,6 +27,14 @@ const rowMessage = ref<Record<string, { ok: boolean; text: string }>>({})
 
 const usersById = computed(() => new Map(users.value.map((u) => [u.id, u])))
 
+// Dónde van las fotos que se cambien: la global (la ven todos los clubes) o solo la de este club,
+// que tapa a la global mientras exista. Vaciar una de club vuelve a enseñar la global.
+const imageScope = ref<ImageScope>("global")
+const IMAGE_SCOPE_OPTIONS: ToggleOption<ImageScope>[] = [
+    { value: "global", label: "Todos los clubes" },
+    { value: "club", label: `Solo ${CLUB.name}` }
+]
+
 // Editor de foto (un único modal para todas las filas)
 const imageEditor = ref<InstanceType<typeof PlayerImageEditor> | null>(null)
 const editingMember = ref<IClubMember | null>(null)
@@ -32,18 +42,30 @@ function openImageEditor(m: IClubMember, url?: string) {
     editingMember.value = m
     imageEditor.value?.open(url || undefined)
 }
-// La foto se sube y asigna al momento: reflejar en la fila y en el borrador
-function onImageUploaded(imageUrl: string) {
+// La foto se sube y asigna al momento: reflejar en la fila (foto y origen) y en el borrador
+function onImageUploaded(updated: IClubMember) {
     const m = editingMember.value
     if (!m) return
-    m.imageUrl = imageUrl
-    if (drafts.value[m.playerId]) drafts.value[m.playerId].imageUrl = imageUrl
+    Object.assign(m, updated)
+    if (drafts.value[m.playerId]) drafts.value[m.playerId].imageUrl = m.imageUrl ?? ""
     rowMessage.value[m.playerId] = { ok: true, text: "Foto actualizada" }
     setTimeout(() => { if (rowMessage.value[m.playerId]?.ok) rowMessage.value[m.playerId] = { ok: true, text: "" } }, 2500)
 }
 
-/** Cuentas para el selector de una fila: aviso si ya están en otro jugador */
-function userItemsFor(playerId: string): PickerItem[] {
+// Selector de cuenta: uno solo para todas las filas (como el editor de fotos). Uno por fila
+// eran 100+ modales con la lista entera de cuentas recalculada en cada tecla.
+const accountPicker = ref<InstanceType<typeof PlayerPickerModal> | null>(null)
+const pickingFor = ref<IClubMember | null>(null)
+async function openAccountPicker(m: IClubMember) {
+    pickingFor.value = m
+    // Que el selector reciba ya la cuenta y la lista de esta fila antes de abrirse
+    await nextTick()
+    accountPicker.value?.open()
+}
+
+/** Cuentas para el selector de la fila activa: aviso si ya están en otro jugador */
+const accountItems = computed<PickerItem[]>(() => {
+    const playerId = pickingFor.value?.playerId ?? ""
     return users.value.map((u) => {
         const other = linkedElsewhere(u.id, playerId)
         return {
@@ -54,7 +76,7 @@ function userItemsFor(playerId: string): PickerItem[] {
             hint: other ? `Ya vinculada a ${other.playerName}` : undefined
         }
     })
-}
+})
 
 // Solicitudes de vinculación pendientes (las crean los usuarios desde "Mi cuenta")
 const linkRequests = ref<ILinkRequest[]>([])
@@ -92,11 +114,11 @@ const filteredMembers = computed(() => {
     return list.filter((m) => m.playerName.toLowerCase().includes(q) || (m.proName ?? "").toLowerCase().includes(q))
 })
 
+const draftOf = (m: IClubMember) => ({ imageUrl: m.imageUrl ?? "", userId: m.userId ?? "" })
+
+/** Borrador de la fila. Se crean todos al cargar: crearlos aquí, durante el render, provocaba otro render más */
 function draftFor(m: IClubMember) {
-    if (!drafts.value[m.playerId]) {
-        drafts.value[m.playerId] = { imageUrl: m.imageUrl ?? "", userId: m.userId ?? "" }
-    }
-    return drafts.value[m.playerId]
+    return drafts.value[m.playerId] ?? (drafts.value[m.playerId] = draftOf(m))
 }
 
 function isDirty(m: IClubMember) {
@@ -105,9 +127,17 @@ function isDirty(m: IClubMember) {
     return d.imageUrl !== (m.imageUrl ?? "") || d.userId !== (m.userId ?? "")
 }
 
+/** Jugador de cada cuenta vinculada (consulta directa en vez de recorrer la plantilla) */
+const memberByUserId = computed(() => {
+    const map = new Map<string, IClubMember>()
+    for (const m of members.value) if (m.userId) map.set(m.userId, m)
+    return map
+})
+
 /** Cuentas ya vinculadas a otro jugador (para avisar en el selector) */
 function linkedElsewhere(userId: string, playerId: string) {
-    return members.value.find((m) => m.userId === userId && m.playerId !== playerId)
+    const m = memberByUserId.value.get(userId)
+    return m && m.playerId !== playerId ? m : undefined
 }
 
 async function load() {
@@ -118,7 +148,7 @@ async function load() {
         members.value = m
         users.value = u
         linkRequests.value = r
-        drafts.value = {}
+        drafts.value = Object.fromEntries(m.map((x) => [x.playerId, draftOf(x)]))
     } catch (e) {
         loadError.value = e instanceof ApiError ? e.code : "Error cargando datos"
     } finally {
@@ -132,8 +162,11 @@ async function save(m: IClubMember) {
     saving.value[m.playerId] = true
     rowMessage.value[m.playerId] = { ok: true, text: "" }
     try {
-        const patch: { imageUrl?: string | null; userId?: string | null } = {}
-        if (d.imageUrl !== (m.imageUrl ?? "")) patch.imageUrl = d.imageUrl.trim() || null
+        const patch: IClubMemberAdminPatch = {}
+        if (d.imageUrl !== (m.imageUrl ?? "")) {
+            patch.imageUrl = d.imageUrl.trim() || null
+            patch.imageScope = imageScope.value
+        }
         if (d.userId !== (m.userId ?? "")) patch.userId = d.userId || null
         const updated = await tpcsApi.admin.patchMember(m.playerId, patch)
         // La cuenta solo puede estar en un jugador: el api la libera del anterior; reflejarlo en la lista
@@ -245,7 +278,18 @@ onMounted(() => {
                         <p v-if="requestError" class="text-xs text-error mt-2">No se ha podido resolver la solicitud ({{ requestError }})</p>
                     </section>
 
-                    <p class="text-xs text-base-content/50">{{ filteredMembers.length }} jugadores · {{ users.length }} cuentas</p>
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <p class="text-xs text-base-content/50">{{ filteredMembers.length }} jugadores · {{ users.length }} cuentas</p>
+                        <div class="flex flex-col sm:items-end gap-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] uppercase font-black tracking-wider text-base-content/50">Las fotos se guardan para</span>
+                                <OptionToggle v-model="imageScope" :options="IMAGE_SCOPE_OPTIONS" size="sm" />
+                            </div>
+                            <span class="text-[10px] text-base-content/40">
+                                {{ imageScope === "global" ? "La foto por defecto del jugador, en todos los clubes." : `Solo en ${CLUB.name}; tapa a la global. Vacíala para volver a la global.` }}
+                            </span>
+                        </div>
+                    </div>
 
                     <div v-for="m in filteredMembers" :key="m.playerId"
                         class="rounded-2xl bg-base-200 shadow-sm p-4 grid grid-cols-1 lg:grid-cols-[auto_1fr_1fr_auto] gap-4 items-center"
@@ -255,7 +299,11 @@ onMounted(() => {
 
                         <!-- Foto: cualquier URL pasa por el editor para encuadrarla a 400x450 y subirla al CDN -->
                         <div class="form-control w-full">
-                            <span class="label-text text-[10px] uppercase font-black tracking-wider text-base-content/50 mb-1">Foto</span>
+                            <span class="label-text text-[10px] uppercase font-black tracking-wider text-base-content/50 mb-1 flex items-center gap-2">
+                                Foto
+                                <span v-if="m.imageSource === 'club'" class="badge badge-xs badge-secondary normal-case tracking-normal">Propia de este club</span>
+                                <span v-else-if="m.imageSource === 'global'" class="badge badge-xs badge-ghost normal-case tracking-normal">Global</span>
+                            </span>
                             <div class="join w-full">
                                 <input
                                     v-model="draftFor(m).imageUrl"
@@ -269,22 +317,20 @@ onMounted(() => {
                             <span class="text-[10px] text-base-content/40 mt-1">Al pulsar Enter se abre el editor para ajustar la foto a la escala del club. Vacía y guarda para quitarla.</span>
                         </div>
 
-                        <!-- Cuenta -->
-                        <label class="form-control w-full">
-                            <span class="label-text text-[10px] uppercase font-black tracking-wider text-base-content/50 mb-1">Cuenta vinculada</span>
-                            <PlayerPickerModal
-                                :model-value="draftFor(m).userId || null"
-                                @update:model-value="(v) => (draftFor(m).userId = (v as string | null) ?? '')"
-                                :items="userItemsFor(m.playerId)"
-                                :title="`Cuenta para ${m.playerName}`"
-                                placeholder="— Sin vincular —"
-                                search-placeholder="Buscar cuenta…"
-                                image-shape="avatar"
-                            />
+                        <!-- Cuenta: el botón abre el selector compartido (ver openAccountPicker) -->
+                        <div class="form-control w-full">
+                            <span class="label-text text-[10px] uppercase font-black tracking-wider text-base-content/50 mb-1">Cuenta vinculada <span class="normal-case tracking-normal font-normal text-base-content/40">· común a todos los clubes</span></span>
+                            <button type="button" class="btn btn-outline btn-sm w-full justify-between font-normal" @click="openAccountPicker(m)">
+                                <span class="flex items-center gap-2 min-w-0">
+                                    <img v-if="usersById.get(draftFor(m).userId)?.image" :src="usersById.get(draftFor(m).userId)!.image!" alt="" class="size-5 rounded-full shrink-0 object-cover" loading="lazy" />
+                                    <span class="truncate" :class="{ 'opacity-50': !usersById.get(draftFor(m).userId) }">{{ usersById.get(draftFor(m).userId)?.name ?? "— Sin vincular —" }}</span>
+                                </span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                            </button>
                             <span v-if="draftFor(m).userId && linkedElsewhere(draftFor(m).userId, m.playerId)" class="text-[10px] text-warning mt-1">
                                 Esta cuenta está vinculada a {{ linkedElsewhere(draftFor(m).userId, m.playerId)!.playerName }}; al guardar pasará a este jugador.
                             </span>
-                        </label>
+                        </div>
 
                         <!-- Guardar -->
                         <div class="flex lg:flex-col items-center gap-2 lg:w-28">
@@ -310,6 +356,17 @@ onMounted(() => {
         ref="imageEditor"
         :player-id="editingMember?.playerId ?? ''"
         :player-name="editingMember?.playerName ?? ''"
+        :scope="imageScope"
         @uploaded="onImageUploaded"
+    />
+    <PlayerPickerModal
+        ref="accountPicker"
+        :trigger="false"
+        :model-value="pickingFor ? draftFor(pickingFor).userId || null : null"
+        @update:model-value="(v) => { if (pickingFor) draftFor(pickingFor).userId = (v as string | null) ?? '' }"
+        :items="accountItems"
+        :title="`Cuenta para ${pickingFor?.playerName ?? ''}`"
+        search-placeholder="Buscar cuenta…"
+        image-shape="avatar"
     />
 </template>

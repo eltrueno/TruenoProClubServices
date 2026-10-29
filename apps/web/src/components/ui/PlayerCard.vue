@@ -28,10 +28,13 @@ const props = withDefaults(defineProps<{
     showId?: boolean
 }>(), { positions: () => [], image: undefined, size: "sm", zoom: "md", link: false, noDates: false, showId: false })
 
+// Compartido por todas las tarjetas: en listas largas (panel admin, selector) crear uno por fecha se nota
+const MONTH_YEAR = new Intl.DateTimeFormat("es-ES", { month: "short", year: "numeric" })
+
 const fmt = (d?: Date | string | number | null) => {
     if (!d) return ""
     const date = typeof d === "number" ? new Date(d * (d < 1e12 ? 1000 : 1)) : new Date(d)
-    return isNaN(date.getTime()) ? "" : date.toLocaleDateString("es-ES", { month: "short", year: "numeric" })
+    return isNaN(date.getTime()) ? "" : MONTH_YEAR.format(date)
 }
 const since = computed(() => fmt(props.member.createdAt))
 const lastSeen = computed(() => fmt(props.member.lastSeenAt))

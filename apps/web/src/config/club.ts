@@ -13,6 +13,11 @@ export interface ClubColors {
     primaryContent: string;
     secondary: string;
     secondaryContent: string;
+    /** Variante para el tema oscuro. Solo hace falta cuando el color principal
+     *  es tan oscuro (o tan claro) que se perdería contra el fondo del tema.
+     *  Si no se indica, se usa el mismo color en ambos temas. */
+    primaryDark?: string;
+    primaryContentDark?: string;
 }
 
 export interface ClubData {
@@ -64,11 +69,15 @@ const clubs: Record<ClubId, ClubData> = {
         apiUrl: "/api",
         logo: "/club/city/logo.webp",
         ogImage: "/club/city/escudo_banner_fondo.webp",
-        themeColor: "#C80D0D",
+        themeColor: "#0A0A0A",
         colors: {
-            primary: "#c80d0d",
+            // Negro de marca. En oscuro se aclara lo justo para despegarse del
+            // fondo del tema (base-100 es un gris azulado, no negro puro).
+            primary: "#0a0a0a",
             primaryContent: "#ffffff",
-            secondary: "#0037ff",
+            primaryDark: "#111111",
+            primaryContentDark: "#ffffff",
+            secondary: "#c80d0d",
             secondaryContent: "#ffffff",
         },
         keywords: ["casemuro united", "casemuro city", "casemurocity"],

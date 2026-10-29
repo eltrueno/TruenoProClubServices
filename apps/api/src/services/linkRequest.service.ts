@@ -1,6 +1,7 @@
 import { ClubMemberModel, LinkRequestModel } from "@trueno-proclub-services/shared/models"
 import type { IAuthUser, ILinkRequest } from "@trueno-proclub-services/shared"
 import * as ClubMemberService from "./clubMember.service.js"
+import * as PlayerIdentityService from "./playerIdentity.service.js"
 
 /** Solicitud pendiente del usuario (como mucho una) */
 const getPendingByUser = async (userId: string): Promise<ILinkRequest | null> => {
@@ -11,15 +12,17 @@ const getPendingByUser = async (userId: string): Promise<ILinkRequest | null> =>
 /**
  * Crea (o sustituye) la solicitud pendiente del usuario para `playerId`.
  * Lanza `ALREADY_LINKED` si la cuenta ya tiene jugador y `PLAYER_TAKEN` si el jugador ya tiene cuenta.
+ * El vínculo es global, así que ambas cosas se miran en todos los clubes, no solo en este.
  */
 const create = async (user: IAuthUser, playerId: string): Promise<ILinkRequest> => {
-    const [member, mine] = await Promise.all([
+    const [member, mine, identity] = await Promise.all([
         ClubMemberModel.findOne({ playerId }),
-        ClubMemberModel.findOne({ userId: user.id })
+        PlayerIdentityService.getByUserId(user.id),
+        PlayerIdentityService.getByPlayerId(playerId)
     ])
     if (!member) throw new Error("ERROR_NOT_FOUND")
-    if (mine) throw new Error("ALREADY_LINKED")
-    if (member.userId) throw new Error("PLAYER_TAKEN")
+    if (mine?.userId) throw new Error("ALREADY_LINKED")
+    if (identity?.userId) throw new Error("PLAYER_TAKEN")
 
     // Solo una pendiente por usuario: la anterior (si la había) se descarta
     await LinkRequestModel.deleteMany({ userId: user.id, status: "pending" })
@@ -39,9 +42,14 @@ const cancel = async (userId: string) => {
     return res.deletedCount > 0
 }
 
+/** Pendientes de jugadores de este club. Las solicitudes son globales, pero cada
+ *  panel solo puede resolver las de su plantilla (un jugador puede estar en varios). */
 const getAllPending = async (): Promise<ILinkRequest[]> => {
     const docs = await LinkRequestModel.find({ status: "pending" }).sort({ createdAt: 1 })
-    return docs.map((d) => d.toJSON() as ILinkRequest)
+    if (docs.length === 0) return []
+    const inClub = await ClubMemberModel.find({ playerId: { $in: docs.map((d) => d.playerId) } }, { _id: 0, playerId: 1 }).lean<{ playerId: string }[]>()
+    const playerIds = new Set(inClub.map((m) => m.playerId))
+    return docs.filter((d) => playerIds.has(d.playerId)).map((d) => d.toJSON() as ILinkRequest)
 }
 
 /** Aprobar = vincular la cuenta al jugador (misma lógica que el PATCH admin) */

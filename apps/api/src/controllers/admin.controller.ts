@@ -1,7 +1,14 @@
 import type { NextFunction, Request, Response } from "express"
-import type { IClubMemberAdminPatch } from "@trueno-proclub-services/shared"
+import type { IClubMemberAdminPatch, ImageScope } from "@trueno-proclub-services/shared"
 import * as ClubMemberService from "../services/clubMember.service.js"
 import * as ImageStorage from "../services/imageStorage.service.js"
+
+/** `imageScope` ausente = global; cualquier otro valor que no sea "club" es un error */
+const parseScope = (value: unknown): ImageScope | null => {
+    if (value === undefined || value === "global") return "global"
+    if (value === "club") return "club"
+    return null
+}
 
 const isHttpUrl = (value: string) => {
     try {
@@ -13,8 +20,9 @@ const isHttpUrl = (value: string) => {
 }
 
 /**
- * PATCH /admin/members/:playerId  { imageUrl?: string | null, userId?: string | null }
- * `null` desvincula; un campo ausente no se toca.
+ * PATCH /admin/members/:playerId  { imageUrl?: string | null, userId?: string | null, imageScope?: "global" | "club" }
+ * `null` desvincula / quita la foto; un campo ausente no se toca.
+ * `imageScope` (por defecto global) dice si la foto es la de todos los clubes o solo la de este.
  */
 async function patchMember(req: Request, res: Response, next: NextFunction) {
     try {
@@ -26,6 +34,9 @@ async function patchMember(req: Request, res: Response, next: NextFunction) {
             if (body.imageUrl === null || body.imageUrl === "") patch.imageUrl = null
             else if (typeof body.imageUrl === "string" && isHttpUrl(body.imageUrl)) patch.imageUrl = body.imageUrl
             else return next(new Error("ERROR_BAD_REQUEST"))
+            const scope = parseScope(body.imageScope)
+            if (!scope) return next(new Error("ERROR_BAD_REQUEST"))
+            patch.imageScope = scope
         }
 
         if ("userId" in body) {
@@ -49,8 +60,9 @@ async function patchMember(req: Request, res: Response, next: NextFunction) {
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024
 
 /**
- * POST /admin/members/:playerId/image  { image: "data:image/png;base64,..." }
- * La web ya manda el PNG recortado a 400x450; aquí se sube a R2 y se guarda la URL en el miembro.
+ * POST /admin/members/:playerId/image  { image: "data:image/png;base64,...", scope?: "global" | "club" }
+ * La web ya manda el PNG recortado a 400x450; aquí se sube a R2 y se guarda la URL
+ * como foto global (por defecto) o solo de este club.
  */
 async function uploadMemberImage(req: Request, res: Response, next: NextFunction) {
     try {
@@ -65,8 +77,11 @@ async function uploadMemberImage(req: Request, res: Response, next: NextFunction
         const png = Buffer.from(match[1], "base64")
         if (png.length === 0 || png.length > MAX_IMAGE_BYTES || ImageStorage.sniffImageType(png) !== "image/png") return next(new Error("ERROR_BAD_REQUEST"))
 
-        const imageUrl = await ImageStorage.uploadPlayerImage(playerId, png)
-        const updated = await ClubMemberService.adminPatch(playerId, { imageUrl })
+        const scope = parseScope(req.body?.scope)
+        if (!scope) return next(new Error("ERROR_BAD_REQUEST"))
+
+        const imageUrl = await ImageStorage.uploadPlayerImage(playerId, png, scope)
+        const updated = await ClubMemberService.adminPatch(playerId, { imageUrl, imageScope: scope })
         if (!updated) return next(new Error("ERROR_NOT_FOUND"))
         res.json({ status: { code: 200, message: "Ok" }, response: updated })
     } catch (err) {
