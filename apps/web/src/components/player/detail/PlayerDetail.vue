@@ -209,7 +209,7 @@
     import UnlinkIcon from "@/icons/unlink.svg?component";
     import { MATCH_SCOPE_OPTIONS, type MatchScope } from "@/lib/matchScope";
     import { Position, translatePosition } from "@/i18n/translations";
-    import { getQueryParam } from "@/lib/query";
+    import { getQueryParam, setQueryParams } from "@/lib/query";
     import { playerImage as memberImage, onPlayerImageError } from "@/lib/playerImage";
     import { useMembers } from "@/composables/useMembers";
     import { authApi } from "@/lib/api";
@@ -250,13 +250,9 @@
     }
     const activeTab = ref(defaultTab)
 
-    watch(activeTab, (newTab) => {
-        if (typeof window !== 'undefined') {
-            const url = new URL(window.location.href)
-            url.searchParams.set('tab', newTab)
-            window.history.replaceState(null, '', url.toString())
-        }
-    })
+    // La pestaña va en la URL. setQueryParams conserva history.state: con replaceState(null) se borraba
+    // el estado del ClientRouter de Astro y luego el botón de atrás no hacía nada en esa entrada
+    watch(activeTab, (newTab) => setQueryParams({ tab: newTab }))
     const posFilter = ref<Position | null>(null)
 
     function handlePosFilter(position: Position) {

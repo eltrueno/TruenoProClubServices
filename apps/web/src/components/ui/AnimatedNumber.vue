@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /**
- * Número que cuenta desde 0 (o desde el valor anterior) cuando entra en pantalla.
+ * Número que cuenta desde 0 (o desde el valor anterior) cuando entra en pantalla: espera a que
+ * se vea de verdad (bien dentro, no asomando por abajo) para que la cuenta no pase sin verse.
  * Si el valor cambia después, vuelve a animar desde donde estaba.
  * Admite texto no numérico (p. ej. "Oro IV"): entonces solo lo muestra.
  */
@@ -16,12 +17,14 @@ const props = withDefaults(defineProps<{
     duration?: number
     /** separador de miles */
     grouping?: boolean
-}>(), { value: 0, decimals: 0, suffix: "", prefix: "", duration: 1100, grouping: true })
+}>(), { value: 0, decimals: 0, suffix: "", prefix: "", duration: 1600, grouping: true })
 
 const numeric = computed(() => (typeof props.value === "number" && Number.isFinite(props.value) ? props.value : null))
 const text = computed(() => (props.value === null || props.value === undefined ? "" : String(props.value)))
 
-const { target, inView } = useInView()
+// Con el número entero a la vista (95%, por los medios píxeles) y por encima del 15% inferior de la
+// pantalla, tanto al cargar como al hacer scroll: así se le ve contar en vez de pillarlo terminado
+const { target, inView } = useInView({ threshold: 0.95, rootMargin: "0px 0px -15% 0px" })
 const displayed = ref(0)
 let frame = 0
 let from = 0
@@ -35,8 +38,9 @@ const formatter = computed(() => new Intl.NumberFormat("es-ES", {
 }))
 const format = (n: number) => formatter.value.format(n)
 
-// easing suave al final (out-cubic)
-const ease = (t: number) => 1 - Math.pow(1 - t, 3)
+// Suave al final pero sin dar casi todo el salto de golpe (out-quad): con out-cubic el número
+// llegaba casi al final en las primeras décimas y la cuenta apenas se apreciaba
+const ease = (t: number) => 1 - (1 - t) * (1 - t)
 
 const run = (to: number) => {
     cancelAnimationFrame(frame)

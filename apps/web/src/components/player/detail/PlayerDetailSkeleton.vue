@@ -1,25 +1,41 @@
 <template>
     <div class="w-full min-h-screen bg-base-200/50 pb-2 rounded-xl animate-in">
+        <!-- Migas de pan: mismo alto que en la ficha, para que la foto quede en el mismo sitio -->
+        <div class="breadcrumbs text-sm">
+            <ul>
+                <li><a href="/">Inicio</a></li>
+                <li><a href="/plantilla">Plantilla</a></li>
+                <li><span class="skeleton dark:bg-base-100 skeletondark inline-block w-20 h-3"></span></li>
+            </ul>
+        </div>
         <!-- Hero Section Skeleton -->
         <section class="bg-base-200 rounded-2xl shadow-md">
             <div class="mx-auto px-4 py-8 lg:py-12">
                 <div class="flex flex-row items-end gap-5 lg:gap-8">
-                    <!-- Avatar Skeleton -->
-                    <div class="relative shrink-0 w-28 lg:w-44 aspect-[8/9] dark:bg-base-100 bg-base-300 rounded-2xl lg:rounded-3xl overflow-hidden shadow-sm skeleton skeletondark">
+                    <!-- Hueco de la foto, igual que en la ficha. Si se llega desde la plantilla trae ya la foto
+                         del jugador (ver lib/playerPhotoTransition.ts): en el esqueleto estático la pone el
+                         cambio de página y en el del island se recoge aquí -->
+                    <div data-vt-photo class="relative shrink-0 w-28 lg:w-44 aspect-[8/9] dark:bg-base-100 bg-base-300 rounded-2xl lg:rounded-3xl overflow-hidden shadow-sm" :class="{ 'skeleton skeletondark': !photo }">
+                        <img :src="photo ?? undefined" :hidden="!photo" alt="" class="w-full h-full object-contain object-top scale-[1.55] origin-top" />
                     </div>
  
-                    <!-- Info Skeleton -->
+                    <!-- Info Skeleton: misma estructura y márgenes que la ficha (chip de cuenta, nombre,
+                         posiciones, fechas). La foto va alineada abajo con este bloque, así que si midiera
+                         distinto la foto quedaría a otra altura (y la de la transición aterrizaría mal) -->
                     <div class="flex-1 text-left pb-1">
+                        <div class="mb-1.5 skeleton dark:bg-base-100 skeletondark rounded-full w-36 lg:w-44 h-6"></div>
                         <div class="mb-2 lg:mb-4">
-                            <div class="skeleton dark:bg-base-100 w-24 lg:w-40 h-4 lg:h-6 skeletondark mb-2"></div>
-                            <div class="skeleton dark:bg-base-100 w-48 lg:w-80 h-8 lg:h-12 skeletondark"></div>
+                            <div class="skeleton dark:bg-base-100 w-44 lg:w-80 h-6 lg:h-12 skeletondark"></div>
                         </div>
-                        
                         <div class="flex flex-wrap gap-2 mb-3 lg:mb-4">
-                             <div class="skeleton dark:bg-base-100 w-16 lg:w-24 h-6 lg:h-8 skeletondark rounded-full"></div>
-                             <div class="skeleton dark:bg-base-100 w-16 lg:w-24 h-6 lg:h-8 skeletondark rounded-full"></div>
+                            <div class="skeleton dark:bg-base-100 w-20 lg:w-28 h-6 lg:h-8 skeletondark rounded-full"></div>
+                            <div class="skeleton dark:bg-base-100 w-16 lg:w-24 h-6 lg:h-8 skeletondark rounded-full"></div>
                         </div>
-                        <div class="skeleton dark:bg-base-100 w-32 lg:w-56 h-4 lg:h-6 skeletondark opacity-60"></div>
+                        <!-- Fechas: dos líneas en móvil, una en escritorio (text-sm / text-lg) -->
+                        <div class="h-10 lg:h-7 flex flex-col justify-center gap-1.5">
+                            <div class="skeleton dark:bg-base-100 w-40 lg:w-96 h-3.5 lg:h-5 skeletondark opacity-60"></div>
+                            <div class="skeleton dark:bg-base-100 w-28 h-3.5 skeletondark opacity-60 lg:hidden"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -62,6 +78,10 @@
 </template>
 
 <script setup lang="ts">
+import { playerPhotoFor } from "@/lib/playerPhotoTransition"
+
+// Solo en cliente: en el HTML estático no hay foto (la pone el cambio de página si procede)
+const photo = typeof window === "undefined" ? null : playerPhotoFor(new URLSearchParams(location.search).get("id"))
 </script>
 
 <style scoped>

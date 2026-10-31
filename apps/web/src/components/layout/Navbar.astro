@@ -5,7 +5,7 @@ import UsersIcon from "@/icons/usersgroup.svg";
 import CalendarIcon from "@/icons/calendar.svg";
 import AwardIcon from "@/icons/award.svg";
 import Separator from "./Separator.astro";
-import { CLUB } from "@/config/club";
+import { CLUB, OTHER_CLUBS } from "@/config/club";
 
 interface Props {
     isindex?: boolean;
@@ -17,13 +17,17 @@ const links = [
     { href: "/", label: "Inicio", icon: HomeIcon, aria: "Volver al inicio de la página", homeOnly: true },
     { href: "/plantilla", label: "Plantilla", icon: UsersIcon, aria: `Ver plantilla de ${CLUB.name}` },
     { href: "/partidos", label: "Partidos", icon: CalendarIcon, aria: `Ver partidos de ${CLUB.name}` },
-    { href: "/totw", label: "Hall of Fame", icon: AwardIcon, aria: `Ver el Hall of Fame de ${CLUB.name}` },
+    { href: "/totw", label: "Salon de la fama", icon: AwardIcon, aria: `Ver el Hall of Fame de ${CLUB.name}` },
 ];
 
 // En build estático con `format: "file"` la ruta llega como "/plantilla.html" (o "/index.html")
 const normalize = (path: string) => path.replace(/\.html$/, "").replace(/\/index$/, "").replace(/\/+$/, "") || "/";
 const currentPath = normalize(Astro.url.pathname);
 const isActive = (href: string) => href === currentPath;
+
+// Enlace a la web del otro club: su escudo asoma en pequeño en la esquina del nuestro (con dos clubes;
+// si algún día hay más, aquí solo cabe uno y habría que pasar a un menú)
+const otherClub = OTHER_CLUBS[0];
 
 // Fondo de la nav según el club: su color principal o el del tema (ver headerStyle). Sobre el fondo del
 // tema se despega de la página con un tono más marcado (más oscuro en claro, más claro en oscuro)
@@ -33,13 +37,28 @@ const navTheme = isBase ? "nav-base bg-base-300 dark:bg-base-100 text-base-conte
 ---
 
 <nav class:list={["navbar min-w-full sticky top-0 rounded-b-md shadow-md z-50", navTheme]}>
-    <div class="shrink-0">
-        <a href="/" class="btn btn-ghost px-1" aria-label="Volver al inicio de la página">
-            <img src={CLUB.logo} class="h-12 w-auto" class:list={[{ "logo-anim": isindex }]} alt={`Escudo de ${CLUB.name}`} />
-        </a>
+    <!-- Escudo sobre disco blanco (se despega de cualquier fondo de nav: rojo, marfil u oscuro) y, en su
+         esquina, el del otro club enlazando a su web. La animación del index va en el conjunto -->
+    <div class="club-logo shrink-0 relative" class:list={[{ "logo-anim": isindex }]}>
+        <!-- Tooltips de DaisyUI en un envoltorio: usan ::before/::after, que en la insignia ya amplía la zona de toque.
+             tooltip-start: alineados a la izquierda, porque centrados se salían por el borde de la pantalla -->
+        <div class="tooltip tooltip-bottom tooltip-start" data-tip={`Inicio de ${CLUB.name}`}>
+            <a href="/" class="club-disc" aria-label="Volver al inicio de la página">
+                <img src={CLUB.logo} class="h-10 w-auto" alt={`Escudo de ${CLUB.name}`} />
+            </a>
+        </div>
+        {otherClub && (
+            <div class="club-switch tooltip tooltip-bottom tooltip-start" data-tip={`Ir a la web de ${otherClub.name}`}>
+                <a href={otherClub.webUrl} class="club-switch-link" aria-label={`Ir a la web de ${otherClub.name}`}>
+                    <img src={otherClub.logo} alt="" class="h-[18px] w-auto" />
+                </a>
+            </div>
+        )}
     </div>
 
-    <div id="navbar-links" class="space-x-1 absolute" class:list={[{ "links-anim": isindex }, { "right-(--links-right)": !isindex }]}>
+    <!-- w-max + nowrap: al ir en absoluto (y en el index centrado con right:50%) solo tendría media pantalla
+         de ancho disponible y el último botón saltaba de línea por debajo de la nav -->
+    <div id="navbar-links" class="space-x-1 absolute w-max flex flex-nowrap" class:list={[{ "links-anim": isindex }, { "right-(--links-right)": !isindex }]}>
         {links.map((link) => {
             const Icon = link.icon;
             return (
@@ -50,7 +69,8 @@ const navTheme = isBase ? "nav-base bg-base-300 dark:bg-base-100 text-base-conte
                     aria-label={link.aria}
                 >
                     <Icon class="w-6 h-6" />
-                    <span class="hidden md:inline">{link.label}</span>
+                    <!-- Texto desde lg: con los cuatro en una línea, por debajo de ~880px pisarían el botón de cuenta -->
+                    <span class="hidden lg:inline">{link.label}</span>
                 </a>
             );
         })}
@@ -119,6 +139,55 @@ const navTheme = isBase ? "nav-base bg-base-300 dark:bg-base-100 text-base-conte
         --btn-bg: var(--nav-active-bg);
         --btn-fg: var(--nav-active-fg);
         color: var(--nav-active-fg);
+    }
+
+    /* Disco blanco detrás de nuestro escudo: se lee igual sobre el rojo, el marfil o el oscuro */
+    .club-disc {
+        display: grid;
+        place-items: center;
+        width: 3.25rem;
+        height: 3.25rem;
+        border-radius: 9999px;
+        background: #fff;
+        box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+        transition: scale 0.2s ease;
+    }
+    .club-disc:hover,
+    .club-disc:focus-visible {
+        scale: 1.05;
+    }
+
+    /* Escudo del otro club: insignia blanca pequeña que solapa solo la esquina superior derecha del disco.
+       El envoltorio (.club-switch) la coloca y lleva el tooltip (debajo: a la derecha quedaba por detrás
+       de los botones de la nav); el enlace es la insignia. Algo separada del borde de arriba para que al
+       crecer con el hover no se corte */
+    .club-switch {
+        position: absolute;
+        right: -0.5rem;
+        top: 0.15rem;
+        z-index: 10;
+    }
+    .club-switch-link {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 1.625rem;
+        height: 1.625rem;
+        border-radius: 9999px;
+        background: #fff;
+        box-shadow: 0 0 0 1.5px rgb(0 0 0 / 0.12), 0 1px 3px rgb(0 0 0 / 0.3);
+        transition: scale 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), translate 0.25s ease;
+    }
+    .club-switch-link:hover,
+    .club-switch-link:focus-visible {
+        scale: 1.4;
+        translate: 0.15rem 0;
+    }
+    /* Zona de toque más grande que la insignia (móvil) */
+    .club-switch-link::before {
+        content: "";
+        position: absolute;
+        inset: -0.4rem;
     }
 
     :root {

@@ -1,5 +1,6 @@
 <template>
-    <div role="contentinfo" class="w-full overflow-hidden">
+    <!-- overflow-x-clip y no hidden: hidden lo haría contenedor de scroll y pararía las animaciones de scroll (view()) -->
+    <div role="contentinfo" class="w-full overflow-x-clip">
         <div class="breadcrumbs text-sm w-full flex justify-center text-center ml-4">
             <ul class="flex w-full">
                 <li><a href="/" class="">Inicio</a></li>
@@ -99,9 +100,13 @@
                 <!--<PlayerGridList v-else :players="finalMembers"/>-->
 
 
-                <div v-else-if="finalMembers.length>0" class="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3  content-center justify-center">
-                    <TransitionGroup name="playerlist">
-                        <PlayerField v-for="(member, index) in finalMembers" :key="member.playerId" :player="member" :index="index"/>
+                <!-- Dos capas: el envoltorio lo mueve el filtrado (playerlist) y la tarjeta entra con el scroll (reveal).
+                     En el mismo elemento las dos animarían la opacidad y se pisarían -->
+                <div v-else-if="finalMembers.length>0" class="relative w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3  content-center justify-center">
+                    <TransitionGroup name="playerlist" @before-leave="freezeLeaving">
+                        <div v-for="(member, index) in finalMembers" :key="member.playerId">
+                            <PlayerField class="reveal h-full" :player="member" :index="index"/>
+                        </div>
                     </TransitionGroup>
 			    </div>
                 <div v-else class="w-full">
@@ -132,6 +137,22 @@
     const legacyDetailId = getQueryParam("id")
 
     const dropdownContent = ref();
+
+    /**
+     * Al filtrar, la tarjeta que sale se queda en su sitio pero fuera del flujo: así el resto se
+     * desliza a su nuevo hueco a la vez (playerlist-move) en vez de esperar y saltar
+     */
+    function freezeLeaving(el: Element) {
+        const card = el as HTMLElement
+        const { offsetTop, offsetLeft, offsetWidth, offsetHeight } = card
+        Object.assign(card.style, {
+            position: "absolute",
+            top: `${offsetTop}px`,
+            left: `${offsetLeft}px`,
+            width: `${offsetWidth}px`,
+            height: `${offsetHeight}px`
+        })
+    }
 
     function closeDropdown() {
         dropdownContent.value.blur()
@@ -386,16 +407,17 @@ path.footballloader {
   100%   { opacity: .1; }
 }
 
-.playerlist-move, 
+.playerlist-move {
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
 .playerlist-enter-active,
 .playerlist-leave-active {
-  transition: all 0.5s ease;
+  transition: opacity 0.3s ease, scale 0.3s ease;
 }
-
 .playerlist-enter-from,
 .playerlist-leave-to {
   opacity: 0;
-  scale: 0;
+  scale: 0.9;
 }
 
 </style>

@@ -8,6 +8,7 @@ import { computed, onBeforeMount } from "vue"
 import { useMatches } from "@/composables/useMatches"
 import { useMembers } from "@/composables/useMembers"
 import { usePlayerStats } from "@/composables/usePlayerStats"
+import { useInView } from "@/composables/useInView"
 import { routes } from "@/lib/query"
 import { translatePosition } from "@/i18n/translations"
 import AnimatedNumber from "@/components/ui/AnimatedNumber.vue"
@@ -114,6 +115,10 @@ const favouriteHour = computed(() => {
     return { hour, count: hours[hour] }
 })
 
+// Las barras de goles por posición crecen cuando la tarjeta se ve (mismo criterio que los contadores).
+// Se observa la tarjeta, que existe desde el principio: la lista no está hasta que llegan los datos
+const { target: goalsCard, inView: goalsInView } = useInView({ threshold: 0.5, rootMargin: "0px 0px -15% 0px" })
+
 const STREAK_CLASS: Record<string, string> = { win: "text-success", loose: "text-error", tie: "text-base-content" }
 </script>
 
@@ -138,7 +143,7 @@ const STREAK_CLASS: Record<string, string> = { win: "text-success", loose: "text
             <div class="rounded-xl bg-base-200 p-4">
                 <p class="text-[11px] uppercase tracking-widest font-black text-base-content/50">Pases buenos</p>
                 <AnimatedNumber class="text-2xl lg:text-3xl font-black tracking-tight mt-1 block" :value="accuracy.passRate" :decimals="0" suffix="%" />
-                <p class="text-xs text-base-content/50 mt-1 truncate">de <AnimatedNumber :value="accuracy.passes" /> pases</p>
+                <p class="text-xs text-base-content/50 mt-1 truncate">de {{ accuracy.passes.toLocaleString("es-ES") }} pases</p>
             </div>
 
             <!-- Entradas -->
@@ -149,31 +154,32 @@ const STREAK_CLASS: Record<string, string> = { win: "text-success", loose: "text
             </div>
         </div>
 
-        <div class="grid lg:grid-cols-[1fr_1fr] gap-4">
+        <div class="grid lg:grid-cols-[1fr_1fr] gap-4 reveal-sides">
             <!-- Quién marca los goles -->
-            <div class="reveal rounded-2xl bg-base-200 p-5">
+            <div ref="goalsCard" class="rounded-2xl bg-base-200 p-5">
                 <h3 class="text-[11px] uppercase tracking-widest font-black text-base-content/50 mb-4">¿Quién marca los goles?</h3>
                 <p v-if="goalsByPosition.length === 0" class="text-sm text-base-content/50 py-4">Todavía no hay goles registrados.</p>
                 <div v-else class="flex flex-col gap-3">
-                    <div v-for="row in goalsByPosition" :key="row.position">
+                    <div v-for="(row, i) in goalsByPosition" :key="row.position">
                         <div class="flex justify-between text-sm mb-1">
                             <span class="font-bold">{{ translatePosition(row.position) }}</span>
-                            <span class="text-base-content/60"><AnimatedNumber :value="row.goals" /> goles</span>
+                            <span class="text-base-content/60">{{ row.goals }} goles</span>
                         </div>
-                        <!-- La barra crece al entrar en pantalla (transición CSS sobre el ancho) -->
+                        <!-- Crece al verse la tarjeta, una barra detrás de otra -->
                         <div class="h-2 rounded-full bg-base-300 overflow-hidden">
-                            <div class="h-full rounded-full bg-primary transition-[width] duration-700 ease-out" :style="{ width: `${row.percent}%` }"></div>
+                            <div class="h-full rounded-full bg-primary transition-[width] duration-1000 ease-out"
+                                :style="{ width: goalsInView ? `${row.percent}%` : '0%', transitionDelay: `${i * 120}ms` }"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Curiosidades sueltas -->
-            <div class="reveal rounded-2xl bg-base-200 p-5 flex flex-col gap-4">
+            <div class="rounded-2xl bg-base-200 p-5 flex flex-col gap-4">
                 <h3 class="text-[11px] uppercase tracking-widest font-black text-base-content/50">Para la hemeroteca</h3>
 
                 <a v-if="wildestMatch" :href="routes.match(wildestMatch.match.matchId)" class="flex items-baseline gap-3 hover:text-primary transition-colors">
-                    <AnimatedNumber class="text-2xl font-black tracking-tight" :value="wildestMatch.total" />
+                    <span class="text-2xl font-black tracking-tight tabular-nums">{{ wildestMatch.total }}</span>
                     <span class="text-sm text-base-content/60">goles en un solo partido, vs {{ wildestMatch.match.opponentClub.name }}</span>
                 </a>
 

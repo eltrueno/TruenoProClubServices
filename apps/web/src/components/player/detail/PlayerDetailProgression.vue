@@ -193,7 +193,7 @@
         </div>
 
         <!-- ═══ FORMA RECIENTE + MEJORES REGISTROS (Side-by-side on desktop) ═══ -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 reveal-stagger">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 reveal-sides">
 
             <!-- Forma Reciente -->
             <div ref="formCard" class="card bg-base-200 shadow-md relative">
@@ -208,13 +208,12 @@
                             <Bar v-if="recentBarData" :data="recentBarData" :options="recentBarOptions" />
                         </div>
 
-                        <div class="grid gap-3 grid-cols-1">
+                        <div class="grid gap-3 grid-cols-1 reveal-stagger">
                             <!-- Delta de valoración (siempre visible) -->
                             <div class="dark:bg-base-100 bg-base-300 rounded-2xl p-5 flex flex-col justify-center border-l-4"
                                 :class="recentDelta >= 0 ? 'border-green-500' : 'border-red-500'">
-                                <div class="text-3xl font-black tabular-nums" :class="recentDelta >= 0 ? 'text-green-500' : 'text-red-500'">
-                                    {{ recentDelta >= 0 ? '+' : '' }}{{ recentDelta.toFixed(2) }}
-                                </div>
+                                <AnimatedNumber class="text-3xl font-black block" :class="recentDelta >= 0 ? 'text-green-500' : 'text-red-500'"
+                                    :value="recentDelta" :decimals="2" :prefix="recentDelta >= 0 ? '+' : ''" />
                                 <div class="text-xs text-base-content/50 mt-1 font-medium">vs su media en valoración</div>
                             </div>
 
@@ -222,9 +221,8 @@
                             <div v-if="evolutionMetric !== 'rating'"
                                 class="dark:bg-base-100 bg-base-300 rounded-2xl p-5 flex flex-col justify-center border-l-4"
                                 :class="selectedMetricDelta >= 0 ? 'border-green-500' : 'border-red-500'">
-                                <div class="text-3xl font-black tabular-nums" :class="selectedMetricDelta >= 0 ? 'text-green-500' : 'text-red-500'">
-                                    {{ selectedMetricDelta >= 0 ? '+' : '' }}{{ selectedMetricDelta.toFixed(currentMetricMeta.decimals) }}{{ currentMetricMeta.suffix }}
-                                </div>
+                                <AnimatedNumber class="text-3xl font-black block" :class="selectedMetricDelta >= 0 ? 'text-green-500' : 'text-red-500'"
+                                    :value="selectedMetricDelta" :decimals="currentMetricMeta.decimals" :prefix="selectedMetricDelta >= 0 ? '+' : ''" :suffix="currentMetricMeta.suffix" />
                                 <div class="text-xs text-base-content/50 mt-1 font-medium">vs su media en {{ currentMetricMeta.label.toLowerCase() }}</div>
                             </div>
                         </div>
@@ -246,7 +244,7 @@
                         </div>
 
                         <!-- Stats summary grid -->
-                        <div class="grid grid-cols-3 gap-2 text-center mt-1">
+                        <div class="grid grid-cols-3 gap-2 text-center mt-1 reveal-stagger">
                             <div class="bg-base-300/30 dark:bg-base-100/40 border border-base-content/5 rounded-xl p-2">
                                 <div class="text-[9px] uppercase font-black text-base-content/40 tracking-wider">Goles</div>
                                 <div class="text-sm font-black text-primary mt-0.5">{{ recentStatsSummary.goals }}</div>
@@ -271,13 +269,13 @@
                         Mejores Registros
                     </h2>
 
-                    <div class="grid grid-cols-2 gap-3 lg:gap-4">
+                    <div class="grid grid-cols-2 gap-3 lg:gap-4 reveal-stagger">
                         <div v-for="h in highlightStats" :key="h.label"
                              class="dark:bg-base-100 bg-base-300 border border-base-content/5 rounded-xl p-3 flex flex-col items-center text-center gap-1 group hover:-translate-y-0.5 hover:shadow-md hover:border-primary/25 transition-all duration-300 relative"
                              :class="{ 'cursor-pointer hover:border-primary/40': h.matchId }">
                             <span class="text-xl group-hover:scale-110 transition-transform duration-300">{{ h.icon }}</span>
                             <span class="text-base-content/50 uppercase text-[0.65rem] lg:text-[0.7rem] font-black tracking-widest leading-tight">{{ h.label }}</span>
-                            <span class="text-lg font-black tabular-nums mt-0.5">{{ h.value }}</span>
+                            <AnimatedNumber class="text-lg font-black mt-0.5" :value="h.value" :decimals="h.decimals ?? 0" />
                             
                             <span v-if="h.matchId" class="tooltip tooltip-top w-full before:text-[10px]" data-tip="Ir al partido">
                                 <a :href="routes.match(h.matchId, playerId)"
@@ -401,7 +399,8 @@
                 </div>
 
                 
-                <div v-else class="hidden md:block overflow-x-auto">
+                <!-- En lg la tabla cabe: sin overflow, que lo convertiría en contenedor de scroll y dejaría quietas las filas (view()) -->
+                <div v-else class="hidden md:block overflow-x-auto lg:overflow-visible">
                     <table class="table table-sm w-full">
                         <thead>
                             <tr class="text-xs uppercase text-base-content/40 tracking-widest border-b border-base-content/10">
@@ -426,7 +425,7 @@
                                 </th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="reveal-list">
                             <tr v-for="row in visibleMatches" :key="row.matchId"
                                 class="border-b border-base-content/5 transition-colors duration-150 relative cursor-pointer"
                                 :class="[row.manOfTheMatch
@@ -471,7 +470,7 @@
                     </table>
                 </div>
 
-                <div v-if="matchRows.length > 0" class="md:hidden flex flex-col gap-3">
+                <div v-if="matchRows.length > 0" class="md:hidden flex flex-col gap-3 reveal-list">
                     
                         <a v-for="row in visibleMatches" :key="row.matchId"
                         :href="routes.match(row.matchId, playerId)"
@@ -548,6 +547,8 @@
 <script setup lang="ts">
     import { computed, ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
     import { useInView } from '@/composables/useInView';
+    import AnimatedNumber from '@/components/ui/AnimatedNumber.vue';
+    import { useSiteFontInCharts } from '@/lib/chartFont';
     import {
         Chart as ChartJS,
         CategoryScale,
@@ -581,6 +582,7 @@
         CategoryScale, LinearScale, PointElement, LineElement,
         BarElement, Filler, Tooltip, Legend, LineController, BarController
     );
+    useSiteFontInCharts();
 
     const props = defineProps<{
         player: PlayerProfileEntity,
@@ -911,14 +913,14 @@
             else tmpStreak = 0
         }
         return [
-            { icon: '⭐', label: 'Mejor Valoración', value: bestRating.toFixed(1), sub: `vs ${bestRatingRival}`, matchId: bestRatingMatchId },
+            { icon: '⭐', label: 'Mejor Valoración', value: bestRating, decimals: 1, sub: `vs ${bestRatingRival}`, matchId: bestRatingMatchId },
             { icon: '⚽', label: 'Máx. Goles', value: bestGoals, sub: `vs ${bestGoalsRival}`, matchId: bestGoalsMatchId },
             { icon: '🅰️', label: 'Máx. Asistencias', value: bestAssists, sub: `vs ${bestAssistsRival}`, matchId: bestAssistsMatchId },
             { icon: '🔥', label: 'Racha Victorias', value: currentStreak > 0 ? `${currentStreak} actual` : `${maxStreak} mejor`, sub: currentStreak > 0 ? 'Racha activa' : 'Récord histórico' },
             { icon: '💥', label: 'Máx. G+A', value: bestGA, sub: `vs ${bestGARival}`, matchId: bestGAMatchId },
             { icon: '🏅', label: 'MVPs Totales', value: totalMvp, sub: `${matches.length} partidos` },
-            { icon: '📊', label: 'Media Valoración', value: (props.stats?.ratingAve ?? 0).toFixed(2), sub: 'Histórica' },
-            { icon: '🎯', label: 'G+A / Partido', value: (props.stats?.goalsPlusAssistsPerMatch ?? 0).toFixed(2), sub: 'Media por partido' },
+            { icon: '📊', label: 'Media Valoración', value: props.stats?.ratingAve ?? 0, decimals: 2, sub: 'Histórica' },
+            { icon: '🎯', label: 'G+A / Partido', value: props.stats?.goalsPlusAssistsPerMatch ?? 0, decimals: 2, sub: 'Media por partido' },
         ]
     })
 
