@@ -124,5 +124,10 @@ try {
 			<slot />
 		</main>
 		<Footer />
+		<script>
+			// Foto que vuela de la plantilla a la ficha del jugador al navegar (ver lib/playerPhotoTransition.ts)
+			import { enablePlayerPhotoTransition } from "@/lib/playerPhotoTransition";
+			enablePlayerPhotoTransition();
+		</script>
 	</body>
 </html>

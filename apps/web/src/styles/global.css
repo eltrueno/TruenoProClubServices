@@ -70,34 +70,37 @@
 }
 
 /* ── Animaciones de scroll (scroll-driven, sin JS) ───────────────────────────
-   Discretas a propósito: el efecto es un desplazamiento corto. La opacidad se
-   completa en el primer tercio del recorrido (aparece rápido y el resto es solo
-   movimiento) y no hay giros ni escalas grandes: con el texto escalado o girado
+   Discretas a propósito: el efecto es un desplazamiento corto con un fundido que
+   dura hasta el 70% del recorrido (en el primer tercio pasaba mientras la tarjeta
+   aún asomaba por abajo y no se apreciaba). No hay giros ni escalas grandes: con el texto escalado o girado
    el navegador lo pinta borroso hasta que vuelve a su tamaño.
    .reveal        → sube un poco al entrar en pantalla
    .reveal-left/-right → entra deslizando un poco desde un lado (artículos)
    .reveal-zoom   → sube y crece apenas (fotos, tarjetas grandes)
-   .reveal-stagger→ en un contenedor, cada hijo entra un poco después
+   .reveal-stagger→ en un contenedor, cada hijo entra un poco después (grupos cortos)
+   .reveal-list   → en listas largas, cada hijo entra por su cuenta al aparecer
+   .reveal-sides  → rejilla de 2 columnas: en lg cada tarjeta entra desde su lado
+                    (izquierda/derecha); en una columna, subiendo
    Requieren animation-timeline (Chrome/Edge). Donde no exista, el contenido se
    ve normal. Se desactivan con prefers-reduced-motion.                        */
 @keyframes reveal-up {
-  from { opacity: 0; translate: 0 1.25rem; }
-  33% { opacity: 1; }
+  from { opacity: 0; translate: 0 2.5rem; }
+  70% { opacity: 1; }
   to { opacity: 1; translate: 0 0; }
 }
 @keyframes reveal-left {
-  from { opacity: 0; translate: -1.5rem 0; }
-  33% { opacity: 1; }
+  from { opacity: 0; translate: -3rem 0; }
+  70% { opacity: 1; }
   to { opacity: 1; translate: 0 0; }
 }
 @keyframes reveal-right {
-  from { opacity: 0; translate: 1.5rem 0; }
-  33% { opacity: 1; }
+  from { opacity: 0; translate: 3rem 0; }
+  70% { opacity: 1; }
   to { opacity: 1; translate: 0 0; }
 }
 @keyframes reveal-in {
-  from { opacity: 0; translate: 0 0.75rem; scale: 0.98; }
-  33% { opacity: 1; }
+  from { opacity: 0; translate: 0 1.5rem; scale: 0.96; }
+  70% { opacity: 1; }
   to { opacity: 1; translate: 0 0; scale: 1; }
 }
 
@@ -109,25 +112,34 @@
     .reveal-zoom {
       animation: reveal-up linear both;
       animation-timeline: view();
-      animation-range: entry 0% cover 22%;
+      animation-range: entry 0% cover 28%;
     }
     .reveal-left { animation-name: reveal-left; }
     .reveal-right { animation-name: reveal-right; }
     .reveal-zoom { animation-name: reveal-in; }
 
     /* Escalonado: cada hijo entra un poco después que el anterior */
-    .reveal-stagger > * {
+    .reveal-stagger > *,
+    .reveal-list > *,
+    .reveal-sides > * {
       animation: reveal-up linear both;
       animation-timeline: view();
+      animation-range: entry 0% cover 28%;
     }
-    .reveal-stagger > *:nth-child(1) { animation-range: entry 0% cover 18%; }
-    .reveal-stagger > *:nth-child(2) { animation-range: entry 0% cover 22%; }
-    .reveal-stagger > *:nth-child(3) { animation-range: entry 0% cover 26%; }
-    .reveal-stagger > *:nth-child(4) { animation-range: entry 0% cover 30%; }
-    .reveal-stagger > *:nth-child(5) { animation-range: entry 0% cover 34%; }
-    .reveal-stagger > *:nth-child(6) { animation-range: entry 0% cover 38%; }
-    .reveal-stagger > *:nth-child(7) { animation-range: entry 0% cover 42%; }
-    .reveal-stagger > *:nth-child(8) { animation-range: entry 0% cover 46%; }
+    /* Con 2 columnas cada tarjeta viene de su lado. El contenedor de la página debe recortar en x
+       (overflow-x-clip, no hidden: hidden lo haría contenedor de scroll y pararía view()) */
+    @media (min-width: 1024px) {
+      .reveal-sides > *:nth-child(odd) { animation-name: reveal-left; }
+      .reveal-sides > *:nth-child(even) { animation-name: reveal-right; }
+    }
+    .reveal-stagger > *:nth-child(1) { animation-range: entry 0% cover 24%; }
+    .reveal-stagger > *:nth-child(2) { animation-range: entry 0% cover 28%; }
+    .reveal-stagger > *:nth-child(3) { animation-range: entry 0% cover 32%; }
+    .reveal-stagger > *:nth-child(4) { animation-range: entry 0% cover 36%; }
+    .reveal-stagger > *:nth-child(5) { animation-range: entry 0% cover 40%; }
+    .reveal-stagger > *:nth-child(6) { animation-range: entry 0% cover 44%; }
+    .reveal-stagger > *:nth-child(7) { animation-range: entry 0% cover 48%; }
+    .reveal-stagger > *:nth-child(8) { animation-range: entry 0% cover 52%; }
   }
 }
 
@@ -143,6 +155,15 @@
       animation-timeline: view();
       animation-range: cover 0% cover 100%;
     }
+  }
+}
+
+/* Vuelo de la foto plantilla -> ficha (lib/playerPhotoTransition.ts): más largo que el fundido por
+   defecto de Astro (250ms, muy corto para ver viajar la foto) y frenando suave al llegar */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-group(.player-photo) {
+    animation-duration: 450ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 

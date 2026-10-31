@@ -6,13 +6,13 @@
           Mejores
         </a>
         <a role="tab" class="tab hidden lg:block" :class="{ 'tab-active': isBest }" @click="changeTab(true)">
-          Hall of Fame (mejores)
+          Mejores jugadores
         </a>
         <a role="tab" class="tab lg:hidden" :class="{ 'tab-active': !isBest }" @click="changeTab(false)">
           Peores
         </a>
         <a role="tab" class="tab hidden lg:block" :class="{ 'tab-active': !isBest }" @click="changeTab(false)">
-          Hall of Shame (peores)
+          Peores jugadores
         </a>
       </div>
     </header>

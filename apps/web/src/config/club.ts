@@ -137,5 +137,8 @@ export const CLUB: ClubConfig = {
     authUrl: stripSlash(import.meta.env.PUBLIC_AUTH_URL || "https://auth.casemuro.stream"),
 };
 
+/** Todos los clubes de la comunidad, siempre en el mismo orden (el del selector de la navbar) */
+export const ALL_CLUBS: ClubData[] = Object.values(clubs);
+
 /** Los demás clubes de la comunidad, para que cada web enlace a las otras */
-export const OTHER_CLUBS: ClubData[] = Object.values(clubs).filter((c) => c.id !== clubId);
+export const OTHER_CLUBS: ClubData[] = ALL_CLUBS.filter((c) => c.id !== clubId);

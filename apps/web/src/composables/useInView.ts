@@ -10,10 +10,24 @@ export function useInView(options: { threshold?: number; rootMargin?: string; on
     const inView = ref(false)
     let observer: IntersectionObserver | null = null
 
-    /** ¿El elemento ya está dentro de la ventana? (sin depender del observer) */
+    // Margen inferior del rootMargin ("0px 0px -15% 0px" -> 15% del alto)
+    const bottomInset = (vh: number) => {
+        const bottom = rootMargin.trim().split(/\s+/)[2] ?? "0px"
+        const value = Number.parseFloat(bottom) || 0
+        return -(bottom.endsWith("%") ? (vh * value) / 100 : value)
+    }
+
+    /**
+     * ¿Se ve ya al montar? Misma regla que el observer (umbral y margen inferior), sin esperarle.
+     * Lo que al cargar queda pegado al borde de abajo espera al primer scroll: si se animara ahí,
+     * la cuenta pasaría donde nadie mira (medido: la fila de datos de la landing quedaba a 751/800px).
+     */
     const isOnScreen = (el: HTMLElement) => {
         const r = el.getBoundingClientRect()
-        return r.bottom > 0 && r.top < (window.innerHeight || document.documentElement.clientHeight)
+        if (r.height === 0) return false
+        const vh = window.innerHeight || document.documentElement.clientHeight
+        const visible = Math.min(r.bottom, vh - bottomInset(vh)) - Math.max(r.top, 0)
+        return visible / r.height >= threshold
     }
 
     onMounted(() => {

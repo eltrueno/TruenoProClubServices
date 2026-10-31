@@ -79,7 +79,7 @@
                                 >Últimos 10</button>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-2 gap-4 reveal-stagger">
                             <div 
                                 v-for="(m, index) in radarMetrics" 
                                 :key="m.label" 
@@ -89,7 +89,7 @@
                                 :class="{ '!border-primary ring-1 ring-primary/20 shadow-lg': hoveredIdx === index }"
                             >
                                 <p class="text-xs uppercase font-bold mb-1 transition-colors" :class="{ 'text-primary': hoveredIdx === index, 'opacity-50': hoveredIdx !== index }">{{ m.label }}</p>
-                                <p class="text-2xl font-black tabular-nums transition-colors">{{ formatRadarDisplay(m) }}</p>
+                                <AnimatedNumber class="text-2xl font-black transition-colors block" v-bind="radarNumber(m)" />
                             </div>
                         </div>
                     </div>
@@ -98,7 +98,7 @@
         </div>
 
         <!-- Detailed Stats Panels -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 reveal-stagger">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 reveal-sides">
             <div v-for="group in statGroups" :key="group.title" class="group h-full">
                 <div class="card h-full bg-base-200 border border-base-300 shadow-md transition-all duration-300">
                     <div class="card-body p-6">
@@ -112,10 +112,10 @@
                             </span>
                             {{ group.title }}
                         </h3>
-                        <div class="space-y-4">
+                        <div class="space-y-4 reveal-list">
                             <div v-for="stat in group.stats" :key="stat.label" class="flex items-center justify-between pb-3 border-b border-base-content/5 last:border-0 group/row">
                                 <span class="text-sm font-medium text-base-content/60">{{ stat.label }}</span>
-                                <span class="text-lg font-bold tabular-nums">{{ formatValue(stat) }}</span>
+                                <AnimatedNumber class="text-lg font-bold" v-bind="statNumber(stat)" />
                             </div>
                         </div>
                     </div>
@@ -141,6 +141,8 @@
     import { Radar } from 'vue-chartjs';
     import { translatePosition, Position } from '@/i18n/translations';
     import { useInView } from '@/composables/useInView';
+    import AnimatedNumber from '@/components/ui/AnimatedNumber.vue';
+    import { useSiteFontInCharts } from '@/lib/chartFont';
     import PlayerStatsEntity from '@/model/PlayerStatsEntity';
     import ClubMatchEntity from '@/model/match/ClubMatchEntity';
     import type PlayerProfileEntity from '@/model/PlayerProfileEntity';
@@ -148,6 +150,7 @@
     import { hexToRgba } from '@/lib/color';
 
     ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, RadarController);
+    useSiteFontInCharts();
 
     const props = defineProps<{
         profile: PlayerProfileEntity
@@ -270,26 +273,26 @@
         return props.stats
     })
 
-    const formatValue = (stat: any) => {
-        const raw = (props.stats as any)[stat.key]
-        const val = raw ?? 0
-        if (typeof val === 'number' && isNaN(val)) return '0'
-        if (stat.type === 'percent' || stat.fixed) return val.toFixed(1) + '%'
-        if (stat.type === 'decimal') return typeof val === 'number' ? val.toFixed(2) : val
-        if (typeof val === 'number' && !Number.isInteger(val)) return val.toFixed(2)
-        return val
+    /** Props de AnimatedNumber para un número de estadística: valor, decimales y sufijo */
+    type StatNumber = { value: number | string; decimals?: number; suffix?: string }
+
+    const statNumber = (stat: any): StatNumber => {
+        const val = (props.stats as any)[stat.key] ?? 0
+        if (typeof val !== 'number') return { value: val }
+        if (isNaN(val)) return { value: 0 }
+        if (stat.type === 'percent' || stat.fixed) return { value: val, decimals: 1, suffix: '%' }
+        if (stat.type === 'decimal' || !Number.isInteger(val)) return { value: val, decimals: 2 }
+        return { value: val }
     }
 
-    const formatRadarDisplay = (m: any) => {
-        const rawVal = m.raw !== undefined ? m.raw : (currentStats.value as any)[m.key]
-        const val = rawVal ?? 0
-        if (typeof val === 'number' && isNaN(val)) return '0'
-        
-        if (m.key === 'ratingAve') return val.toFixed(1)
-        if (m.key.toLowerCase().includes('rate') || m.key.toLowerCase().includes('percent')) return val.toFixed(1) + '%'
-        if (m.key === 'goalsPlusAssistsPerMatch') return val.toFixed(2)
-        
-        return Number.isInteger(val) ? val : val.toFixed(0)
+    const radarNumber = (m: any): StatNumber => {
+        const val = (m.raw !== undefined ? m.raw : (currentStats.value as any)[m.key]) ?? 0
+        if (typeof val !== 'number') return { value: val }
+        if (isNaN(val)) return { value: 0 }
+        if (m.key === 'ratingAve') return { value: val, decimals: 1 }
+        if (m.key.toLowerCase().includes('rate') || m.key.toLowerCase().includes('percent')) return { value: val, decimals: 1, suffix: '%' }
+        if (m.key === 'goalsPlusAssistsPerMatch') return { value: val, decimals: 2 }
+        return { value: Math.round(val) }
     }
 
     const statGroups = computed(() => [
@@ -505,7 +508,7 @@ const getRadarDataPoints = (s: PlayerStatsEntity): number[] => {
                 ticks: { display: false, stepSize: 20 },
                 pointLabels: {
                     display: !isMobile.value,
-                    font: { size: 12, weight: 'bold', family: 'Inter' },
+                    font: { size: 12, weight: 'bold' },
                     color: '#A6ADBB',
                     padding: 10
                 }

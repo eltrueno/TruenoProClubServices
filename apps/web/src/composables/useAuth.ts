@@ -32,6 +32,8 @@ export function useAuth() {
     const isAdmin = computed(() => user.value?.role === UserRole.admin)
 
     const myMember = computed(() => _myMember.value)
+    /** Ya se sabe si la cuenta tiene jugador vinculado (myMember null puede ser "sin vincular" o "cargando") */
+    const myMemberLoaded = computed(() => _myMemberLoaded.value)
     async function loadMyMember(force = false) {
         if (!isLoggedIn.value) { _myMember.value = null; return null }
         if (_myMemberLoaded.value && !force) return _myMember.value
@@ -176,6 +178,7 @@ export function useAuth() {
         isAdmin,
         isPending,
         myMember,
+        myMemberLoaded,
         loadMyMember,
         syncTwitch,
         loginWithTwitch,

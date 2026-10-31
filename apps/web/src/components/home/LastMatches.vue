@@ -59,9 +59,9 @@ const playerOfTheMoment = computed(() => {
 </script>
 
 <template>
-    <div class="grid lg:grid-cols-[1.4fr_1fr] gap-4">
+    <div class="grid lg:grid-cols-[1.4fr_1fr] gap-4 reveal-sides">
         <!-- Último partido + forma -->
-        <div class="reveal rounded-2xl bg-base-200 p-5">
+        <div class="rounded-2xl bg-base-200 p-5">
             <h3 class="text-[11px] uppercase tracking-widest font-black text-base-content/50 mb-3">Último partido</h3>
 
             <div v-if="loading" class="space-y-3">
@@ -74,7 +74,7 @@ const playerOfTheMoment = computed(() => {
                 <a :href="routes.match(lastMatch.matchId)" class="group flex items-center gap-3 rounded-xl bg-base-100 p-4 hover:bg-base-300/40 transition-colors">
                     <span class="flex-1 min-w-0 truncate font-bold text-sm lg:text-base">{{ lastMatch.ourClub.name }}</span>
                     <span class="text-2xl lg:text-4xl font-black tracking-tight tabular-nums transition-transform duration-300 group-hover:scale-110" :class="[RESULT_CLASS[lastMatch.result], { 'animate-pulse': isToday }]">
-                        <AnimatedNumber :value="lastMatch.ourClub.matchStats.goals" /> : <AnimatedNumber :value="lastMatch.opponentClub.matchStats.goals" />
+                        {{ lastMatch.ourClub.matchStats.goals }} : {{ lastMatch.opponentClub.matchStats.goals }}
                     </span>
                     <span class="flex-1 min-w-0 truncate text-right text-sm lg:text-base text-base-content/70">{{ lastMatch.opponentClub.name }}</span>
                 </a>
@@ -101,7 +101,7 @@ const playerOfTheMoment = computed(() => {
 
         <!-- Jugador del momento. El aura toma el color del texto (text-primary/40), así que el
              contenido recupera el suyo: si no, todo lo de dentro sale en primary al 40% -->
-        <div class="reveal-zoom aura aura-glow text-primary/40 rounded-2xl w-full">
+        <div class="aura aura-glow text-primary/40 rounded-2xl w-full">
         <div class="rounded-2xl bg-base-200 p-5 h-full text-base-content">
             <h3 class="text-[11px] uppercase tracking-widest font-black text-base-content/50 mb-3">Jugador del momento</h3>
             <div v-if="loading" class="flex items-center gap-3">

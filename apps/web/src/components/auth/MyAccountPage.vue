@@ -175,7 +175,14 @@ watch(
     myPlayerLoading.value = true
     loadMyMember(true)
       .then((m) => (m ? undefined : loadLinkState()))
-      .finally(() => { myPlayerLoading.value = false })
+      .finally(() => {
+        myPlayerLoading.value = false
+        // Desde "Vincular mi jugador" (/micuenta#mi-jugador): la tarjeta se pinta en cliente, así que el
+        // navegador no encuentra el ancla al llegar; se baja a ella cuando ya está con su contenido
+        if (location.hash === "#mi-jugador") {
+          requestAnimationFrame(() => document.getElementById("mi-jugador")?.scrollIntoView({ behavior: "smooth", block: "start" }))
+        }
+      })
   },
   { immediate: true }
 )
@@ -405,8 +412,8 @@ const icons = {
         </div>
 
 
-        <!-- Card Cuenta de juego: jugador vinculado desde el panel admin (members.userId) -->
-        <div class="rounded-xl bg-base-200 shadow-md p-6">
+        <!-- Card Cuenta de juego: jugador vinculado. #mi-jugador: el desplegable de la cuenta enlaza aquí para vincular -->
+        <div id="mi-jugador" class="rounded-xl bg-base-200 shadow-md p-6 scroll-mt-24">
           <h2 class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Mi jugador</h2>
           <div v-if="myPlayerLoading" class="flex items-center gap-3">
             <div class="skeleton w-12 h-14 rounded-lg shrink-0"></div>

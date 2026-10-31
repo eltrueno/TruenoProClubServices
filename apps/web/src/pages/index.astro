@@ -16,7 +16,8 @@ import { CLUB } from "@/config/club";
 	description={`${CLUB.name} Web oficial: Inicio. Nuestros números y nuestros valores`}
 	keywords={[...CLUB.keywords, "fifa", "eafc", "fifa23", "fifa24", "eafc24", "eafc25", "eafc26", "ea fc", "club", "pro", "clubespro", "proclubs", "eltrueno", "el_trueno", "inicio", "valores", "web"].join(", ")}
 >
-	<div class="w-full max-w-[100rem] mx-auto px-4 lg:px-8 flex flex-col gap-12 lg:gap-16 py-8 lg:py-12">
+	<!-- overflow-x-clip: las tarjetas que entran de lado (reveal-sides) no deben abrir scroll horizontal -->
+	<div class="w-full max-w-[100rem] mx-auto px-4 lg:px-8 flex flex-col gap-12 lg:gap-16 py-8 lg:py-12 overflow-x-clip">
 		<!-- Hero -->
 		<header class="text-center reveal-stagger">
 			<p class="text-xs lg:text-sm uppercase tracking-[0.3em] font-black text-primary">Web oficial</p>
