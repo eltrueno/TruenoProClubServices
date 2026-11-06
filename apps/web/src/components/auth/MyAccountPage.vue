@@ -25,7 +25,21 @@ const THEME_OPTIONS: ToggleOption<ThemeChoice>[] = [
 import { usePlayerStats } from "@/composables/usePlayerStats"
 import type { IClubMember, ILinkRequest } from "@trueno-proclub-services/shared"
 
-const { user, syncTwitch, logout, deleteAccount, isLoggedIn, isPending, myMember, loadMyMember } = useAuth()
+const { user, syncTwitch, logout, deleteAccount, isLoggedIn, isPending, myMember, loadMyMember, loginWithTwitchPopup } = useAuth()
+
+// Estado de la sincronización con Twitch (la hace el servidor al entrar, en segundo plano y con el botón)
+const rtf = new Intl.RelativeTimeFormat('es', { numeric: 'auto' })
+const twitchSyncedLabel = computed(() => {
+  const raw = user.value?.twitchSyncedAt
+  if (!raw) return null
+  const diffMin = Math.round((new Date(raw).getTime() - Date.now()) / 60000)
+  if (!Number.isFinite(diffMin)) return null
+  if (Math.abs(diffMin) < 60) return rtf.format(diffMin, 'minute')
+  if (Math.abs(diffMin) < 60 * 24) return rtf.format(Math.round(diffMin / 60), 'hour')
+  return rtf.format(Math.round(diffMin / 1440), 'day')
+})
+const twitchNeedsReauth = computed(() => !!user.value?.twitchNeedsReauth)
+const reconnectTwitch = () => loginWithTwitchPopup(false)
 
 // Solicitud de vinculación cuenta ↔ jugador (la aprueba un admin desde /admin)
 const linkRequest = ref<ILinkRequest | null>(null)
@@ -148,10 +162,16 @@ let cooldownTimer: ReturnType<typeof setInterval> | null = null
 const handleSync = async (silent: boolean = false) => {
   if (!isLoggedIn.value || syncCooldown.value > 0) return
   twitchSyncing.value = true
-  await syncTwitch(silent)
-  localStorage.setItem('last_twitch_sync', Date.now().toString())
-  updateCooldown()
-  twitchSyncing.value = false
+  try {
+    await syncTwitch(silent)
+  } catch (e) {
+    // Twitch caído o pedido demasiado pronto: el botón no se queda colgado
+    console.warn('[MyAccount] Twitch sync failed', e)
+  } finally {
+    localStorage.setItem('last_twitch_sync', Date.now().toString())
+    updateCooldown()
+    twitchSyncing.value = false
+  }
 }
 
 onMounted(() => {
@@ -346,6 +366,15 @@ const icons = {
                 </svg>
               </div>
               <p class="text-sm text-base-content/50 mt-1">{{  user?.email?.replace(/^(.{3}).+(@.+)$/, '$1***$2') || 'usuario@email.com' }}</p>
+              <p v-if="!twitchNeedsReauth && twitchSyncedLabel" class="text-xs text-base-content/40 mt-1">
+                Datos de Twitch actualizados {{ twitchSyncedLabel }}
+              </p>
+            </div>
+
+            <!-- El token de Twitch ya no sirve: sin volver a entrar no se puede saber si sigues o eres sub -->
+            <div v-if="twitchNeedsReauth" role="alert" class="alert alert-warning alert-soft mt-4 text-left text-sm py-3">
+              <span>Tu conexión con Twitch ha caducado y no podemos comprobar si sigues el canal o eres sub.</span>
+              <button @click="reconnectTwitch" class="btn btn-sm btn-warning rounded-lg font-bold">Reconectar Twitch</button>
             </div>
             
             <!-- Botones de acción -->

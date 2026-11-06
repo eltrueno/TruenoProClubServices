@@ -143,6 +143,9 @@ export interface ITwitchSyncResult {
     twitchSub: boolean
     twitchSubTier: string | null
     role: UserRole | string
+    twitchSyncedAt?: string
+    /** Twitch falló en una de las consultas y se conservó el valor anterior */
+    partial?: boolean
 }
 
 interface AuthListResponse<T> {

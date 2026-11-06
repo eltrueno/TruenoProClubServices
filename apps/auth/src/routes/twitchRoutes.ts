@@ -18,7 +18,7 @@ router.get("/sync", async (req, res) => {
       })
     }
 
-    const result = await twitchService.syncTwitchData(user)
+    const result = await twitchService.syncTwitchDataManual(user)
 
     if (!result.ok) {
       switch (result.error.code) {
@@ -29,10 +29,20 @@ router.get("/sync", async (req, res) => {
         case "TOKEN_EXPIRED":
           return res.status(401).json({ status: "error", message: "Twitch token expired", code: "TWITCH_TOKEN_EXPIRED" })
         case "FOLLOW_CHECK_FAILED":
-          return res.status(result.error.status).json({
+          // Twitch no respondió bien a ninguna de las dos consultas; no se ha cambiado nada
+          return res.status(result.error.status >= 400 ? result.error.status : 502).json({
             status: "error",
             message: "Error checking Twitch follow status",
+            code: "TWITCH_UNAVAILABLE",
             details: result.error.details
+          })
+        case "TOO_SOON":
+          res.setHeader("Retry-After", String(result.error.retryAfterSeconds))
+          return res.status(429).json({
+            status: "error",
+            message: "Sync requested too soon",
+            code: "TWITCH_SYNC_TOO_SOON",
+            retryAfterSeconds: result.error.retryAfterSeconds
           })
         default:
           return res.status(500).json({ status: "error", message: "Unknown error during sync" })

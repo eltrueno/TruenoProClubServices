@@ -54,7 +54,7 @@ Puedes ver el sistema en funcionamiento en el despliegue oficial de **Casemuro C
 
 ##### **auth** — Servicio de autenticación
 - **Stack**: Express + Better Auth + MongoDB.
-- Login social con Twitch, sincronización de follow/sub/rol, endpoint público de usuarios y listado admin.
+- Login social con Twitch, sincronización de follow/sub/rol (al entrar, en segundo plano cuando los datos son viejos y con un repaso periódico), endpoint público de usuarios y listado admin.
 
 ##### **web** — Frontend
 - **Stack**: Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5.
@@ -152,6 +152,8 @@ Las más importantes:
 | `TOTW_CRON_SCHEDULE`, `TZ` | api, worker | Cuándo se calcula el equipo de la semana |
 | `CLUB_CACHE_MS`, `CLUB_RETRY_MS` | api | TTL de la caché de `/club` y espera tras un fallo de EA |
 | `TWITCH_CLIENT_ID/SECRET`, `TWITCH_CHANNEL_ID` | auth | Proveedor Twitch y canal a seguir |
+| `TWITCH_SYNC_INTERVAL_MINUTES`, `TWITCH_SYNC_STALE_MINUTES`, `TWITCH_SYNC_RETRY_MINUTES` | auth | Cada cuánto pasa el repaso de follow/sub (60), a partir de cuándo se consideran viejos los datos (360) y espera tras un intento fallido (10) |
+| `BETTER_AUTH_SECRET` | auth | Firma las sesiones y cifra los tokens de Twitch guardados. Si cambia, los usuarios tendrán que volver a conectar Twitch |
 | `PUPPETEER_EXECUTABLE_PATH` | api, worker, imagerenderer | Ruta a Chrome si no está en la ubicación por defecto |
 
 #### Servicios Externos
@@ -300,7 +302,7 @@ This project is an **evolution** of [Caracantosmeaos](https://github.com/Caracan
 
 - **api** — Express + Mongoose REST API: club, members, matches, stats, achievements, HOF/HOS, position averages, account ↔ player link requests and an admin panel backend (player photo with a 400×450 crop editor uploading to Cloudflare R2, linked account, request approval). Protected routes validate the session against the auth service. 📖 **Endpoints: [docs/API.md](docs/API.md)**
 - **worker** — Every `WORKER_INTERVAL` seconds fetches new matches from EA, normalizes them (`MatchDTO`), registers the members that appear, accumulates stats, evaluates achievements and publishes RabbitMQ events. Weekly team-of-the-week job. Enriches members (`proName`, `proOverall`…) from EA without overwriting good data with empty values.
-- **auth** — Express + Better Auth + MongoDB: Twitch login, follow/sub/role sync, public users endpoint and admin user listing.
+- **auth** — Express + Better Auth + MongoDB: Twitch login, follow/sub/role sync (on sign-in, in the background when stale and in a periodic sweep), public users endpoint and admin user listing.
 - **web** — Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5 frontend. Fully static, deployed to GitHub Pages (`.github/workflows/deploy-web.yml`, custom domain via a generated `CNAME`). Multi-club: one club per repository; other clubs live in satellite repos that only hold a workflow cloning this one, and a successful deploy here triggers them (`repository_dispatch`, `CLUB_PAGES_REPOS` variable and `CLUB_PAGES_DISPATCH_TOKEN` secret) so every club publishes the same commit. Dynamic pages take query params read client-side (`/jugador?id=<playerId>`, `/partido?id=<matchId>`, `/totw?semana=…&tipo=…`). Admin panel at `/admin` (pending link requests, player photo and linked account, `admin` role only); users request the link to their player from `/micuenta`. Configured through `PUBLIC_*` env vars (`apps/web/.env.example`). The link preview image (`/og.png`, 1200×630 PNG) is generated at build time from the club crest over its `themeColor`.
 - **discordbot** — Consumes RabbitMQ events and announces the team of the week (matches / achievements once their producers are enabled).
 - **imagerenderer** — Captures web pages with puppeteer to render the images the bot posts.
@@ -361,6 +363,8 @@ Each app ships a commented `.env.example`: [`apps/api`](apps/api/.env.example), 
 | `TOTW_CRON_SCHEDULE`, `TZ` | api, worker | When the team of the week is computed |
 | `CLUB_CACHE_MS`, `CLUB_RETRY_MS` | api | `/club` cache TTL and cooldown after an EA failure |
 | `TWITCH_CLIENT_ID/SECRET`, `TWITCH_CHANNEL_ID` | auth | Twitch provider and channel to follow |
+| `TWITCH_SYNC_INTERVAL_MINUTES`, `TWITCH_SYNC_STALE_MINUTES`, `TWITCH_SYNC_RETRY_MINUTES` | auth | How often the follow/sub sweep runs (60), when data counts as stale (360) and the wait after a failed attempt (10) |
+| `BETTER_AUTH_SECRET` | auth | Signs sessions and encrypts stored Twitch tokens. Changing it forces users to reconnect Twitch |
 | `PUPPETEER_EXECUTABLE_PATH` | api, worker, imagerenderer | Chrome path if not in the default location |
 
 ### 🔌 Endpoints

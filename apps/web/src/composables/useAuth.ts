@@ -67,6 +67,9 @@ export function useAuth() {
                 ...user.value,
                 twitchFollowing: syncData.twitchFollowing,
                 twitchSub: syncData.twitchSub,
+                twitchSubTier: syncData.twitchSubTier,
+                twitchSyncedAt: syncData.twitchSyncedAt ?? new Date().toISOString(),
+                twitchNeedsReauth: false,
                 role: syncData.role,
             }
         }
@@ -82,7 +85,6 @@ export function useAuth() {
         const { data } = await authClient.signIn.social({
             provider: "twitch",
             callbackURL: `${SITE_URL}/authcallback`,
-            scopes: ["user:read:email", "user:read:follows", "user:read:subscriptions"],
             disableRedirect: true
         })
 
@@ -109,8 +111,7 @@ export function useAuth() {
             const { data } = await authClient.signIn.social({
                 provider: "twitch",
                 callbackURL: `${SITE_URL}/authcallback`,
-                scopes: ["user:read:email", "user:read:follows", "user:read:subscriptions"],
-                disableRedirect: true
+                    disableRedirect: true
             })
 
             if (!data?.url) {

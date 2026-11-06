@@ -15,4 +15,7 @@ export interface TwitchSyncResult {
   twitchSub: boolean
   twitchSubTier: string | null
   role: string
+  twitchSyncedAt: string
+  /** true si Twitch falló en alguna de las dos consultas y se conservó el valor anterior */
+  partial: boolean
 }
