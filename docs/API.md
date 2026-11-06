@@ -118,11 +118,28 @@ Better Auth con proveedor social de **Twitch**. Cookie de sesión con dominio `C
 
 Todo lo que cuelga de `/api/auth/*` lo maneja Better Auth (sign-in social, callback, `get-session`, sign-out, delete-user…). Lo habitual desde la web se hace con el cliente (`better-auth/vue`) apuntando a `PUBLIC_AUTH_URL`. `update-user` está bloqueado (403).
 
-Campos extra del usuario: `role` (`visitor` \| `follower` \| `subscriber` \| `vip` \| `mod` \| `admin`), `twitchId`, `twitchFollowing`, `twitchSub`, `discordId` (solo los escribe el servidor: `input: false`), y los de privacidad `showPublicName` / `showPublicImage` (booleanos, por defecto `true`). `POST /api/auth/update-user` solo admite esos dos campos: cualquier otro (nombre, imagen…) devuelve `403 Not allowed`, porque el perfil viene de Twitch.
+Campos extra del usuario: `role` (`visitor` \| `follower` \| `subscriber` \| `vip` \| `mod` \| `admin`), `twitchId`, `twitchFollowing`, `twitchSub`, `twitchSubTier` (`"1000"` / `"2000"` / `"3000"` o `null`), `twitchSyncedAt` (última sincronización correcta), `twitchSyncAttemptAt` (último intento, haya salido bien o no), `twitchNeedsReauth` (el token de Twitch ya no sirve: hay que volver a iniciar sesión), `discordId` (solo los escribe el servidor: `input: false`), y los de privacidad `showPublicName` / `showPublicImage` (booleanos, por defecto `true`). `POST /api/auth/update-user` solo admite esos dos campos: cualquier otro (nombre, imagen…) devuelve `403 Not allowed`, porque el perfil viene de Twitch.
 
 | Método | Ruta | Descripción |
 |---|---|---|
 | `GET` | `/api/auth/get-session` | `{ session, user }` o `null`. Es lo que usa el api para validar sesiones. |
+
+#### Sincronización con Twitch
+
+Follow, sub (con nivel) y rol se refrescan solos, sin que el usuario tenga que pulsar nada:
+
+- **Al iniciar sesión**, en cada login (no solo el primero).
+- **Al leer la sesión** (`get-session`), si la última sincronización tiene más de `TWITCH_SYNC_STALE_MINUTES` (6 h por defecto). Va en segundo plano: esa respuesta trae los datos de antes y la siguiente ya los nuevos.
+- **Un repaso periódico** cada `TWITCH_SYNC_INTERVAL_MINUTES` (60 por defecto) para quien no entra en la web: hasta 200 usuarios por pasada, primero los que llevan más tiempo sin intentarse.
+- **A mano**, con `GET /api/twitch/sync` (como mucho una vez cada 30 s).
+
+Si un intento falla (Twitch caído, cuenta sin token…), ni el segundo plano ni el repaso lo reintentan hasta pasados `TWITCH_SYNC_RETRY_MINUTES` (10 por defecto): así una caída de Twitch no se convierte en tres peticiones a Twitch por cada carga de página.
+
+El rol se guarda con condición: solo si el rol que hay en la base de datos en ese momento no es `admin`, `mod` ni `vip`. Si un admin cambia un rol mientras dura una sincronización, gana el cambio del admin.
+
+Los tokens de Twitch (`accessToken`, `refreshToken` de la colección `account`) se guardan **cifrados** (`account.encryptOAuthTokens`, clave `BETTER_AUTH_SECRET`). Los que ya existían en claro se siguen leyendo y se cifran solos en el siguiente login o renovación. Si cambia `BETTER_AUTH_SECRET`, los tokens cifrados dejan de poder leerse y esas cuentas pasan a `twitchNeedsReauth` hasta que vuelvan a entrar.
+
+Los permisos de Twitch (`user:read:follows`, `user:read:subscriptions`) los pide el servidor en todos los logins (`TWITCH_SCOPES` en `packages/auth`). Si Twitch falla en una de las dos consultas se conserva el valor anterior (antes un error contaba como "no es sub"). Si el token no tiene esos permisos o sigue dando 401 después de renovarlo, se marca `twitchNeedsReauth` y no se vuelve a intentar hasta el siguiente login. Los roles `admin`, `mod` y `vip` nunca se tocan.
 
 ### Rutas propias
 
@@ -131,7 +148,7 @@ Formato: `{ "status": "success", "data": … }` o `{ "status": "error", "message
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
 | `GET` | `/api/public/users?ids=a,b,c` | — | Datos públicos de usuarios (`IPublicUser[]`: `id`, `name`, `image`). `name` / `image` vienen a `null` si el usuario los ha ocultado (`showPublicName` / `showPublicImage`). Máx. 50 ids; 400 si ninguno es válido. Para mostrar la cuenta vinculada a un jugador. |
-| `GET` | `/api/twitch/sync` | sesión | Re-sincroniza follow / sub / rol del usuario con Twitch. Errores: `NO_TWITCH_ACCOUNT` (404), `TWITCH_TOKEN_EXPIRED` (401), `MISSING_CHANNEL_ID` (500). |
+| `GET` | `/api/twitch/sync` | sesión | Re-sincroniza follow / sub / rol del usuario con Twitch. Devuelve `twitchFollowing`, `twitchSub`, `twitchSubTier`, `role`, `twitchSyncedAt` y `partial` (`true` si Twitch falló en una consulta y se conservó el valor anterior). Errores: `NO_TWITCH_ACCOUNT` (404), `TWITCH_TOKEN_EXPIRED` (401: token caducado, revocado o sin permisos; hay que volver a iniciar sesión), `TWITCH_UNAVAILABLE` (el código de Twitch, o 502: fallaron las dos consultas y no se cambió nada), `TWITCH_SYNC_TOO_SOON` (429 con `Retry-After` y `retryAfterSeconds`: menos de 30 s desde la anterior), `MISSING_CHANNEL_ID` (500). |
 | `GET` | `/api/admin/users?q=texto` | sesión + `admin` | Lista de usuarios (`id`, `name`, `image`, `role`, `twitchId`, `discordId`) filtrada por nombre, máx. 200. Para el selector del panel admin. |
 | `GET` | `/health` | — | `{ "status": "ok" }`. |
 

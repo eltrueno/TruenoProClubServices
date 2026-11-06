@@ -8,7 +8,21 @@ import { ObjectId } from "mongodb"
 const DEVMODE = process.env.DEVMODE === "true";
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(",") ?? [];
 
-export const createAuth = (db: any, onTwitchLogin?: (user: any) => Promise<void>) => betterAuth({
+/**
+ * Permisos que se piden a Twitch en TODOS los logins (además de los de por defecto,
+ * `user:read:email` y `openid`). Van aquí y no en el cliente para que no dependan de
+ * por dónde entre el usuario: sin ellos no se puede saber si sigue o es sub del canal.
+ */
+export const TWITCH_SCOPES = ["user:read:follows", "user:read:subscriptions"]
+
+export interface AuthHooks {
+  /** Cada vez que alguien inicia sesión (se crea una sesión), también la primera. */
+  onSignIn?: (user: any) => void | Promise<void>
+  /** Cada vez que se lee la sesión (`get-session`). No se espera: es para refrescos en segundo plano. */
+  onSessionRead?: (user: any) => void
+}
+
+export const createAuth = (db: any, authHooks: AuthHooks = {}) => betterAuth({
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:4000",
   database: mongodbAdapter(db),
 
@@ -38,6 +52,13 @@ export const createAuth = (db: any, onTwitchLogin?: (user: any) => Promise<void>
         }
       }
     }),
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/get-session" || !authHooks.onSessionRead) return
+      const returned = ctx.context.returned as { user?: unknown } | null | undefined
+      if (returned && typeof returned === "object" && "user" in returned && returned.user) {
+        authHooks.onSessionRead(returned.user)
+      }
+    }),
   },
 
   databaseHooks: {
@@ -45,18 +66,24 @@ export const createAuth = (db: any, onTwitchLogin?: (user: any) => Promise<void>
       create: {
         after: async (account: any) => {
           if (account.providerId === "twitch") {
-            // Actualizamos el twitchId en el usuario
+            // twitchId en el usuario; la sincronización la lanza el hook de sesión, justo después
             await db.collection("user").updateOne(
               { _id: new ObjectId(account.userId) },
               { $set: { twitchId: account.accountId } }
             )
-
-            const userDoc = await db.collection("user").findOne({ _id: new ObjectId(account.userId) })
-            if (userDoc) {
-              const user = { ...userDoc, id: userDoc._id.toString() }
-              onTwitchLogin?.(user)
-            }
           }
+        }
+      }
+    },
+    session: {
+      create: {
+        // Cada inicio de sesión (no solo el primero): así follow/sub/rol se refrescan al entrar
+        after: async (session: any) => {
+          if (!authHooks.onSignIn) return
+          const userDoc = await db.collection("user").findOne({ _id: new ObjectId(session.userId) })
+          if (!userDoc) return
+          const user = { ...userDoc, id: userDoc._id.toString() }
+          Promise.resolve(authHooks.onSignIn(user)).catch((err) => console.error("[auth] onSignIn error:", err))
         }
       }
     }
@@ -87,6 +114,27 @@ export const createAuth = (db: any, onTwitchLogin?: (user: any) => Promise<void>
         defaultValue: false,
         input: false
       },
+      twitchSubTier: {
+        type: "string",
+        required: false,
+        input: false
+      },
+      twitchSyncedAt: {
+        type: "date",
+        required: false,
+        input: false
+      },
+      twitchSyncAttemptAt: {
+        type: "date",
+        required: false,
+        input: false
+      },
+      twitchNeedsReauth: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+        input: false
+      },
       role: {
         type: "string",
         defaultValue: "visitor",
@@ -111,10 +159,18 @@ export const createAuth = (db: any, onTwitchLogin?: (user: any) => Promise<void>
 
   trustedOrigins: ALLOWED_ORIGINS.length ? ALLOWED_ORIGINS : ["http://localhost:4321"],
 
+  account: {
+    // accessToken / refreshToken cifrados en la base de datos (clave: BETTER_AUTH_SECRET).
+    // Los guardados antes de activarlo siguen en claro y se cifran solos en el siguiente
+    // login o renovación. apps/auth los lee con las mismas funciones (services/tokenCrypto).
+    encryptOAuthTokens: true,
+  },
+
   socialProviders: {
     twitch: {
       clientId: process.env.TWITCH_CLIENT_ID || "",
       clientSecret: process.env.TWITCH_CLIENT_SECRET || "",
+      scope: TWITCH_SCOPES,
       overrideUserInfoOnSignIn: true
     }
   }
