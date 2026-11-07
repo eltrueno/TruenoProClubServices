@@ -97,7 +97,6 @@
   background-size: 200% 100%;
   background-position: 0% 50%;
   border-color: transparent;
-  box-shadow: 0 1px 0 0 color-mix(in oklab, white 25%, transparent) inset;
 }
 .btn-primary:not(.btn-outline, .btn-soft, .btn-ghost, .btn-link) {
   transition: background-position 0.45s ease, transform 0.15s ease;
@@ -112,7 +111,6 @@
 .btn-primary:disabled,
 .btn-primary.btn-disabled {
   background-image: none;
-  box-shadow: none;
 }
 /* Enlaces de marca */
 .link-primary {

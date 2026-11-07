@@ -126,7 +126,7 @@ onUnmounted(() => {
 
           <li v-if="!myMemberLoaded"><div class="skeleton h-10 w-full rounded-field"></div></li>
           <li v-else-if="myMember">
-            <a :href="routes.player(myMember.playerId)" @click="closeDropdown" class="btn btn-soft btn-primary justify-start gap-3">
+            <a :href="routes.player(myMember.playerId)" @click="closeDropdown" class="btn btn-primary justify-start gap-3">
               <UserRound class="size-5" />
               Mi jugador
             </a>
@@ -139,14 +139,14 @@ onUnmounted(() => {
             </span>
           </li>
           <li v-else>
-            <a :href="linkPlayerHref" @click="closeDropdown" class="btn btn-soft btn-primary justify-start gap-3">
+            <a :href="linkPlayerHref" @click="closeDropdown" class="btn btn-primary justify-start gap-3">
               <LinkIcon class="size-5" />
               Vincular mi jugador
             </a>
           </li>
 
           <li>
-            <button @click="logout(); closeDropdown()" class="btn btn-soft btn-error justify-start gap-3">
+            <button @click="logout(); closeDropdown()" class="btn btn-ghost justify-start gap-3 text-base-content/70 hover:text-error hover:bg-error/10">
               <LogOut class="size-5" />
               Cerrar sesión
             </button>
@@ -163,9 +163,13 @@ onUnmounted(() => {
         </template>
 
         <div class="divider my-0"></div>
-        <li class="flex-row items-center justify-between px-3 py-1 pointer-events-auto hover:bg-transparent">
-          <span class="text-xs font-semibold opacity-60 p-0 bg-transparent">Tema</span>
-          <OptionToggle :model-value="currentTheme" @update:model-value="setTheme" :options="THEME_OPTIONS" size="sm" class="p-0" />
+        <!-- menu-title: DaisyUI no le pone hover ni cursor de enlace (como el nombre de arriba); el toggle sí se puede pulsar -->
+        <!-- Como el nombre de arriba, la fila no recibe clics (si no, DaisyUI la ilumina al pulsar); solo el toggle -->
+        <li class="menu-title pointer-events-none flex flex-row items-center justify-between gap-3 px-3 py-1.5 normal-case">
+          <span class="text-xs font-semibold text-base-content/60 select-none">Tema</span>
+          <div class="pointer-events-auto">
+            <OptionToggle :model-value="currentTheme" @update:model-value="setTheme" :options="THEME_OPTIONS" size="sm" />
+          </div>
         </li>
       </ul>
     </template>

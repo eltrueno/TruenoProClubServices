@@ -91,7 +91,7 @@ const login = async () => {
                 </div>
 
                 <div v-else class="flex flex-col items-center gap-5">
-                    <div class="size-16 rounded-2xl bg-brand text-white grid place-items-center shadow-lg">
+                    <div class="size-16 rounded-2xl bg-brand text-white grid place-items-center">
                         <svg class="size-8" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2Zm10-10V7a4 4 0 0 0-8 0v4h8Z" />
                         </svg>
