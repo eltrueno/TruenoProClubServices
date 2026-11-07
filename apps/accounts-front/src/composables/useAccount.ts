@@ -2,6 +2,7 @@ import { computed, ref } from "vue"
 import { authClient, type User } from "@/lib/auth"
 import { CLUBS, SITE_URL } from "@/config/site"
 import { ApiError, authApi, clubApi, type ITwitchSyncResult } from "@/lib/api"
+import { watchSessionWithRetry, type SessionRetry } from "@/lib/sessionRetry"
 
 // Tras sincronizar con Twitch se sobreescriben los campos del usuario sin esperar a la sesión nueva
 const _userOverride = ref<Partial<User> | null>(null)
@@ -9,6 +10,8 @@ const _userOverride = ref<Partial<User> | null>(null)
 const SESSION_PENDING_TIMEOUT_MS = 6000
 const _pendingTimedOut = ref(false)
 if (typeof window !== "undefined") setTimeout(() => { _pendingTimedOut.value = true }, SESSION_PENDING_TIMEOUT_MS)
+// Reintentos de get-session (ver lib/sessionRetry): uno para toda la página, aunque useAccount se use en varias islas
+let _sessionRetry: SessionRetry | null = null
 
 /**
  * Better Auth solo deja borrar la cuenta con una sesión reciente (`session.freshAge`, 24 h por
@@ -23,15 +26,22 @@ export const loginReturnUrl = (redirect?: string | null) =>
 
 export function useAccount() {
     const sessionState = authClient.useSession()
+    if (!_sessionRetry && typeof window !== "undefined") _sessionRetry = watchSessionWithRetry(sessionState)
+    const retrying = computed(() => _sessionRetry?.retrying.value ?? false)
 
     const user = computed<User | null>(() => {
         const base = (sessionState.value?.data?.user as User | undefined) ?? null
         return base && _userOverride.value ? ({ ...base, ..._userOverride.value } as User) : base
     })
-    const isPending = computed(() => (sessionState.value?.isPending ?? false) && !_pendingTimedOut.value)
+    // Mientras se reintenta tras un fallo, la página sigue "comprobando sesión". Si ya había
+    // sesión cargada (falla un refresco en segundo plano) no se toca nada: se reintenta por detrás.
+    const hasSession = computed(() => !!sessionState.value?.data)
+    const isPending = computed(() =>
+        (retrying.value && !hasSession.value) || ((sessionState.value?.isPending ?? false) && !_pendingTimedOut.value))
     const isLoggedIn = computed(() => !!user.value)
     const sessionCreatedAt = computed(() => (sessionState.value?.data?.session as { createdAt?: Date | string } | undefined)?.createdAt)
-    const authUnavailable = computed(() => !!sessionState.value?.error)
+    // Caído de verdad solo cuando han fallado todos los reintentos
+    const authUnavailable = computed(() => !!sessionState.value?.error && !retrying.value && !hasSession.value)
 
     /**
      * Login con Twitch a página completa (sin popup). Twitch vuelve a /login, que ve la
