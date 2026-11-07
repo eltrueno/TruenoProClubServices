@@ -60,8 +60,27 @@ Puedes ver el sistema en funcionamiento en el despliegue oficial de **Casemuro C
 - **Stack**: Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5.
 - **100% estática** (`output: "static"`) y **multi-club**: el club se elige en tiempo de build con `PUBLIC_CLUB` (`city` | `united`, ver [`src/config/club.ts`](apps/web/src/config/club.ts)), que define nombre, logo, colores, redes y metadatos, y opcionalmente el estilo de la cabecera (`headerStyle`: color del club o fondo del tema) y fondos propios por tema (`surfaces`). La imagen de las vistas previas de enlaces (`/og.png`, PNG 1200×630) se genera en el build con el escudo sobre el `themeColor` del club. Se despliega en **GitHub Pages** (`.github/workflows/deploy-web.yml`), que publica **un club por repositorio**: el dominio sale de `PUBLIC_SITE_URL` y el workflow genera el `CNAME`. Los demás clubes tienen un repo propio con solo un workflow que clona este y compila con su `PUBLIC_CLUB`; cuando este despliegue sale bien, avisa a esos repos (`repository_dispatch`, variable `CLUB_PAGES_REPOS` y secret `CLUB_PAGES_DISPATCH_TOKEN`) para que publiquen el mismo commit. Las islas Vue llaman al api (`PUBLIC_API_URL`) y al auth (`PUBLIC_AUTH_URL`) desde el navegador.
 - Las páginas "dinámicas" van por query string y se leen en cliente: `/jugador?id=<playerId>&tab=…`, `/partido?id=<matchId>&player=<playerId>`, `/totw?semana=<iso>&tipo=best|worst`, `/partidos?id=…&desde=…&hasta=…&liga&playoff&amistoso`.
-- Panel admin en `/admin` (solicitudes de vinculación pendientes, foto y cuenta vinculada de cada jugador; solo rol `admin`) y "Mi jugador" en `/micuenta`, desde donde un usuario pide vincular su cuenta a su jugador del club.
+- Panel admin en `/admin` (solicitudes de vinculación pendientes, foto y cuenta vinculada de cada jugador; solo rol `admin`).
+- **La cuenta no vive aquí:** iniciar sesión y los ajustes están en **accounts** (ver abajo). En la web del club solo quedan el tema (en el menú de la cuenta) y el botón **Mi jugador**: lleva a la ficha del jugador vinculado en este club, sale desactivado si la cuenta tiene jugador pero no ha jugado en este club, y lleva a accounts para pedir la vinculación si no tiene. `/micuenta` y `/login` se mantienen solo como redirecciones a accounts.
 - Config por variables `PUBLIC_*` (ver `apps/web/.env.example`).
+
+##### **accounts-front** — Web de la cuenta (`accounts.casemuro.stream`)
+- **Stack**: Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5, **100% estática**, en **Cloudflare Pages** (conectado al repo desde el panel de Cloudflare).
+- Común a todos los clubes: **login** (`/login?redirect=<url>`), perfil y sincronización con Twitch, conexiones, **Mi jugador** (de todos los clubes a la vez, porque una cuenta = un EA ID), privacidad, borrar la cuenta y la política de privacidad (`/privacidad`).
+- Las webs de los clubes mandan aquí para iniciar sesión y, al terminar, se vuelve a la página de origen. La vuelta (`redirect`) solo se acepta hacia rutas propias o webs `https://*.casemuro.stream`, para que el enlace de login no sirva para mandar a nadie a una web de fuera.
+- La sesión es la de Better Auth: la cookie es de `.casemuro.stream`, así que una sesión iniciada aquí vale en todas las webs. Las solicitudes de vinculación se crean en el api del club donde aparece el jugador.
+- Colores: el rojo del City (`#c80d0d`) funde con el granate del United (`#b90a34`) de izquierda a derecha en todo lo que lleva color de marca.
+- Config por variables `PUBLIC_*` (ver `apps/accounts-front/.env.example`).
+- **Despliegue en Cloudflare Pages**, conectado al repo desde el panel (Cloudflare compila solo con cada push a `main`; no hay Action ni secrets en GitHub). Puesta en marcha, una vez:
+  1. `ALLOWED_ORIGINS` del auth y de los dos api: añadir `https://accounts.casemuro.stream` (y desplegarlos).
+  2. Cloudflare → *Workers & Pages → Create → Pages → Connect to Git* → este repo, con:
+     - **Production branch:** `main`. En *Settings → Builds → Branch control*, previsualizaciones en **None** (solo publica `main`).
+     - **Framework preset:** None. **Root directory:** vacío (la raíz del repo).
+     - **Build command:** `pnpm --filter @trueno-proclub-services/shared build && pnpm --filter @trueno-proclub-services/auth build && pnpm --filter @trueno-proclub-services/accounts-front build`
+     - **Build output directory:** `apps/accounts-front/dist`
+     - **Variables de entorno:** `NODE_VERSION=24`, `PNPM_VERSION=10.32.1`, `PUPPETEER_SKIP_DOWNLOAD=true` (Cloudflare instala todo el monorepo y si no se descargaría Chrome para `eafcapi`), `PUBLIC_SITE_URL=https://accounts.casemuro.stream` y, si algún club aún no tiene api, `PUBLIC_CLUBS=city`.
+     - **Build watch paths** (*Settings → Builds*): incluir `apps/accounts-front/*`, `packages/shared/*` y `packages/auth/*`, para que un cambio en la web o el api no la recompile.
+  3. *Custom domains → Set up a custom domain* → `accounts.casemuro.stream` (como `casemuro.stream` ya está en Cloudflare, el DNS y el certificado se crean solos).
 
 ##### **discordbot** — Bot de Discord
 - Consume los eventos de RabbitMQ y anuncia el equipo de la semana (y partidos / logros cuando se activen sus productores).
@@ -126,6 +145,26 @@ pnpm --filter @trueno-proclub-services/web check    # astro check
 
 Para desarrollar contra un api local, `apps/web/.env` con `PUBLIC_API_URL=http://localhost:3999`.
 
+#### ✅ Pruebas: `pnpm test`
+
+`pnpm test` compila `shared` y `auth` y pasa todas las pruebas del monorepo con [Vitest](https://vitest.dev) (`apps/*/test`, `packages/*/test`; `pnpm test:watch` para dejarlas mirando). Cubren la sincronización con Twitch (follow, sub, rol, errores, tokens cifrados, renovación), el modelo de usuario y los hooks de Better Auth contra un Mongo en memoria, el login de desarrollo, la limpieza de vínculos de cuentas borradas y la URL de vuelta del login de accounts. Las que usan Mongo tiran de `mongodb-memory-server`: la primera vez descarga el binario de Mongo (~100 MB).
+
+#### 🧪 Probar las cuentas en local: `pnpm dev:local`
+
+Con los servicios de producción no se puede probar el login desde localhost (CORS, cookies de `.casemuro.stream` y la URL de vuelta de Twitch). `pnpm dev:local` ([`scripts/dev-local.mjs`](scripts/dev-local.mjs)) arranca todo en localhost con la configuración buena, sin tocar los `.env`:
+
+| Servicio | URL |
+|---|---|
+| accounts | http://localhost:4323/login |
+| web (city) | http://localhost:4321 |
+| api (city) | http://localhost:3010 |
+| auth | http://localhost:3001 |
+
+- **Twitch:** usa las credenciales de `apps/auth/.env`; si ahí no está `TWITCH_CHANNEL_ID`, busca el id del canal de `mr_casemuro` (o `DEV_TWITCH_CHANNEL`).
+- **Entrar sin Twitch:** en el login de accounts aparecen botones para entrar como usuario de prueba (visitante, seguidor, sub, admin). Es un login de desarrollo del auth (`/api/dev/*`) que solo existe con `DEVMODE=true`, `DEV_LOGIN=true` **y** `BETTER_AUTH_URL` en localhost a la vez; en producción no existe. Para probar el login real con Twitch, añade `http://localhost:3001/api/auth/callback/twitch` a las redirect URLs de la app de Twitch.
+- **Bases de datos:** saca la conexión de `apps/api/.env` (`MONGO_URL`). El auth usa su propia base de desarrollo (`tpcs_auth_dev`). La base del club es la de `apps/api/.env` (casi solo lectura). La compartida (vínculos, solicitudes, fotos globales) es por defecto una **copia de desarrollo** (`tpcs27_shared_dev`), para que lo que pruebes no aparezca en el `/admin` de verdad; con `pnpm dev:local --real-shared` se usa la real. Las subidas de fotos a R2 van desactivadas y la limpieza de vínculos huérfanos no corre en `DEVMODE`.
+- `--only=auth,api` arranca solo algunos. Ctrl+C lo para todo.
+
 ### 🔧 Configuración
 
 Cada app tiene un `.env.example` con todas sus variables comentadas:
@@ -133,7 +172,8 @@ Cada app tiene un `.env.example` con todas sus variables comentadas:
 - [`apps/api/.env.example`](apps/api/.env.example)
 - [`apps/worker/.env.example`](apps/worker/.env.example)
 - [`apps/auth/.env.example`](apps/auth/.env.example)
-- [`apps/web/.env.example`](apps/web/.env.example) (`PUBLIC_CLUB`, `PUBLIC_SITE_URL`, `PUBLIC_API_URL`, `PUBLIC_AUTH_URL`; en el deploy se leen de las *repository variables*)
+- [`apps/web/.env.example`](apps/web/.env.example) (`PUBLIC_CLUB`, `PUBLIC_SITE_URL`, `PUBLIC_API_URL`, `PUBLIC_AUTH_URL`, `PUBLIC_ACCOUNTS_URL`; en el deploy se leen de las *repository variables*)
+- [`apps/accounts-front/.env.example`](apps/accounts-front/.env.example) (`PUBLIC_SITE_URL`, `PUBLIC_AUTH_URL` y, en local, el api de cada club). En producción las variables se ponen en el proyecto de Cloudflare Pages
 
 Las más importantes:
 
@@ -143,15 +183,16 @@ Las más importantes:
 | `SHARED_DB_NAME` | api, worker | Base común a todos los clubes (vínculos, fotos globales, solicitudes). Por defecto `tpcs27_shared`. El usuario de `MONGO_URL` necesita `readWrite` también sobre ella |
 | `CLUBID` | api, worker | Id del club en EA. **Cambia con cada entrega** (FC27 = club nuevo) |
 | `PLATFORM` | api, worker | `common-gen5`, `common-gen4` o `nx` |
-| `ALLOWED_ORIGINS` | api, auth | Orígenes permitidos (CORS / trustedOrigins), separados por coma |
+| `ALLOWED_ORIGINS` | api, auth | Orígenes permitidos (CORS / trustedOrigins), separados por coma. Tienen que incluir `https://accounts.casemuro.stream`: en el auth para que el login de Twitch pueda volver allí, y en el api de cada club para que accounts pueda consultar el jugador y pedir la vinculación |
 | `AUTH_URL` | api | URL del auth service para validar sesiones en rutas protegidas |
+| `IDENTITY_CLEANUP_HOURS` | api | Cada cuántas horas se liberan los jugadores vinculados a cuentas borradas (24) |
 | `DEVMODE` | api, auth | CORS abierto y cookies sin dominio, solo para desarrollo |
 | `RABBITMQ_URL` | worker, discordbot | Conexión a RabbitMQ |
 | `WORKER_INTERVAL` | worker | Segundos entre sincronizaciones con EA |
 | `FORCE_RECALCULATE` | worker | Recalcula todas las stats y logros desde el histórico al arrancar |
 | `TOTW_CRON_SCHEDULE`, `TZ` | api, worker | Cuándo se calcula el equipo de la semana |
 | `CLUB_CACHE_MS`, `CLUB_RETRY_MS` | api | TTL de la caché de `/club` y espera tras un fallo de EA |
-| `TWITCH_CLIENT_ID/SECRET`, `TWITCH_CHANNEL_ID` | auth | Proveedor Twitch y canal a seguir |
+| `TWITCH_CLIENT_ID/SECRET`, `TWITCH_CHANNEL_ID` | auth | Proveedor Twitch y canal a seguir (`TWITCH_CHANNEL_ID` es el id **numérico** del canal) |
 | `TWITCH_SYNC_INTERVAL_MINUTES`, `TWITCH_SYNC_STALE_MINUTES`, `TWITCH_SYNC_RETRY_MINUTES` | auth | Cada cuánto pasa el repaso de follow/sub (60), a partir de cuándo se consideran viejos los datos (360) y espera tras un intento fallido (10) |
 | `BETTER_AUTH_SECRET` | auth | Firma las sesiones y cifra los tokens de Twitch guardados. Si cambia, los usuarios tendrán que volver a conectar Twitch |
 | `PUPPETEER_EXECUTABLE_PATH` | api, worker, imagerenderer | Ruta a Chrome si no está en la ubicación por defecto |
@@ -192,6 +233,11 @@ apps/
 │   ├── routes/                   # twitch, public, admin
 │   ├── services/  middleware/  models/  db/
 │   └── index.ts
+├── accounts-front/src/          # accounts.casemuro.stream (Cloudflare Pages)
+│   ├── pages/                    # / (cuenta), /login, /privacidad, 404
+│   ├── components/account/       # Tarjetas: perfil, conexiones, mi jugador, privacidad, borrar
+│   ├── lib/                      # auth.ts, api.ts (auth + api de cada club), redirect.ts (vuelta segura)
+│   └── config/site.ts            # URL del auth y clubes
 ├── web/src/
 │   ├── pages/                    # Una página por ruta (sin [params]: query string)
 │   ├── components/  layouts/  composables/
@@ -303,7 +349,8 @@ This project is an **evolution** of [Caracantosmeaos](https://github.com/Caracan
 - **api** — Express + Mongoose REST API: club, members, matches, stats, achievements, HOF/HOS, position averages, account ↔ player link requests and an admin panel backend (player photo with a 400×450 crop editor uploading to Cloudflare R2, linked account, request approval). Protected routes validate the session against the auth service. 📖 **Endpoints: [docs/API.md](docs/API.md)**
 - **worker** — Every `WORKER_INTERVAL` seconds fetches new matches from EA, normalizes them (`MatchDTO`), registers the members that appear, accumulates stats, evaluates achievements and publishes RabbitMQ events. Weekly team-of-the-week job. Enriches members (`proName`, `proOverall`…) from EA without overwriting good data with empty values.
 - **auth** — Express + Better Auth + MongoDB: Twitch login, follow/sub/role sync (on sign-in, in the background when stale and in a periodic sweep), public users endpoint and admin user listing.
-- **web** — Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5 frontend. Fully static, deployed to GitHub Pages (`.github/workflows/deploy-web.yml`, custom domain via a generated `CNAME`). Multi-club: one club per repository; other clubs live in satellite repos that only hold a workflow cloning this one, and a successful deploy here triggers them (`repository_dispatch`, `CLUB_PAGES_REPOS` variable and `CLUB_PAGES_DISPATCH_TOKEN` secret) so every club publishes the same commit. Dynamic pages take query params read client-side (`/jugador?id=<playerId>`, `/partido?id=<matchId>`, `/totw?semana=…&tipo=…`). Admin panel at `/admin` (pending link requests, player photo and linked account, `admin` role only); users request the link to their player from `/micuenta`. Configured through `PUBLIC_*` env vars (`apps/web/.env.example`). The link preview image (`/og.png`, 1200×630 PNG) is generated at build time from the club crest over its `themeColor`.
+- **web** — Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5 frontend. Fully static, deployed to GitHub Pages (`.github/workflows/deploy-web.yml`, custom domain via a generated `CNAME`). Multi-club: one club per repository; other clubs live in satellite repos that only hold a workflow cloning this one, and a successful deploy here triggers them (`repository_dispatch`, `CLUB_PAGES_REPOS` variable and `CLUB_PAGES_DISPATCH_TOKEN` secret) so every club publishes the same commit. Dynamic pages take query params read client-side (`/jugador?id=<playerId>`, `/partido?id=<matchId>`, `/totw?semana=…&tipo=…`). Admin panel at `/admin` (pending link requests, player photo and linked account, `admin` role only). Signing in and account settings live in **accounts** (below); the club site only keeps the theme (in the account menu) and the **Mi jugador** button, which opens the linked player's page in this club, is disabled when the account has a player who never played for this club, and links to accounts to request the link otherwise. `/micuenta` and `/login` are kept as redirects to accounts. Configured through `PUBLIC_*` env vars (`apps/web/.env.example`). The link preview image (`/og.png`, 1200×630 PNG) is generated at build time from the club crest over its `themeColor`.
+- **accounts-front** — `accounts.casemuro.stream`, shared by every club: sign-in (`/login?redirect=<url>`), profile and Twitch sync, connections, **Mi jugador** across all clubs (one account = one EA ID), privacy, account deletion and the privacy policy. Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5, fully static, deployed to **Cloudflare Pages** with its Git integration (Cloudflare builds every push to `main`; no GitHub Action or secrets). Club sites send users here to sign in and get them back afterwards; `redirect` is only honoured for its own paths and `https://*.casemuro.stream` sites (no open redirect). The session cookie is on `.casemuro.stream`, so one sign-in works everywhere. Brand colours blend the City red (`#c80d0d`) into the United maroon (`#b90a34`) left to right. Pages settings: production branch `main` (preview deployments off), root directory = repo root, build command `pnpm --filter @trueno-proclub-services/shared build && pnpm --filter @trueno-proclub-services/auth build && pnpm --filter @trueno-proclub-services/accounts-front build`, output `apps/accounts-front/dist`, env `NODE_VERSION=24`, `PNPM_VERSION=10.32.1`, `PUPPETEER_SKIP_DOWNLOAD=true`, `PUBLIC_SITE_URL=https://accounts.casemuro.stream` (plus `PUBLIC_CLUBS=city` if a club has no API yet), build watch paths `apps/accounts-front/*`, `packages/shared/*`, `packages/auth/*`, custom domain `accounts.casemuro.stream`. Add that origin to `ALLOWED_ORIGINS` in auth and every club API.
 - **discordbot** — Consumes RabbitMQ events and announces the team of the week (matches / achievements once their producers are enabled).
 - **imagerenderer** — Captures web pages with puppeteer to render the images the bot posts.
 
@@ -344,6 +391,18 @@ pnpm --filter @trueno-proclub-services/api serve   # node dist/…
 
 Packages (`shared`, `auth`, `eafcapi`) are built with `build`; rebuild `shared` after changing it (or run its `dev` watch).
 
+#### ✅ Tests: `pnpm test`
+
+`pnpm test` builds `shared` and `auth` and runs every test in the monorepo with [Vitest](https://vitest.dev) (`apps/*/test`, `packages/*/test`; `pnpm test:watch` to keep watching): Twitch sync (follow, sub, role, errors, encrypted tokens, refresh), the user model and Better Auth hooks against an in-memory Mongo, the dev login, the orphan-link sweep and the accounts login redirect check. Mongo-backed tests use `mongodb-memory-server`, which downloads a Mongo binary (~100 MB) on first run.
+
+#### 🧪 Testing accounts locally: `pnpm dev:local`
+
+The production services can't be used for sign-in from localhost (CORS, `.casemuro.stream` cookies, Twitch redirect URL). `pnpm dev:local` ([`scripts/dev-local.mjs`](scripts/dev-local.mjs)) starts everything on localhost with the right config, without touching any `.env`: accounts on `:4323`, web (city) on `:4321`, api (city) on `:3010`, auth on `:3001`.
+
+- **Sign in without Twitch:** the accounts login shows buttons to sign in as a test user (visitor, follower, sub, admin). It's an auth dev login (`/api/dev/*`) that only exists when `DEVMODE=true`, `DEV_LOGIN=true` **and** a localhost `BETTER_AUTH_URL` are all set. For the real Twitch login, add `http://localhost:3001/api/auth/callback/twitch` to the Twitch app redirect URLs.
+- **Databases:** the connection comes from `apps/api/.env`. Auth uses its own dev database (`tpcs_auth_dev`); the club database is the one in `apps/api/.env` (mostly read-only); the shared database defaults to a **dev copy** (`tpcs27_shared_dev`) so your tests don't show up in the real `/admin` (`--real-shared` to use the real one). R2 uploads are disabled and the orphan-link sweep doesn't run under `DEVMODE`.
+- `--only=auth,api` starts a subset. Ctrl+C stops everything.
+
 ### 🔧 Configuration
 
 Each app ships a commented `.env.example`: [`apps/api`](apps/api/.env.example), [`apps/worker`](apps/worker/.env.example), [`apps/auth`](apps/auth/.env.example). Key variables:
@@ -354,15 +413,16 @@ Each app ships a commented `.env.example`: [`apps/api`](apps/api/.env.example), 
 | `SHARED_DB_NAME` | api, worker | Database shared by all clubs (links, global photos, link requests). Defaults to `tpcs27_shared`. The `MONGO_URL` user also needs `readWrite` on it |
 | `CLUBID` | api, worker | EA club id. **Changes every game release** (FC27 = new club) |
 | `PLATFORM` | api, worker | `common-gen5`, `common-gen4` or `nx` |
-| `ALLOWED_ORIGINS` | api, auth | Comma-separated allowed origins (CORS / trustedOrigins) |
+| `ALLOWED_ORIGINS` | api, auth | Comma-separated allowed origins (CORS / trustedOrigins). Must include `https://accounts.casemuro.stream`: in auth so the Twitch login can return there, and in every club api so accounts can read the player and request the link |
 | `AUTH_URL` | api | Auth service URL used to validate sessions on protected routes |
+| `IDENTITY_CLEANUP_HOURS` | api | How often (hours) players linked to deleted accounts are released (24) |
 | `DEVMODE` | api, auth | Open CORS and host-only cookies, development only |
 | `RABBITMQ_URL` | worker, discordbot | RabbitMQ connection |
 | `WORKER_INTERVAL` | worker | Seconds between EA syncs |
 | `FORCE_RECALCULATE` | worker | Recompute all stats and achievements from match history on startup |
 | `TOTW_CRON_SCHEDULE`, `TZ` | api, worker | When the team of the week is computed |
 | `CLUB_CACHE_MS`, `CLUB_RETRY_MS` | api | `/club` cache TTL and cooldown after an EA failure |
-| `TWITCH_CLIENT_ID/SECRET`, `TWITCH_CHANNEL_ID` | auth | Twitch provider and channel to follow |
+| `TWITCH_CLIENT_ID/SECRET`, `TWITCH_CHANNEL_ID` | auth | Twitch provider and channel to follow (`TWITCH_CHANNEL_ID` is the **numeric** channel id) |
 | `TWITCH_SYNC_INTERVAL_MINUTES`, `TWITCH_SYNC_STALE_MINUTES`, `TWITCH_SYNC_RETRY_MINUTES` | auth | How often the follow/sub sweep runs (60), when data counts as stale (360) and the wait after a failed attempt (10) |
 | `BETTER_AUTH_SECRET` | auth | Signs sessions and encrypts stored Twitch tokens. Changing it forces users to reconnect Twitch |
 | `PUPPETEER_EXECUTABLE_PATH` | api, worker, imagerenderer | Chrome path if not in the default location |

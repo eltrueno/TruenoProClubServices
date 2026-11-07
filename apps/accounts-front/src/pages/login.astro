@@ -1,0 +1,8 @@
+---
+import Layout from "../layouts/Layout.astro";
+import LoginPage from "../components/LoginPage.vue";
+---
+
+<Layout title="Iniciar sesión · Casemuro" description="Inicia sesión con Twitch en la comunidad Casemuro." compact>
+	<LoginPage client:only="vue" />
+</Layout>

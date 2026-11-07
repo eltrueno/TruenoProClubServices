@@ -8,7 +8,6 @@ Disallow: /404
 Disallow: /404.html
 Disallow: /imagegenerator
 Disallow: /logrosdef
-Disallow: /authcallback
 
 Sitemap: ${baseUrl}/sitemap.xml
 `;

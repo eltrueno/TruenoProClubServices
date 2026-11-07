@@ -1,0 +1,71 @@
+---
+import "../styles/global.css";
+import ThemeToggle from "../components/ThemeToggle.vue";
+import Footer from "../components/Footer.astro";
+import { BRAND_CLUBS as CLUBS, SITE_URL, BRAND } from "../config/site";
+
+interface Props {
+	title: string;
+	description?: string;
+	/** páginas sin cabecera completa (login): solo la barra de marca */
+	compact?: boolean;
+}
+
+const { title, description = "Tu cuenta de la comunidad Casemuro: inicio de sesión, conexiones y jugador vinculado.", compact = false } = Astro.props;
+const pathname = Astro.url.pathname.replace(/\/+$/, "") || "";
+---
+
+<!doctype html>
+<html lang="es" class="min-h-screen">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex, nofollow" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="canonical" href={`${SITE_URL}${pathname}`} />
+		<meta name="description" content={description} />
+		<meta name="theme-color" content={BRAND.from} />
+		<meta name="color-scheme" content="dark light" />
+		<title>{title}</title>
+		<!-- Tema antes de pintar, para que no parpadee -->
+		<script is:inline>
+			(() => {
+				const apply = () => {
+					let theme = "system";
+					try { theme = localStorage.getItem("theme") || "system"; } catch {}
+					const dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+					document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+				};
+				apply();
+				window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+					let theme = null;
+					try { theme = localStorage.getItem("theme"); } catch {}
+					if (!theme || theme === "system") apply();
+				});
+			})();
+		</script>
+	</head>
+	<body class="min-h-screen bg-base-100 dark:bg-base-300 text-base-content flex flex-col page-glow">
+		<!-- Barra de marca: rojo del City → granate del United -->
+		<div class="h-1.5 bg-brand"></div>
+
+		<header class="w-full max-w-3xl mx-auto px-4 sm:px-6 pt-5 pb-2 flex items-center justify-between gap-4">
+			<a href="/" class="flex items-center gap-2.5 group" aria-label="Casemuro · Mi cuenta">
+				<span class="flex -space-x-2.5">
+					{CLUBS.map((c) => <img src={c.logo} alt="" class="size-8 object-contain drop-shadow" width="32" height="32" />)}
+				</span>
+				<span class="leading-none">
+					<span class="block text-lg font-black tracking-tight uppercase text-brand">Casemuro</span>
+					<span class="block text-[11px] font-bold uppercase tracking-[0.2em] text-base-content/50">Mi cuenta</span>
+				</span>
+			</a>
+			<ThemeToggle client:only="vue" />
+		</header>
+
+		<main class="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+			<slot />
+		</main>
+
+		<Footer compact={compact} />
+	</body>
+</html>

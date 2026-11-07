@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useAuth } from '@/composables/useAuth';
 import { translateRole } from '@/i18n/translations';
 import { routes } from '@/lib/query';
 import { CLUB } from '@/config/club';
+import { accountsLoginUrl, accountsUrl } from '@/lib/accounts';
+import OptionToggle, { type ToggleOption } from '@/components/ui/OptionToggle.vue';
 
 import ChevronDown from '@/icons/chevron-down.svg?component';
 import UserRound from '@/icons/user-circle.svg?component';
@@ -12,12 +14,37 @@ import LogOut from '@/icons/signout.svg?component';
 import LogIn from '@/icons/signin.svg?component';
 import Shield from '@/icons/shield-check.svg?component';
 import LinkIcon from '@/icons/link.svg?component';
+import SunIcon from '@/icons/sun.svg?component';
+import MonitorIcon from '@/icons/monitor.svg?component';
+import MoonIcon from '@/icons/moon.svg?component';
 
-const { isLoggedIn, isPending, user, logout, isAdmin, myMember, myMemberLoaded, loadMyMember } = useAuth();
+const { isLoggedIn, isPending, user, logout, isAdmin, myMember, myPlayerId, myMemberLoaded, loadMyMember } = useAuth();
 
-// Jugador vinculado (para "Mi jugador" / "Vincular mi jugador"): cacheado y compartido con Ajustes
+// Jugador de la cuenta: con él, "Mi jugador" lleva a su ficha aquí; vinculado pero sin partidos en este
+// club, el botón sale desactivado; sin vincular, lleva a accounts para pedirlo
 watch(isLoggedIn, (logged) => { if (logged) loadMyMember(); }, { immediate: true });
-const dropdownRef = ref<HTMLDivElement | null>(null);
+const linkedElsewhere = computed(() => !myMember.value && !!myPlayerId.value);
+
+// Login y ajustes en accounts.casemuro.stream (comunes a todos los clubes). Al loguearse se vuelve aquí.
+const loginHref = ref(accountsLoginUrl(CLUB.siteUrl));
+const settingsHref = accountsUrl();
+const linkPlayerHref = accountsUrl('mi-jugador');
+const refreshLoginHref = () => { loginHref.value = accountsLoginUrl(window.location.href); };
+
+// Tema: es lo único de ajustes que se queda en la web de cada club
+type ThemeChoice = 'light' | 'dark' | 'system';
+const THEME_OPTIONS: ToggleOption<ThemeChoice>[] = [
+  { value: 'light', label: 'Tema claro', icon: SunIcon, iconOnly: true },
+  { value: 'system', label: 'Tema del sistema', icon: MonitorIcon, iconOnly: true },
+  { value: 'dark', label: 'Tema oscuro', icon: MoonIcon, iconOnly: true },
+];
+const currentTheme = ref<ThemeChoice>('system');
+const setTheme = (theme: ThemeChoice) => {
+  currentTheme.value = theme;
+  localStorage.setItem('theme', theme);
+  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+};
 
 // Pastilla de la cuenta: blanca sobre una nav del color del club (City) y del color del club sobre una
 // nav con el fondo del tema (United, headerStyle "base"), para que destaque en las dos
@@ -33,15 +60,20 @@ const closeDropdown = () => {
 };
 
 onMounted(() => {
+  const stored = localStorage.getItem('theme');
+  currentTheme.value = stored === 'light' || stored === 'dark' ? stored : 'system';
+  refreshLoginHref();
   document.addEventListener('astro:after-swap', closeDropdown);
+  document.addEventListener('astro:after-swap', refreshLoginHref);
 });
 onUnmounted(() => {
   document.removeEventListener('astro:after-swap', closeDropdown);
+  document.removeEventListener('astro:after-swap', refreshLoginHref);
 });
 </script>
 
 <template>
-  <div ref="dropdownRef" class="dropdown dropdown-end">
+  <div class="dropdown dropdown-end">
     <!-- Cargando sesión -->
     <div v-if="isPending" class="btn btn-sm h-9 rounded-full border-none px-2 cursor-default" :class="pillPendingClass">
       <div class="skeleton size-7 rounded-full shrink-0 bg-base-300"></div>
@@ -77,9 +109,9 @@ onUnmounted(() => {
           </li>
 
           <li>
-            <a href="/micuenta" @click="closeDropdown" class="btn btn-ghost justify-start gap-3">
+            <a :href="settingsHref" @click="closeDropdown" class="btn btn-ghost justify-start gap-3">
               <SettingsIcon class="size-5" />
-              Ajustes
+              Mi cuenta
             </a>
           </li>
 
@@ -92,7 +124,6 @@ onUnmounted(() => {
 
           <div class="divider my-0"></div>
 
-          <!-- Con jugador vinculado lleva a su ficha; sin él, a vincularlo en Ajustes -->
           <li v-if="!myMemberLoaded"><div class="skeleton h-10 w-full rounded-field"></div></li>
           <li v-else-if="myMember">
             <a :href="routes.player(myMember.playerId)" @click="closeDropdown" class="btn btn-soft btn-primary justify-start gap-3">
@@ -100,15 +131,22 @@ onUnmounted(() => {
               Mi jugador
             </a>
           </li>
+          <!-- Tiene jugador, pero no ha jugado nunca en este club: no hay ficha que enseñar -->
+          <li v-else-if="linkedElsewhere" class="pointer-events-none">
+            <span class="btn btn-soft btn-disabled justify-start gap-3 h-auto min-h-10 py-2 text-left leading-tight">
+              <UserRound class="size-5 shrink-0" />
+              <span>Mi jugador<br /><span class="text-[11px] font-normal opacity-70">Aún no has jugado en {{ CLUB.name }}</span></span>
+            </span>
+          </li>
           <li v-else>
-            <a href="/micuenta#mi-jugador" @click="closeDropdown" class="btn btn-soft btn-primary justify-start gap-3">
+            <a :href="linkPlayerHref" @click="closeDropdown" class="btn btn-soft btn-primary justify-start gap-3">
               <LinkIcon class="size-5" />
               Vincular mi jugador
             </a>
           </li>
 
           <li>
-            <button @click="logout(true); closeDropdown()" class="btn btn-soft btn-error justify-start gap-3">
+            <button @click="logout(); closeDropdown()" class="btn btn-soft btn-error justify-start gap-3">
               <LogOut class="size-5" />
               Cerrar sesión
             </button>
@@ -117,12 +155,18 @@ onUnmounted(() => {
 
         <template v-else>
           <li>
-            <a href="/micuenta" @click="closeDropdown" class="btn btn-ghost justify-start gap-3">
+            <a :href="loginHref" @click="closeDropdown" class="btn btn-ghost justify-start gap-3">
               <LogIn class="size-5" />
               Iniciar sesión
             </a>
           </li>
         </template>
+
+        <div class="divider my-0"></div>
+        <li class="flex-row items-center justify-between px-3 py-1 pointer-events-auto hover:bg-transparent">
+          <span class="text-xs font-semibold opacity-60 p-0 bg-transparent">Tema</span>
+          <OptionToggle :model-value="currentTheme" @update:model-value="setTheme" :options="THEME_OPTIONS" size="sm" class="p-0" />
+        </li>
       </ul>
     </template>
   </div>

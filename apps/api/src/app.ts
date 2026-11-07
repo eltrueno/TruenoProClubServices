@@ -4,6 +4,7 @@ import bodyParser from "body-parser";
 import errorHandler from "./middleware/errorHandler.js";
 import database from "./database/mongo.js"
 import { migrateToSharedIdentity } from "./services/identityMigration.service.js"
+import { startOrphanLinkSweep } from "./services/identityCleanup.service.js"
 
 const app: Express = express();
 
@@ -52,6 +53,8 @@ database().then(async () => {
     // Una sola vez por base de club; si falla se reintenta al reiniciar (ver el servicio)
     await migrateToSharedIdentity().catch((e) =>
         console.error("[identity] Migración a la base compartida fallida, se reintentará al reiniciar:", e instanceof Error ? e.message : e))
+    // Libera los jugadores vinculados a cuentas que ya no existen en el auth (ver el servicio)
+    startOrphanLinkSweep()
 })
     .catch((e) => console.log("An error ocurred while trying to connect to database:  " + e))
 

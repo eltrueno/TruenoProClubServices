@@ -11,12 +11,14 @@ import { initTokenCrypto } from "./services/tokenCrypto.js"
 import { createAuth, User } from "@trueno-proclub-services/auth"
 import publicRoutes from "./routes/publicRoutes.js"
 import adminRoutes from "./routes/adminRoutes.js"
+import { createDevRoutes, isDevLoginEnabled } from "./routes/devRoutes.js"
 import { UserRole } from "@trueno-proclub-services/shared"
 
 const app = express()
 export const auth = createAuth(db, {
   // Cada inicio de sesión refresca follow/sub/rol (antes solo se hacía el primero)
   onSignIn: async (user: User) => {
+    if (!user.twitchId) return // usuarios sin Twitch (los de prueba de dev:local)
     const result = await twitchService.syncTwitchData(user)
     if (!result.ok) console.warn(`[auth] Twitch sync al iniciar sesión (${user.id}): ${result.error.code}`)
   },
@@ -30,7 +32,8 @@ export const auth = createAuth(db, {
 
 const requireAuth = createRequireAuth(auth)
 
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(",") ?? [];
+// "a, b" también vale: sin quitar espacios, " b" no coincidiría con ningún origen
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(",").map((s) => s.trim()).filter(Boolean) ?? [];
 
 const DEVMODE = process.env.DEVMODE === "true";
 
@@ -55,6 +58,12 @@ app.use("/api/twitch", requireAuth, twitchRoutes)
 
 // Admin routes (session + admin role)
 app.use("/api/admin", requireAuth, requireRole(UserRole.admin), adminRoutes)
+
+// Login de desarrollo (usuarios de prueba sin Twitch): solo en local, ver routes/devRoutes.ts
+if (isDevLoginEnabled()) {
+  console.warn("### DEV LOGIN ACTIVADO: /api/dev/login crea sesiones sin Twitch (solo local) ###")
+  app.use("/api/dev", createDevRoutes(auth))
+}
 
 app.get("/health", (_, res) => {
   res.json({ status: "ok" })
