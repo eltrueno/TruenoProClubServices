@@ -1,7 +1,14 @@
-import { authClient, SITE_URL, type User } from "@/lib/auth"
-import { ApiError, authApi, tpcsApi, type ITwitchSyncResult } from "@/lib/api"
+import { authClient, type User } from "@/lib/auth"
+import { tpcsApi } from "@/lib/api"
+import { accountsLoginUrl } from "@/lib/accounts"
 import { UserRole, type IClubMember } from "@trueno-proclub-services/shared"
 import { computed, ref } from "vue"
+
+/**
+ * Sesión en la web del club. Iniciar sesión y todo lo de la cuenta (ajustes, Twitch,
+ * vincular jugador, borrar la cuenta) se hace en accounts.casemuro.stream: la cookie es
+ * de .casemuro.stream, así que la sesión de allí vale aquí directamente.
+ */
 
 /** Sesión de Better Auth (lo que devuelve `useSession().data`): usuario + datos de la sesión */
 export interface Session {
@@ -9,10 +16,10 @@ export interface Session {
     session: { id: string; userId: string; expiresAt: Date | string; token?: string }
 }
 
-// Tras sincronizar con Twitch se sobreescriben los campos del usuario sin esperar a la sesión nueva
-const _userOverride = ref<User | null>(null)
-// Jugador vinculado a la cuenta (members.userId): se carga bajo demanda y se comparte entre islas
+// Jugador de la cuenta, compartido entre islas: el de este club (members.userId) y el EA ID
+// vinculado aunque no juegue aquí (la vinculación es global, una cuenta = un jugador)
 const _myMember = ref<IClubMember | null>(null)
+const _myPlayerId = ref<string | null>(null)
 const _myMemberLoaded = ref(false)
 // Si el auth no responde (caído, CORS...), better-auth puede quedarse en isPending para siempre:
 // pasado este tiempo se da la sesión por no iniciada para no dejar la UI en skeleton
@@ -25,151 +32,48 @@ export function useAuth() {
 
     const session = computed<Session | null>(() => (sessionState.value?.data as Session | null | undefined) ?? null)
     const isPending = computed(() => (sessionState.value?.isPending ?? false) && !_pendingTimedOut.value)
-    const isLoggingIn = ref(false)
 
-    const user = computed<User | null>(() => _userOverride.value ?? session.value?.user ?? null)
+    const user = computed<User | null>(() => session.value?.user ?? null)
     const isLoggedIn = computed(() => !!user.value)
     const isAdmin = computed(() => user.value?.role === UserRole.admin)
 
     const myMember = computed(() => _myMember.value)
-    /** Ya se sabe si la cuenta tiene jugador vinculado (myMember null puede ser "sin vincular" o "cargando") */
+    /** EA ID vinculado a la cuenta (juegue o no en este club) */
+    const myPlayerId = computed(() => _myPlayerId.value)
+    /** Ya se sabe si la cuenta tiene jugador ("null" puede ser "sin vincular" o "cargando") */
     const myMemberLoaded = computed(() => _myMemberLoaded.value)
+
     async function loadMyMember(force = false) {
-        if (!isLoggedIn.value) { _myMember.value = null; return null }
+        if (!isLoggedIn.value) { _myMember.value = null; _myPlayerId.value = null; return null }
         if (_myMemberLoaded.value && !force) return _myMember.value
         try {
-            _myMember.value = await tpcsApi.members.getMine()
+            // Una sola petición: EA ID vinculado y, si juega aquí, su miembro de este club
+            const identity = await tpcsApi.members.getMyIdentity()
+            _myPlayerId.value = identity?.playerId ?? null
+            _myMember.value = identity && "member" in identity
+                ? identity.member ?? null
+                : await tpcsApi.members.getMine() // api antiguo sin `member`
         } catch (e) {
-            console.warn("[useAuth] myMember unavailable", e)
-            _myMember.value = null
+            // api sin /members/me/identity: lo de siempre
+            console.warn("[useAuth] identity unavailable", e)
+            _myMember.value = await tpcsApi.members.getMine().catch(() => null)
+            _myPlayerId.value = _myMember.value?.playerId ?? null
         }
         _myMemberLoaded.value = true
         return _myMember.value
     }
 
-
-    /** Sincroniza follow/sub/rol con Twitch. Devuelve el resultado, o `null` si hubo que relanzar el login. */
-    async function syncTwitch(silent?: boolean): Promise<ITwitchSyncResult | null> {
-        let syncData: ITwitchSyncResult
-        try {
-            syncData = await authApi.twitchSync()
-        } catch (e) {
-            if (e instanceof ApiError && e.code === "TWITCH_TOKEN_EXPIRED") {
-                await loginWithTwitchPopup(true)
-                return null
-            }
-            throw e
-        }
-        //refresh session
-        await authClient.$fetch("/get-session", { method: "GET" })
-        if (user.value) {
-            _userOverride.value = {
-                ...user.value,
-                twitchFollowing: syncData.twitchFollowing,
-                twitchSub: syncData.twitchSub,
-                twitchSubTier: syncData.twitchSubTier,
-                twitchSyncedAt: syncData.twitchSyncedAt ?? new Date().toISOString(),
-                twitchNeedsReauth: false,
-                role: syncData.role,
-            }
-        }
-        if (!silent) window.location.reload()
-        return syncData
+    /** Lleva al login de accounts; al terminar se vuelve a `returnTo` (por defecto, esta misma página) */
+    function login(returnTo?: string) {
+        window.location.href = accountsLoginUrl(returnTo)
     }
 
-    async function loginWithTwitch(callbackURL = `${SITE_URL}/login`) {
-        await authClient.signIn.social({ provider: "twitch", callbackURL })
-    }
-
-    async function waitForTwitchLogin(): Promise<void> {
-        const { data } = await authClient.signIn.social({
-            provider: "twitch",
-            callbackURL: `${SITE_URL}/authcallback`,
-            disableRedirect: true
-        })
-
-        if (!data?.url) return
-
-        const width = 600
-        const height = 700
-        const left = window.screenX + (window.outerWidth - width) / 2
-        const top = window.screenY + (window.outerHeight - height) / 2
-
-        window.open(data.url, "Login con Twitch", `width=${width},height=${height},left=${left},top=${top}`)
-
-        return new Promise<void>((resolve) => {
-            window.addEventListener("message", (e) => {
-                if (e.origin !== SITE_URL) return
-                if (e.data === "auth-success") resolve()
-            }, { once: true })
-        })
-    }
-
-    async function loginWithTwitchPopup(silent?: boolean, callbackURL?: string) {
-        isLoggingIn.value = true
-        try {
-            const { data } = await authClient.signIn.social({
-                provider: "twitch",
-                callbackURL: `${SITE_URL}/authcallback`,
-                    disableRedirect: true
-            })
-
-            if (!data?.url) {
-                isLoggingIn.value = false
-                return
-            }
-
-            const width = 600
-            const height = 700
-            const left = window.screenX + (window.outerWidth - width) / 2
-            const top = window.screenY + (window.outerHeight - height) / 2
-
-            window.open(data.url, "Login con Twitch", `width=${width},height=${height},left=${left},top=${top}`)
-
-            // Escucha el mensaje de la página intermedia
-            window.addEventListener("message", async (e) => {
-                if (e.origin !== SITE_URL) return
-                if (e.data === "auth-success") {
-                    await authClient.$fetch("/get-session")
-                    if (!silent) window.location.href = callbackURL ?? "/micuenta"
-                    else window.location.reload()
-                }
-                isLoggingIn.value = false
-            }, { once: true })
-        } catch (error) {
-            console.error("Login error:", error)
-            isLoggingIn.value = false
-        }
-    }
-
-    async function logout(silent?: boolean, callbackURL?: string) {
+    async function logout() {
         await authClient.signOut({
             fetchOptions: {
-                onSuccess: async () => {
-                    await authClient.$fetch("/get-session")
-                    if (!silent) window.location.href = callbackURL ?? "/login"
-                    else window.location.reload()
-                }
+                onSuccess: () => window.location.reload()
             }
         })
-    }
-
-    async function deleteAccount(silent?: boolean, callbackURL?: string) {
-        const { error } = await authClient.deleteUser({})
-
-        if (error?.code === "SESSION_EXPIRED") {
-            await waitForTwitchLogin()
-            await authClient.deleteUser({
-                fetchOptions: {
-                    onSuccess: () => {
-                        if (!silent) window.location.href = callbackURL ?? "/login"
-                    }
-                }
-            })
-            return
-        }
-
-        if (!silent) window.location.href = callbackURL ?? "/login"
     }
 
     return {
@@ -179,15 +83,11 @@ export function useAuth() {
         isAdmin,
         isPending,
         myMember,
+        myPlayerId,
         myMemberLoaded,
         loadMyMember,
-        syncTwitch,
-        loginWithTwitch,
-        loginWithTwitchPopup,
+        login,
         logout,
-        deleteAccount,
-        isLoggingIn,
         error: sessionState.value?.error,
     }
-
 }

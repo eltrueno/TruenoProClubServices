@@ -6,7 +6,8 @@ import { mongodbAdapter } from "better-auth/adapters/mongodb"
 import { ObjectId } from "mongodb"
 
 const DEVMODE = process.env.DEVMODE === "true";
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(",") ?? [];
+// "a, b" también vale: sin quitar espacios, " b" no coincidiría con ningún origen
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(",").map((s) => s.trim()).filter(Boolean) ?? [];
 
 /**
  * Permisos que se piden a Twitch en TODOS los logins (además de los de por defecto,

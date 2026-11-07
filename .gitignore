@@ -28,3 +28,7 @@ docker-data/
 .vscode/
 .idea/
 node_modules
+
+# Configuración local de Claude Code (launch.json, ajustes): no va al repo
+.claude/
+.claude

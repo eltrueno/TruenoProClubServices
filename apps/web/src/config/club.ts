@@ -53,6 +53,8 @@ export interface ClubConfig extends ClubData {
     siteUrl: string;
     /** servicio de auth, común a todos los clubes */
     authUrl: string;
+    /** web de la cuenta (login, ajustes, vincular jugador), común a todos los clubes */
+    accountsUrl: string;
 }
 
 const clubs: Record<ClubId, ClubData> = {
@@ -135,6 +137,7 @@ export const CLUB: ClubConfig = {
     // Las env mandan sobre los valores del club (útil en local y para entornos de prueba)
     apiUrl: stripSlash(import.meta.env.PUBLIC_API_URL || clubs[clubId].apiUrl),
     authUrl: stripSlash(import.meta.env.PUBLIC_AUTH_URL || "https://auth.casemuro.stream"),
+    accountsUrl: stripSlash(import.meta.env.PUBLIC_ACCOUNTS_URL || "https://accounts.casemuro.stream"),
 };
 
 /** Todos los clubes de la comunidad, siempre en el mismo orden (el del selector de la navbar) */

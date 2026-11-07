@@ -137,8 +137,10 @@ async function doSync(user: User, attemptAt: Date): Promise<TwitchSyncResponse> 
 
   if (!account || !twitchId) return failed({ code: "NO_TWITCH_ACCOUNT" })
 
-  const broadcasterId = process.env.TWITCH_CHANNEL_ID
-  if (!broadcasterId) return { ok: false, error: { code: "MISSING_CHANNEL_ID" } }
+  // Tiene que ser el id numérico del canal. Con uno vacío o inválido ("0") Twitch no da
+  // error en la consulta de follow: devuelve todos los canales que sigue el usuario.
+  const broadcasterId = process.env.TWITCH_CHANNEL_ID?.trim()
+  if (!broadcasterId || !/^[1-9]\d*$/.test(broadcasterId)) return { ok: false, error: { code: "MISSING_CHANNEL_ID" } }
 
   // Inicios de sesión de antes de pedir los permisos en el servidor: el token no los tiene
   if (!hasRequiredScopes(account.scope)) return needsReauth()
@@ -172,7 +174,10 @@ async function doSync(user: User, attemptAt: Date): Promise<TwitchSyncResponse> 
 
   // Cada dato solo se cambia si Twitch ha respondido bien. Un error (429, 5xx...) ya no
   // cuenta como "no sigue" / "no es sub": se conserva lo que había.
-  const followKnown = followRes.ok && typeof followData?.total === "number"
+  // channels/followed con broadcaster_id: `data` trae ese canal si lo sigue y viene vacío si no.
+  // OJO: `total` es el número de canales que sigue el usuario EN TOTAL, no si sigue este: con
+  // `total > 0` cualquiera que siguiera algún canal salía como seguidor.
+  const followKnown = followRes.ok && Array.isArray(followData?.data)
   // subscriptions/user: 200 = es sub, 404 = no lo es, cualquier otra cosa = no se sabe
   const subKnown = subRes.ok || subRes.status === 404
 
@@ -180,7 +185,9 @@ async function doSync(user: User, attemptAt: Date): Promise<TwitchSyncResponse> 
     return failed({ code: "FOLLOW_CHECK_FAILED", status: followRes.status, details: followData })
   }
 
-  const isFollowing = followKnown ? followData.total > 0 : !!user.twitchFollowing
+  const isFollowing = followKnown
+    ? followData.data.some((f: { broadcaster_id?: string }) => f.broadcaster_id === broadcasterId)
+    : !!user.twitchFollowing
   const isSub = subKnown ? subRes.ok && !!subData?.data?.length : !!user.twitchSub
   const subTier: string | null = subKnown
     ? (isSub ? subData.data[0].tier ?? null : null)

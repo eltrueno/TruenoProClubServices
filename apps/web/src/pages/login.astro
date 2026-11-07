@@ -1,20 +1,25 @@
 ---
-import LoginWall from "@/components/auth/LoginWall.vue";
-import Layout from "@/layouts/Layout.astro";
+// El login vive en accounts.casemuro.stream. Esta ruta se mantiene para no romper enlaces:
+// manda allí y, al terminar, vuelve a `?redirect=` (si es de esta web) o a la portada.
 import { CLUB } from "@/config/club";
+const accounts = CLUB.accountsUrl;
+const site = CLUB.siteUrl;
 ---
 
-<Layout
-	title={`${CLUB.name}: Inicio de sesión`}
-	isindex={false}
-	description={`Inicio de sesión en ${CLUB.name}`}
-	keywords={[...CLUB.keywords, "fifa", "eafc", "fifa23", "fifa24", "eafc24", "club", "pro", "clubespro", "proclubs", "inicio", "jugador", "login", "cuenta"].join(", ")}
->
-	<meta slot="metadata" name="robots" content="noindex, nofollow" />
-
-	<section>
-		<container class="flex p-4 lg:p-8 justify-center items-center text-center">
-			<LoginWall client:load />
-		</container>
-	</section>
-</Layout>
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="robots" content="noindex, nofollow" />
+		<title>Iniciar sesión · {CLUB.name}</title>
+		<script is:inline define:vars={{ accounts, site }}>
+			const raw = new URLSearchParams(window.location.search).get("redirect");
+			// Solo rutas de esta misma web (accounts además valida el dominio por su cuenta)
+			const back = raw && raw.startsWith("/") && !raw.startsWith("//") ? site + raw : site + "/";
+			window.location.replace(accounts + "/login?redirect=" + encodeURIComponent(back));
+		</script>
+	</head>
+	<body>
+		<p>Redirigiendo al <a href={`${accounts}/login`}>inicio de sesión</a>…</p>
+	</body>
+</html>
