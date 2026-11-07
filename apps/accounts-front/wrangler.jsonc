@@ -1,0 +1,16 @@
+// accounts.casemuro.stream en Cloudflare Workers (solo archivos estáticos, sin código de servidor).
+// Cloudflare compila el repo (ver README) y luego publica con:
+//   npx wrangler deploy --config apps/accounts-front/wrangler.jsonc
+{
+  // Tiene que coincidir con el nombre del Worker creado en el panel de Cloudflare
+  "name": "casemuro-accounts",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    // Lo que genera `astro build` (relativo a este archivo)
+    "directory": "./dist",
+    // /login sirve login.html (el build usa format: "file"), sin barra final
+    "html_handling": "auto-trailing-slash",
+    // Rutas que no existen: la página 404 de la propia web
+    "not_found_handling": "404-page"
+  }
+}
