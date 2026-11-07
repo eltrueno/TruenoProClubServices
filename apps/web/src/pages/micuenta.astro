@@ -1,20 +1,23 @@
 ---
-import MyAccountPage from "@/components/auth/MyAccountPage.vue";
-import Layout from "@/layouts/Layout.astro";
+// Los ajustes de la cuenta viven en accounts.casemuro.stream (comunes a todos los clubes).
+// Esta ruta se mantiene para no romper enlaces antiguos: redirige allí (conservando
+// #mi-jugador y similares).
 import { CLUB } from "@/config/club";
+const target = `${CLUB.accountsUrl}/`;
 ---
 
-<Layout
-	title={`${CLUB.name}: Ajustes`}
-	isindex={false}
-	description={`Ajustes de tu cuenta en ${CLUB.name}`}
-	keywords={[...CLUB.keywords, "fifa", "eafc", "fifa23", "fifa24", "eafc24", "club", "pro", "clubespro", "proclubs", "inicio", "jugador", "login", "cuenta", "micuenta"].join(", ")}
->
-	<meta slot="metadata" name="robots" content="noindex, nofollow" />
-
-	<section>
-		<container class="flex px-2 py-4 justify-center items-center text-center">
-			<MyAccountPage client:load />
-		</container>
-	</section>
-</Layout>
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="robots" content="noindex, nofollow" />
+		<meta http-equiv="refresh" content={`0;url=${target}`} />
+		<title>Mi cuenta · {CLUB.name}</title>
+		<script is:inline define:vars={{ target }}>
+			window.location.replace(target + window.location.hash);
+		</script>
+	</head>
+	<body>
+		<p>Tu cuenta está ahora en <a href={target}>{target}</a>.</p>
+	</body>
+</html>

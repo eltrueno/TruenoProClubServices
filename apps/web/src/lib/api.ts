@@ -43,10 +43,12 @@ async function request<T, TBody = unknown>(base: string, path: string, options: 
     const text = await res.text()
     const body = text ? JSON.parse(text) : {}
     if (!res.ok) {
-        // api: { status: { code, message } } · auth: { status: "error", message }
-        const code = typeof body?.status?.message === "string" ? body.status.message
-            : typeof body?.message === "string" ? body.message
-                : `HTTP_${res.status}`
+        // api: { status: { code, message } } · auth: { status: "error", message, code? }
+        // El `code` del auth va primero: su `message` es texto legible, no un código estable
+        const code = typeof body?.code === "string" ? body.code
+            : typeof body?.status?.message === "string" ? body.status.message
+                : typeof body?.message === "string" ? body.message
+                    : `HTTP_${res.status}`
         throw new ApiError(code, code, res.status)
     }
     return body as T
@@ -64,8 +66,10 @@ export const tpcsApi = {
         getProfile: (playerId: string) => api<IPlayerProfile>(`/members/${encodeURIComponent(playerId)}`),
         getAllStats: () => api<{ official: IPlayerStats[]; friendly: IPlayerStats[] }>("/members/stats"),
         getStatsByType: (type: "official" | "friendly") => api<IPlayerStats[]>(`/members/stats/${type}`),
-        /** Jugador vinculado a la cuenta con sesión (null si no hay) */
+        /** Jugador vinculado a la cuenta con sesión, si juega en este club (null si no) */
         getMine: () => api<IClubMember | null>("/members/me", { credentials: true }),
+        /** EA ID vinculado a la cuenta (juegue o no en este club) y su miembro aquí, en una sola petición */
+        getMyIdentity: () => api<{ playerId: string | null; member?: IClubMember | null }>("/members/me/identity", { credentials: true }),
         /** Solicitud de vinculación pendiente de la cuenta con sesión (null si no hay) */
         getMyLinkRequest: () => api<ILinkRequest | null>("/members/me/link-request", { credentials: true }),
         requestLink: (playerId: string) => api<ILinkRequest>("/members/me/link-request", { method: "POST", body: { playerId }, credentials: true }),
@@ -137,16 +141,6 @@ export interface IAdminUser extends IPublicUser {
 }
 
 /** Resultado de `GET /api/twitch/sync` */
-export interface ITwitchSyncResult {
-    status: "success"
-    twitchFollowing: boolean
-    twitchSub: boolean
-    twitchSubTier: string | null
-    role: UserRole | string
-    twitchSyncedAt?: string
-    /** Twitch falló en una de las consultas y se conservó el valor anterior */
-    partial?: boolean
-}
 
 interface AuthListResponse<T> {
     status: string
@@ -159,7 +153,6 @@ export const authApi = {
         ids.length === 0
             ? Promise.resolve([] as IPublicUser[])
             : request<AuthListResponse<IPublicUser[]>>(AUTH_URL, `/api/public/users?ids=${ids.map(encodeURIComponent).join(",")}`).then((r) => r.data),
-    twitchSync: () => request<ITwitchSyncResult>(AUTH_URL, "/api/twitch/sync", { credentials: true }),
     admin: {
         users: (q?: string) =>
             request<AuthListResponse<IAdminUser[]>>(

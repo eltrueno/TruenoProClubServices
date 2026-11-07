@@ -1,0 +1,65 @@
+name: Deploy accounts to Cloudflare Pages
+
+# accounts.casemuro.stream: login y ajustes de la cuenta, común a todos los clubes.
+# Va a Cloudflare Pages (no a GitHub Pages, que solo admite un sitio por repo).
+#
+# Necesita en el repo:
+#   secrets.CLOUDFLARE_API_TOKEN   token con permiso "Cloudflare Pages: Edit"
+#   secrets.CLOUDFLARE_ACCOUNT_ID  id de la cuenta de Cloudflare
+#   vars.CF_ACCOUNTS_PROJECT       (opcional) nombre del proyecto de Pages; por defecto casemuro-accounts
+#   vars.ACCOUNTS_CLUBS            (opcional) "city" para limitar los clubes; por defecto, todos
+# El dominio accounts.casemuro.stream se asocia al proyecto una vez desde el panel de Cloudflare.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/accounts-front/**"
+      - "packages/shared/**"
+      - "packages/auth/**"
+      - ".github/workflows/deploy-accounts.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: accounts-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Instalar dependencias
+        # Solo accounts y sus dependencias del workspace (shared, auth)
+        run: pnpm install --frozen-lockfile --filter @trueno-proclub-services/accounts-front...
+
+      - name: Build de packages
+        run: pnpm --filter @trueno-proclub-services/shared build && pnpm --filter @trueno-proclub-services/auth build
+
+      - name: Build de accounts
+        run: pnpm --filter @trueno-proclub-services/accounts-front build
+        env:
+          PUBLIC_SITE_URL: ${{ vars.ACCOUNTS_SITE_URL || 'https://accounts.casemuro.stream' }}
+          PUBLIC_AUTH_URL: ${{ vars.PUBLIC_AUTH_URL }}
+          # Opcional: "city" si algún club aún no tiene api en producción (por defecto, todos)
+          PUBLIC_CLUBS: ${{ vars.ACCOUNTS_CLUBS }}
+
+      - name: Publicar en Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy apps/accounts-front/dist --project-name=${{ vars.CF_ACCOUNTS_PROJECT || 'casemuro-accounts' }} --branch=main

@@ -1,0 +1,159 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark;
+}
+
+/*
+ * Marca de accounts: no es de ningún club, es de los dos. El rojo del City
+ * (#c80d0d) a la izquierda funde con el granate del United (#b90a34) a la
+ * derecha en todo lo que lleva color de marca (cabecera, botones, insignias,
+ * títulos…). Donde un componente de DaisyUI necesita un color liso (toggles,
+ * checkboxes, anillos de foco) se usa el punto medio de los dos.
+ */
+:root {
+  --brand-from: #c80d0d;
+  --brand-to: #b90a34;
+  --brand-gradient: linear-gradient(90deg, var(--brand-from), var(--brand-to));
+  /*
+   * Los dos rojos se parecen mucho: en algo pequeño (un botón, una insignia) el fundido no se
+   * ve. Para eso se alarga por los dos extremos: un City algo más claro → City → United →
+   * un United algo más oscuro. Sigue siendo "de un rojo al otro", pero se nota.
+   */
+  --brand-light: color-mix(in oklab, var(--brand-from) 78%, #ff6b4a);
+  --brand-deep: color-mix(in oklab, var(--brand-to) 72%, #2a0010);
+  --brand-gradient-strong: linear-gradient(100deg, var(--brand-light) 0%, var(--brand-from) 30%, var(--brand-to) 70%, var(--brand-deep) 100%);
+}
+
+@plugin "daisyui/theme" {
+  name: "light";
+  default: true;
+  color-scheme: light;
+  --color-base-100: oklch(100% 0 0);
+  --color-base-200: oklch(96% 0.003 250);
+  --color-base-300: oklch(91% 0.005 250);
+  /* punto medio entre los dos rojos */
+  --color-primary: #c00c21;
+  --color-primary-content: #ffffff;
+  --color-error: #ef4444;
+  --color-error-content: #ffffff;
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 0.5px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+  name: "dark";
+  prefersdark: true;
+  color-scheme: dark;
+  --color-base-content: #a6adbb;
+  --color-primary: #c00c21;
+  --color-primary-content: #ffffff;
+  --color-error: #ef4444;
+  --color-error-content: #ffffff;
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 0.5px;
+  --depth: 0;
+  --noise: 0;
+}
+
+/* El tema se aplica con data-theme (ver Layout.astro); las clases `dark:` cuelgan de él */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@source "../";
+
+/* ── Degradado de marca ─────────────────────────────────────────────────────
+   bg-brand    → fondo con el degradado (barras, banners)
+   text-brand  → texto relleno con el degradado (títulos, enlaces destacados)
+   border-brand→ borde inferior de 2px con el degradado                     */
+@utility bg-brand {
+  background-image: var(--brand-gradient-strong);
+}
+@utility text-brand {
+  background-image: var(--brand-gradient-strong);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+@utility border-brand {
+  border-bottom: 2px solid transparent;
+  border-image: var(--brand-gradient-strong) 1;
+}
+
+/* Componentes de DaisyUI con color de marca: el degradado en vez del color liso.
+   Va al doble de ancho para que al pasar el ratón se desplace (y se vea que es un fundido). */
+.btn-primary:not(.btn-outline, .btn-soft, .btn-ghost, .btn-link),
+.badge-primary:not(.badge-outline, .badge-soft) {
+  background-image: linear-gradient(100deg, var(--brand-light) 0%, var(--brand-from) 25%, var(--brand-to) 50%, var(--brand-deep) 75%, var(--brand-to) 100%);
+  background-size: 200% 100%;
+  background-position: 0% 50%;
+  border-color: transparent;
+  box-shadow: 0 1px 0 0 color-mix(in oklab, white 25%, transparent) inset;
+}
+.btn-primary:not(.btn-outline, .btn-soft, .btn-ghost, .btn-link) {
+  transition: background-position 0.45s ease, transform 0.15s ease;
+}
+.btn-primary:not(.btn-outline, .btn-soft, .btn-ghost, .btn-link):hover {
+  background-position: 100% 50%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary:not(.btn-outline, .btn-soft, .btn-ghost, .btn-link) { transition: none; }
+}
+/* Deshabilitado: gris como el resto de botones de DaisyUI, sin degradado */
+.btn-primary:disabled,
+.btn-primary.btn-disabled {
+  background-image: none;
+  box-shadow: none;
+}
+/* Enlaces de marca */
+.link-primary {
+  background-image: var(--brand-gradient-strong);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-decoration-color: var(--brand-to);
+}
+/* Toggles activos (privacidad): la bola sobre el degradado */
+.toggle-primary:checked {
+  background-image: var(--brand-gradient-strong);
+  border-color: transparent;
+  color: white;
+}
+
+/* Fondo de la página: un halo rojo muy suave arriba, de izquierda a derecha */
+.page-glow {
+  background-image:
+    radial-gradient(60rem 18rem at 15% -6rem, color-mix(in oklab, var(--brand-from) 14%, transparent), transparent 70%),
+    radial-gradient(60rem 18rem at 85% -6rem, color-mix(in oklab, var(--brand-to) 14%, transparent), transparent 70%);
+  background-repeat: no-repeat;
+}
+
+.checkbox:before {
+  transition: opacity 0.1s;
+}
+
+/* Skeletons con brillo (DaisyUI los deja planos) */
+@keyframes skeleton-shimmer {
+  to { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton {
+    background-image: linear-gradient(
+      100deg,
+      transparent 25%,
+      color-mix(in oklab, var(--color-base-content) 8%, transparent) 45%,
+      transparent 65%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.6s linear infinite;
+  }
+}
