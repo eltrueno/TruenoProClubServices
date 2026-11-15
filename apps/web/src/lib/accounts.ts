@@ -13,3 +13,6 @@ export const accountsLoginUrl = (returnTo?: string) => {
     const back = returnTo ?? (typeof window !== "undefined" ? window.location.href : CLUB.siteUrl)
     return `${CLUB.accountsUrl}/login?redirect=${encodeURIComponent(back)}`
 }
+
+/** Panel admin (común a todos los clubes), abierto en este club */
+export const accountsAdminUrl = () => `${CLUB.accountsUrl}/admin?club=${CLUB.id}`

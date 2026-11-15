@@ -1,10 +1,11 @@
 # ===========================
 # Stage 1: Build
 # ===========================
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 # Instala pnpm global
-RUN npm install -g pnpm
+# Versión fijada (la de los workflows y el lockfile v9): sin fijar coge la última mayor y pnpm install falla
+RUN npm install -g pnpm@10
 
 # WORKDIR en la raíz del repo dentro de la imagen
 WORKDIR /workspace
@@ -34,7 +35,7 @@ RUN pnpm --filter @trueno-proclub-services/authservice build
 # ===========================
 # Stage 2: Runtime
 # ===========================
-FROM node:20-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 

@@ -1,20 +1,19 @@
 ---
-import AdminPanel from "@/components/admin/AdminPanel.vue";
-import Layout from "@/layouts/Layout.astro";
+// El panel admin se ha movido a accounts (común a todos los clubes): /admin solo redirige allí
 import { CLUB } from "@/config/club";
+const target = `${CLUB.accountsUrl}/admin?club=${CLUB.id}`;
 ---
 
-<Layout
-	title={`${CLUB.name}: Admin`}
-	isindex={false}
-	description={`Panel de administración de ${CLUB.name}`}
-	keywords={`${CLUB.name}, admin`}
->
-	<meta slot="metadata" name="robots" content="noindex, nofollow" />
-
-	<section>
-		<container class="flex px-2 py-4 justify-center items-center text-center">
-			<AdminPanel client:only="vue" />
-		</container>
-	</section>
-</Layout>
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="robots" content="noindex, nofollow" />
+		<meta http-equiv="refresh" content={`0; url=${target}`} />
+		<link rel="canonical" href={target} />
+		<title>Panel admin</title>
+	</head>
+	<body>
+		<p>El panel admin está ahora en <a href={target}>{target}</a>.</p>
+	</body>
+</html>

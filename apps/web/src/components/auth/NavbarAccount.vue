@@ -4,7 +4,7 @@ import { useAuth } from '@/composables/useAuth';
 import { translateRole } from '@/i18n/translations';
 import { routes } from '@/lib/query';
 import { CLUB } from '@/config/club';
-import { accountsLoginUrl, accountsUrl } from '@/lib/accounts';
+import { accountsAdminUrl, accountsLoginUrl, accountsUrl } from '@/lib/accounts';
 import OptionToggle, { type ToggleOption } from '@/components/ui/OptionToggle.vue';
 
 import ChevronDown from '@/icons/chevron-down.svg?component';
@@ -29,6 +29,7 @@ const linkedElsewhere = computed(() => !myMember.value && !!myPlayerId.value);
 const loginHref = ref(accountsLoginUrl(CLUB.siteUrl));
 const settingsHref = accountsUrl();
 const linkPlayerHref = accountsUrl('mi-jugador');
+const adminHref = accountsAdminUrl();
 const refreshLoginHref = () => { loginHref.value = accountsLoginUrl(window.location.href); };
 
 // Tema: es lo único de ajustes que se queda en la web de cada club
@@ -116,7 +117,7 @@ onUnmounted(() => {
           </li>
 
           <li v-if="isAdmin">
-            <a href="/admin" @click="closeDropdown" class="btn btn-ghost justify-start gap-3">
+            <a :href="adminHref" @click="closeDropdown" class="btn btn-ghost justify-start gap-3">
               <Shield class="size-5" />
               Panel de admin
             </a>

@@ -5,20 +5,21 @@
  * resolución y escala que tenían todas las fotos del club— y sube el PNG resultante.
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue"
-import type { IClubMember, ImageScope } from "@trueno-proclub-services/shared"
-import { ApiError, tpcsApi } from "@/lib/api"
+import type { IClubMember } from "@trueno-proclub-services/shared"
+import { ApiError, clubApi } from "@/lib/api"
+import type { ClubLink } from "@/config/site"
 import { PLAYER_PLACEHOLDER } from "@/lib/playerImage"
 
 // Resolución de todas las fotos del club (las antiguas eran 400x450 PNG, busto arriba)
 const FRAME_W = 400
 const FRAME_H = 450
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
+    /** club cuyo api recibe la foto */
+    club: ClubLink
     playerId: string
     playerName: string
-    /** dónde se guarda la foto: la de todos los clubes o solo la de este */
-    scope?: ImageScope
-}>(), { scope: "global" })
+}>()
 const emit = defineEmits<{ (e: "uploaded", member: IClubMember): void }>()
 
 const dialog = ref<HTMLDialogElement | null>(null)
@@ -103,7 +104,7 @@ const loadUrl = async (url: string) => {
     loading.value = true
     try {
         // Vía proxy del api: así el canvas no queda "tainted" por CORS y se puede exportar
-        await loadFromBlob(await tpcsApi.admin.fetchImageViaProxy(url))
+        await loadFromBlob(await clubApi(props.club).admin.fetchImageViaProxy(url))
     } catch (e) {
         setError(e, e instanceof Error ? e.message : "No se ha podido cargar la imagen")
     } finally {
@@ -181,7 +182,7 @@ const upload = async () => {
         const dataUrl = canvas.value.toDataURL("image/png")
         showGuide.value = wasGuide
         draw()
-        const member = await tpcsApi.admin.uploadMemberImage(props.playerId, dataUrl, props.scope)
+        const member = await clubApi(props.club).admin.uploadMemberImage(props.playerId, dataUrl, "global")
         emit("uploaded", member)
         close()
     } catch (e) {

@@ -9,9 +9,11 @@ interface Props {
 	description?: string;
 	/** páginas sin cabecera completa (login): solo la barra de marca */
 	compact?: boolean;
+	/** más ancho que la cuenta (panel admin) */
+	wide?: boolean;
 }
 
-const { title, description = "Tu cuenta de la comunidad Casemuro: inicio de sesión, conexiones y jugador vinculado.", compact = false } = Astro.props;
+const { title, description = "Tu cuenta de la comunidad Casemuro: inicio de sesión, conexiones y jugador vinculado.", compact = false, wide = false } = Astro.props;
 const pathname = Astro.url.pathname.replace(/\/+$/, "") || "";
 ---
 
@@ -49,7 +51,7 @@ const pathname = Astro.url.pathname.replace(/\/+$/, "") || "";
 		<!-- Barra de marca: rojo del City → granate del United -->
 		<div class="h-1.5 bg-brand"></div>
 
-		<header class="w-full max-w-3xl mx-auto px-4 sm:px-6 pt-5 pb-2 flex items-center justify-between gap-4">
+		<header class:list={["w-full mx-auto px-4 sm:px-6 pt-5 pb-2 flex items-center justify-between gap-4", wide ? "max-w-6xl" : "max-w-3xl"]}>
 			<a href="/" class="flex items-center gap-2.5 group" aria-label="Casemuro · Mi cuenta">
 				<span class="flex -space-x-2.5">
 					{CLUBS.map((c) => <img src={c.logo} alt="" class="size-8 object-contain drop-shadow" width="32" height="32" />)}
@@ -62,7 +64,7 @@ const pathname = Astro.url.pathname.replace(/\/+$/, "") || "";
 			<ThemeToggle client:only="vue" />
 		</header>
 
-		<main class="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+		<main class:list={["flex-1 w-full mx-auto px-4 sm:px-6 py-4 sm:py-6", wide ? "max-w-6xl" : "max-w-3xl"]}>
 			<slot />
 		</main>
 

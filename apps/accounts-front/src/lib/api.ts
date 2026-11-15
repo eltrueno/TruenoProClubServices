@@ -1,4 +1,4 @@
-import type { ApiResponse, IClubMember, ILinkRequest, UserRole } from "@trueno-proclub-services/shared"
+import type { ApiResponse, IClubMember, IClubMemberAdminPatch, ILinkRequest, IPublicUser, ImageScope, UserRole } from "@trueno-proclub-services/shared"
 import { AUTH_URL, type ClubLink } from "@/config/site"
 
 /** Error de cualquier llamada: `code` estable (TWITCH_TOKEN_EXPIRED, ALREADY_LINKED…) + `httpStatus` */
@@ -10,7 +10,7 @@ export class ApiError extends Error {
 }
 
 interface RequestOptions {
-    method?: "GET" | "POST" | "DELETE"
+    method?: "GET" | "POST" | "PATCH" | "DELETE"
     body?: unknown
 }
 
@@ -55,6 +55,16 @@ export interface ITwitchSyncResult {
 /** Rutas propias del servicio de auth (fuera de Better Auth) */
 export const authApi = {
     twitchSync: () => request<ITwitchSyncResult>(`${AUTH_URL}/api/twitch/sync`),
+    /** Cuentas para el panel admin (vincular cuenta ↔ jugador). Solo admins */
+    adminUsers: (q?: string) =>
+        request<{ status: string; data: IAdminUser[] }>(`${AUTH_URL}/api/admin/users${q ? `?q=${encodeURIComponent(q)}` : ""}`).then((r) => r.data),
+}
+
+/** Usuario tal y como lo lista `GET /api/admin/users` del auth */
+export interface IAdminUser extends IPublicUser {
+    role: UserRole | string
+    twitchId: string | null
+    discordId: string | null
 }
 
 /**
@@ -73,5 +83,36 @@ export const clubApi = (club: ClubLink) => {
         cancelLinkRequest: () => api<{ cancelled: boolean }>("/members/me/link-request", { method: "DELETE" }),
         /** Suelta el jugador vinculado y retira la solicitud pendiente (antes de borrar la cuenta) */
         unlinkMe: () => api<{ unlinked: boolean }>("/members/me/identity", { method: "DELETE" }),
+
+        /** Panel admin (/admin): plantilla, fotos y solicitudes de vinculación de este club */
+        admin: {
+            patchMember: (playerId: string, patch: IClubMemberAdminPatch) =>
+                api<IClubMember>(`/admin/members/${encodeURIComponent(playerId)}`, { method: "PATCH", body: patch }),
+            /** Sube la foto ya recortada (PNG 400x450 en data URL) a R2 y la asigna al jugador:
+             *  como foto global (todos los clubes) o solo de este club */
+            uploadMemberImage: (playerId: string, imageDataUrl: string, scope: ImageScope = "global") =>
+                api<IClubMember>(`/admin/members/${encodeURIComponent(playerId)}/image`, { method: "POST", body: { image: imageDataUrl, scope } }),
+            /** Descarga una imagen remota vía api (POST a propósito: exige preflight) para pintarla en canvas sin CORS */
+            fetchImageViaProxy: async (url: string): Promise<Blob> => {
+                const res = await fetch(`${club.apiUrl}/admin/image-proxy`, {
+                    method: "POST",
+                    credentials: "include",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ url }),
+                })
+                if (!res.ok) {
+                    const body = await res.json().catch(() => null)
+                    const code = body?.status?.message || `HTTP_${res.status}`
+                    throw new ApiError(code, code, res.status)
+                }
+                return res.blob()
+            },
+            /** Pendientes de jugadores de este club (las solicitudes son globales, cada api filtra las suyas) */
+            linkRequests: () => api<ILinkRequest[]>("/admin/link-requests"),
+            approveLinkRequest: (id: string) =>
+                api<{ request: ILinkRequest; member: IClubMember }>(`/admin/link-requests/${encodeURIComponent(id)}/approve`, { method: "POST" }),
+            rejectLinkRequest: (id: string) =>
+                api<ILinkRequest>(`/admin/link-requests/${encodeURIComponent(id)}/reject`, { method: "POST" }),
+        },
     }
 }
