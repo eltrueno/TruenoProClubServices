@@ -10,7 +10,7 @@ import { CLUB } from "../config/club";
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="robots" content="noindex, nofollow" />
-		<link rel="icon" type="image/webp" href={CLUB.logo} />
+		<link rel="icon" type={CLUB.logo.endsWith(".svg") ? "image/svg+xml" : "image/webp"} href={CLUB.logo} />
 		<meta name="generator" content={Astro.generator} />
 		<title>{CLUB.name}</title>
 	</head>

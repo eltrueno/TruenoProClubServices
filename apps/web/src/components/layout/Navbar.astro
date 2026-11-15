@@ -43,13 +43,15 @@ const navTheme = isBase ? "nav-base bg-base-300 dark:bg-base-100 text-base-conte
         <!-- Tooltips de DaisyUI en un envoltorio: usan ::before/::after, que en la insignia ya amplía la zona de toque.
              tooltip-start: alineados a la izquierda, porque centrados se salían por el borde de la pantalla -->
         <div class="tooltip tooltip-bottom tooltip-start" data-tip={`Inicio de ${CLUB.name}`}>
-            <a href="/" class="club-disc" aria-label="Volver al inicio de la página">
-                <img src={CLUB.logo} class="h-10 w-auto" alt={`Escudo de ${CLUB.name}`} />
+            <a href="/" class="club-disc" class:list={[{ "club-disc-mono": CLUB.logoMono }]} aria-label="Volver al inicio de la página">
+                {CLUB.logoMono
+                    ? <span class="crest-mask h-10 w-8" style={`--crest: url('${CLUB.logo}')`} role="img" aria-label={`Escudo de ${CLUB.name}`}></span>
+                    : <img src={CLUB.logo} class="h-10 w-auto" alt={`Escudo de ${CLUB.name}`} />}
             </a>
         </div>
         {otherClub && (
             <div class="club-switch tooltip tooltip-bottom tooltip-start" data-tip={`Ir a la web de ${otherClub.name}`}>
-                <a href={otherClub.webUrl} class="club-switch-link" aria-label={`Ir a la web de ${otherClub.name}`}>
+                <a href={otherClub.webUrl} class="club-switch-link" class:list={[{ "club-switch-mono": CLUB.logoMono }]} aria-label={`Ir a la web de ${otherClub.name}`}>
                     <img src={otherClub.logo} alt="" class="h-[18px] w-auto" />
                 </a>
             </div>
@@ -156,6 +158,17 @@ const navTheme = isBase ? "nav-base bg-base-300 dark:bg-base-100 text-base-conte
     .club-disc:focus-visible {
         scale: 1.05;
     }
+    /* Escudo de un solo color (United): disco del color principal y escudo en blanco */
+    .club-disc-mono {
+        background: var(--color-primary);
+        box-shadow: 0 0 0 1.5px rgb(255 255 255 / 0.15), 0 1px 4px rgb(0 0 0 / 0.3);
+    }
+    .crest-mask {
+        display: block;
+        background: var(--color-primary-content);
+        -webkit-mask: var(--crest) center / contain no-repeat;
+        mask: var(--crest) center / contain no-repeat;
+    }
 
     /* Escudo del otro club: insignia blanca pequeña que solapa solo la esquina superior derecha del disco.
        El envoltorio (.club-switch) la coloca y lleva el tooltip (debajo: a la derecha quedaba por detrás
@@ -182,6 +195,12 @@ const navTheme = isBase ? "nav-base bg-base-300 dark:bg-base-100 text-base-conte
     .club-switch-link:focus-visible {
         scale: 1.4;
         translate: 0.15rem 0;
+    }
+    /* En la web de escudo monocolor (United) la insignia no va en blanco: fondo del tema con borde
+       del color principal, a juego con el disco */
+    .club-switch-mono {
+        background: var(--color-base-100);
+        box-shadow: 0 0 0 2px var(--color-primary), 0 1px 3px rgb(0 0 0 / 0.35);
     }
     /* Zona de toque más grande que la insignia (móvil) */
     .club-switch-link::before {

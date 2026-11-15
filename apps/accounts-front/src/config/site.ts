@@ -16,6 +16,8 @@ export interface ClubLink {
     /** api del club: por defecto `${webUrl}/api` (Cloudflare lo enruta a su instancia) */
     apiUrl: string
     logo: string
+    /** escudo de un solo color (SVG): sobre fondos de marca se pinta en blanco (ver ClubCrest) */
+    monochrome?: boolean
 }
 
 const env = import.meta.env
@@ -36,7 +38,8 @@ const ALL_CLUBS: ClubLink[] = [
         name: "Casemuro United",
         webUrl: unitedWeb,
         apiUrl: stripSlash(env.PUBLIC_API_URL_UNITED || `${unitedWeb}/api`),
-        logo: "/clubs/united.webp",
+        logo: "/clubs/united.svg",
+        monochrome: true,
     },
 ]
 
