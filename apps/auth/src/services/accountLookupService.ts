@@ -20,6 +20,9 @@ export interface ExternalAccount {
     twitchSyncedAt: Date | null
     /** el permiso de Twitch ya no sirve: follow / sub pueden estar desfasados */
     twitchNeedsReauth: boolean
+    /** cuenta de Discord vinculada (id y nombre de usuario), null si no tiene */
+    discordId: string | null
+    discordName: string | null
     /** EA ID del jugador vinculado (el mismo en todos los clubes), null si no tiene */
     playerId: string | null
 }
@@ -30,6 +33,7 @@ export interface LookupQuery {
     ids: string[]
     twitchIds: string[]
     twitchLogins: string[]
+    discordIds?: string[]
 }
 
 type LookupResult =
@@ -40,7 +44,8 @@ type LookupResult =
 const clubApiUrl = () => (process.env.CLUB_API_URL || "https://api.casemuro.stream").replace(/\/+$/, "")
 
 const PROJECTION = {
-    name: 1, image: 1, role: 1, twitchId: 1, twitchFollowing: 1, twitchSub: 1, twitchSubTier: 1, twitchSyncedAt: 1, twitchNeedsReauth: 1
+    name: 1, image: 1, role: 1, twitchId: 1, twitchFollowing: 1, twitchSub: 1, twitchSubTier: 1, twitchSyncedAt: 1, twitchNeedsReauth: 1,
+    discordId: 1, discordName: 1
 }
 
 /** userId -> playerId, preguntando al api (los vínculos viven en la base compartida de los clubes) */
@@ -59,7 +64,9 @@ export const accountLookupService = {
         // Los nombres de usuario de Twitch solo llevan letras, números y _
         const twitchLogins = query.twitchLogins.filter((l) => /^\w{1,25}$/.test(l))
 
-        const total = ids.length + twitchIds.length + twitchLogins.length
+        const discordIds = (query.discordIds ?? []).filter((id) => /^\d{1,20}$/.test(id))
+
+        const total = ids.length + twitchIds.length + twitchLogins.length + discordIds.length
         if (total === 0) return { ok: false, error: { code: "NO_VALID_PARAMS" } }
         if (total > MAX_LOOKUP) return { ok: false, error: { code: "TOO_MANY" } }
 
@@ -70,6 +77,7 @@ export const accountLookupService = {
             twitchIds.length ? find({ twitchId: { $in: twitchIds } }).toArray() : [],
             // `name` es el nombre visible de Twitch: igual que el de usuario salvo mayúsculas
             twitchLogins.length ? find({ name: { $in: twitchLogins } }).collation({ locale: "en", strength: 2 }).toArray() : [],
+            discordIds.length ? find({ discordId: { $in: discordIds } }).toArray() : [],
         ])).flat()
 
         // Por id de cuenta: la misma puede salir por dos criterios
@@ -94,6 +102,8 @@ export const accountLookupService = {
             twitchSubTier: u.twitchSubTier ?? null,
             twitchSyncedAt: u.twitchSyncedAt ?? null,
             twitchNeedsReauth: u.twitchNeedsReauth === true,
+            discordId: u.discordId || null,
+            discordName: u.discordName || null,
             playerId: playerIds.get(id) ?? null,
         }))
         return { ok: true, data }

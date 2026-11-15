@@ -16,11 +16,23 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(",").map((s) => s.tri
  */
 export const TWITCH_SCOPES = ["user:read:follows", "user:read:subscriptions"]
 
+/**
+ * Discord solo se usa para VINCULARLO a una cuenta que ya existe (se entra siempre con Twitch).
+ * Solo se pide `identify` (id y nombre): sin email, Better Auth no puede crear ni abrir una
+ * cuenta con Discord, que es justo lo que se quiere. Sin credenciales, no hay proveedor.
+ */
+const DISCORD_ENABLED = !!(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET)
+
 export interface AuthHooks {
   /** Cada vez que alguien inicia sesión (se crea una sesión), también la primera. */
   onSignIn?: (user: any) => void | Promise<void>
   /** Cada vez que se lee la sesión (`get-session`). No se espera: es para refrescos en segundo plano. */
   onSessionRead?: (user: any) => void
+  /**
+   * Se acaba de vincular una cuenta de Discord (`account`, con el token como se guarda:
+   * cifrado). `discordId` ya está en el usuario; esto es para completar el nombre.
+   */
+  onDiscordLinked?: (userId: string, account: any) => void | Promise<void>
 }
 
 export const createAuth = (db: any, authHooks: AuthHooks = {}) => betterAuth({
@@ -43,6 +55,17 @@ export const createAuth = (db: any, authHooks: AuthHooks = {}) => betterAuth({
     before: createAuthMiddleware(async (ctx) => {
       // El perfil (nombre, imagen…) viene de Twitch y no se edita a mano: por /update-user
       // solo se admiten los ajustes de privacidad. El resto de campos ya llevan `input: false`.
+      // Solo se entra con Twitch y solo se vincula Discord. Lo demás (aunque Better Auth lo
+      // rechazaría igual por falta de email o de proveedor) se corta aquí con un error claro.
+      const provider = (ctx.body as { provider?: unknown } | undefined)?.provider
+      if ((ctx.path === "/sign-in/social" && provider !== "twitch") || (ctx.path === "/link-social" && provider !== "discord")) {
+        throw new APIError("FORBIDDEN", { message: "Provider not allowed" })
+      }
+      // Desvincular va por DELETE /api/discord/link del servicio de auth (solo Discord, y sin
+      // exigir sesión reciente). Por aquí se podría soltar Twitch y dejar la cuenta sin entrada.
+      if (ctx.path === "/unlink-account") {
+        throw new APIError("FORBIDDEN", { message: "Not allowed" })
+      }
       if (ctx.path === "/update-user") {
         const allowed = new Set(["showPublicName", "showPublicImage"])
         const keys = Object.keys((ctx.body ?? {}) as Record<string, unknown>)
@@ -73,6 +96,16 @@ export const createAuth = (db: any, authHooks: AuthHooks = {}) => betterAuth({
               { $set: { twitchId: account.accountId } }
             )
           }
+          if (account.providerId === "discord") {
+            await db.collection("user").updateOne(
+              { _id: new ObjectId(account.userId) },
+              { $set: { discordId: account.accountId } }
+            )
+            if (authHooks.onDiscordLinked) {
+              Promise.resolve(authHooks.onDiscordLinked(String(account.userId), account))
+                .catch((err) => console.error("[auth] onDiscordLinked error:", err))
+            }
+          }
         }
       }
     },
@@ -94,6 +127,12 @@ export const createAuth = (db: any, authHooks: AuthHooks = {}) => betterAuth({
     additionalFields: {
       // input: false => solo los pone el servidor (sync de Twitch / admin), nunca `updateUser` desde el cliente
       discordId: {
+        type: "string",
+        required: false,
+        input: false
+      },
+      // Nombre de usuario de Discord, para enseñarlo en la cuenta (se guarda al vincular)
+      discordName: {
         type: "string",
         required: false,
         input: false
@@ -165,6 +204,13 @@ export const createAuth = (db: any, authHooks: AuthHooks = {}) => betterAuth({
     // Los guardados antes de activarlo siguen en claro y se cifran solos en el siguiente
     // login o renovación. apps/auth los lee con las mismas funciones (services/tokenCrypto).
     encryptOAuthTokens: true,
+    // Vincular Discord a la cuenta de Twitch: son cuentas distintas, con emails distintos (y
+    // de Discord ni se pide). Una cuenta de Discord solo puede estar en una cuenta de aquí.
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["discord"],
+      allowDifferentEmails: true,
+    },
   },
 
   socialProviders: {
@@ -173,7 +219,17 @@ export const createAuth = (db: any, authHooks: AuthHooks = {}) => betterAuth({
       clientSecret: process.env.TWITCH_CLIENT_SECRET || "",
       scope: TWITCH_SCOPES,
       overrideUserInfoOnSignIn: true
-    }
+    },
+    ...(DISCORD_ENABLED ? {
+      discord: {
+        clientId: process.env.DISCORD_CLIENT_ID as string,
+        clientSecret: process.env.DISCORD_CLIENT_SECRET as string,
+        disableDefaultScope: true,
+        scope: ["identify"],
+        // Siempre pregunta: así se puede elegir otra cuenta de Discord al volver a vincular
+        prompt: "consent" as const,
+      }
+    } : {})
   }
 })
 

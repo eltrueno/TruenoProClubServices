@@ -58,6 +58,11 @@ export const authApi = {
     /** Cuentas para el panel admin (vincular cuenta ↔ jugador). Solo admins */
     adminUsers: (q?: string) =>
         request<{ status: string; data: IAdminUser[] }>(`${AUTH_URL}/api/admin/users${q ? `?q=${encodeURIComponent(q)}` : ""}`).then((r) => r.data),
+    /** Si se puede vincular Discord (el auth tiene credenciales) y qué hay vinculado */
+    discordStatus: () =>
+        request<{ status: string; data: IDiscordStatus }>(`${AUTH_URL}/api/discord`).then((r) => r.data),
+    unlinkDiscord: () =>
+        request<{ status: string; data: { unlinked: boolean } }>(`${AUTH_URL}/api/discord/link`, { method: "DELETE" }).then((r) => r.data),
     /** Tokens de API para servicios externos. Solo admins */
     apiTokens: () => request<{ status: string; data: IApiToken[] }>(`${AUTH_URL}/api/admin/tokens`).then((r) => r.data),
     /** Crea un token: `token` (en claro) solo viene en esta respuesta */
@@ -65,6 +70,12 @@ export const authApi = {
         request<{ status: string; data: IApiToken & { token: string } }>(`${AUTH_URL}/api/admin/tokens`, { method: "POST", body: { name } }).then((r) => r.data),
     revokeApiToken: (id: string) =>
         request<{ status: string }>(`${AUTH_URL}/api/admin/tokens/${encodeURIComponent(id)}`, { method: "DELETE" }),
+}
+
+export interface IDiscordStatus {
+    enabled: boolean
+    discordId: string | null
+    discordName: string | null
 }
 
 /** Token de API tal y como lo lista `GET /api/admin/tokens` del auth (sin el token) */

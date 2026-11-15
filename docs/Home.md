@@ -31,6 +31,7 @@ Paquetes compartidos: `packages/shared` (tipos, constantes, modelos, definicione
 - **Minutos mínimos**: un jugador con menos de 15' en un partido se guarda, pero ese partido no cuenta para sus stats, medias, logros ni TOTW. Si nadie llega a 15', el partido es **nulo** y no cuenta para nada.
 - **DNF / penaltis**: se detectan a partir del payload de EA (`packages/eafcapi/src/core/parse.ts`); se guarda el marcador real y los goles de la tanda.
 - **Logros**: definidos en `packages/shared/src/achievements.definitions.ts`; el worker los sincroniza a la DB al arrancar y los evalúa con cada partido.
+- **Discord**: cada usuario conecta su Discord en accounts; el bot saca de ahí (auth, con token de API) a quién mencionar. Ya no hay fichero de jugadores en el bot.
 - **Sesión**: cookie de dominio `.casemuro.stream` emitida por el auth service; las rutas protegidas del api la validan contra `get-session`.
 
 ## Flujo de datos

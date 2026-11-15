@@ -122,6 +122,10 @@ const SERVICES = [
       TWITCH_CLIENT_ID: authEnv.TWITCH_CLIENT_ID || "",
       TWITCH_CLIENT_SECRET: authEnv.TWITCH_CLIENT_SECRET || "",
       TWITCH_CHANNEL_ID: twitchChannelId,
+      // Discord (de apps/auth/.env) para probar la vinculación: en la app de Discord hay que
+      // añadir http://localhost:3001/api/auth/callback/discord a los Redirects
+      DISCORD_CLIENT_ID: authEnv.DISCORD_CLIENT_ID || "",
+      DISCORD_CLIENT_SECRET: authEnv.DISCORD_CLIENT_SECRET || "",
     },
   },
   {

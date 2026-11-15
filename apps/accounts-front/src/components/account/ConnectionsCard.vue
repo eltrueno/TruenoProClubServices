@@ -1,10 +1,72 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, onMounted, ref } from "vue"
 import { useAccount } from "@/composables/useAccount"
+import { authApi } from "@/lib/api"
 import { subTierLabel } from "@/lib/format"
 
-const { user } = useAccount()
+const { user, linkDiscord, unlinkDiscord } = useAccount()
 const tier = computed(() => subTierLabel(user.value?.twitchSubTier))
+
+// ---- Discord ----
+const discordLinked = computed(() => !!user.value?.discordId)
+/** null = aún no se sabe si el auth tiene Discord configurado */
+const discordEnabled = ref<boolean | null>(null)
+const discordBusy = ref(false)
+const confirmUnlink = ref(false)
+const discordMessage = ref<{ ok: boolean; text: string } | null>(null)
+
+/** Códigos con los que Better Auth vuelve de Discord cuando algo falla */
+const DISCORD_ERRORS: Record<string, string> = {
+    account_already_linked_to_different_user: "Esa cuenta de Discord ya está conectada a otra cuenta de Casemuro. Desconéctala allí primero.",
+    access_denied: "Has cancelado la conexión en Discord.",
+}
+
+onMounted(async () => {
+    // Vuelta de Discord: ?discord=ok | ?discord=error&error=<código>
+    const params = new URLSearchParams(window.location.search)
+    const result = params.get("discord")
+    if (result) {
+        const code = params.get("error") ?? ""
+        discordMessage.value = result === "ok"
+            ? { ok: true, text: "Discord conectado." }
+            : { ok: false, text: DISCORD_ERRORS[code] ?? "No se ha podido conectar Discord. Inténtalo de nuevo." }
+        for (const k of ["discord", "error", "error_description"]) params.delete(k)
+        const qs = params.toString()
+        history.replaceState(history.state, "", window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash)
+    }
+    try {
+        discordEnabled.value = (await authApi.discordStatus()).enabled
+    } catch {
+        discordEnabled.value = false
+    }
+})
+
+async function connectDiscord() {
+    discordBusy.value = true
+    discordMessage.value = null
+    try {
+        await linkDiscord() // navega a Discord
+    } catch (e) {
+        console.error("[cuenta] Discord", e)
+        discordMessage.value = { ok: false, text: "No se ha podido conectar con Discord. Inténtalo de nuevo." }
+        discordBusy.value = false
+    }
+}
+
+async function disconnectDiscord() {
+    discordBusy.value = true
+    discordMessage.value = null
+    try {
+        await unlinkDiscord()
+        discordMessage.value = { ok: true, text: "Discord desconectado." }
+    } catch (e) {
+        console.error("[cuenta] Discord", e)
+        discordMessage.value = { ok: false, text: "No se ha podido desconectar Discord. Inténtalo de nuevo." }
+    } finally {
+        discordBusy.value = false
+        confirmUnlink.value = false
+    }
+}
 </script>
 
 <template>
@@ -33,7 +95,7 @@ const tier = computed(() => subTierLabel(user.value?.twitchSubTier))
                 </div>
             </li>
 
-            <!-- Discord: el siguiente paso (vinculación con Casemuro Bot) -->
+            <!-- Discord: para que el bot de la comunidad sepa quién es cada uno -->
             <li class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div class="flex items-center gap-4">
                     <div class="size-10 shrink-0 rounded-full bg-[#5865F2]/15 text-[#5865F2] grid place-items-center">
@@ -42,11 +104,40 @@ const tier = computed(() => subTierLabel(user.value?.twitchSubTier))
                         </svg>
                     </div>
                     <div>
-                        <p class="font-bold text-sm">Discord</p>
-                        <p class="text-xs text-base-content/50 mt-0.5">Para que el bot de la comunidad sepa quién eres: menciones en el equipo de la semana, mercado de fichajes…</p>
+                        <p class="font-bold text-sm">
+                            Discord
+                            <span v-if="discordLinked && user?.discordName" class="font-normal text-base-content/60">· {{ user.discordName }}</span>
+                        </p>
+                        <p class="text-xs text-base-content/50 mt-0.5">
+                            {{ discordLinked
+                                ? "El bot de la comunidad te mencionará en los partidos, logros y equipo de la semana de tu jugador."
+                                : "Para que el bot de la comunidad sepa quién eres: menciones en el equipo de la semana, mercado de fichajes…" }}
+                        </p>
+                        <p v-if="discordMessage" class="text-xs font-bold mt-1" :class="discordMessage.ok ? 'text-success' : 'text-error'" role="status">
+                            {{ discordMessage.text }}
+                        </p>
                     </div>
                 </div>
-                <button class="btn btn-sm btn-outline btn-disabled font-bold w-full sm:w-auto">Próximamente</button>
+                <div class="flex flex-wrap items-center gap-2 sm:justify-end w-full sm:w-auto">
+                    <template v-if="discordLinked">
+                        <template v-if="confirmUnlink">
+                            <button class="btn btn-sm btn-error font-bold" :disabled="discordBusy" @click="disconnectDiscord">
+                                <span v-if="discordBusy" class="loading loading-spinner loading-xs"></span>
+                                <span v-else>Desconectar</span>
+                            </button>
+                            <button class="btn btn-sm btn-ghost" :disabled="discordBusy" @click="confirmUnlink = false">Cancelar</button>
+                        </template>
+                        <template v-else>
+                            <span class="badge badge-sm badge-success badge-soft">Conectado</span>
+                            <button class="btn btn-sm btn-ghost" @click="confirmUnlink = true">Desconectar</button>
+                        </template>
+                    </template>
+                    <span v-else-if="discordEnabled === false" class="badge badge-sm badge-ghost">No disponible ahora</span>
+                    <button v-else class="btn btn-sm btn-primary font-bold w-full sm:w-auto" :disabled="discordBusy || discordEnabled === null" @click="connectDiscord">
+                        <span v-if="discordBusy" class="loading loading-spinner loading-xs"></span>
+                        <span v-else>Conectar Discord</span>
+                    </button>
+                </div>
             </li>
         </ul>
     </section>

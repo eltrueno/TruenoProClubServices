@@ -10,7 +10,7 @@ async function handle(client, achievement) {
         const announcementsChannel = await client.channels.cache.get("411962391799136266")
 
         const player = { playerId: achievement.playerId, playerName: achievement.playerName }
-        const playerMention = mention(client, player)
+        const playerMention = await mention(player)
 
         const encoraugements = ['¡Increible!', '¡Imparable!', '¡Impresionante!', '¡Menudo logro!']
         let achievementType = ""

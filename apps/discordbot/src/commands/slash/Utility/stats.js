@@ -34,7 +34,7 @@ module.exports = {
 
         try {
             const discordId = jugadorOption ? jugadorOption.id : interaction.user.id
-            const entry = findByDiscordId(client, discordId)
+            const entry = await findByDiscordId(discordId)
             if (!entry || !entry.playerId) {
                 if (!jugadorOption) throw new Error("¡No eres un jugador del club! Debes especificar un jugador")
                 throw new Error("Jugador no encontrado, por favor especifica un jugador que juegue en el club")

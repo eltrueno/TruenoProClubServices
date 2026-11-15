@@ -12,6 +12,8 @@ import { createAuth, User } from "@trueno-proclub-services/auth"
 import publicRoutes from "./routes/publicRoutes.js"
 import adminRoutes from "./routes/adminRoutes.js"
 import externalRoutes from "./routes/externalRoutes.js"
+import discordRoutes from "./routes/discordRoutes.js"
+import { discordService, isDiscordEnabled } from "./services/discordService.js"
 import { requireApiToken } from "./middleware/requireApiToken.js"
 import { apiTokenService } from "./services/apiTokenService.js"
 import { createDevRoutes, isDevLoginEnabled } from "./routes/devRoutes.js"
@@ -31,6 +33,8 @@ export const auth = createAuth(db, {
     if (!twitchService.isStale(user)) return
     twitchService.syncTwitchData(user).catch((err) => console.error("[auth] Twitch sync en segundo plano:", err))
   },
+  // Al vincular Discord se apunta el nombre de usuario (el id ya lo pone packages/auth)
+  onDiscordLinked: (userId, account) => discordService.completeLink(userId, account),
 })
 
 const requireAuth = createRequireAuth(auth)
@@ -58,6 +62,9 @@ app.use("/api/public", publicRoutes)
 
 // Custom API routes protected by middleware
 app.use("/api/twitch", requireAuth, twitchRoutes)
+
+// Discord vinculado a la cuenta (estado y desvincular; vincular va por Better Auth)
+app.use("/api/discord", requireAuth, discordRoutes)
 
 // Admin routes (session + admin role)
 app.use("/api/admin", requireAuth, requireRole(UserRole.admin), express.json(), adminRoutes)
@@ -88,6 +95,7 @@ async function start() {
 
     app.listen(PORT, () => {
       console.log(`Auth service ready at http://localhost:${PORT}`)
+      console.log(isDiscordEnabled() ? "Discord linking: enabled" : "Discord linking: disabled (DISCORD_CLIENT_ID / DISCORD_CLIENT_SECRET not set)")
     })
     startTwitchSyncJob()
   } catch (error) {

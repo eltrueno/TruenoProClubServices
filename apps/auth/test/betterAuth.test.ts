@@ -14,6 +14,8 @@ process.env.BETTER_AUTH_URL = "http://localhost:4000"
 process.env.DEVMODE = "true"
 process.env.TWITCH_CLIENT_ID = "test-client" // si no, Better Auth avisa de que faltan credenciales
 process.env.TWITCH_CLIENT_SECRET = "test-secret"
+process.env.DISCORD_CLIENT_ID = "discord-client"
+process.env.DISCORD_CLIENT_SECRET = "discord-secret"
 process.env.ALLOWED_ORIGINS = "http://localhost:4323, http://localhost:4321" // con espacio a propósito
 
 const { createAuth } = await import("@trueno-proclub-services/auth")
@@ -22,6 +24,7 @@ const { initTokenCrypto, readToken } = await import("../src/services/tokenCrypto
 const client = new MongoClient(mongod.getUri())
 const signIns: any[] = []
 const reads: any[] = []
+const discordLinks: any[] = []
 let auth: ReturnType<typeof createAuth>
 let ctx: any
 
@@ -30,6 +33,7 @@ beforeAll(async () => {
     auth = createAuth(client.db("authtest"), {
         onSignIn: (u: any) => { signIns.push(u) },
         onSessionRead: (u: any) => { reads.push(u) },
+        onDiscordLinked: (userId: string, account: any) => { discordLinks.push({ userId, account }) },
     })
     ctx = await auth.$context
 })
@@ -62,6 +66,51 @@ describe("hooks de sesión", () => {
         const res = await auth.handler(new Request("http://localhost:4000/api/auth/ok"))
         expect(res.ok).toBe(true)
         expect(reads.length).toBe(before)
+    })
+})
+
+describe("Discord vinculado a la cuenta", () => {
+    const post = (path: string, body: unknown, cookie?: string) =>
+        auth.handler(new Request(`http://localhost:4000/api/auth${path}`, {
+            method: "POST",
+            headers: { "content-type": "application/json", origin: "http://localhost:4323", ...(cookie ? { cookie } : {}) },
+            body: JSON.stringify(body),
+        }))
+
+    it("al crear la cuenta de Discord se guarda discordId en el usuario y se avisa", async () => {
+        const user = await ctx.internalAdapter.createUser({ name: "ConDiscord", email: "d@x.test", emailVerified: true })
+        await ctx.internalAdapter.createAccount({ userId: user.id, providerId: "discord", accountId: "123456789012345678", accessToken: "tok" })
+        await new Promise((r) => setTimeout(r, 50))
+
+        const stored = await client.db("authtest").collection("user").findOne({ email: "d@x.test" })
+        expect(stored?.discordId).toBe("123456789012345678")
+        expect(discordLinks.at(-1)).toMatchObject({ userId: user.id, account: { accountId: "123456789012345678" } })
+    })
+
+    it("se puede vincular con otro email (y sin email), pero solo Discord", async () => {
+        expect(ctx.options.account?.accountLinking).toMatchObject({ enabled: true, allowDifferentEmails: true, trustedProviders: ["discord"] })
+        const user = await ctx.internalAdapter.createUser({ name: "Vincula", email: "v@x.test", emailVerified: true })
+        const session = await ctx.internalAdapter.createSession(user.id)
+        const cookie = sessionCookie(session.token)
+
+        const link = await post("/link-social", { provider: "discord", callbackURL: "http://localhost:4323/" }, cookie)
+        expect(link.status).toBe(200)
+        const url = new URL((await link.json()).url)
+        expect(url.origin + url.pathname).toBe("https://discord.com/api/oauth2/authorize")
+        // Solo `identify`: sin email no se puede crear ni abrir una cuenta con Discord
+        expect(url.searchParams.get("scope")).toBe("identify")
+        expect(url.searchParams.get("redirect_uri")).toBe("http://localhost:4000/api/auth/callback/discord")
+
+        expect((await post("/link-social", { provider: "twitch", callbackURL: "http://localhost:4323/" }, cookie)).status).toBe(403)
+    })
+
+    it("no se entra con Discord ni se desvincula nada por Better Auth", async () => {
+        expect((await post("/sign-in/social", { provider: "discord", callbackURL: "http://localhost:4323/" })).status).toBe(403)
+
+        const user = await ctx.internalAdapter.createUser({ name: "NoSuelta", email: "n@x.test", emailVerified: true })
+        const session = await ctx.internalAdapter.createSession(user.id)
+        const res = await post("/unlink-account", { providerId: "twitch" }, sessionCookie(session.token))
+        expect(res.status).toBe(403)
     })
 })
 

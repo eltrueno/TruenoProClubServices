@@ -95,7 +95,8 @@ Así validan la sesión las APIs de los clubes. No guardes la cookie ni el objet
 | `twitchSyncedAt` | fecha | Última vez que se comprobó follow / sub / rol. |
 | `twitchNeedsReauth` | `boolean` | El permiso de Twitch ya no sirve: follow / sub pueden estar desfasados hasta que vuelva a iniciar sesión. |
 | `showPublicName`, `showPublicImage` | `boolean` | Privacidad: si es `false`, no enseñes su nombre / avatar junto a su jugador. |
-| `discordId` | `string \| null` | Reservado, hoy vacío. |
+| `discordId` | `string \| null` | Id de la cuenta de Discord que el usuario ha conectado en accounts (`null` si no tiene). |
+| `discordName` | `string \| null` | Su nombre de usuario de Discord. |
 
 Follow, sub y rol se refrescan solos (al entrar, y en segundo plano si tienen más de 6 h). No hace falta que llames a nada.
 
@@ -128,6 +129,7 @@ Cierra la sesión en **todas** las webs de `casemuro.stream`, no solo en la tuya
 ### Qué no puedes hacer
 
 - Cambiar el perfil: nombre, avatar y email vienen de Twitch. `update-user` solo admite `showPublicName` / `showPublicImage`.
+- Conectar o desconectar Discord desde tu web: se hace en `accounts.casemuro.stream`.
 - Cambiar roles o vincular jugadores: es cosa de los admins (`accounts.casemuro.stream/admin`).
 - Usar el token de Twitch del usuario: no sale del auth service.
 
@@ -175,9 +177,10 @@ Authorization: Bearer tpcs_…
 |---|---|
 | `twitchIds` | Ids numéricos de Twitch, separados por comas. **El recomendado**: no cambia nunca (en el chat es la etiqueta `user-id`). |
 | `twitchLogins` | Nombres de usuario de Twitch, sin distinguir mayúsculas. Puede no encontrar a quien se ha cambiado el nombre hace poco o usa un nombre visible distinto del de usuario (p. ej. con caracteres no latinos). |
+| `discordIds` | Ids numéricos de Discord: solo encuentra a quien ha conectado su Discord en su cuenta. |
 | `ids` | Ids de cuenta de Casemuro (el `userId` que traen los miembros en la API de los clubes). |
 
-Se pueden combinar. Máximo 100 valores por petición entre los tres; los que no tienen formato válido se ignoran.
+Se pueden combinar. Máximo 100 valores por petición entre todos; los que no tienen formato válido se ignoran.
 
 ```js
 const res = await fetch("https://auth.casemuro.stream/api/v1/accounts?twitchIds=123456789,987654321", {
@@ -201,6 +204,8 @@ const { data } = await res.json()
       "twitchSubTier": "1000",
       "twitchSyncedAt": "2026-11-15T17:40:43.000Z",
       "twitchNeedsReauth": false,
+      "discordId": "234567890123456789",
+      "discordName": "nombre.en.discord",
       "playerId": "1003297613"
     }
   ]
@@ -208,6 +213,7 @@ const { data } = await res.json()
 ```
 
 - **Quien no tiene cuenta no viene en `data`** (no hay error ni entrada vacía). En el ejemplo, `987654321` no se ha registrado. Empareja por `twitchId`, no por posición.
+- `discordId` / `discordName`: la cuenta de Discord que el usuario ha conectado; `null` si no ha conectado ninguna.
 - `playerId` es el EA ID del jugador vinculado, el mismo en todos los clubes; `null` si la cuenta no tiene jugador.
 - `role`: `visitor` \| `follower` \| `subscriber` \| `vip` \| `mod` \| `admin`. `twitchSubTier`: `"1000"` / `"2000"` / `"3000"` o `null`.
 - Follow y sub son los de la última comprobación (`twitchSyncedAt`); se refrescan cada pocas horas, no al momento. Con `twitchNeedsReauth: true` pueden estar desfasados hasta que el usuario vuelva a entrar.
@@ -233,7 +239,7 @@ Formato: `{ "status": "error", "code": "…", "message": "…" }`.
 | HTTP | `code` | Qué pasa |
 |---|---|---|
 | `401` | `INVALID_TOKEN` | Falta la cabecera `Authorization: Bearer …`, o el token no existe o está revocado. |
-| `400` | `NO_VALID_PARAMS` | No has pasado ningún `twitchIds` / `twitchLogins` / `ids` válido. |
+| `400` | `NO_VALID_PARAMS` | No has pasado ningún `twitchIds` / `twitchLogins` / `discordIds` / `ids` válido. |
 | `400` | `TOO_MANY` | Más de 100 valores en una petición: pártela. |
 | `429` | `RATE_LIMITED` | Más de 120 peticiones por minuto con ese token. Espera lo que diga `Retry-After` (segundos). |
 | `502` | `PLAYERS_UNAVAILABLE` | No se ha podido consultar los jugadores vinculados. Reintenta más tarde; no lo trates como "sin jugador". |
