@@ -47,8 +47,8 @@ const lastSeen = computed(() => fmt(props.member.lastSeenAt))
             <component
                 :is="link ? 'a' : 'p'"
                 :href="link || undefined"
-                class="font-bold truncate block leading-tight"
-                :class="[size === 'md' ? 'text-base' : 'text-sm', link ? 'hover:text-primary' : '']"
+                class="font-bold truncate leading-tight max-w-full"
+                :class="[size === 'md' ? 'text-base' : 'text-sm', link ? 'hover-text-brand inline-block align-top' : 'block']"
             >{{ member.playerName || "—" }}</component>
             <p v-if="positions.length" class="flex gap-1 mt-0.5">
                 <span

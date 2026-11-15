@@ -18,7 +18,7 @@ withDefaults(defineProps<{ bodyOnly?: boolean }>(), { bodyOnly: false })
                     <div class="skeleton on-page h-10 w-56"></div>
                     <div class="skeleton on-page h-4 w-full max-w-md"></div>
                     <div v-if="CLUBS.length > 1" class="flex gap-2 pt-2">
-                        <div v-for="c in CLUBS" :key="c.id" class="skeleton on-page h-8 w-40 rounded-field"></div>
+                        <div v-for="i in CLUBS.length + 1" :key="i" class="skeleton on-page h-8 rounded-field" :class="i === 1 ? 'w-24' : 'w-40'"></div>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 w-full md:w-auto">

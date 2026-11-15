@@ -192,7 +192,7 @@ defineExpose({ open, close })
                             type="button"
                             class="w-full flex items-center gap-3 rounded-xl p-2 text-left transition border"
                             :class="[
-                                isChecked(item.id) ? 'bg-primary/10 border-primary/50' : 'bg-base-100 border-transparent hover:border-base-300 hover:bg-base-300/40',
+                                isChecked(item.id) ? 'picked-brand' : 'bg-base-100 border-transparent hover:border-base-300 hover:bg-base-300/40',
                                 item.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
                             ]"
                             :disabled="item.disabled"

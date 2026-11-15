@@ -1,8 +1,13 @@
 <script setup lang="ts">
 /**
  * Panel admin común a todos los clubes (antes estaba en /admin de cada web).
- * Se elige el club arriba: la plantilla, las fotos y las solicitudes van al api de ese club;
- * las cuentas (auth) y la vinculación (base compartida) son las mismas para todos.
+ *
+ * Fotos y vínculos son globales (base compartida, por playerId), así que se trabaja sobre
+ * una sola lista: la plantilla de cada club se pide a su api y se junta, con cada jugador
+ * una sola vez aunque haya jugado en varios (con los escudos de dónde aparece). Las pestañas
+ * de club solo filtran. Los cambios se mandan al api de un club donde está el jugador (los
+ * api solo editan su plantilla); la foto, a todos los suyos, para que ninguno se quede con
+ * una foto propia antigua tapando a la nueva.
  */
 import { computed, nextTick, ref, watch } from "vue"
 import type { IClubMember, IClubMemberAdminPatch, ILinkRequest } from "@trueno-proclub-services/shared"
@@ -25,30 +30,36 @@ watch([isPending, isLoggedIn], ([pending, logged]) => {
     window.location.replace(`/login?redirect=${encodeURIComponent(here)}`)
 }, { immediate: true })
 
-// Club elegido (?club=united para entrar directo a uno)
-const initialClubId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("club") : null
-const club = ref<ClubLink>(CLUBS.find((c) => c.id === initialClubId) ?? CLUBS[0])
-const api = computed(() => clubApi(club.value))
-const playerUrl = (playerId: string) => `${club.value.webUrl}/jugador?id=${encodeURIComponent(playerId)}`
+// ---- Filtro por club (?club=united; sin nada, todos) ----
+type ClubFilter = "all" | ClubLink["id"]
+const initialFilter = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("club") : null
+const clubFilter = ref<ClubFilter>(CLUBS.some((c) => c.id === initialFilter) ? (initialFilter as ClubFilter) : "all")
 
-// Pendientes de cada club, para el aviso en las pestañas
-const pendingByClub = ref<Record<string, number>>({})
-
-function selectClub(c: ClubLink) {
-    if (c.id === club.value.id) return
-    club.value = c
+function selectFilter(f: ClubFilter) {
+    clubFilter.value = f
     const url = new URL(window.location.href)
-    url.searchParams.set("club", c.id)
+    if (f === "all") url.searchParams.delete("club")
+    else url.searchParams.set("club", f)
     history.replaceState(history.state, "", url)
-    search.value = ""
-    load()
 }
 
+// ---- Datos ----
 const members = ref<IClubMember[]>([])
+/** Clubes donde aparece cada jugador (en el orden de CLUBS) */
+const clubsOf = ref<Record<string, ClubLink[]>>({})
 const users = ref<IAdminUser[]>([])
 const loading = ref(true)
 const loadError = ref("")
+/** Clubes cuyo api no ha respondido (se enseña el resto) */
+const failedClubs = ref<ClubLink[]>([])
 const search = ref("")
+
+const clubsFor = (playerId: string) => clubsOf.value[playerId] ?? []
+/** Ficha en la web del primer club donde aparece */
+const playerUrl = (playerId: string) => {
+    const c = clubsFor(playerId)[0] ?? CLUBS[0]
+    return `${c.webUrl}/jugador?id=${encodeURIComponent(playerId)}`
+}
 
 // Borradores por jugador (solo lo editado; se envía al guardar)
 const drafts = ref<Record<string, { imageUrl: string; userId: string }>>({})
@@ -57,24 +68,40 @@ const rowMessage = ref<Record<string, { ok: boolean; text: string }>>({})
 
 const usersById = computed(() => new Map(users.value.map((u) => [u.id, u])))
 
-// Fotos y vínculos son siempre globales (base compartida, por playerId): valen en todos los
-// clubes donde esté el jugador, también en los que aparezca más adelante.
+function flash(playerId: string, ok: boolean, text: string) {
+    rowMessage.value[playerId] = { ok, text }
+    if (ok) setTimeout(() => { if (rowMessage.value[playerId]?.ok) rowMessage.value[playerId] = { ok: true, text: "" } }, 2500)
+}
+
+/**
+ * La foto es global, pero un club puede tener una propia antigua que la tapa. Al cambiarla
+ * se manda también a los demás clubes del jugador (con alcance global), que así la quitan.
+ */
+async function syncImageToOtherClubs(playerId: string, imageUrl: string | null, done: ClubLink) {
+    const others = clubsFor(playerId).filter((c) => c.id !== done.id)
+    await Promise.all(others.map((c) => clubApi(c).admin.patchMember(playerId, { imageUrl, imageScope: "global" })))
+}
 
 // Editor de foto (un único modal para todas las filas)
 const imageEditor = ref<InstanceType<typeof PlayerImageEditor> | null>(null)
 const editingMember = ref<IClubMember | null>(null)
+const editingClub = computed(() => (editingMember.value ? clubsFor(editingMember.value.playerId)[0] : undefined) ?? CLUBS[0])
 function openImageEditor(m: IClubMember, url?: string) {
     editingMember.value = m
     imageEditor.value?.open(url || undefined)
 }
 // La foto se sube y asigna al momento: reflejar en la fila (foto y origen) y en el borrador
-function onImageUploaded(updated: IClubMember) {
+async function onImageUploaded(updated: IClubMember) {
     const m = editingMember.value
     if (!m) return
     Object.assign(m, updated)
     if (drafts.value[m.playerId]) drafts.value[m.playerId].imageUrl = m.imageUrl ?? ""
-    rowMessage.value[m.playerId] = { ok: true, text: "Foto actualizada" }
-    setTimeout(() => { if (rowMessage.value[m.playerId]?.ok) rowMessage.value[m.playerId] = { ok: true, text: "" } }, 2500)
+    try {
+        await syncImageToOtherClubs(m.playerId, m.imageUrl ?? null, editingClub.value)
+        flash(m.playerId, true, "Foto actualizada")
+    } catch (e) {
+        flash(m.playerId, false, `Foto subida, pero falta en otro club (${e instanceof ApiError ? e.code : "ERROR"})`)
+    }
 }
 
 // Selector de cuenta: uno solo para todas las filas (como el editor de fotos). Uno por fila
@@ -103,29 +130,35 @@ const accountItems = computed<PickerItem[]>(() => {
     })
 })
 
-// Solicitudes de vinculación pendientes (las crean los usuarios desde "Mi cuenta")
+// ---- Solicitudes de vinculación (las crean los usuarios desde "Mi cuenta") ----
+// Son globales; cada api devuelve las de su plantilla, así que se juntan sin repetir.
 const linkRequests = ref<ILinkRequest[]>([])
 const requestBusy = ref<Record<string, boolean>>({})
 const requestError = ref("")
 
+const inFilter = (playerId: string) => clubFilter.value === "all" || clubsFor(playerId).some((c) => c.id === clubFilter.value)
+const visibleRequests = computed(() => linkRequests.value.filter((r) => inFilter(r.playerId)))
+const pendingCount = (f: ClubFilter) =>
+    f === "all" ? linkRequests.value.length : linkRequests.value.filter((r) => clubsFor(r.playerId).some((c) => c.id === f)).length
+
 async function resolveRequest(r: ILinkRequest, action: "approve" | "reject") {
+    const c = clubsFor(r.playerId)[0] ?? CLUBS[0]
     requestBusy.value[r.id] = true
     requestError.value = ""
     try {
         if (action === "approve") {
-            const { member } = await api.value.admin.approveLinkRequest(r.id)
+            const { member } = await clubApi(c).admin.approveLinkRequest(r.id)
             // Misma regla que el PATCH: la cuenta se libera de cualquier otro jugador
             members.value.forEach((o) => { if (o.userId === member.userId && o.playerId !== member.playerId) o.userId = null })
             const target = members.value.find((m) => m.playerId === member.playerId)
-            if (target) Object.assign(target, member)
-            drafts.value[member.playerId] = { imageUrl: member.imageUrl ?? "", userId: member.userId ?? "" }
+            if (target) target.userId = member.userId
+            drafts.value[member.playerId] = { imageUrl: target?.imageUrl ?? "", userId: member.userId ?? "" }
             // Al aprobar, el api descarta las demás pendientes del mismo usuario/jugador
             linkRequests.value = linkRequests.value.filter((x) => x.id !== r.id && x.userId !== r.userId && x.playerId !== r.playerId)
         } else {
-            await api.value.admin.rejectLinkRequest(r.id)
+            await clubApi(c).admin.rejectLinkRequest(r.id)
             linkRequests.value = linkRequests.value.filter((x) => x.id !== r.id)
         }
-        pendingByClub.value[club.value.id] = linkRequests.value.length
     } catch (e) {
         requestError.value = e instanceof ApiError ? e.code : "ERROR"
     } finally {
@@ -135,9 +168,9 @@ async function resolveRequest(r: ILinkRequest, action: "approve" | "reject") {
 
 const filteredMembers = computed(() => {
     const q = search.value.trim().toLowerCase()
-    const list = [...members.value].sort((a, b) => a.playerName.localeCompare(b.playerName))
-    if (!q) return list
-    return list.filter((m) => m.playerName.toLowerCase().includes(q) || (m.proName ?? "").toLowerCase().includes(q))
+    return members.value.filter((m) =>
+        inFilter(m.playerId) && (!q || m.playerName.toLowerCase().includes(q) || (m.proName ?? "").toLowerCase().includes(q))
+    )
 })
 
 const draftOf = (m: IClubMember) => ({ imageUrl: m.imageUrl ?? "", userId: m.userId ?? "" })
@@ -166,63 +199,81 @@ function linkedElsewhere(userId: string, playerId: string) {
     return m && m.playerId !== playerId ? m : undefined
 }
 
-let loadSeq = 0
+const lastSeen = (m: IClubMember) => m.lastSeenAt ?? 0
+
 async function load() {
-    const seq = ++loadSeq
-    const current = club.value
     loading.value = true
     loadError.value = ""
+    failedClubs.value = []
     rowMessage.value = {}
     try {
-        const [m, u, r] = await Promise.all([api.value.members(), authApi.adminUsers(), api.value.admin.linkRequests()])
-        if (seq !== loadSeq) return // se cambió de club mientras cargaba
-        members.value = m
+        const [u, ...perClub] = await Promise.all([
+            authApi.adminUsers(),
+            ...CLUBS.map((c) =>
+                Promise.all([clubApi(c).members(), clubApi(c).admin.linkRequests()]).then(
+                    ([m, r]) => ({ club: c, members: m, requests: r }),
+                    () => ({ club: c, members: null, requests: null })
+                )
+            )
+        ])
+        const ok = perClub.filter((x) => x.members)
+        failedClubs.value = perClub.filter((x) => !x.members).map((x) => x.club)
+        if (ok.length === 0) throw new ApiError("CONNECTION_REFUSED", "", 0)
+
+        // Un jugador una sola vez: se queda la ficha del club donde jugó más recientemente
+        const byId = new Map<string, IClubMember>()
+        const clubs: Record<string, ClubLink[]> = {}
+        for (const { club, members: list } of ok) {
+            for (const m of list!) {
+                (clubs[m.playerId] ??= []).push(club)
+                const prev = byId.get(m.playerId)
+                if (!prev || lastSeen(m) > lastSeen(prev)) byId.set(m.playerId, m)
+            }
+        }
+        const requests = new Map<string, ILinkRequest>()
+        for (const { requests: list } of ok) for (const r of list!) requests.set(r.id, r)
+
+        clubsOf.value = clubs
+        members.value = [...byId.values()].sort((a, b) => a.playerName.localeCompare(b.playerName))
         users.value = u
-        linkRequests.value = r
-        pendingByClub.value[current.id] = r.length
-        drafts.value = Object.fromEntries(m.map((x) => [x.playerId, draftOf(x)]))
+        linkRequests.value = [...requests.values()].sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
+        drafts.value = Object.fromEntries(members.value.map((x) => [x.playerId, draftOf(x)]))
     } catch (e) {
-        if (seq !== loadSeq) return
         loadError.value = e instanceof ApiError ? e.code : "Error cargando datos"
     } finally {
-        if (seq === loadSeq) loading.value = false
-    }
-}
-
-/** Cuántas pendientes tienen los otros clubes (no bloquea la carga del elegido) */
-function loadOtherPending() {
-    for (const c of CLUBS) {
-        if (c.id === club.value.id) continue
-        clubApi(c).admin.linkRequests().then((r) => { pendingByClub.value[c.id] = r.length }).catch(() => {})
+        loading.value = false
     }
 }
 
 async function save(m: IClubMember) {
     const d = drafts.value[m.playerId]
-    if (!d) return
+    const [main] = clubsFor(m.playerId)
+    if (!d || !main) return
     saving.value[m.playerId] = true
     rowMessage.value[m.playerId] = { ok: true, text: "" }
     try {
         const patch: IClubMemberAdminPatch = {}
-        if (d.imageUrl !== (m.imageUrl ?? "")) {
+        const imageChanged = d.imageUrl !== (m.imageUrl ?? "")
+        if (imageChanged) {
             patch.imageUrl = d.imageUrl.trim() || null
             patch.imageScope = "global"
         }
         if (d.userId !== (m.userId ?? "")) patch.userId = d.userId || null
-        const updated = await api.value.admin.patchMember(m.playerId, patch)
+        // El vínculo es global: con un club basta. La foto, a todos los suyos (ver syncImageToOtherClubs)
+        const updated = await clubApi(main).admin.patchMember(m.playerId, patch)
+        if (imageChanged) await syncImageToOtherClubs(m.playerId, patch.imageUrl ?? null, main)
         // La cuenta solo puede estar en un jugador: el api la libera del anterior; reflejarlo en la lista
         if (patch.userId) {
             members.value.forEach((o) => { if (o.userId === patch.userId && o.playerId !== m.playerId) o.userId = null })
         }
-        Object.assign(m, updated)
+        Object.assign(m, { imageUrl: updated.imageUrl, imageSource: updated.imageSource, userId: updated.userId })
         drafts.value[m.playerId] = { imageUrl: m.imageUrl ?? "", userId: m.userId ?? "" }
-        rowMessage.value[m.playerId] = { ok: true, text: "Guardado" }
+        flash(m.playerId, true, "Guardado")
     } catch (e) {
         const code = e instanceof ApiError ? e.code : "ERROR"
-        rowMessage.value[m.playerId] = { ok: false, text: code === "FORBIDDEN" ? "Sin permisos" : code === "ERROR_BAD_REQUEST" ? "URL no válida" : code }
+        flash(m.playerId, false, code === "FORBIDDEN" ? "Sin permisos" : code === "ERROR_BAD_REQUEST" ? "URL no válida" : code)
     } finally {
         saving.value[m.playerId] = false
-        setTimeout(() => { if (rowMessage.value[m.playerId]?.ok) rowMessage.value[m.playerId] = { ok: true, text: "" } }, 2500)
     }
 }
 
@@ -231,7 +282,7 @@ let started = false
 watch([isPending, isAdmin], ([pending, admin]) => {
     if (pending || started) return
     started = true
-    if (admin) { load(); loadOtherPending() }
+    if (admin) load()
     else loading.value = false
 }, { immediate: true })
 </script>
@@ -262,13 +313,21 @@ watch([isPending, isAdmin], ([pending, admin]) => {
             <div>
                 <h1 class="text-3xl lg:text-4xl font-black tracking-tight">Panel admin</h1>
                 <p class="text-sm text-base-content/60 mt-1">Solicitudes de vinculación, foto y cuenta vinculada de cada jugador. Los cambios de las filas se guardan por fila.</p>
-                <!-- Club: plantilla, fotos y solicitudes son de cada uno -->
+                <!-- Filtro por club: los datos son los mismos, solo cambia qué jugadores se ven -->
                 <div v-if="CLUBS.length > 1" role="tablist" class="flex flex-wrap gap-2 mt-4">
-                    <button v-for="c in CLUBS" :key="c.id" type="button" role="tab" :aria-selected="c.id === club.id"
-                        class="btn btn-sm gap-2" :class="c.id === club.id ? 'btn-neutral' : 'btn-ghost'" @click="selectClub(c)">
+                    <button type="button" role="tab" :aria-selected="clubFilter === 'all'"
+                        class="btn btn-sm gap-2" :class="clubFilter === 'all' ? 'btn-primary' : 'btn-ghost'" @click="selectFilter('all')">
+                        <span class="flex -space-x-1.5">
+                            <img v-for="c in CLUBS" :key="c.id" :src="c.logo" alt="" class="size-5 object-contain" />
+                        </span>
+                        Todos
+                        <span v-if="!loading && pendingCount('all')" class="badge badge-xs badge-warning">{{ pendingCount("all") }}</span>
+                    </button>
+                    <button v-for="c in CLUBS" :key="c.id" type="button" role="tab" :aria-selected="clubFilter === c.id"
+                        class="btn btn-sm gap-2" :class="clubFilter === c.id ? 'btn-primary' : 'btn-ghost'" @click="selectFilter(c.id)">
                         <img :src="c.logo" alt="" class="size-5 object-contain" />
                         {{ c.name }}
-                        <span v-if="pendingByClub[c.id]" class="badge badge-xs badge-warning">{{ pendingByClub[c.id] }}</span>
+                        <span v-if="!loading && pendingCount(c.id)" class="badge badge-xs badge-warning">{{ pendingCount(c.id) }}</span>
                     </button>
                 </div>
             </div>
@@ -282,19 +341,23 @@ watch([isPending, isAdmin], ([pending, admin]) => {
         <AdminSkeleton v-if="loading" body-only />
 
         <div v-else-if="loadError" class="alert alert-error">
-            <span>No se han podido cargar los datos de {{ club.name }} ({{ loadError }}). ¿Sesión caducada o api caído?</span>
+            <span>No se han podido cargar los datos ({{ loadError }}). ¿Sesión caducada o api caído?</span>
         </div>
 
         <div v-else class="flex flex-col gap-3">
+            <div v-if="failedClubs.length" role="alert" class="alert alert-warning alert-soft text-sm">
+                No responde el api de {{ failedClubs.map((c) => c.name).join(" y ") }}: faltan sus jugadores y solicitudes.
+            </div>
+
             <!-- Solicitudes de vinculación -->
             <section class="rounded-2xl border border-warning/30 bg-warning/5 p-4 mb-3">
                 <div class="flex items-center justify-between gap-2 mb-2">
                     <h2 class="font-black uppercase tracking-wider text-sm">Solicitudes de vinculación</h2>
-                    <span class="badge badge-sm" :class="linkRequests.length ? 'badge-warning' : 'badge-ghost'">{{ linkRequests.length }}</span>
+                    <span class="badge badge-sm" :class="visibleRequests.length ? 'badge-warning' : 'badge-ghost'">{{ visibleRequests.length }}</span>
                 </div>
-                <p v-if="linkRequests.length === 0" class="text-xs text-base-content/50">No hay solicitudes pendientes.</p>
+                <p v-if="visibleRequests.length === 0" class="text-xs text-base-content/50">No hay solicitudes pendientes.</p>
                 <ul v-else class="flex flex-col gap-2">
-                    <li v-for="r in linkRequests" :key="r.id" class="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl bg-base-200 p-3">
+                    <li v-for="r in visibleRequests" :key="r.id" class="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl bg-base-200 p-3">
                         <div class="flex items-center gap-2 min-w-0 flex-1">
                             <div class="avatar shrink-0">
                                 <div class="w-8 rounded-full bg-base-300">
@@ -304,8 +367,11 @@ watch([isPending, isAdmin], ([pending, admin]) => {
                             <p class="text-sm min-w-0 truncate">
                                 <span class="font-bold">{{ r.userName }}</span>
                                 <span class="text-base-content/50"> quiere ser </span>
-                                <a :href="playerUrl(r.playerId)" target="_blank" rel="noopener" class="font-bold hover:text-primary">{{ r.playerName }}</a>
+                                <a :href="playerUrl(r.playerId)" target="_blank" rel="noopener" class="font-bold hover-text-brand">{{ r.playerName }}</a>
                             </p>
+                            <span class="flex -space-x-1 shrink-0">
+                                <img v-for="c in clubsFor(r.playerId)" :key="c.id" :src="c.logo" :alt="c.name" :title="c.name" class="size-4 object-contain" />
+                            </span>
                             <span class="text-[10px] text-base-content/40 shrink-0 hidden md:inline">{{ new Date(r.createdAt).toLocaleDateString("es-ES") }}</span>
                         </div>
                         <div class="flex gap-2">
@@ -326,17 +392,18 @@ watch([isPending, isAdmin], ([pending, admin]) => {
             </div>
 
             <div v-for="m in filteredMembers" :key="m.playerId"
-                class="rounded-2xl bg-base-200 shadow-sm p-4 grid grid-cols-1 lg:grid-cols-[auto_1fr_1fr_auto] gap-4 items-center"
-                :class="{ 'ring-1 ring-primary/40': isDirty(m) }">
-                <!-- Jugador -->
-                <PlayerCard class="lg:w-64" :member="m" :image="draftFor(m).imageUrl || null" size="md" :link="playerUrl(m.playerId)" show-id />
+                class="rounded-2xl bg-base-200 border border-transparent shadow-sm p-4 grid grid-cols-1 lg:grid-cols-[auto_1fr_1fr_auto] gap-4 items-center"
+                :class="{ 'border-brand-soft': isDirty(m) }">
+                <!-- Jugador, con los escudos de los clubes donde aparece -->
+                <PlayerCard class="lg:w-64" :member="m" :image="draftFor(m).imageUrl || null" size="md" :link="playerUrl(m.playerId)" show-id>
+                    <span v-if="CLUBS.length > 1" class="flex gap-1 mt-1">
+                        <img v-for="c in clubsFor(m.playerId)" :key="c.id" :src="c.logo" :alt="c.name" :title="c.name" class="size-4 object-contain" />
+                    </span>
+                </PlayerCard>
 
                 <!-- Foto: cualquier URL pasa por el editor para encuadrarla a 400x450 y subirla al CDN -->
                 <div class="form-control w-full">
-                    <span class="label-text text-[10px] uppercase font-black tracking-wider text-base-content/50 mb-1 flex items-center gap-2">
-                        Foto
-                        <span v-if="m.imageSource === 'club'" class="badge badge-xs badge-secondary normal-case tracking-normal" title="Foto antigua solo de este club: al cambiarla pasa a ser la de todos">Solo de este club</span>
-                    </span>
+                    <span class="label-text text-[10px] uppercase font-black tracking-wider text-base-content/50 mb-1">Foto</span>
                     <div class="join w-full">
                         <input
                             v-model="draftFor(m).imageUrl"
@@ -386,7 +453,7 @@ watch([isPending, isAdmin], ([pending, admin]) => {
 
     <PlayerImageEditor
         ref="imageEditor"
-        :club="club"
+        :club="editingClub"
         :player-id="editingMember?.playerId ?? ''"
         :player-name="editingMember?.playerName ?? ''"
         @uploaded="onImageUploaded"
