@@ -11,6 +11,9 @@ import { initTokenCrypto } from "./services/tokenCrypto.js"
 import { createAuth, User } from "@trueno-proclub-services/auth"
 import publicRoutes from "./routes/publicRoutes.js"
 import adminRoutes from "./routes/adminRoutes.js"
+import externalRoutes from "./routes/externalRoutes.js"
+import { requireApiToken } from "./middleware/requireApiToken.js"
+import { apiTokenService } from "./services/apiTokenService.js"
 import { createDevRoutes, isDevLoginEnabled } from "./routes/devRoutes.js"
 import { UserRole } from "@trueno-proclub-services/shared"
 
@@ -57,7 +60,10 @@ app.use("/api/public", publicRoutes)
 app.use("/api/twitch", requireAuth, twitchRoutes)
 
 // Admin routes (session + admin role)
-app.use("/api/admin", requireAuth, requireRole(UserRole.admin), adminRoutes)
+app.use("/api/admin", requireAuth, requireRole(UserRole.admin), express.json(), adminRoutes)
+
+// Servicios externos con token de API (de servidor a servidor, ver docs/AUTH.md)
+app.use("/api/v1", requireApiToken, externalRoutes)
 
 // Login de desarrollo (usuarios de prueba sin Twitch): solo en local, ver routes/devRoutes.ts
 if (isDevLoginEnabled()) {
@@ -78,6 +84,7 @@ async function start() {
 
     // Clave para leer/guardar los tokens de Twitch cifrados igual que Better Auth
     await initTokenCrypto(auth)
+    await apiTokenService.ensureIndexes()
 
     app.listen(PORT, () => {
       console.log(`Auth service ready at http://localhost:${PORT}`)

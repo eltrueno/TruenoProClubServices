@@ -14,7 +14,9 @@ import { translatePosition } from "@/i18n/translations"
 import AnimatedNumber from "@/components/ui/AnimatedNumber.vue"
 import PlayerCard from "@/components/ui/PlayerCard.vue"
 
-const { matches, loading, load: loadMatches } = useMatches()
+const { matches: allMatches, loading, load: loadMatches } = useMatches()
+// Los partidos nulos se ven en la lista, pero no cuentan para rachas ni récords
+const matches = computed(() => allMatches.value.filter((m) => m.counts))
 const { load: loadMembers, memberFor } = useMembers()
 const { stats, load: loadStats, positionsOf } = usePlayerStats()
 

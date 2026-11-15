@@ -21,7 +21,7 @@ export class ApiError extends Error {
 }
 
 interface RequestOptions<TBody = unknown> {
-    method?: "GET" | "POST" | "PATCH" | "DELETE"
+    method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
     body?: TBody
     /** Envía la cookie de sesión*/
     credentials?: boolean
@@ -99,6 +99,14 @@ export const tpcsApi = {
     averages: {
         getAll: () => api<IAverageStats[]>("/playeraverages"),
         getByPosition: (position: string) => api<IAverageStats>(`/playeraverages/${position}`),
+    },
+
+    /** Lo poco de admin que queda en la web (el panel está en accounts) */
+    admin: {
+        /** Partido nulo a mano (true/false) o vuelta al automático (null). Las stats las recalcula el worker
+         *  al recibir el aviso (`queued`); `unavailable` = RabbitMQ no respondió y no se han recalculado */
+        setMatchVoided: (matchId: number, voided: boolean | null) =>
+            api<{ match: IMatch; recalculation: "queued" | "unavailable" }>(`/admin/matches/${matchId}/voided`, { method: "PUT", body: { voided }, credentials: true }),
     },
 }
 

@@ -43,14 +43,10 @@ export const getMatchClubIds = (match: IClubMatches, ourClubId: string | number)
 }
 
 /**
- * DNF real: EA marca `winnerByDnf`, fuerza el marcador a 3-0 y el agregado
- * de goles de los jugadores no coincide con `clubs.goals`. Las tres a la vez
- * solo ocurren cuando un equipo abandona.
+ * Marcador forzado por abandono: EA le da 3-0 a quien se queda, así que `clubs.goals`
+ * queda en 3-0 y no coincide con el agregado de goles de los jugadores.
  */
-export const detectDnf = (match: IClubMatches, clubIds: string[]): boolean => {
-	const anyDnfFlag = clubIds.some((id) => match.clubs[id]?.winnerByDnf === '1')
-	if (!anyDnfFlag) return false
-
+const hasForcedDnfScore = (match: IClubMatches, clubIds: string[]): boolean => {
 	const forcedResult = clubIds.some((id) => Number(match.clubs[id]?.goals) === 3)
 		&& clubIds.some((id) => Number(match.clubs[id]?.goals) === 0)
 
@@ -58,6 +54,41 @@ export const detectDnf = (match: IClubMatches, clubIds: string[]): boolean => {
 
 	return forcedResult && aggregateMismatches
 }
+
+/**
+ * DNF real: EA marca `winnerByDnf`, fuerza el marcador a 3-0 y el agregado
+ * de goles de los jugadores no coincide con `clubs.goals`. Las tres a la vez
+ * solo ocurren cuando un equipo abandona.
+ */
+export const detectDnf = (match: IClubMatches, clubIds: string[]): boolean => {
+	const anyDnfFlag = clubIds.some((id) => match.clubs[id]?.winnerByDnf === '1')
+	if (!anyDnfFlag) return false
+	return hasForcedDnfScore(match, clubIds)
+}
+
+/** Por debajo de esto (80') el partido no llegó al final: los completos van de 90' a 94' (o 120'). */
+export const FULL_TIME_MIN_SECONDS = 80 * 60
+
+/** Lo más que jugó alguien en el partido (de cualquiera de los dos equipos), en segundos. */
+export const getMaxSecondsPlayed = (match: IClubMatches): number => {
+	let max = 0
+	for (const clubPlayers of Object.values(match.players ?? {})) {
+		for (const p of Object.values(clubPlayers)) {
+			const s = Number(p.secondsPlayed)
+			if (Number.isFinite(s) && s > max) max = s
+		}
+	}
+	return max
+}
+
+/**
+ * Abandono en un amistoso. EA no marca `winnerByDnf` en amistosos, pero sí hace lo demás: el
+ * que se va pierde 3-0 (marcador forzado que no cuadra con los goles de los jugadores). Como sin
+ * la marca un 3-0 con goles en propia se le parecería, se exige además que el partido se
+ * cortara antes del final (nadie llegó al minuto 80).
+ */
+export const detectFriendlyDnf = (match: IClubMatches, clubIds: string[]): boolean =>
+	getMaxSecondsPlayed(match) < FULL_TIME_MIN_SECONDS && hasForcedDnfScore(match, clubIds)
 
 /** Algún jugador del partido superó el umbral de prórroga. */
 export const playedExtraTime = (match: IClubMatches, threshold: number = EXTRA_TIME_SECONDS): boolean => {

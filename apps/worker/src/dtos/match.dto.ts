@@ -1,6 +1,6 @@
-import { fixEaEncoding, type IMatch, type IMatchClub, type MatchResult, type MatchType } from "@trueno-proclub-services/shared"
+import { fixEaEncoding, isShortMatch, type IMatch, type IMatchClub, type MatchResult, type MatchType, type MatchVoidedBy } from "@trueno-proclub-services/shared"
 import {
-    detectDnf, detectPenalties, getClubScore, getMatchClubIds, getMatchPlayers,
+    detectDnf, detectFriendlyDnf, detectPenalties, getClubScore, getMatchClubIds, getMatchPlayers,
     type IClubMatches
 } from "@trueno-proclub-services/eafcapi"
 import MatchPlayerDTO from "./matchPlayer.dto.js"
@@ -12,6 +12,7 @@ const CLUBID: number = Number(process.env.CLUBID) || 290776
 /**
  * Mapea un partido crudo de `clubs/matches` → IMatch.
  * La detección de DNF / penaltis / marcador real vive en eafcapi (parse.ts).
+ * Partido nulo (nadie llega a 15'): `voided`, ver `isShortMatch` en shared.
  */
 export default class MatchDTO implements IMatch {
     matchId: number
@@ -23,6 +24,8 @@ export default class MatchDTO implements IMatch {
     localTeam: boolean
     localClub: IMatchClub
     awayClub: IMatchClub
+    voided: boolean
+    voidedBy: MatchVoidedBy | null
 
     constructor(raw: IClubMatches & { matchType?: MatchType }) {
         this.matchId = Number(raw.matchId)
@@ -32,7 +35,9 @@ export default class MatchDTO implements IMatch {
         const { ourId, opponentId } = getMatchClubIds(raw, CLUBID)
         this.localTeam = Object.keys(raw.clubs)[0] === ourId
 
+        // En amistosos EA no marca el abandono, pero sí fuerza el 3-0: ver detectFriendlyDnf
         this.winnerByDnf = detectDnf(raw, [ourId, opponentId])
+            || (this.matchType === "friendly" && detectFriendlyDnf(raw, [ourId, opponentId]))
 
         // En liga no hay tandas; solo se evalúa en playoff / amistoso.
         const penalties = this.matchType === "league"
@@ -46,7 +51,8 @@ export default class MatchDTO implements IMatch {
         const ourPens = penalties.hasPenalties ? penalties.scores?.[ourId] ?? 0 : 0
         const opponentPens = penalties.hasPenalties ? penalties.scores?.[opponentId] ?? 0 : 0
 
-        // Resultado: marcador real; si hubo tanda, la decide la tanda. Un DNF lo gana quien se quedó.
+        // Resultado: marcador real; si hubo tanda, la decide la tanda. Un DNF lo pierde el que se va:
+        // EA le da el 3-0 forzado (`clubs.goals`) a quien se queda.
         if (this.winnerByDnf) {
             this.result = Number(raw.clubs[ourId]?.goals) === 3 ? "win" : "loose"
         } else if (this.winnerByPen) {
@@ -78,5 +84,9 @@ export default class MatchDTO implements IMatch {
         const opponent = buildClub(opponentId, opponentScore, opponentPens)
         this.localClub = this.localTeam ? our : opponent
         this.awayClub = this.localTeam ? opponent : our
+
+        // Nadie llegó a 15': nulo (se guarda y se ve, pero no cuenta para nada)
+        this.voided = isShortMatch(this)
+        this.voidedBy = this.voided ? "auto" : null
     }
 }

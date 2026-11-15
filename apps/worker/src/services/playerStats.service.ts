@@ -1,5 +1,5 @@
-import { countsForPlayerStats, type IMatch, type IMatchPlayer, type IPlayerStats } from "@trueno-proclub-services/shared"
-import { MatchModel, PlayerStatsOfficialModel, PlayerStatsFriendlyModel } from "@trueno-proclub-services/shared/models"
+import { countsForPlayerStats, countsForStats, type IMatch, type IMatchPlayer, type IPlayerStats } from "@trueno-proclub-services/shared"
+import { AchievementUnlockedModel, MatchModel, PlayerStatsOfficialModel, PlayerStatsFriendlyModel } from "@trueno-proclub-services/shared/models"
 import { processAchievements, recalculateAllTOTWAchievements } from "./achievement.service.js"
 import { Model } from "mongoose"
 
@@ -37,6 +37,8 @@ async function getPlayerTotals(StatsModel: Model<IPlayerStats>, playerId: string
  * Increments stats for each of our club's players
  */
 const accumulateStatsFromMatch = async (match: IMatch, clubId: number, skipAchievements = false, silentAchievements = false) => {
+    // Partido nulo: se guarda pero no suma nada a nadie
+    if (!countsForStats(match)) return
     const StatsModel = getStatsModel(match.matchType)
     const isLocal = Number(match.localClub.id) === Number(clubId)
     const ourPlayers: IMatchPlayer[] = isLocal ? match.localClub.players : match.awayClub.players
@@ -47,7 +49,7 @@ const accumulateStatsFromMatch = async (match: IMatch, clubId: number, skipAchie
 
     for (const player of ourPlayers) {
         if (!player.playerId) continue
-        // 0 segundos jugados: se guarda en el partido pero no altera stats ni logros
+        // Menos de 15' jugados: se guarda en el partido pero no altera stats ni logros
         if (!countsForPlayerStats(player)) continue
         const isHattrick = player.goals === 3
         const isPoker = player.goals >= 4
@@ -101,14 +103,20 @@ const accumulateStatsFromMatch = async (match: IMatch, clubId: number, skipAchie
  * Full recalculation from scratch for ALL players, for both official and friendly.
  * Idempotent: replaces all stats with a fresh calculation from the match history.
  * Safe to call at startup.
+ *
+ * Los logros también se rehacen desde cero: si cambia qué cuenta (partidos nulos, minutos
+ * mínimos), uno desbloqueado gracias a un partido que ya no cuenta debe desaparecer. Se
+ * vuelven a desbloquear en silencio y con la fecha del partido en que se consiguen.
  */
 const recalculateAllPlayerStats = async (clubId: number) => {
     console.info("[Stats] Starting full recalculation from match history...")
 
     await PlayerStatsOfficialModel.deleteMany({})
     await PlayerStatsFriendlyModel.deleteMany({})
+    await AchievementUnlockedModel.deleteMany({})
 
-    const allMatches = await MatchModel.find({}).sort({ timestamp: 1 }).lean() // Process matches chronologically
+    // Process matches chronologically (los nulos los descarta accumulateStatsFromMatch)
+    const allMatches = await MatchModel.find({}).sort({ timestamp: 1 }).lean()
     for (const match of allMatches) {
         // silent: en un recálculo completo no se re-anuncian logros históricos
         await accumulateStatsFromMatch(match as unknown as IMatch, clubId, false, true)

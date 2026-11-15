@@ -1,5 +1,6 @@
 import cron from "node-cron"
 import { calculateAndSaveTOTW } from "../services/totw.service.js"
+import { runExclusive } from "../utils/exclusive.js"
 import { TOTWModel, MemberTotwAppearancesModel } from "@trueno-proclub-services/shared/models"
 import { getISOWeek, getISOWeekYear, subWeeks, isAfter, setHours, setMinutes, setSeconds, endOfISOWeek } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
@@ -62,17 +63,18 @@ export const scheduleTOTWJob = () => {
     
     if (FORCE_RECALCULATE) {
         console.info("[TOTW] Force recalculate enabled, checking latest finished week...")
-        checkMissedTOTW(true)
+        // Como la sincronización y el recálculo: escribe logros, así que va por la misma cola
+        runExclusive(() => checkMissedTOTW(true)).catch((err) => console.error("[TOTW] Error:", err))
     } else {
         console.log("[TOTW] Force recalculate disabled, running standard startup check...")
-        checkMissedTOTW(false)
+        runExclusive(() => checkMissedTOTW(false)).catch((err) => console.error("[TOTW] Error:", err))
     }
 
     console.log(`[TOTW] Cron schedule set to: ${TOTW_CRON_SCHEDULE} in ${TIMEZONE}`);
     cron.schedule(TOTW_CRON_SCHEDULE, async () => {
         console.info("[TOTW] Calculating team of the week...")
         const week = getCurrentWeekKey()
-        await calculateAndSaveTOTW(week)
+        await runExclusive(() => calculateAndSaveTOTW(week))
         console.info("[TOTW] Done")
     }, {
         timezone: TIMEZONE

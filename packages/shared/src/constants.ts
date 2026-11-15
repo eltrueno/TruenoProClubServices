@@ -16,6 +16,18 @@ export type MatchType = typeof MATCH_TYPES[number]
 export const MATCH_RESULTS = ["win", "tie", "loose"] as const
 export type MatchResult = typeof MATCH_RESULTS[number]
 
+/**
+ * Minutos de juego (en segundos, tiempo de partido) por debajo de los cuales algo no cuenta:
+ * - un jugador que juega menos no suma ese partido a sus stats, medias, logros ni TOTW;
+ * - un partido en el que nadie (de ninguno de los dos equipos) llega es nulo: se guarda y se ve,
+ *   pero no cuenta para nada. Ver `countsForPlayerStats` e `isShortMatch`.
+ */
+export const MIN_SECONDS_PLAYED = 15 * 60
+
+/** Quién marcó un partido como nulo: el worker por los minutos (`auto`) o un admin a mano */
+export const MATCH_VOIDED_BY = ["auto", "admin"] as const
+export type MatchVoidedBy = typeof MATCH_VOIDED_BY[number]
+
 export const ACHIEVEMENT_CATEGORIES = [
     "gamesPlayed", "goals", "assists", "redCards", "passesMade", "passesSuccess",
     "manOfTheMatch", "hattricks", "pokers", "cleanSheets", "saves", "minutesPlayed",
@@ -45,8 +57,13 @@ export const EVENT_KEYS = {
     achievementMilestone: "player.achievement.unlock.milestone",
     achievementOneTime: "player.achievement.unlock.onetime",
     totwNew: "totw.new",
+    /** api → worker: recalcular stats, logros y medias (IStatsRecalculatePayload) */
+    statsRecalculate: "stats.recalculate",
 } as const
 export type EventKey = typeof EVENT_KEYS[keyof typeof EVENT_KEYS]
+
+/** Routing key del aviso api → worker para recalcular stats */
+export const STATS_RECALCULATE_ROUTING_KEY = EVENT_KEYS.statsRecalculate
 
 /** Roles de usuario (Better Auth `user.role`) */
 export enum UserRole {

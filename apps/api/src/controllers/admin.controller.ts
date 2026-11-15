@@ -2,6 +2,8 @@ import type { NextFunction, Request, Response } from "express"
 import type { IClubMemberAdminPatch, ImageScope } from "@trueno-proclub-services/shared"
 import * as ClubMemberService from "../services/clubMember.service.js"
 import * as ImageStorage from "../services/imageStorage.service.js"
+import * as MatchService from "../services/match.service.js"
+import { requestStatsRecalculation } from "../services/events.service.js"
 
 /** `imageScope` ausente = global; cualquier otro valor que no sea "club" es un error */
 const parseScope = (value: unknown): ImageScope | null => {
@@ -117,4 +119,37 @@ async function imageProxy(req: Request, res: Response, next: NextFunction) {
     }
 }
 
-export { patchMember, uploadMemberImage, imageProxy }
+/**
+ * PUT /admin/matches/:matchId/voided  { voided: true | false | null }
+ * Marca (true) o desmarca (false) un partido como nulo a mano; `null` lo devuelve al criterio
+ * automático. Avisa al worker por RabbitMQ para que recalcule stats, logros y medias al momento.
+ * Responde `{ match, recalculation: "queued" | "unavailable" }`: si RabbitMQ no responde, el
+ * cambio queda guardado igualmente pero las stats no se rehacen hasta el próximo recálculo.
+ */
+async function setMatchVoided(req: Request, res: Response, next: NextFunction) {
+    try {
+        const matchId = Number(req.params.matchId)
+        const voided = req.body?.voided
+        if (!Number.isFinite(matchId) || !(voided === true || voided === false || voided === null)) {
+            return next(new Error("ERROR_BAD_REQUEST"))
+        }
+        const match = voided === null
+            ? await MatchService.resetVoided(matchId)
+            : await MatchService.setVoided(matchId, voided)
+        if (!match) return next(new Error("ERROR_NOT_FOUND"))
+
+        const queued = await requestStatsRecalculation({
+            requestedBy: req.user?.id ?? null,
+            reason: voided === null ? "match-void-reset" : voided ? "match-voided" : "match-unvoided",
+            matchId
+        })
+        if (!queued) console.warn(`[Admin] Partido ${matchId}: nulo guardado, pero no se ha podido avisar al worker (RabbitMQ)`)
+
+        res.json({ status: { code: 200, message: "Ok" }, response: { match, recalculation: queued ? "queued" : "unavailable" } })
+    } catch (err) {
+        console.error(err)
+        next(new Error("ERROR_UPDATING_MATCH"))
+    }
+}
+
+export { patchMember, uploadMemberImage, imageProxy, setMatchVoided }

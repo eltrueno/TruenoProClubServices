@@ -5,7 +5,7 @@ import { endOfISOWeek } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 import { CronExpressionParser } from "cron-parser"
 import dotenv from "dotenv"
-import type { ITOTWPlayer } from "@trueno-proclub-services/shared"
+import { MIN_SECONDS_PLAYED, type ITOTWPlayer } from "@trueno-proclub-services/shared"
 import { getTOTWProducer } from "../events/index.js";
 dotenv.config()
 
@@ -64,7 +64,8 @@ const getTopPlayersByPosition = async (
 ): Promise<ITOTWPlayer[]> => {
     return MatchModel.aggregate([
         {
-            $match: { timestamp: { $gte: weekStart, $lte: weekEnd } }
+            // Los partidos nulos no cuentan
+            $match: { timestamp: { $gte: weekStart, $lte: weekEnd }, voided: { $ne: true } }
         },
         {
             $addFields: {
@@ -77,7 +78,8 @@ const getTopPlayersByPosition = async (
         {
             $match: {
                 'clubPlayers.position': position,
-                'clubPlayers.secondsPlayed': { $gt: 0 }
+                // Mismo criterio que countsForPlayerStats: al menos 15' en el partido
+                'clubPlayers.secondsPlayed': { $gte: MIN_SECONDS_PLAYED }
             }
         },
         {

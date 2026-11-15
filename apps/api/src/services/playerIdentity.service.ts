@@ -15,6 +15,12 @@ const getByPlayerId = async (playerId: string): Promise<IPlayerIdentity | null> 
 const getByUserId = async (userId: string): Promise<IPlayerIdentity | null> =>
     PlayerIdentityModel.findOne({ userId }, PROJECTION).lean<IPlayerIdentity>()
 
+/** Jugador vinculado a cada cuenta (solo las que tienen uno) */
+const getByUserIds = async (userIds: string[]): Promise<Pick<IPlayerIdentity, "playerId" | "userId">[]> => {
+    if (userIds.length === 0) return []
+    return PlayerIdentityModel.find({ userId: { $in: userIds } }, { _id: 0, playerId: 1, userId: 1 }).lean<Pick<IPlayerIdentity, "playerId" | "userId">[]>()
+}
+
 /**
  * Identidades de varios jugadores de una vez. Si la base compartida no responde
  * (p. ej. sin permisos todavía), se avisa y se sigue sin ellas: mejor una plantilla
@@ -57,4 +63,4 @@ const merge = <T extends MemberLike>(member: T, identity: IPlayerIdentity | null
     }
 }
 
-export { getByPlayerId, getByUserId, getMany, setUserId, setImageUrl, merge }
+export { getByPlayerId, getByUserId, getByUserIds, getMany, setUserId, setImageUrl, merge }

@@ -9,6 +9,7 @@ Sistema de gestión para clubes de Pro Clubs (EA FC): miembros, partidos, estad�
 | Página | Contenido |
 |---|---|
 | **[API](API)** | Endpoints de la REST API y del servicio de auth, formato de respuesta, códigos de error y eventos de RabbitMQ |
+| **[AUTH](AUTH)** | Guía para usar las cuentas desde otra web: login compartido y sesión dentro de `casemuro.stream`, y tokens de API para servicios de fuera |
 | **[README](https://github.com/eltrueno/TruenoProClubServices#readme)** | Arquitectura, instalación, scripts, variables de entorno, estructura de carpetas y base de datos |
 
 ## Servicios
@@ -27,7 +28,7 @@ Paquetes compartidos: `packages/shared` (tipos, constantes, modelos, definicione
 ## Conceptos clave
 
 - **`playerId`**: los jugadores se identifican por su id de EA, no por el nombre. Los miembros se crean a partir de los partidos (única fuente del id) y guardan su histórico de nombres.
-- **0 segundos**: un jugador que aparece en un partido sin jugar se guarda pero no cuenta para stats, medias, logros ni TOTW.
+- **Minutos mínimos**: un jugador con menos de 15' en un partido se guarda, pero ese partido no cuenta para sus stats, medias, logros ni TOTW. Si nadie llega a 15', el partido es **nulo** y no cuenta para nada.
 - **DNF / penaltis**: se detectan a partir del payload de EA (`packages/eafcapi/src/core/parse.ts`); se guarda el marcador real y los goles de la tanda.
 - **Logros**: definidos en `packages/shared/src/achievements.definitions.ts`; el worker los sincroniza a la DB al arrancar y los evalúa con cada partido.
 - **Sesión**: cookie de dominio `.casemuro.stream` emitida por el auth service; las rutas protegidas del api la validan contra `get-session`.

@@ -20,7 +20,9 @@ const MIN_CLUB_MATCHES = 10
 const MIN_PLAYER_GAMES = 5
 const MIN_PASSES = 100
 
-const { matches, loading: matchesLoading, load: loadMatches } = useMatches()
+const { matches: allMatches, loading: matchesLoading, load: loadMatches } = useMatches()
+// Los partidos nulos no cuentan para récords
+const matches = computed(() => allMatches.value.filter((m) => m.counts))
 const { load: loadMembers, memberFor } = useMembers()
 const { stats, loading: statsLoading, load: loadStats, positionsOf } = usePlayerStats()
 const { club, load: loadClub } = useClub()

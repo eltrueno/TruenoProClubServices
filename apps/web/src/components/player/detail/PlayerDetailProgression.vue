@@ -300,7 +300,7 @@
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                     <h2 class="card-title text-xl font-black uppercase border-l-4 border-primary pl-4">Partidos</h2>
 
-                    <label class="label cursor-pointer gap-2 text-xs font-bold uppercase tracking-wider text-base-content/60 tooltip tooltip-bottom" data-tip="Partidos en los que apareció con 0 minutos. Nunca cuentan para las stats ni las medias.">
+                    <label class="label cursor-pointer gap-2 text-xs font-bold uppercase tracking-wider text-base-content/60 tooltip tooltip-bottom" data-tip="Partidos en los que jugó menos de 15 minutos y partidos nulos. Nunca cuentan para las stats ni las medias.">
                         <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="showUnplayed" />
                         <span>Mostrar sin jugar</span>
                     </label>
@@ -464,7 +464,7 @@
                                     <td class="text-center tabular-nums py-3">{{ row.assists }}</td>
                                     <td class="text-center tabular-nums py-3 text-base-content/60">{{ row.minutes }}'</td>
                                 </template>
-                                <td v-else colspan="4" class="text-center py-3 text-xs font-bold uppercase tracking-wider text-base-content/40">No jugó</td>
+                                <td v-else colspan="4" class="text-center py-3 text-xs font-bold uppercase tracking-wider text-base-content/40">{{ row.voided ? "Partido nulo" : "Menos de 15'" }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -503,7 +503,7 @@
                                 <span class="badge badge-xs badge-outline font-bold uppercase px-2 py-2 rounded-full">{{ translatePosition(row.position) }}</span>
                             </div>
 
-                            <div v-if="!row.played" class="text-xs font-bold uppercase tracking-wider text-base-content/40 italic">No jugó</div>
+                            <div v-if="!row.played" class="text-xs font-bold uppercase tracking-wider text-base-content/40 italic">{{ row.voided ? "Partido nulo" : "Menos de 15'" }}</div>
                             <div v-else class="grid grid-cols-4 gap-2 text-center">
                                 <div>
                                     <div class="text-[9px] uppercase font-black text-base-content/40 tracking-wider">Val</div>
@@ -1219,6 +1219,8 @@
     interface MatchRow {
         matchId: number
         played: boolean
+        /** partido nulo: no cuenta aunque jugara */
+        voided: boolean
         rivalName: string
         matchType: string
         rating: number
@@ -1264,6 +1266,7 @@
             return {
                 matchId: m.matchId,
                 played: p.played,
+                voided: !!m.voided,
                 rivalName: getRivalName(m),
                 matchType: m.matchType,
                 rating: p.rating,

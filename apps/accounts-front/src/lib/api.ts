@@ -58,6 +58,24 @@ export const authApi = {
     /** Cuentas para el panel admin (vincular cuenta ↔ jugador). Solo admins */
     adminUsers: (q?: string) =>
         request<{ status: string; data: IAdminUser[] }>(`${AUTH_URL}/api/admin/users${q ? `?q=${encodeURIComponent(q)}` : ""}`).then((r) => r.data),
+    /** Tokens de API para servicios externos. Solo admins */
+    apiTokens: () => request<{ status: string; data: IApiToken[] }>(`${AUTH_URL}/api/admin/tokens`).then((r) => r.data),
+    /** Crea un token: `token` (en claro) solo viene en esta respuesta */
+    createApiToken: (name: string) =>
+        request<{ status: string; data: IApiToken & { token: string } }>(`${AUTH_URL}/api/admin/tokens`, { method: "POST", body: { name } }).then((r) => r.data),
+    revokeApiToken: (id: string) =>
+        request<{ status: string }>(`${AUTH_URL}/api/admin/tokens/${encodeURIComponent(id)}`, { method: "DELETE" }),
+}
+
+/** Token de API tal y como lo lista `GET /api/admin/tokens` del auth (sin el token) */
+export interface IApiToken {
+    id: string
+    name: string
+    /** principio del token, para reconocerlo */
+    hint: string
+    createdAt: string
+    createdBy: string | null
+    lastUsedAt: string | null
 }
 
 /** Usuario tal y como lo lista `GET /api/admin/users` del auth */

@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { getAllMembers, getMemberProfileById, getAllPlayerStats, getAllPlayerStatsByType, getMyMember, getMyIdentity, unlinkMyIdentity } from "../controllers/clubMember.controller.js"
+import { getAllMembers, getMemberProfileById, getAllPlayerStats, getAllPlayerStatsByType, getMyMember, getMyIdentity, unlinkMyIdentity, getPlayersByUsers } from "../controllers/clubMember.controller.js"
 import { requireAuth } from "../middleware/requireAdmin.js"
 import { getMyLinkRequest, createMyLinkRequest, cancelMyLinkRequest } from "../controllers/linkRequest.controller.js"
 
@@ -8,6 +8,8 @@ const router = Router()
 router.get("/", getAllMembers)
 router.get("/stats/:type", getAllPlayerStatsByType)
 router.get("/stats", getAllPlayerStats)
+// Jugador vinculado a una o varias cuentas (?ids=a,b). Público: los miembros ya traen su userId
+router.get("/by-user", getPlayersByUsers)
 
 // Jugador vinculado a la cuenta con sesión (cookie de auth.casemuro.stream)
 router.get("/me", requireAuth, getMyMember)

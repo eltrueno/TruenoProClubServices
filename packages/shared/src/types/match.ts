@@ -1,4 +1,4 @@
-import type { MatchResult, MatchType, PlayerPosition } from "../constants.js"
+import type { MatchResult, MatchType, MatchVoidedBy, PlayerPosition } from "../constants.js"
 
 export interface IMatchPlayer {
     /** personaId de EA */
@@ -61,4 +61,11 @@ export interface IMatch {
     localTeam?: boolean
     localClub: IMatchClub
     awayClub: IMatchClub
+    /**
+     * Partido nulo: se guarda y se enseña, pero no cuenta para nada (stats, logros, medias,
+     * TOTW, rachas de la web). Automático si nadie llega a `MIN_SECONDS_PLAYED`; un admin
+     * puede marcarlo o desmarcarlo a mano (`voidedBy: "admin"`, y el automático ya no lo toca).
+     */
+    voided?: boolean
+    voidedBy?: MatchVoidedBy | null
 }
