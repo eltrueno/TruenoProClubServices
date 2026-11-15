@@ -257,7 +257,8 @@ defineExpose({ open, close })
                     </div>
                     <div v-if="ready" class="mt-3 flex items-center gap-3">
                         <span class="text-xs text-base-content/60">Zoom</span>
-                        <input type="range" class="range range-primary range-xs flex-1" :min="minScale" :max="maxScale" :step="0.001" v-model.number="sliderValue" />
+                        <input type="range" class="range range-primary range-xs flex-1" :min="minScale" :max="maxScale" :step="0.001" v-model.number="sliderValue"
+                            :style="{ '--range-pos': maxScale > minScale ? (sliderValue - minScale) / (maxScale - minScale) : 0 }" />
                         <button type="button" class="btn btn-ghost btn-xs" @click="fit">Ajustar</button>
                     </div>
                 </div>

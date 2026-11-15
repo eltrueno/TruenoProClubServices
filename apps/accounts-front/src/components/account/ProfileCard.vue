@@ -72,7 +72,7 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
                     <img v-if="user?.image" :src="user.image" :alt="user?.name ?? 'Avatar'" class="size-full object-cover" referrerpolicy="no-referrer" />
                 </div>
                 <div class="flex items-center gap-2 mt-3">
-                    <a v-if="user?.role === 'admin'" href="/admin" class="btn btn-xs btn-neutral">Panel admin</a>
+                    <a v-if="user?.role === 'admin'" href="/admin" class="btn btn-xs btn-primary font-bold">Panel admin</a>
                     <span class="badge badge-primary badge-sm uppercase font-bold tracking-wide">{{ roleLabel(user?.role) }}</span>
                 </div>
             </div>

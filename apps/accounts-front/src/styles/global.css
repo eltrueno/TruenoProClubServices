@@ -127,6 +127,62 @@
   color: white;
 }
 
+/* Checkboxes marcados (silueta guía, filtros): el tic sobre el degradado */
+.checkbox-primary:checked,
+.checkbox-primary[aria-checked="true"] {
+  background-image: var(--brand-gradient-strong);
+  border-color: transparent;
+}
+/* Sliders: DaisyUI pinta el tramo recorrido con una sombra del pulgar (solo color liso).
+   Aquí se quita y el degradado va de fondo de la pista, hasta el centro del pulgar.
+   El componente pone `--range-pos` (0…1) con la posición actual; sin ella no hay tramo. */
+.range-primary {
+  --range-fill: 0;
+  --range-progress: var(--brand-to);
+}
+.range-primary::-webkit-slider-runnable-track {
+  background:
+    var(--brand-gradient-strong) 0 0 / calc(var(--range-thumb-size) / 2 + (100% - var(--range-thumb-size)) * var(--range-pos, 0)) 100% no-repeat,
+    var(--range-bg);
+}
+.range-primary::-moz-range-track {
+  background:
+    var(--brand-gradient-strong) 0 0 / calc(var(--range-thumb-size) / 2 + (100% - var(--range-thumb-size)) * var(--range-pos, 0)) 100% no-repeat,
+    var(--range-bg);
+}
+
+/* Texto que se tiñe con el degradado al pasar el ratón (nombres de jugador enlazados) */
+.hover-text-brand {
+  transition: color 0.15s;
+}
+.hover-text-brand:hover {
+  background-image: var(--brand-gradient-strong);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+/* Borde fino con el degradado, suavizado (fila del panel admin con cambios sin guardar).
+   Necesita `border border-transparent` y el fondo en `--border-brand-bg` (por defecto base-200). */
+.border-brand-soft {
+  background:
+    linear-gradient(var(--border-brand-bg, var(--color-base-200)), var(--border-brand-bg, var(--color-base-200))) padding-box,
+    linear-gradient(100deg,
+      color-mix(in oklab, var(--brand-from) 65%, transparent),
+      color-mix(in oklab, var(--brand-to) 65%, transparent)) border-box;
+}
+/* Opción elegida en los selectores: tinte del degradado y borde con el degradado */
+.picked-brand {
+  background:
+    linear-gradient(100deg,
+      color-mix(in oklab, var(--brand-from) 12%, transparent),
+      color-mix(in oklab, var(--brand-to) 12%, transparent)) padding-box,
+    linear-gradient(var(--color-base-100), var(--color-base-100)) padding-box,
+    linear-gradient(100deg,
+      color-mix(in oklab, var(--brand-from) 60%, transparent),
+      color-mix(in oklab, var(--brand-to) 60%, transparent)) border-box;
+  border-color: transparent;
+}
+
 /* Fondo de la página: un halo rojo muy suave arriba, de izquierda a derecha */
 .page-glow {
   background-image:
