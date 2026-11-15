@@ -33,6 +33,9 @@ export interface ClubData {
      *  la URL canónica del build actual sigue saliendo de PUBLIC_SITE_URL (siteUrl). */
     webUrl: string;
     logo: string;
+    /** Escudo de un solo color (SVG): en el disco de la navbar va en blanco sobre el color
+     *  principal en vez de a color sobre blanco (se pinta usando el SVG como máscara) */
+    logoMono?: boolean;
     /** Imagen propia para las vistas previas de enlaces. Sin ella se genera /og.png
      *  en el build: el escudo sobre ogBackground (ver pages/og.png.ts) */
     ogImage?: string;
@@ -86,8 +89,9 @@ const clubs: Record<ClubId, ClubData> = {
         name: "Casemuro United",
         apiUrl: "/api",
         webUrl: "https://united.casemuro.stream",
-        // El escudo del City en monocolor, con el granate del club
-        logo: "/club/united/logo.webp",
+        // Escudo de un solo color (SVG) con el granate del club
+        logo: "/club/united/logo.svg",
+        logoMono: true,
         // Fondo de la navbar en el tema oscuro (base-100 de DaisyUI)
         ogBackground: "#1d232a",
         themeColor: "#B90A34",

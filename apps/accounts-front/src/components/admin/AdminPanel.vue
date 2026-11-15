@@ -18,6 +18,7 @@ import PlayerPickerModal, { type PickerItem } from "./PlayerPickerModal.vue"
 import PlayerCard from "./PlayerCard.vue"
 import PlayerImageEditor from "./PlayerImageEditor.vue"
 import AdminSkeleton from "./AdminSkeleton.vue"
+import ClubCrest from "./ClubCrest.vue"
 
 
 const { user, isPending, isLoggedIn, authUnavailable } = useAccount()
@@ -318,14 +319,14 @@ watch([isPending, isAdmin], ([pending, admin]) => {
                     <button type="button" role="tab" :aria-selected="clubFilter === 'all'"
                         class="btn btn-sm gap-2" :class="clubFilter === 'all' ? 'btn-primary' : 'btn-ghost'" @click="selectFilter('all')">
                         <span class="flex -space-x-1.5">
-                            <img v-for="c in CLUBS" :key="c.id" :src="c.logo" alt="" class="size-5 object-contain" />
+                            <ClubCrest v-for="c in CLUBS" :key="c.id" :club="c" :on-brand="clubFilter === 'all'" class="size-5" />
                         </span>
                         Todos
                         <span v-if="!loading && pendingCount('all')" class="badge badge-xs badge-warning">{{ pendingCount("all") }}</span>
                     </button>
                     <button v-for="c in CLUBS" :key="c.id" type="button" role="tab" :aria-selected="clubFilter === c.id"
                         class="btn btn-sm gap-2" :class="clubFilter === c.id ? 'btn-primary' : 'btn-ghost'" @click="selectFilter(c.id)">
-                        <img :src="c.logo" alt="" class="size-5 object-contain" />
+                        <ClubCrest :club="c" :on-brand="clubFilter === c.id" class="size-5" />
                         {{ c.name }}
                         <span v-if="!loading && pendingCount(c.id)" class="badge badge-xs badge-warning">{{ pendingCount(c.id) }}</span>
                     </button>

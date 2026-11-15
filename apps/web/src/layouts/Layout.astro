@@ -52,7 +52,7 @@ try {
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/webp" href={CLUB.logo} />
+		<link rel="icon" type={CLUB.logo.endsWith(".svg") ? "image/svg+xml" : "image/webp"} href={CLUB.logo} />
 		<link rel="canonical" href={canonicalUrl} />
 		<meta name="generator" content={Astro.generator} />
 		<meta name="author" content="Raúl Jiménez 'el_trueno'" />
