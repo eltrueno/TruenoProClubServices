@@ -1,0 +1,12 @@
+---
+import Layout from "../layouts/Layout.astro";
+import AdminPanel from "../components/admin/AdminPanel.vue";
+import AdminSkeleton from "../components/admin/AdminSkeleton.vue";
+---
+
+<!-- Panel admin de todos los clubes (las webs de los clubes redirigen su /admin aquí) -->
+<Layout title="Panel admin · Casemuro" description="Panel de administración de los clubes de Casemuro" wide>
+	<AdminPanel client:only="vue">
+		<AdminSkeleton slot="fallback" />
+	</AdminPanel>
+</Layout>

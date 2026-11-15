@@ -1,6 +1,6 @@
 import type {
-    ApiResponse, IAchievementDefinition, IAverageStats, IClub, IClubMember, IClubMemberAdminPatch, ILinkRequest, ImageScope,
-    IMatch, IPlayerProfile, IPlayerStats, IPublicUser, ITOTW, IMemberTotwAppearances, UserRole
+    ApiResponse, IAchievementDefinition, IAverageStats, IClub, IClubMember, ILinkRequest,
+    IMatch, IPlayerProfile, IPlayerStats, IPublicUser, ITOTW, IMemberTotwAppearances
 } from "@trueno-proclub-services/shared"
 import { CLUB } from "@/config/club"
 
@@ -100,45 +100,9 @@ export const tpcsApi = {
         getAll: () => api<IAverageStats[]>("/playeraverages"),
         getByPosition: (position: string) => api<IAverageStats>(`/playeraverages/${position}`),
     },
-
-    admin: {
-        patchMember: (playerId: string, patch: IClubMemberAdminPatch) =>
-            api<IClubMember>(`/admin/members/${encodeURIComponent(playerId)}`, { method: "PATCH", body: patch, credentials: true }),
-        /** Sube la foto ya recortada (PNG 400x450 en data URL) a R2 y la asigna al jugador:
-         *  como foto global (todos los clubes) o solo de este club */
-        uploadMemberImage: (playerId: string, imageDataUrl: string, scope: ImageScope = "global") =>
-            api<IClubMember>(`/admin/members/${encodeURIComponent(playerId)}/image`, { method: "POST", body: { image: imageDataUrl, scope }, credentials: true }),
-        /** Descarga una imagen remota vía api (POST a propósito: exige preflight) para pintarla en canvas sin CORS */
-        fetchImageViaProxy: async (url: string): Promise<Blob> => {
-            const res = await fetch(`${API_URL}/admin/image-proxy`, {
-                method: "POST",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url })
-            })
-            if (!res.ok) {
-                const body = await res.json().catch(() => null)
-                const code = body?.status?.message || `HTTP_${res.status}`
-                throw new ApiError(code, code, res.status)
-            }
-            return res.blob()
-        },
-        linkRequests: () => api<ILinkRequest[]>("/admin/link-requests", { credentials: true }),
-        approveLinkRequest: (id: string) =>
-            api<{ request: ILinkRequest; member: IClubMember }>(`/admin/link-requests/${encodeURIComponent(id)}/approve`, { method: "POST", credentials: true }),
-        rejectLinkRequest: (id: string) =>
-            api<ILinkRequest>(`/admin/link-requests/${encodeURIComponent(id)}/reject`, { method: "POST", credentials: true }),
-    },
 }
 
 // ---- Respuestas del auth service (rutas propias, fuera de Better Auth) ----
-
-/** Usuario tal y como lo lista `GET /api/admin/users` */
-export interface IAdminUser extends IPublicUser {
-    role: UserRole | string
-    twitchId: string | null
-    discordId: string | null
-}
 
 /** Resultado de `GET /api/twitch/sync` */
 
@@ -153,10 +117,4 @@ export const authApi = {
         ids.length === 0
             ? Promise.resolve([] as IPublicUser[])
             : request<AuthListResponse<IPublicUser[]>>(AUTH_URL, `/api/public/users?ids=${ids.map(encodeURIComponent).join(",")}`).then((r) => r.data),
-    admin: {
-        users: (q?: string) =>
-            request<AuthListResponse<IAdminUser[]>>(
-                AUTH_URL, `/api/admin/users${q ? `?q=${encodeURIComponent(q)}` : ""}`, { credentials: true }
-            ).then((r) => r.data),
-    },
 }
