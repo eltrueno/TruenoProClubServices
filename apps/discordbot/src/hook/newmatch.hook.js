@@ -2,7 +2,7 @@ const { AttachmentBuilder } = require("discord.js")
 const { render } = require("@trueno-proclub-services/imagerenderer-client")
 require('dotenv').config();
 const WWW_URL = process.env.WWW_URL || "https://city.casemuro.stream"
-const { mention } = require("../utils/players")
+const { mentions } = require("../utils/players")
 
 async function handle(client, match) {
     try {
@@ -10,11 +10,7 @@ async function handle(client, match) {
         const matchesChannel = await client.channels.cache.get("411962391799136266")
 
         const players = match.localTeam ? match.localClub.players : match.awayClub.players
-        let playerMentions = ""
-        for (p in players) {
-            var player = players[p]
-            playerMentions += mention(client, player) + " "
-        }
+        const playerMentions = (await mentions(Object.values(players))).map((m) => m + " ").join("")
 
         let embedMsg
         const imgBuffer = await render({

@@ -77,6 +77,24 @@ export function useAccount() {
         }
     }
 
+    /**
+     * Vincula Discord a la cuenta: va a Discord a página completa y vuelve a la cuenta
+     * (`?discord=ok`, o `?discord=error&error=<código>` si algo falla).
+     */
+    async function linkDiscord() {
+        const { error } = await authClient.linkSocial({
+            provider: "discord",
+            callbackURL: `${SITE_URL}/?discord=ok#conexiones`,
+            errorCallbackURL: `${SITE_URL}/?discord=error`,
+        })
+        if (error) throw new Error(error.code || error.message || "No se ha podido conectar con Discord")
+    }
+
+    async function unlinkDiscord() {
+        await authApi.unlinkDiscord()
+        _userOverride.value = { ...(_userOverride.value ?? {}), discordId: null, discordName: null }
+    }
+
     async function logout() {
         await authClient.signOut()
         window.location.href = "/login"
@@ -115,5 +133,5 @@ export function useAccount() {
         return "deleted"
     }
 
-    return { user, isPending, isLoggedIn, authUnavailable, loginWithTwitch, syncTwitch, logout, deleteAccount }
+    return { user, isPending, isLoggedIn, authUnavailable, loginWithTwitch, syncTwitch, linkDiscord, unlinkDiscord, logout, deleteAccount }
 }

@@ -15,14 +15,10 @@ async function handle(client, totw) {
         }
 
         const playersBest = totw.bestPlayers.sort((a, b) => b.avgRating - a.avgRating)
-        let playerMentionsBest = ""
-        var player = playersBest[0]
-        playerMentionsBest += mention(client, player) + " "
+        const playerMentionsBest = (await mention(playersBest[0])) + " "
 
         const playersWorst = totw.worstPlayers.sort((a, b) => a.avgRating - b.avgRating)
-        let playerMentionsWorst = ""
-        var player = playersWorst[0]
-        playerMentionsWorst += mention(client, player) + " "
+        const playerMentionsWorst = (await mention(playersWorst[0])) + " "
 
         const imgBufferBest = await render({
             type: 'totw',

@@ -9,6 +9,8 @@ export interface IAuthUser {
     role?: UserRole | string | null
     twitchId?: string | null
     discordId?: string | null
+    /** nombre de usuario de Discord (se guarda al vincular) */
+    discordName?: string | null
     twitchFollowing?: boolean | null
     twitchSub?: boolean | null
     /** "1000" | "2000" | "3000" si es sub (nivel 1/2/3), null si no */

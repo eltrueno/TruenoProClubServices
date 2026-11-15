@@ -62,7 +62,7 @@ describe("apiTokenService", () => {
 describe("accountLookupService", () => {
     it("busca por id de Twitch, por nombre (sin distinguir mayúsculas) y por id de cuenta, con su jugador", async () => {
         const ana = await addUser({ name: "AnaGamer", image: "a.png", role: "subscriber", twitchId: "111", twitchFollowing: true, twitchSub: true, twitchSubTier: "1000", showPublicName: false })
-        const bob = await addUser({ name: "Bob_99", twitchId: "222" })
+        const bob = await addUser({ name: "Bob_99", twitchId: "222", discordId: "900", discordName: "bob" })
         const cia = await addUser({ name: "Cia", twitchId: "333" })
         const fetchMock = mockClubApi({ [ana]: "EA-1" })
 
@@ -76,13 +76,20 @@ describe("accountLookupService", () => {
         // La privacidad (showPublicName) no se aplica aquí, y el email no sale nunca
         expect(byName.AnaGamer).toEqual({
             id: ana, name: "AnaGamer", image: "a.png", role: "subscriber", twitchId: "111",
-            twitchFollowing: true, twitchSub: true, twitchSubTier: "1000", twitchSyncedAt: null, twitchNeedsReauth: false, playerId: "EA-1"
+            twitchFollowing: true, twitchSub: true, twitchSubTier: "1000", twitchSyncedAt: null, twitchNeedsReauth: false, discordId: null, discordName: null, playerId: "EA-1"
         })
-        expect(byName.Bob_99).toMatchObject({ id: bob, role: "visitor", twitchFollowing: false, playerId: null })
+        expect(byName.Bob_99).toMatchObject({ id: bob, role: "visitor", twitchFollowing: false, playerId: null, discordId: "900", discordName: "bob" })
         expect(byName.Cia.playerId).toBeNull()
         expect(JSON.stringify(result.data)).not.toContain("@x.test")
 
         expect(String(fetchMock.mock.calls[0][0])).toMatch(/^http:\/\/club-api\.test\/members\/by-user\?ids=/)
+    })
+
+    it("busca por id de Discord (lo que usa el bot para saber quién es alguien)", async () => {
+        const eva = await addUser({ name: "Eva", twitchId: "555", discordId: "901", discordName: "eva.gg" })
+        mockClubApi({ [eva]: "EA-9" })
+        const result = await accountLookupService.lookup({ ids: [], twitchIds: [], twitchLogins: [], discordIds: ["901", "nope"] })
+        expect(result).toMatchObject({ ok: true, data: [{ id: eva, discordId: "901", discordName: "eva.gg", playerId: "EA-9" }] })
     })
 
     it("rechaza peticiones vacías, inválidas o demasiado grandes sin consultar nada", async () => {
