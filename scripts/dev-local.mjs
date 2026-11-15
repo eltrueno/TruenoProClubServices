@@ -116,6 +116,8 @@ const SERVICES = [
       BETTER_AUTH_URL: URL.auth,
       BETTER_AUTH_SECRET: DEV_SECRET,
       ALLOWED_ORIGINS: LOCAL_ORIGINS,
+      // Jugadores vinculados para /api/v1/accounts (tokens de API)
+      CLUB_API_URL: URL.api,
       // Twitch (de apps/auth/.env) por si quieres probar el login de verdad
       TWITCH_CLIENT_ID: authEnv.TWITCH_CLIENT_ID || "",
       TWITCH_CLIENT_SECRET: authEnv.TWITCH_CLIENT_SECRET || "",

@@ -1,5 +1,6 @@
 import { Router } from "express"
 import { db } from "../db/index.js"
+import { apiTokenService } from "../services/apiTokenService.js"
 
 const router = Router()
 
@@ -31,6 +32,28 @@ router.get("/users", async (req, res) => {
             discordId: u.discordId ?? null
         }))
     })
+})
+
+/**
+ * Tokens de API para servicios externos (GET /api/v1/*).
+ * GET lista (sin el token), POST { name } crea y devuelve el token UNA sola vez, DELETE revoca.
+ */
+router.get("/tokens", async (_req, res) => {
+    res.json({ status: "success", data: await apiTokenService.list() })
+})
+
+router.post("/tokens", async (req, res) => {
+    const name = typeof req.body?.name === "string" ? req.body.name.trim() : ""
+    if (!name || name.length > 60) {
+        return res.status(400).json({ status: "error", code: "INVALID_NAME", message: "name is required (max 60 chars)" })
+    }
+    res.status(201).json({ status: "success", data: await apiTokenService.create(name, req.user?.id ?? null) })
+})
+
+router.delete("/tokens/:id", async (req, res) => {
+    const revoked = await apiTokenService.revoke(req.params.id)
+    if (!revoked) return res.status(404).json({ status: "error", code: "NOT_FOUND", message: "Token not found" })
+    res.json({ status: "success", data: { revoked: true } })
 })
 
 export default router

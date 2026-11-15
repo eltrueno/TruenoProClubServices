@@ -35,6 +35,13 @@
                 </ul>
             </div>
             <p class="w-full text-5xl md:text-6xl font-bold text-center" :class="resultColor">{{ translateMatchResult(match.result).toUpperCase() }}</p>
+            <!-- Nulo: se ve, pero no cuenta para nada -->
+            <div v-if="match.voided" role="note" class="alert alert-soft mt-3 max-w-xl text-sm">
+                <span>
+                    <b>Partido nulo:</b> no cuenta para estadísticas, logros, medias, TOTW ni rachas.
+                    {{ match.voidedBy === "admin" ? "Lo ha marcado un admin." : "Nadie llegó a jugar 15 minutos." }}
+                </span>
+            </div>
             <div class="items-center justify-center align-middle h-full w-full p-4 hidden md:flex">
                 <p class="text-end self-center font-medium text-2xl">{{match.localClub.name}}</p>
                 <p class="text-end font-extrabold text-4xl  ml-4">{{ match.localClub.matchStats.goals }}</p>
@@ -58,10 +65,22 @@
                 </div>
             </div>
             <div class="py-2 px-4 flex justify-between gap-x-8 md:gap-x-12">
+                <div v-if="match.voided" class="badge badge-neutral badge-lg">Nulo</div>
                 <div v-if="match.winnerByDnf" class="badge badge-error badge-lg">Desconexión</div>
                 <div class="badge badge-primary badge-lg">{{ translateMatchType(match.matchType) }}</div>
                 <div v-if="match.winnerByPen" class="badge badge-neutral badge-lg">Penaltis</div>
             </div>
+            <!-- Solo admins: marcar / desmarcar como nulo a mano -->
+            <div v-if="isAdmin" class="flex flex-wrap items-center justify-center gap-2 mt-1">
+                <button type="button" class="btn btn-sm" :class="match.voided ? 'btn-outline' : 'btn-neutral'" :disabled="voidBusy" @click="setVoided(!match.voided)">
+                    <span v-if="voidBusy" class="loading loading-spinner loading-xs"></span>
+                    {{ match.voided ? "Quitar nulo" : "Marcar como nulo" }}
+                </button>
+                <button v-if="match.voidedBy === 'admin'" type="button" class="btn btn-sm btn-ghost" :disabled="voidBusy" @click="setVoided(null)"
+                    title="Que decida el criterio automático (nadie llega a 15')">Volver al automático</button>
+                <span v-if="voidMessage" class="text-xs w-full text-center" :class="voidMessage.ok ? 'text-success' : 'text-error'">{{ voidMessage.text }}</span>
+            </div>
+
             <div class="flex my-3 items-center justify-center text-center text-xl gap-x-1">
                 <p class="font-semibold">Rating del equipo: </p>
                 <p :class="ratingColor(teamAverageRating)" class="font-light text-2xl bg-neutral-900 p-1 rounded-lg">{{ teamAverageRating.toFixed(1) }}</p>
@@ -201,6 +220,8 @@
     import { getQueryParam, routes } from "@/lib/query"
     import { useMembers } from "@/composables/useMembers"
     import { onPlayerImageError } from "@/lib/playerImage"
+    import { useAuth } from "@/composables/useAuth"
+    import { ApiError, tpcsApi } from "@/lib/api"
 
     // /partido?id=<matchId>&player=<playerId>
     const props = {
@@ -216,6 +237,28 @@
     const isLoading = matchResource.loading
     const errorText = matchResource.error
     const hasError = matchResource.hasError
+
+    // ── Partido nulo a mano (admins) ──
+    const { isAdmin } = useAuth()
+    const voidBusy = ref(false)
+    const voidMessage = ref<{ ok: boolean; text: string } | null>(null)
+    async function setVoided(voided: boolean | null) {
+        voidBusy.value = true
+        voidMessage.value = null
+        try {
+            const { match: updated, recalculation } = await tpcsApi.admin.setMatchVoided(match.value.matchId, voided)
+            // Entidad nueva: recalcula quién "jugó" (en un nulo, nadie)
+            matchResource.data.value = new ClubMatchEntity(updated)
+            voidMessage.value = recalculation === "queued"
+                ? { ok: true, text: "Guardado. Las estadísticas se están recalculando (tarda un momento)." }
+                : { ok: false, text: "Guardado, pero no se ha podido avisar al worker: las estadísticas no se han recalculado." }
+        } catch (e) {
+            const code = e instanceof ApiError ? e.code : "ERROR"
+            voidMessage.value = { ok: false, text: code === "FORBIDDEN" || code === "UNAUTHORIZED" ? "Sin permisos" : `No se ha podido guardar (${code})` }
+        } finally {
+            voidBusy.value = false
+        }
+    }
 
     const players = computed(() => {
         if (!match.value) return [];
@@ -481,8 +524,9 @@ function getPlayerSummaryText(player) {
 
     const resultColor = computed((local?)=>{
         let resp = {
-            'text-error': match.value.result=="loose",
-            'text-success': match.value.result=="win"
+            'text-error': !match.value.voided && match.value.result=="loose",
+            'text-success': !match.value.voided && match.value.result=="win",
+            'text-base-content/40': !!match.value.voided
         }
         return resp
     })

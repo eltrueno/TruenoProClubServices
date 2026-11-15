@@ -54,7 +54,7 @@ Puedes ver el sistema en funcionamiento en el despliegue oficial de **Casemuro C
 
 ##### **auth** — Servicio de autenticación
 - **Stack**: Express + Better Auth + MongoDB.
-- Login social con Twitch, sincronización de follow/sub/rol (al entrar, en segundo plano cuando los datos son viejos y con un repaso periódico), endpoint público de usuarios y listado admin.
+- Login social con Twitch, sincronización de follow/sub/rol (al entrar, en segundo plano cuando los datos son viejos y con un repaso periódico), endpoint público de usuarios, listado admin y **tokens de API** para servicios externos (`GET /api/v1/accounts`: de una cuenta de Twitch a su cuenta y su jugador vinculado; se crean y revocan en el panel admin).
 
 ##### **web** — Frontend
 - **Stack**: Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5.
@@ -93,8 +93,9 @@ Puedes ver el sistema en funcionamiento en el despliegue oficial de **Casemuro C
 La clave de un jugador es su **`playerId`** (id de EA), no su nombre. Así los datos persisten aunque el jugador cambie de gamertag. El id solo lo da EA en `clubs/matches` (clave del objeto `players[clubId]`), por lo que **los miembros se crean a partir de los partidos**: quien juega, existe. `playerName` es siempre el último nombre visto y cada miembro guarda su `nameHistory`.
 
 Reglas relacionadas:
-- Un jugador con **0 segundos** en un partido se guarda en el partido pero no cuenta para stats, medias, logros ni TOTW.
-- **DNF**: flag de EA + marcador forzado 3-0 + agregado de jugadores discordante.
+- Un jugador con **menos de 15'** en un partido se guarda en el partido pero ese partido no cuenta para sus stats, medias, logros ni TOTW (`MIN_SECONDS_PLAYED` en shared).
+- **Partido nulo** (`voided`): si nadie de ninguno de los dos equipos llega a 15', el partido se guarda y se ve (con la etiqueta "Nulo"), pero no cuenta para nada: stats, logros, medias, TOTW ni rachas/récords de la web. Un admin puede marcarlo o desmarcarlo a mano desde el detalle del partido (`voidedBy: "admin"`, el automático ya no lo toca); el api avisa al worker por RabbitMQ (`stats.recalculate`) y este recalcula stats, logros y medias al momento. Al arrancar, el worker marca una sola vez los partidos ya guardados y recalcula todo (marca de la migración en `worker_tasks`). Sincronización, recálculo y TOTW van en cola, de uno en uno, para no pisarse.
+- **DNF**: en liga/playoff, flag de EA + marcador forzado 3-0 + agregado de jugadores discordante. En **amistosos** EA no pone el flag pero sí fuerza el 3-0: es abandono si además el partido se cortó antes del minuto 80 (`detectFriendlyDnf`). Pierde el que se va y se guarda el marcador real (el de los jugadores).
 - **Penaltis**: solo en playoff / amistoso; `clubs.goals − aggregate.goals > 0` en los dos clubes **y** prórroga jugada. Se guarda el marcador real y `penaltiesScore` por club.
 
 ## 📊 Diagrama de la aplicación
@@ -187,11 +188,13 @@ Las más importantes:
 | `AUTH_URL` | api | URL del auth service para validar sesiones en rutas protegidas |
 | `IDENTITY_CLEANUP_HOURS` | api | Cada cuántas horas se liberan los jugadores vinculados a cuentas borradas (24) |
 | `DEVMODE` | api, auth | CORS abierto y cookies sin dominio, solo para desarrollo |
-| `RABBITMQ_URL` | worker, discordbot | Conexión a RabbitMQ |
+| `RABBITMQ_URL` | worker, discordbot, api | Conexión a RabbitMQ (en el api: avisar al worker de recalcular stats; mismo vhost que el worker del club) |
 | `WORKER_INTERVAL` | worker | Segundos entre sincronizaciones con EA |
 | `FORCE_RECALCULATE` | worker | Recalcula todas las stats y logros desde el histórico al arrancar |
 | `TOTW_CRON_SCHEDULE`, `TZ` | api, worker | Cuándo se calcula el equipo de la semana |
 | `CLUB_CACHE_MS`, `CLUB_RETRY_MS` | api | TTL de la caché de `/club` y espera tras un fallo de EA |
+| `CLUB_API_URL` | auth | Api de un club cualquiera (por defecto `https://api.casemuro.stream`): de ahí saca el jugador vinculado a cada cuenta para `GET /api/v1/accounts` |
+| `API_TOKEN_RATE_LIMIT` | auth | Peticiones por minuto y token de API (120 por defecto) |
 | `TWITCH_CLIENT_ID/SECRET`, `TWITCH_CHANNEL_ID` | auth | Proveedor Twitch y canal a seguir (`TWITCH_CHANNEL_ID` es el id **numérico** del canal) |
 | `TWITCH_SYNC_INTERVAL_MINUTES`, `TWITCH_SYNC_STALE_MINUTES`, `TWITCH_SYNC_RETRY_MINUTES` | auth | Cada cuánto pasa el repaso de follow/sub (60), a partir de cuándo se consideran viejos los datos (360) y espera tras un intento fallido (10) |
 | `BETTER_AUTH_SECRET` | auth | Firma las sesiones y cifra los tokens de Twitch guardados. Si cambia, los usuarios tendrán que volver a conectar Twitch |
@@ -210,7 +213,7 @@ docker run -d -p 5672:5672 -p 15672:15672 --name rabbitmq rabbitmq:3-management
 packages/
 ├── shared/src/
 │   ├── constants.ts              # Enums / constantes de dominio
-│   ├── helpers.ts                # Helpers puros (validación de datos de EA, 0 segundos…)
+│   ├── helpers.ts                # Helpers puros (validación de datos de EA, minutos mínimos, partidos nulos…)
 │   ├── achievements.definitions.ts
 │   ├── types/                    # Interfaces
 │   └── models/                   # Esquemas mongoose (api + worker)
@@ -251,6 +254,8 @@ apps/
 ### 🔌 Endpoints
 
 Documentados en **[docs/API.md](docs/API.md)** (REST API, auth service y eventos de RabbitMQ). La API también expone un índice en `GET /`.
+
+Para usar las cuentas desde otra web (login compartido y sesión dentro de `casemuro.stream`, tokens de API desde fuera): **[docs/AUTH.md](docs/AUTH.md)**.
 
 ### 🗓️ Base de Datos
 
@@ -348,7 +353,7 @@ This project is an **evolution** of [Caracantosmeaos](https://github.com/Caracan
 
 - **api** — Express + Mongoose REST API: club, members, matches, stats, achievements, HOF/HOS, position averages, account ↔ player link requests and an admin panel backend (player photo with a 400×450 crop editor uploading to Cloudflare R2, linked account, request approval). Protected routes validate the session against the auth service. 📖 **Endpoints: [docs/API.md](docs/API.md)**
 - **worker** — Every `WORKER_INTERVAL` seconds fetches new matches from EA, normalizes them (`MatchDTO`), registers the members that appear, accumulates stats, evaluates achievements and publishes RabbitMQ events. Weekly team-of-the-week job. Enriches members (`proName`, `proOverall`…) from EA without overwriting good data with empty values.
-- **auth** — Express + Better Auth + MongoDB: Twitch login, follow/sub/role sync (on sign-in, in the background when stale and in a periodic sweep), public users endpoint and admin user listing.
+- **auth** — Express + Better Auth + MongoDB: Twitch login, follow/sub/role sync (on sign-in, in the background when stale and in a periodic sweep), public users endpoint, admin user listing and **API tokens** for external services (`GET /api/v1/accounts`: from a Twitch account to its account and linked player; created and revoked in the admin panel).
 - **web** — Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5 frontend. Fully static, deployed to GitHub Pages (`.github/workflows/deploy-web.yml`, custom domain via a generated `CNAME`). Multi-club: one club per repository; other clubs live in satellite repos that only hold a workflow cloning this one, and a successful deploy here triggers them (`repository_dispatch`, `CLUB_PAGES_REPOS` variable and `CLUB_PAGES_DISPATCH_TOKEN` secret) so every club publishes the same commit. Dynamic pages take query params read client-side (`/jugador?id=<playerId>`, `/partido?id=<matchId>`, `/totw?semana=…&tipo=…`). `/admin` redirects to the admin panel in accounts (`accounts.casemuro.stream/admin?club=<id>`). Signing in and account settings live in **accounts** (below); the club site only keeps the theme (in the account menu) and the **Mi jugador** button, which opens the linked player's page in this club, is disabled when the account has a player who never played for this club, and links to accounts to request the link otherwise. `/micuenta` and `/login` are kept as redirects to accounts. Configured through `PUBLIC_*` env vars (`apps/web/.env.example`). The link preview image (`/og.png`, 1200×630 PNG) is generated at build time from the club crest over its `themeColor`.
 - **accounts-front** — `accounts.casemuro.stream`, shared by every club: sign-in (`/login?redirect=<url>`), profile and Twitch sync, connections, **Mi jugador** across all clubs (one account = one EA ID), privacy, account deletion and the privacy policy, plus the **admin panel** at `/admin` (`admin` role only), shared by every club: one list with the players of every club (each once, with the crests of the clubs they played for) and the pending link requests; club tabs only filter (`?club=city|united`). Photo and linked account are global: the link is saved through the api of a club the player is in and the photo is sent to all of them (`/admin/*`); accounts come from auth (`/api/admin/users`). Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5, fully static, deployed as a static-assets **Cloudflare Worker** connected to the repo (Cloudflare builds and deploys every push to `main`; no GitHub Action or secrets; config in `apps/accounts-front/wrangler.jsonc`). Club sites send users here to sign in and get them back afterwards; `redirect` is only honoured for its own paths and `https://*.casemuro.stream` sites (no open redirect). The session cookie is on `.casemuro.stream`, so one sign-in works everywhere. Brand colours blend the City red (`#c80d0d`) into the United maroon (`#b90a34`) left to right. Worker settings: name `casemuro-accounts` (must match `wrangler.jsonc`), root = repo root, production branch `main`, build command `pnpm --filter @trueno-proclub-services/shared build && pnpm --filter @trueno-proclub-services/auth build && pnpm --filter @trueno-proclub-services/accounts-front build`, deploy command `npx wrangler deploy --config apps/accounts-front/wrangler.jsonc`, build variables `NODE_VERSION=24`, `PNPM_VERSION=10.32.1`, `PUPPETEER_SKIP_DOWNLOAD=true`, `PUBLIC_SITE_URL=https://accounts.casemuro.stream` (plus `PUBLIC_CLUBS=city` if a club has no API yet), build watch paths `apps/accounts-front/*`, `packages/shared/*`, `packages/auth/*`, custom domain `accounts.casemuro.stream`. Add that origin to `ALLOWED_ORIGINS` in auth and every club API.
 - **discordbot** — Consumes RabbitMQ events and announces the team of the week (matches / achievements once their producers are enabled).
@@ -359,8 +364,9 @@ This project is an **evolution** of [Caracantosmeaos](https://github.com/Caracan
 A player is keyed by its **`playerId`** (EA id), never by name, so data survives gamertag changes. EA only exposes the id in `clubs/matches` (key of the `players[clubId]` object), so **members are created from matches**: whoever plays, exists. `playerName` is always the last seen name and each member keeps a `nameHistory`.
 
 Related rules:
-- A player with **0 seconds** in a match is stored in the match but does not count for stats, averages, achievements or TOTW.
-- **DNF**: EA flag + forced 3-0 + player aggregate mismatch.
+- A player with **less than 15'** in a match is stored in the match, but that match does not count for their stats, averages, achievements or TOTW (`MIN_SECONDS_PLAYED` in shared).
+- **Void match** (`voided`): if nobody on either team reaches 15', the match is stored and shown (labelled "Nulo") but counts for nothing: stats, achievements, averages, TOTW or the site's streaks/records. An admin can mark or unmark it by hand from the match page (`voidedBy: "admin"`, never overridden by the automatic rule); the api notifies the worker over RabbitMQ (`stats.recalculate`), which recalculates stats, achievements and averages right away. On startup the worker marks already stored matches once and recalculates everything (migration marker in `worker_tasks`). Sync, recalculation and TOTW run in a queue, one at a time, so they never overlap.
+- **DNF**: in league/playoff, EA flag + forced 3-0 + player aggregate mismatch. In **friendlies** EA sets no flag but still forces the 3-0: it is a DNF when, on top of that, the match ended before minute 80 (`detectFriendlyDnf`). The team that left loses and the real score (players' goals) is stored.
 - **Penalties**: playoff / friendly only; `clubs.goals − aggregate.goals > 0` for both clubs **and** extra time played. Real score and per-club `penaltiesScore` are stored.
 
 ## 📊 Application Diagram
@@ -417,7 +423,7 @@ Each app ships a commented `.env.example`: [`apps/api`](apps/api/.env.example), 
 | `AUTH_URL` | api | Auth service URL used to validate sessions on protected routes |
 | `IDENTITY_CLEANUP_HOURS` | api | How often (hours) players linked to deleted accounts are released (24) |
 | `DEVMODE` | api, auth | Open CORS and host-only cookies, development only |
-| `RABBITMQ_URL` | worker, discordbot | RabbitMQ connection |
+| `RABBITMQ_URL` | worker, discordbot, api | RabbitMQ connection (in the api: ask the worker to recalculate stats; same vhost as the club's worker) |
 | `WORKER_INTERVAL` | worker | Seconds between EA syncs |
 | `FORCE_RECALCULATE` | worker | Recompute all stats and achievements from match history on startup |
 | `TOTW_CRON_SCHEDULE`, `TZ` | api, worker | When the team of the week is computed |
@@ -430,6 +436,8 @@ Each app ships a commented `.env.example`: [`apps/api`](apps/api/.env.example), 
 ### 🔌 Endpoints
 
 See **[docs/API.md](docs/API.md)** (REST API, auth service and RabbitMQ events). The API also serves an index at `GET /`.
+
+To use the accounts from another website (shared login and session inside `casemuro.stream`, API tokens from outside): **[docs/AUTH.md](docs/AUTH.md)** (Spanish).
 
 ### 🗓️ Database
 

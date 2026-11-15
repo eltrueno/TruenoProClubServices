@@ -14,7 +14,9 @@ Los tipos de todas las respuestas están en `packages/shared` (`IClubMember`, `I
 - **`playerId`**: id del jugador en EA (personaId). Es la clave de todo lo relacionado con un jugador y no cambia aunque cambie de nombre. Sale de `clubs/matches` de EA (clave del objeto `players[clubId]`).
 - **`playerName`**: último gamertag visto para ese `playerId`. Solo para mostrar. Los miembros guardan además `nameHistory[]`.
 - **Sesión**: la pone el auth service en una cookie de dominio `.casemuro.stream`. Las rutas protegidas del api la validan reenviándola a `AUTH_URL/api/auth/get-session`; la web tiene que hacer `fetch(..., { credentials: "include" })`.
-- **0 segundos**: un jugador que aparece en un partido con `secondsPlayed: 0` se guarda en el partido pero no cuenta para stats, medias, logros ni TOTW.
+- **Minutos mínimos**: un jugador con menos de 15' (`secondsPlayed < 900`, `MIN_SECONDS_PLAYED`) se guarda en el partido, pero ese partido no cuenta para sus stats, medias, logros ni TOTW.
+- **Partido nulo** (`voided: true`): nadie de ninguno de los dos equipos llega a 15'. Se guarda y se devuelve como cualquier otro, pero no cuenta para nada (stats, logros, medias, TOTW, rachas de la web). `voidedBy`: `auto` (por los minutos) o `admin` (marcado o desmarcado a mano, ver `PUT /admin/matches/:matchId/voided`).
+- **Abandono en amistosos**: EA no marca `winnerByDnf` en amistosos, pero sí fuerza el 3-0 al que se va. El worker lo pone si el partido se cortó antes del minuto 80 **y** hay ese 3-0 forzado que no cuadra con los goles de los jugadores; pierde el que se fue y se guarda el marcador real, como en liga.
 - **Base compartida** (`SHARED_DB_NAME`, por defecto `tpcs27_shared`): además de la base de cada club (`MONGO_URL`), hay una común a todos los clubes para lo que es de la persona y no del club. Cuelga de la misma conexión (`useDb`), así que el usuario de Mongo de cada club solo necesita `readWrite` también sobre ella. Colecciones `players` (`IPlayerIdentity`: `playerId, userId, imageUrl`) y `link_requests`.
 - **Vinculación cuenta ↔ jugador** (`IPlayerIdentity.userId`, global): la misma cuenta es el mismo jugador en todos los clubes. La hace un admin, bien directamente (`PATCH /admin/members/:playerId`), bien aprobando una **solicitud** que el propio usuario crea desde "Mi jugador" en accounts.casemuro.stream (`POST /members/me/link-request`, en el api de un club donde aparece el jugador). Colección `link_requests` en la base compartida (`ILinkRequest`: `id, userId, userName, userImage, playerId, playerName, status: pending|approved|rejected, createdAt, resolvedAt, resolvedBy`). Un usuario solo puede tener una solicitud pendiente y una cuenta solo puede estar vinculada a un jugador (índice único en la base compartida). Cada api solo devuelve las pendientes de jugadores de su plantilla; el panel admin (accounts.casemuro.stream/admin) pide las de cada club al api de ese club.
 - **Cuentas borradas:** las cuentas están en la base del auth y la vinculación en la compartida, así que borrar una cuenta no toca la vinculación por sí solo. accounts desvincula el jugador antes de borrar (`DELETE /members/me/identity`) y, como red de seguridad, cada api repasa cada `IDENTITY_CLEANUP_HOURS` (24 por defecto) los vínculos: pregunta al auth (`GET /api/public/users`, en lotes de 50) qué cuentas existen y libera los jugadores de las que no (y retira sus solicitudes pendientes). Si el auth falla, si no aparece ninguna de las cuentas consultadas o si de golpe faltaran más de la mitad (3 o más), no toca nada y lo deja en el log.
@@ -54,6 +56,7 @@ Excepción: `GET /club` devuelve `{ "status": 200, "response": … }` o `{ "stat
 | `GET` | `/members/me/link-request` | sesión | Solicitud de vinculación pendiente de la cuenta (`ILinkRequest` o `null`). |
 | `POST` | `/members/me/link-request` | sesión | Body `{ "playerId": string }`. Crea la solicitud (sustituye a la pendiente anterior si la había). `404` si el jugador no existe, `409 ALREADY_LINKED` si la cuenta ya tiene jugador, `409 PLAYER_TAKEN` si el jugador ya tiene cuenta. |
 | `DELETE` | `/members/me/link-request` | sesión | Cancela la solicitud pendiente. `{ cancelled: boolean }`. |
+| `GET` | `/members/by-user?ids=a,b` | — | Jugador vinculado a cada cuenta: `[{ userId, playerId }]`, solo las que tienen uno (las demás no vienen). Máx. 100 ids; `400` sin ids o con más. La vinculación es global: responde lo mismo el api de cualquier club. Lo usa el auth service para `GET /api/v1/accounts`. |
 | `GET` | `/members/:playerId` | — | Perfil completo (`IPlayerProfile`): `{ member, stats: { official, friendly }, achievements, totw }`. 404 si no existe. |
 
 `achievements` viene con la definición embebida: `{ playerId, playerName, achievementId, reached?, unlockedAt, matchId?, definition: IAchievementDefinition }`.
@@ -65,10 +68,10 @@ Excepción: `GET /club` devuelve `{ "status": 200, "response": … }` o `{ "stat
 | `GET` | `/matches` | Todos los partidos (`IMatch[]`). |
 | `GET` | `/matches/ordered?limit=N` | Más recientes primero. |
 | `GET` | `/matches/ordered/:type?limit=N` | `type` = `league` \| `playoff` \| `friendly`. |
-| `GET` | `/matches/player/:playerId?limit=N` | Partidos en los que aparece el jugador (incluye los de 0 segundos). Lista vacía si no ha jugado ninguno. |
+| `GET` | `/matches/player/:playerId?limit=N` | Partidos en los que aparece el jugador (incluye los de menos de 15' y los nulos). Lista vacía si no ha jugado ninguno. |
 | `GET` | `/matches/:id` | Un partido por `matchId` de EA (objeto, 404 si no existe). |
 
-Cada `IMatch` lleva `localClub`/`awayClub` con `matchStats`, `players[]` (`IMatchPlayer`: `playerId`, `playerName`, `secondsPlayed`, `rating`, `matchEvents`…), `penaltiesScore` si hubo tanda, y a nivel de partido `result`, `winnerByDnf`, `winnerByPen`, `localTeam`.
+Cada `IMatch` lleva `localClub`/`awayClub` con `matchStats`, `players[]` (`IMatchPlayer`: `playerId`, `playerName`, `secondsPlayed`, `rating`, `matchEvents`…), `penaltiesScore` si hubo tanda, y a nivel de partido `result`, `winnerByDnf`, `winnerByPen`, `localTeam`, `voided` y `voidedBy`.
 
 ### Logros
 
@@ -106,6 +109,7 @@ Requieren sesión **y** rol `admin`. Devuelven `401` sin sesión, `403` sin rol,
 | `GET` | `/admin/link-requests` | — | Solicitudes de vinculación pendientes de jugadores de este club (`ILinkRequest[]`, más antiguas primero). |
 | `POST` | `/admin/link-requests/:id/approve` | — | Aprueba: vincula la cuenta al jugador (misma regla que el `PATCH`) y descarta las demás pendientes del mismo usuario o jugador. Devuelve `{ request, member }`. 404 si no existe o ya no está pendiente. |
 | `POST` | `/admin/link-requests/:id/reject` | — | Rechaza la solicitud. Devuelve la solicitud actualizada. |
+| `PUT` | `/admin/matches/:matchId/voided` | `{ "voided": true \| false \| null }` | Marca (`true`) o desmarca (`false`) el partido como nulo a mano (`voidedBy: "admin"`); `null` lo devuelve al criterio automático. Avisa al worker por RabbitMQ (`stats.recalculate`) y este recalcula stats, logros y medias al momento. Devuelve `{ match, recalculation: "queued" \| "unavailable" }` (`unavailable`: RabbitMQ no respondió o falta `RABBITMQ_URL`; el cambio queda guardado, pero sin recalcular). 404 si no existe. |
 
 ### Variables de entorno
 
@@ -116,6 +120,8 @@ Ver [`apps/api/.env.example`](../apps/api/.env.example).
 ## Auth service (`apps/auth`)
 
 Better Auth con proveedor social de **Twitch**. Cookie de sesión con dominio `COOKIE_DOMAIN` (`.casemuro.stream`).
+
+> Para integrar otra web con las cuentas (alta del origen, login, leer la sesión, tokens de API para servicios de fuera, ejemplos), ver la guía **[AUTH](AUTH)**.
 
 ### Better Auth
 
@@ -155,6 +161,10 @@ Formato: `{ "status": "success", "data": … }` o `{ "status": "error", "message
 | `GET` | `/api/public/users?ids=a,b,c` | — | Datos públicos de usuarios (`IPublicUser[]`: `id`, `name`, `image`). `name` / `image` vienen a `null` si el usuario los ha ocultado (`showPublicName` / `showPublicImage`). Máx. 50 ids; 400 si ninguno es válido. Para mostrar la cuenta vinculada a un jugador. |
 | `GET` | `/api/twitch/sync` | sesión | Re-sincroniza follow / sub / rol del usuario con Twitch. Devuelve `twitchFollowing`, `twitchSub`, `twitchSubTier`, `role`, `twitchSyncedAt` y `partial` (`true` si Twitch falló en una consulta y se conservó el valor anterior). Errores: `NO_TWITCH_ACCOUNT` (404), `TWITCH_TOKEN_EXPIRED` (401: token caducado, revocado o sin permisos; hay que volver a iniciar sesión), `TWITCH_UNAVAILABLE` (el código de Twitch, o 502: fallaron las dos consultas y no se cambió nada), `TWITCH_SYNC_TOO_SOON` (429 con `Retry-After` y `retryAfterSeconds`: menos de 30 s desde la anterior), `MISSING_CHANNEL_ID` (500). |
 | `GET` | `/api/admin/users?q=texto` | sesión + `admin` | Lista de usuarios (`id`, `name`, `image`, `role`, `twitchId`, `discordId`) filtrada por nombre, máx. 200. Para el selector del panel admin. |
+| `GET` | `/api/admin/tokens` | sesión + `admin` | Tokens de API (`id`, `name`, `hint` —principio del token—, `createdAt`, `createdBy`, `lastUsedAt`). Nunca devuelve el token. |
+| `POST` | `/api/admin/tokens` | sesión + `admin` | Body `{ "name": string }` (máx. 60). Crea un token y lo devuelve en `token` **solo en esta respuesta** (`201`); en la base queda su hash SHA-256 (colección `api_tokens`). `400 INVALID_NAME`. |
+| `DELETE` | `/api/admin/tokens/:id` | sesión + `admin` | Revoca (borra) el token: deja de valer en el acto. `404 NOT_FOUND`. |
+| `GET` | `/api/v1/accounts?twitchIds=&twitchLogins=&ids=` | token de API | Para servicios externos (`Authorization: Bearer tpcs_…`), de servidor a servidor. Cuentas por id de Twitch, nombre de usuario de Twitch (sin distinguir mayúsculas) o id de cuenta; máx. 100 valores. Devuelve `id`, `name`, `image`, `role`, `twitchId`, `twitchFollowing`, `twitchSub`, `twitchSubTier`, `twitchSyncedAt`, `twitchNeedsReauth` y `playerId` (jugador vinculado, lo pide a `CLUB_API_URL/members/by-user`). Las que no existen no vienen. Sin email y sin aplicar `showPublicName` / `showPublicImage`. Errores: `401 INVALID_TOKEN`, `400 NO_VALID_PARAMS` / `TOO_MANY`, `429 RATE_LIMITED` (`API_TOKEN_RATE_LIMIT` por minuto y token, 120 por defecto; en memoria), `502 PLAYERS_UNAVAILABLE`. Guía de uso en **[AUTH](AUTH#fuera-de-casemurostream-tokens-de-api)**. |
 | `GET` | `/health` | — | `{ "status": "ok" }`. |
 | `GET` | `/api/dev/status` | — | **Solo en desarrollo** (`DEVMODE=true` + `DEV_LOGIN=true` + `BETTER_AUTH_URL` en localhost; si no, la ruta no existe). Usuarios de prueba disponibles. |
 | `POST` | `/api/dev/login` | — | **Solo en desarrollo.** Body `{ "preset": "visitante" \| "seguidor" \| "sub" \| "admin" }`. Crea (o reutiliza) ese usuario de prueba y deja la cookie de sesión, sin Twitch. Lo usa `pnpm dev:local`. |
@@ -175,3 +185,4 @@ Exchange `events` (topic). Routing keys en `EVENT_KEYS` de shared:
 | `match.new` | `IMatch` | producer comentado |
 | `player.achievement.unlock.onetime` | `IAchievementEventPayload` | producer comentado |
 | `player.achievement.unlock.milestone` | `IMilestoneEventPayload` | producer comentado |
+| `stats.recalculate` | `IStatsRecalculatePayload` | activo · **api → worker**: un admin ha marcado o desmarcado un partido como nulo. El worker lo consume en su cola durable `worker.stats-recalculate` y recalcula stats, logros y medias (si llegan varios seguidos, uno solo). Necesita `RABBITMQ_URL` también en el api, con el mismo vhost que el worker del club. |

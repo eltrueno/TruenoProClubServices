@@ -1,4 +1,4 @@
-import type { IMatch, MatchResult, MatchType } from "@trueno-proclub-services/shared"
+import { countsForStats, type IMatch, type MatchResult, type MatchType, type MatchVoidedBy } from "@trueno-proclub-services/shared"
 import MatchPlayerEntity from "./MatchPlayerEntity"
 
 export interface ClubMatchSide {
@@ -31,6 +31,9 @@ export default class ClubMatchEntity implements IMatch {
     localTeam?: boolean
     localClub!: ClubMatchSide
     awayClub!: ClubMatchSide
+    /** nulo: se enseña, pero no cuenta para rachas, récords ni stats (ver IMatch.voided) */
+    voided?: boolean
+    voidedBy?: MatchVoidedBy | null
 
     constructor(match: IMatch) {
         Object.assign(this, match)
@@ -42,7 +45,14 @@ export default class ClubMatchEntity implements IMatch {
             s.passSuccessRate = (s.passesSuccess / s.passesMade) * 100
             s.tackleSuccessRate = (s.tackleSuccess / s.tacklesMade) * 100
             side.players = (side.players ?? []).map((p) => new MatchPlayerEntity(p))
+            // Partido nulo: nadie lo ha "jugado" a efectos de stats, medias ni forma
+            if (this.voided) for (const p of side.players) p.played = false
         }
+    }
+
+    /** Cuenta para rachas, récords, forma y stats (no es nulo) */
+    get counts(): boolean {
+        return countsForStats(this)
     }
 
     /** Nuestro lado del partido (según localTeam) */

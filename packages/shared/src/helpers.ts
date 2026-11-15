@@ -1,4 +1,5 @@
 /** Utilidades puras compartidas por api y worker. */
+import { MIN_SECONDS_PLAYED } from "./constants.js"
 
 /** Número finito y > 0, si no undefined. Para no pisar datos buenos con "0"/"" de EA. */
 export const positiveNumberOrUndefined = (value: unknown): number | undefined => {
@@ -26,12 +27,30 @@ export const finiteNumberOrUndefined = (value: unknown): number | undefined => {
 }
 
 /**
- * Un jugador que aparece en un partido con 0 segundos (no llegó a entrar) se
- * guarda en el partido para poder verlo, pero NO cuenta para sus stats,
- * medias, logros ni TOTW. Mismo criterio en worker y web.
+ * Un jugador que juega menos de `MIN_SECONDS_PLAYED` (15') en un partido se guarda en el
+ * partido para poder verlo, pero ese partido NO cuenta para sus stats, medias, logros ni
+ * TOTW. Mismo criterio en worker y web.
  */
 export const countsForPlayerStats = (player: { secondsPlayed?: number | null }): boolean =>
-    Number(player?.secondsPlayed) > 0
+    Number(player?.secondsPlayed) >= MIN_SECONDS_PLAYED
+
+type MatchLike = { localClub: { players: { secondsPlayed?: number | null }[] }, awayClub: { players: { secondsPlayed?: number | null }[] } }
+
+/** Lo más que jugó alguien en el partido (de cualquiera de los dos equipos), en segundos */
+export const maxSecondsPlayed = (match: MatchLike): number => {
+    let max = 0
+    for (const p of [...(match.localClub?.players ?? []), ...(match.awayClub?.players ?? [])]) {
+        const s = Number(p?.secondsPlayed)
+        if (Number.isFinite(s) && s > max) max = s
+    }
+    return max
+}
+
+/** Nadie de ninguno de los dos equipos llegó a `MIN_SECONDS_PLAYED`: el partido es nulo (si un admin no dice otra cosa) */
+export const isShortMatch = (match: MatchLike): boolean => maxSecondsPlayed(match) < MIN_SECONDS_PLAYED
+
+/** El partido cuenta para stats, logros, medias, TOTW y rachas (no es nulo) */
+export const countsForStats = (match: { voided?: boolean | null }): boolean => !match?.voided
 
 /**
  * EA devuelve los nombres (jugadores, pros, clubes) como UTF-8 leído como

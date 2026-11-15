@@ -47,6 +47,7 @@
                 </div>
             </div>
             <div class="flex items-center justify-center mt-2 mb-1 md:mt-0 w-full space-x-4">
+                <div v-if="match.voided" class="badge badge-neutral badge-sm" title="No cuenta para nada (estadísticas, logros, rachas)">Nulo</div>
                 <div v-if="match.winnerByDnf" class="badge badge-error badge-sm badge-outline">Desconexión</div>
                 <div class="badge badge-primary badge-sm  p-2">{{ translateMatchType(match.matchType) }}</div>
             </div>
@@ -256,14 +257,17 @@
         window.location.href = routes.match(props.match.matchId);
     }
 
+    // Nulo: marcador apagado, sin color de resultado
     const resultColorLocal = {
-        'text-error': props.match.result=="loose" && props.match.localTeam,
-        'text-success': props.match.result=="win" && props.match.localTeam
+        'text-error': !props.match.voided && props.match.result=="loose" && props.match.localTeam,
+        'text-success': !props.match.voided && props.match.result=="win" && props.match.localTeam,
+        'text-base-content/40': !!props.match.voided
     }
 
     const resultColorAway = {
-        'text-error': props.match.result=="loose" && !props.match.localTeam,
-        'text-success': props.match.result=="win" && !props.match.localTeam
+        'text-error': !props.match.voided && props.match.result=="loose" && !props.match.localTeam,
+        'text-success': !props.match.voided && props.match.result=="win" && !props.match.localTeam,
+        'text-base-content/40': !!props.match.voided
     }
 
 

@@ -1,6 +1,6 @@
 import { Router, json } from "express"
 import { requireAdmin, requireAuth } from "../middleware/requireAdmin.js"
-import { patchMember, uploadMemberImage, imageProxy } from "../controllers/admin.controller.js"
+import { patchMember, uploadMemberImage, imageProxy, setMatchVoided } from "../controllers/admin.controller.js"
 import { getPendingLinkRequests, approveLinkRequest, rejectLinkRequest } from "../controllers/linkRequest.controller.js"
 
 const router = Router()
@@ -13,6 +13,9 @@ router.patch("/members/:playerId", patchMember)
 // (solo esta ruta admite un body grande: el PNG llega en base64)
 router.post("/members/:playerId/image", json({ limit: "8mb" }), uploadMemberImage)
 router.post("/image-proxy", imageProxy)
+
+// Partido nulo a mano (true / false) o vuelta al automático (null); el worker recalcula
+router.put("/matches/:matchId/voided", setMatchVoided)
 
 // Solicitudes de vinculacion pendientes
 router.get("/link-requests", getPendingLinkRequests)

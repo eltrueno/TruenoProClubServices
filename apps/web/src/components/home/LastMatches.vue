@@ -20,7 +20,8 @@ onBeforeMount(() => {
 })
 
 const lastMatch = computed(() => latest.value[0])
-const form = computed(() => latest.value.slice(0, 5))
+// El último partido se enseña aunque sea nulo (con su aviso); la forma solo con los que cuentan
+const form = computed(() => latest.value.filter((m) => m.counts).slice(0, 5))
 
 /** El partido es de hoy: el marcador late suavemente */
 const isToday = computed(() => {
@@ -73,13 +74,14 @@ const playerOfTheMoment = computed(() => {
             <template v-else>
                 <a :href="routes.match(lastMatch.matchId)" class="group flex items-center gap-3 rounded-xl bg-base-100 p-4 hover:bg-base-300/40 transition-colors">
                     <span class="flex-1 min-w-0 truncate font-bold text-sm lg:text-base">{{ lastMatch.ourClub.name }}</span>
-                    <span class="text-2xl lg:text-4xl font-black tracking-tight tabular-nums transition-transform duration-300 group-hover:scale-110" :class="[RESULT_CLASS[lastMatch.result], { 'animate-pulse': isToday }]">
+                    <span class="text-2xl lg:text-4xl font-black tracking-tight tabular-nums transition-transform duration-300 group-hover:scale-110" :class="[lastMatch.voided ? 'text-base-content/40 line-through decoration-2' : RESULT_CLASS[lastMatch.result], { 'animate-pulse': isToday }]">
                         {{ lastMatch.ourClub.matchStats.goals }} : {{ lastMatch.opponentClub.matchStats.goals }}
                     </span>
                     <span class="flex-1 min-w-0 truncate text-right text-sm lg:text-base text-base-content/70">{{ lastMatch.opponentClub.name }}</span>
                 </a>
                 <div class="flex items-center gap-2 mt-3 flex-wrap">
                     <span class="badge badge-sm badge-soft badge-primary">{{ translateMatchType(lastMatch.matchType) }}</span>
+                    <span v-if="lastMatch.voided" class="badge badge-sm badge-neutral" title="Nadie llegó a 15': no cuenta para nada">Nulo</span>
                     <span class="text-xs text-base-content/50">{{ fmtDate(lastMatch.timestamp) }}</span>
                 </div>
 

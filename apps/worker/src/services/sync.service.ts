@@ -46,9 +46,11 @@ export const syncRecentMatches = async (clubId: number, platform: string) => {
             filterNew(friendlyMatches, "friendlyMatch");
 
             for (const match of matchesToInsert) {
+                const inserted = new MatchDTO(match);
                 await insertMatch(match);
-                if (match.matchType !== "friendly") {
-                    await getMatchProducer().publish(new MatchDTO(match));
+                // Ni los amistosos ni los nulos se anuncian
+                if (match.matchType !== "friendly" && !inserted.voided) {
+                    await getMatchProducer().publish(inserted);
                 }
             }
 

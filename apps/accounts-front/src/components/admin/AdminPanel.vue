@@ -19,6 +19,7 @@ import PlayerCard from "./PlayerCard.vue"
 import PlayerImageEditor from "./PlayerImageEditor.vue"
 import AdminSkeleton from "./AdminSkeleton.vue"
 import ClubCrest from "./ClubCrest.vue"
+import ApiTokens from "./ApiTokens.vue"
 
 
 const { user, isPending, isLoggedIn, authUnavailable } = useAccount()
@@ -450,6 +451,8 @@ watch([isPending, isAdmin], ([pending, admin]) => {
 
             <p v-if="filteredMembers.length === 0" class="text-center text-base-content/50 py-8">Ningún jugador coincide con la búsqueda.</p>
         </div>
+
+        <ApiTokens class="mt-12 pt-8 border-t border-base-300" />
     </div>
 
     <PlayerImageEditor

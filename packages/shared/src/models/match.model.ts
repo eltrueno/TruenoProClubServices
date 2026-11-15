@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose"
-import { MATCH_RESULTS, MATCH_TYPES, PLAYER_POSITIONS } from "../constants.js"
+import { MATCH_RESULTS, MATCH_TYPES, MATCH_VOIDED_BY, PLAYER_POSITIONS } from "../constants.js"
 import type { IMatch, IMatchClub, IMatchPlayer } from "../types/match.js"
 
 const matchPlayerSchema = new Schema<IMatchPlayer>(
@@ -66,7 +66,10 @@ const matchSchema = new Schema<MatchDocument>(
         winnerByPen: { type: Boolean, default: false },
         localTeam: { type: Boolean, default: true },
         localClub: { type: matchClubSchema, required: true },
-        awayClub: { type: matchClubSchema, required: true }
+        awayClub: { type: matchClubSchema, required: true },
+        // Nulo: se guarda y se ve, pero no cuenta para nada (ver IMatch.voided)
+        voided: { type: Boolean, default: false },
+        voidedBy: { type: String, enum: [...MATCH_VOIDED_BY, null], default: null }
     },
     { timestamps: true, versionKey: false, collection: "matches" }
 )

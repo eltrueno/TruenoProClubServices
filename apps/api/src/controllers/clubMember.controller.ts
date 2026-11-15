@@ -72,7 +72,33 @@ async function getMemberProfileById(req: Request, res: Response, next: NextFunct
     }
 }
 
-export { getAllMembers, getMemberProfileById, getAllPlayerStats, getAllPlayerStatsByType }
+const MAX_USER_IDS = 100
+
+/**
+ * Jugador vinculado a cada cuenta: `?ids=a,b` -> `[{ userId, playerId }]` (solo las vinculadas).
+ * Público, como el `userId` que ya traen los miembros. La vinculación es global, así que
+ * responde igual el api de cualquier club. Lo usa el auth service para sus consultas con token.
+ */
+async function getPlayersByUsers(req: Request, res: Response, next: NextFunction) {
+    try {
+        const raw = typeof req.query.ids === "string" ? req.query.ids : ""
+        const ids = [...new Set(raw.split(",").map((s) => s.trim()).filter(Boolean))]
+        if (ids.length === 0 || ids.length > MAX_USER_IDS) return next(new Error("ERROR_BAD_REQUEST"))
+        const response = await PlayerIdentityService.getByUserIds(ids)
+        res.json({
+            status: {
+                code: 200,
+                message: "Ok"
+            },
+            response
+        })
+    } catch (err) {
+        console.error(err)
+        next(new Error("ERROR_GETTING_MEMBER"))
+    }
+}
+
+export { getAllMembers, getMemberProfileById, getAllPlayerStats, getAllPlayerStatsByType, getPlayersByUsers }
 async function getMyMember(req: Request, res: Response, next: NextFunction) {
     try {
         if (!req.user) return next(new Error("ERROR_BAD_REQUEST"))

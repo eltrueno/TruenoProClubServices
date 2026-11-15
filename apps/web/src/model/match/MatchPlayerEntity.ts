@@ -30,7 +30,7 @@ export default class MatchPlayerEntity implements IMatchPlayer {
     reflexSaves!: number
     matchEventsRaw?: string
     matchEvents?: Record<string, number>
-    /** false si apareció con 0 segundos: se muestra, pero no cuenta para stats ni medias */
+    /** false si jugó menos de 15' (o el partido es nulo): se muestra, pero no cuenta para stats ni medias */
     played!: boolean
 
     public constructor(player: IMatchPlayer) {
