@@ -1,9 +1,10 @@
 # ===========================
 # Stage 1: Build
 # ===========================
-FROM node:20-slim AS builder
+FROM node:24-slim AS builder
 
-RUN npm install -g pnpm
+# Versión fijada (la de los workflows y el lockfile v9): sin fijar coge la última mayor y pnpm install falla
+RUN npm install -g pnpm@10
 
 WORKDIR /workspace
 
@@ -25,7 +26,7 @@ RUN pnpm --filter @trueno-proclub-services/imagerenderer-client build
 # ===========================
 # Stage 2: Runtime
 # ===========================
-FROM node:20-slim
+FROM node:24-slim
 
 WORKDIR /app
 
