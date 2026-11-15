@@ -32,3 +32,6 @@ node_modules
 # Configuración local de Claude Code (launch.json, ajustes): no va al repo
 .claude/
 .claude
+
+# Temporales de wrangler (Cloudflare)
+.wrangler/
