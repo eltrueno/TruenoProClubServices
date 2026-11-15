@@ -104,10 +104,10 @@ Follow, sub y rol se refrescan solos (al entrar, y en segundo plano si tienen m�
 
 ### 4. (Opcional) El jugador de la cuenta
 
-La API de cada club (`https://api.casemuro.stream` para City; cada club tiene la suya) responde con el jugador de la sesión. Necesita tu origen en su `ALLOWED_ORIGINS`.
+La API de cada club (`https://city.casemuro.stream/api` para City; cada club tiene la suya) responde con el jugador de la sesión. Necesita tu origen en su `ALLOWED_ORIGINS`.
 
 ```js
-const res = await fetch("https://api.casemuro.stream/members/me/identity", { credentials: "include" })
+const res = await fetch("https://city.casemuro.stream/api/members/me/identity", { credentials: "include" })
 const { data } = await res.json()
 // data.playerId: EA ID vinculado a la cuenta (null si no tiene), igual en todos los clubes
 // data.member:   su ficha en este club (null si no ha jugado aquí)
@@ -225,12 +225,12 @@ Con el `playerId`, lo demás es la API pública de cada club, **sin token**:
 
 ```js
 // Ficha completa en un club: miembro, stats (oficiales y amistosos), logros y TOTW
-const res = await fetch(`https://api.casemuro.stream/members/${playerId}`)
+const res = await fetch(`https://city.casemuro.stream/api/members/${playerId}`)
 if (res.status === 404) { /* ese jugador no ha jugado en este club */ }
 const { response } = await res.json() // { member, stats: { official, friendly }, achievements, totw }
 ```
 
-Cada club tiene su API (`https://api.casemuro.stream` es la de City) y un jugador puede estar en uno, en varios o en ninguno. Las stats vienen con un documento por posición. Todo el detalle, en [API.md](API#miembros).
+Cada club tiene su API (`https://city.casemuro.stream/api` es la de City) y un jugador puede estar en uno, en varios o en ninguno. Las stats vienen con un documento por posición. Todo el detalle, en [API.md](API#miembros).
 
 ### Errores y límites
 
@@ -250,4 +250,4 @@ Consejos: agrupa varias cuentas en una petición en vez de hacer una por persona
 
 - Todo lo de solo lectura de la API de cada club: miembros, stats, partidos, logros, TOTW ([API.md](API#rest-api-appsapi)).
 - `GET https://auth.casemuro.stream/api/public/users?ids=…`: nombre y avatar de una cuenta a partir de su id, aplicando su privacidad.
-- `GET https://api.casemuro.stream/members/by-user?ids=…`: jugador vinculado a una cuenta a partir de su id.
+- `GET https://city.casemuro.stream/api/members/by-user?ids=…`: jugador vinculado a una cuenta a partir de su id.
