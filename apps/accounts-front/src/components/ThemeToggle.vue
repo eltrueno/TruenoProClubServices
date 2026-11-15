@@ -30,7 +30,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="join rounded-full bg-base-200 p-0.5" role="radiogroup" aria-label="Tema">
+    <div class="join rounded-full bg-base-200 p-1 gap-0.5" role="radiogroup" aria-label="Tema">
         <button
             v-for="o in OPTIONS"
             :key="o.value"
@@ -39,11 +39,11 @@ onMounted(() => {
             :aria-checked="current === o.value"
             :aria-label="o.label"
             :title="o.label"
-            class="join-item btn btn-xs btn-circle border-none shadow-none"
+            class="join-item btn btn-sm btn-circle border-none shadow-none"
             :class="current === o.value ? 'bg-brand text-white' : 'btn-ghost text-base-content/60'"
             @click="choose(o.value)"
         >
-            <svg class="size-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+            <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
                 <path :d="o.path" />
             </svg>
         </button>
