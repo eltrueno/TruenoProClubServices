@@ -5,7 +5,8 @@ dotenv.config()
 
 /**
  * Avisos del api al worker por RabbitMQ (mismo exchange `events` y mismo vhost que el worker
- * del club). El api solo publica; la conexión se abre al primer aviso y se rehace si se cae.
+ * del club). El api solo publica; la conexión se abre al arrancar (`initEvents`) y, si se cae,
+ * se rehace con el siguiente aviso.
  * Sin `RABBITMQ_URL` no se publica nada (y quien llame lo sabe por el `false`).
  */
 const EXCHANGE_NAME = "events"
@@ -29,13 +30,17 @@ async function getChannel(): Promise<ConfirmChannel | null> {
         try {
             const conn = await connect(RABBITMQ_URL)
             conn.on("error", (err) => console.error("[RabbitMQ] Connection error", err))
-            conn.on("close", reset)
+            conn.on("close", () => {
+                if (connection === conn) console.warn("[RabbitMQ] Connection closed: it will reconnect on the next event")
+                reset()
+            })
             const ch = await conn.createConfirmChannel()
             ch.on("error", (err) => console.error("[RabbitMQ] Channel error", err))
             ch.on("close", () => { channel = null })
             await ch.assertExchange(EXCHANGE_NAME, "topic", { durable: true })
             connection = conn
             channel = ch
+            console.log("Connection to RabbitMQ: OK")
             return ch
         } catch (err) {
             console.error("[RabbitMQ] Connection failed:", err instanceof Error ? err.message : err)
@@ -65,6 +70,15 @@ async function publish(routingKey: string, payload: unknown): Promise<boolean> {
 /** Pide al worker que recalcule stats, logros y medias (p. ej. tras marcar un partido como nulo) */
 export const requestStatsRecalculation = (payload: Omit<IStatsRecalculatePayload, "requestedAt">) =>
     publish(STATS_RECALCULATE_ROUTING_KEY, { ...payload, requestedAt: new Date().toISOString() } satisfies IStatsRecalculatePayload)
+
+/** Al arrancar el api: abre la conexión y deja dicho en el log si hay RabbitMQ o no */
+export async function initEvents(): Promise<void> {
+    if (!RABBITMQ_URL) {
+        console.warn("Connection to RabbitMQ: disabled (RABBITMQ_URL not set). Marking a match as void will not trigger the stats recalculation")
+        return
+    }
+    await getChannel()
+}
 
 /** Para los tests y el apagado */
 export async function closeEvents(): Promise<void> {

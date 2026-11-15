@@ -5,6 +5,7 @@ import errorHandler from "./middleware/errorHandler.js";
 import database from "./database/mongo.js"
 import { migrateToSharedIdentity } from "./services/identityMigration.service.js"
 import { startOrphanLinkSweep } from "./services/identityCleanup.service.js"
+import { initEvents } from "./services/events.service.js"
 
 const app: Express = express();
 
@@ -113,4 +114,7 @@ app.get("/", async function (req, res) {
 app.set('trust proxy', true);
 app.listen(PORT, '0.0.0.0');
 console.log("Listening on port " + PORT);
+
+// RabbitMQ (avisos al worker): se conecta ya para que el log diga si está disponible
+void initEvents()
 ImageStorage.checkConnection()
