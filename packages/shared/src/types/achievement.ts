@@ -11,6 +11,8 @@ export interface IAchievementDefinition {
     step?: number
     threshold?: number
     exact?: number
+    /** lo que vale (en los `infinite`, cada hito). Para rankings y la futura economía del canal */
+    points: number
 }
 
 export interface IAchievementUnlocked {

@@ -77,7 +77,9 @@ Cada `IMatch` lleva `localClub`/`awayClub` con `matchStats`, `players[]` (`IMatc
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| `GET` | `/achievements` | Definiciones (`IAchievementDefinition[]`). La fuente es `packages/shared/src/achievements.definitions.ts`; el worker las sincroniza a la DB al arrancar. |
+| `GET` | `/achievements` | Definiciones de los logros de club (`IAchievementDefinition[]`, con `type: "club"` y `points`). La fuente es `packages/shared/src/achievements.definitions.ts`; el worker deja la DB igual que ese fichero al arrancar (añade, actualiza y borra). |
+
+Los logros de club cuentan **todos los partidos del jugador en el club, oficiales y amistosos juntos** (menos los nulos y los de menos de 15'). Los hitos (`mode: "infinite"`) dan un desbloqueo por cada escalón (`reached`: 25, 50…), cada uno con sus `points`. Si al arrancar el worker ve que ha desaparecido un logro o le han cambiado las condiciones (`category`, `scope`, `mode`, `step`, `threshold`, `exact`), rehace stats y logros desde el historial, en silencio y con la fecha del partido en que se consiguen; cambiar nombre, descripción o puntos no rehace nada.
 
 ### Equipo de la semana (HOF / HOS)
 

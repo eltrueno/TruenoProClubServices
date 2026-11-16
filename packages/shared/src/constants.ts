@@ -29,16 +29,24 @@ export const MATCH_VOIDED_BY = ["auto", "admin"] as const
 export type MatchVoidedBy = typeof MATCH_VOIDED_BY[number]
 
 export const ACHIEVEMENT_CATEGORIES = [
-    "gamesPlayed", "goals", "assists", "redCards", "passesMade", "passesSuccess",
-    "manOfTheMatch", "hattricks", "pokers", "cleanSheets", "saves", "minutesPlayed",
-    "pass_accuracy", "shot_accuracy", "totwBest", "totwWorst"
+    // acumulados del jugador (y, los que existen en el partido, también por partido)
+    "gamesPlayed", "wins", "losses", "ties", "goals", "assists", "shots", "redCards", "passesMade", "passesSuccess",
+    "tacklesMade", "tacklesSuccess", "manOfTheMatch", "hattricks", "pokers", "cleanSheets", "goalsConceded", "saves", "minutesPlayed",
+    // solo de un partido
+    "rating", "pass_accuracy", "shot_accuracy",
+    // equipo de la semana
+    "totwBest", "totwWorst"
 ] as const
 export type AchievementCategory = typeof ACHIEVEMENT_CATEGORIES[number]
 
 export const ACHIEVEMENT_SCOPES = ["cumulative", "match"] as const
 export type AchievementScope = typeof ACHIEVEMENT_SCOPES[number]
 
-export const ACHIEVEMENT_TYPES = ["official", "friendly", "general"] as const
+/**
+ * De quién es el logro: `club` (del jugador en un club, con todos sus partidos, oficiales y
+ * amistosos juntos) o `account` (de la cuenta, común a todos los clubes).
+ */
+export const ACHIEVEMENT_TYPES = ["club", "account"] as const
 export type AchievementType = typeof ACHIEVEMENT_TYPES[number]
 
 export const ACHIEVEMENT_MODES = ["infinite", "unique"] as const

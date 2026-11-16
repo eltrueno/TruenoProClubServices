@@ -13,7 +13,8 @@ const achievementDefinitionSchema = new Schema<IAchievementDefinition>(
         mode: { type: String, enum: ACHIEVEMENT_MODES, required: true },
         step: { type: Number },
         threshold: { type: Number },
-        exact: { type: Number }
+        exact: { type: Number },
+        points: { type: Number, default: 0 }
     },
     { _id: false, timestamps: true, collection: "achievements_definitions" }
 )

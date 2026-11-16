@@ -19,11 +19,14 @@ const SUMMABLE_FIELDS = [
 ] as const
 
 /**
- * Totales de un jugador sumando todas sus posiciones (los logros acumulativos
- * son del jugador, no de la posición).
+ * Totales de un jugador en el club: todas sus posiciones y todos sus partidos, oficiales y
+ * amistosos juntos (los logros son del jugador, no de la posición ni del tipo de partido).
  */
-async function getPlayerTotals(StatsModel: Model<IPlayerStats>, playerId: string) {
-    const docs = await StatsModel.find({ playerId }).lean()
+async function getPlayerTotals(playerId: string) {
+    const docs = (await Promise.all([
+        PlayerStatsOfficialModel.find({ playerId }).lean(),
+        PlayerStatsFriendlyModel.find({ playerId }).lean()
+    ])).flat()
     if (docs.length === 0) return null
     const totals: Record<string, number> = {}
     for (const field of SUMMABLE_FIELDS) {
@@ -89,11 +92,9 @@ const accumulateStatsFromMatch = async (match: IMatch, clubId: number, skipAchie
         )
 
         if (!skipAchievements) {
-            const totals = await getPlayerTotals(StatsModel, player.playerId)
+            const totals = await getPlayerTotals(player.playerId)
             if (totals) {
-                await processAchievements(player.playerId, player.playerName, totals,
-                    { matchType: match.matchType === "friendly" ? "friendly" : "official", matchObj: match },
-                    silentAchievements)
+                await processAchievements(player.playerId, player.playerName, totals, { matchObj: match }, silentAchievements)
             }
         }
     }

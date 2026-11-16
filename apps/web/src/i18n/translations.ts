@@ -48,6 +48,11 @@ export enum Role {
 export const translateAchievementCategory = (category: string): string => {
     const map: Record<string, string> = {
         gamesPlayed: "partidos jugados", played: "partidos jugados",
+        wins: "victorias", losses: "derrotas", ties: "empates",
+        shots: "tiros",
+        tacklesMade: "entradas", tacklesSuccess: "entradas con éxito",
+        goalsConceded: "goles encajados",
+        rating: "valoración",
         goals: "goles",
         assists: "asistencias",
         redCards: "tarjetas rojas", redcards: "tarjetas rojas",

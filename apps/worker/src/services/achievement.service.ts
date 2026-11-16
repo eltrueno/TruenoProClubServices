@@ -3,6 +3,9 @@ import { AchievementDefinitionModel, AchievementUnlockedModel, MemberTotwAppeara
 import { getMilestoneProducer, getAchievementProducer } from "../events/index.js"
 
 
+/** Categorías que se evalúan con las apariciones en el equipo de la semana, no con las stats */
+const TOTW_CATEGORIES = ["totwBest", "totwWorst"]
+
 function getMatchStatValue(player: IMatchPlayer, category: string): number {
     if (category === "pass_accuracy") {
         if (!player.passesMade || player.passesMade < 10) return -1;
@@ -22,6 +25,13 @@ function getMatchStatValue(player: IMatchPlayer, category: string): number {
     return val || 0;
 }
 
+/** Escalones de un hito que faltan por desbloquear: de `lastReached` hasta el valor actual */
+function pendingSteps(value: number, lastReached: number, step: number): number[] {
+    const steps: number[] = []
+    for (let reached = lastReached + step; reached <= value; reached += step) steps.push(reached)
+    return steps
+}
+
 // Core Achievement Checker
 
 /**
@@ -29,17 +39,15 @@ function getMatchStatValue(player: IMatchPlayer, category: string): number {
  * Loads definitions from DB and checks against current stats or current match.
  */
 const checkMemberAchievements = async (
-    stats: Pick<IPlayerStats, "gamesPlayed" | "goals" | "assists" | "redCards"
-        | "passesMade" | "passesSuccess" | "manOfTheMatch" | "hattricks" | "pokers" | "cleanSheets" | "saves" | "minutesPlayed"> & {
-            playerId: string;
-            playerName: string;
-            type: "official" | "friendly";
-            matchObj?: IMatch;
-        },
+    stats: Partial<Record<keyof IPlayerStats, unknown>> & {
+        playerId: string;
+        playerName: string;
+        matchObj?: IMatch;
+    },
     silent = false
 ) => {
-    // 1. Get all definitions for this type (official/friendly)
-    const definitions = await AchievementDefinitionModel.find({ type: stats.type }).lean();
+    // 1. Logros de club sobre estadísticas (los del equipo de la semana van aparte)
+    const definitions = await AchievementDefinitionModel.find({ type: "club", category: { $nin: TOTW_CATEGORIES } }).lean();
 
     // 2. Get already unlocked by this player for these definitions
     const unlocked = await AchievementUnlockedModel.find({
@@ -64,14 +72,14 @@ const checkMemberAchievements = async (
             const myUnlocksForThis = unlocked.filter(u => u.achievementId === def._id);
             const lastReached = myUnlocksForThis.length > 0 ? Math.max(...myUnlocksForThis.map(u => u.reached || 0)) : 0;
 
-            if (statValue >= (lastReached + step)) {
-                const newReached = Math.floor(statValue / step) * step;
+            // Un desbloqueo por cada escalón superado (cada hito da sus puntos), no solo el último
+            for (const reached of pendingSteps(statValue, lastReached, step)) {
                 newUnlocks.push({
                     unlock: {
                         playerId: stats.playerId,
                         playerName: stats.playerName,
                         achievementId: def._id,
-                        reached: newReached,
+                        reached,
                         unlockedAt: stats.matchObj ? new Date(stats.matchObj.timestamp * 1000) : new Date(),
                         matchId: stats.matchObj?.matchId?.toString()
                     },
@@ -132,10 +140,10 @@ const checkMemberAchievements = async (
 
         if (!silent) {
             if (mode === "infinite") {
-                console.info(`[Milestone - ${stats.type}] Triggered ${unlock.achievementId} for ${stats.playerName} (Reached: ${unlock.reached})`);
+                console.info(`[Milestone] Triggered ${unlock.achievementId} for ${stats.playerName} (Reached: ${unlock.reached})`);
                 await getMilestoneProducer().publish(fullPayload as any);
             } else {
-                console.info(`[Achievement - ${stats.type}] Triggered ${unlock.achievementId} for ${stats.playerName}`);
+                console.info(`[Achievement] Triggered ${unlock.achievementId} for ${stats.playerName}`);
                 await getAchievementProducer().publish(fullPayload as any);
             }
         }
@@ -153,7 +161,7 @@ const processAchievements = async (
     playerId: string,
     playerName: string,
     statsForAchievements: any,
-    match: { matchType: "official" | "friendly", matchObj?: IMatch },
+    match: { matchObj?: IMatch } = {},
     silent = false
 ) => {
     const statsData = statsForAchievements.toObject ? statsForAchievements.toObject() : statsForAchievements
@@ -161,12 +169,11 @@ const processAchievements = async (
         ...statsData,
         playerId,
         playerName,
-        type: match.matchType,
         matchObj: match?.matchObj
     }, silent)
 
     if (newUnlocks.length > 0) {
-        if (!silent) console.info(`[Achievements - ${match.matchType}] Saving ${newUnlocks.length} new unlocks for ${playerName}`);
+        if (!silent) console.info(`[Achievements] Saving ${newUnlocks.length} new unlocks for ${playerName}`);
         for (const unlock of newUnlocks) {
             // Use updateOne with upsert to avoid duplicate key errors during batch processing
             await AchievementUnlockedModel.updateOne(
@@ -186,10 +193,10 @@ const processAchievements = async (
  * Checks TOTW-related achievements for a list of players.
  * Counts their best/worst appearances and evaluates "general" type definitions.
  */
-const processTOTWAchievements = async (players: { playerId: string, playerName: string }[]) => {
+const processTOTWAchievements = async (players: { playerId: string, playerName: string }[], silent = false) => {
     const definitions = await AchievementDefinitionModel.find({
-        type: "general",
-        category: { $in: ["totwBest", "totwWorst"] }
+        type: "club",
+        category: { $in: TOTW_CATEGORIES }
     }).lean();
 
     if (definitions.length === 0) return;
@@ -217,14 +224,13 @@ const processTOTWAchievements = async (players: { playerId: string, playerName: 
                 const myUnlocksForThis = unlocked.filter(u => u.achievementId === def._id);
                 const lastReached = myUnlocksForThis.length > 0 ? Math.max(...myUnlocksForThis.map(u => u.reached || 0)) : 0;
 
-                if (statValue >= (lastReached + step)) {
-                    const newReached = Math.floor(statValue / step) * step;
+                for (const reached of pendingSteps(statValue, lastReached, step)) {
                     newUnlocks.push({
                         unlock: {
                             playerId,
                             playerName,
                             achievementId: def._id,
-                            reached: newReached,
+                            reached,
                             unlockedAt: new Date()
                         },
                         mode: "infinite",
@@ -272,6 +278,9 @@ const processTOTWAchievements = async (players: { playerId: string, playerName: 
             const fullPayload = { ...unlock, ...def, achievementId: def._id };
             delete (fullPayload as any)._id;
 
+            // Recálculo: no se re-anuncian logros históricos
+            if (silent) continue
+
             if (mode === "infinite") {
                 console.info(`[Milestone - TOTW] Triggered ${unlock.achievementId} for ${playerName} (Reached: ${unlock.reached})`);
                 await getMilestoneProducer().publish(fullPayload as any);
@@ -300,24 +309,56 @@ const recalculateAllTOTWAchievements = async () => {
         return
     }
 
-    await processTOTWAchievements(allPlayers)
+    await processTOTWAchievements(allPlayers, true)
     console.info(`[Achievements] TOTW achievement recalculation done for ${allPlayers.length} players.`)
 }
 
 export { processAchievements, processTOTWAchievements, recalculateAllTOTWAchievements }
 
 /**
- * Upserta las definiciones del repo (shared) en la DB. Idempotente; se llama al
- * arrancar para que una DB nueva tenga logros desde el primer partido.
+ * Deja en la DB exactamente las definiciones del repo (shared): upserta las que hay y borra
+ * las que ya no existen. Idempotente; se llama al arrancar para que una DB nueva tenga logros
+ * desde el primer partido.
+ *
+ * Devuelve true si ha cambiado algo que afecta a lo ya desbloqueado (un logro que desaparece,
+ * o uno al que le cambian las condiciones): quien llama debe rehacer los logros desde cero.
+ * Uno nuevo no cuenta: como mucho se desbloqueará con el siguiente partido de cada jugador.
  */
-const syncAchievementDefinitions = async () => {
-    if (ACHIEVEMENT_DEFINITIONS.length === 0) return
+const CONDITION_FIELDS = ["category", "scope", "type", "mode", "step", "threshold", "exact"] as const
+
+const syncAchievementDefinitions = async (): Promise<boolean> => {
+    if (ACHIEVEMENT_DEFINITIONS.length === 0) return false
+    const current = await AchievementDefinitionModel.find({}).lean()
+    const byId = new Map(current.map((d) => [String(d._id), d as Record<string, unknown>]))
+    const ids = ACHIEVEMENT_DEFINITIONS.map((d) => d._id)
+
+    const removed = current.filter((d) => !ids.includes(String(d._id))).map((d) => String(d._id))
+    const changed = ACHIEVEMENT_DEFINITIONS.filter((def) => {
+        const old = byId.get(def._id)
+        return !!old && CONDITION_FIELDS.some((f) => (old[f] ?? null) !== ((def as unknown as Record<string, unknown>)[f] ?? null))
+    }).map((d) => d._id)
+
     const res = await AchievementDefinitionModel.bulkWrite(
-        ACHIEVEMENT_DEFINITIONS.map((def) => ({
-            updateOne: { filter: { _id: def._id }, update: { $set: def }, upsert: true }
-        }))
+        ACHIEVEMENT_DEFINITIONS.map((def) => {
+            // Lo que la definición ya no lleva (p. ej. `exact`) se quita, no se queda de antes
+            const unset = Object.fromEntries(CONDITION_FIELDS.filter((f) => (def as unknown as Record<string, unknown>)[f] === undefined).map((f) => [f, "" as const]))
+            return {
+                updateOne: {
+                    filter: { _id: def._id },
+                    update: { $set: def, ...(Object.keys(unset).length ? { $unset: unset } : {}) },
+                    upsert: true
+                }
+            }
+        })
     )
-    console.info(`[Achievements] Definitions synced: ${res.upsertedCount} new, ${res.modifiedCount} updated, ${ACHIEVEMENT_DEFINITIONS.length} total`)
+    if (removed.length > 0) await AchievementDefinitionModel.deleteMany({ _id: { $in: removed } })
+
+    console.info(`[Achievements] Definitions synced: ${res.upsertedCount} new, ${res.modifiedCount} updated, ${removed.length} removed, ${ACHIEVEMENT_DEFINITIONS.length} total`)
+    if (removed.length > 0 || changed.length > 0) {
+        console.info(`[Achievements] Cambian logros ya existentes (${[...removed, ...changed].join(", ")}): hay que rehacer los desbloqueados`)
+        return true
+    }
+    return false
 }
 
 export { syncAchievementDefinitions }
