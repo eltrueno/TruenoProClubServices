@@ -85,7 +85,10 @@ export const tpcsApi = {
     },
 
     achievements: {
+        /** Logros de club (los de este club) */
         getDefinitions: () => api<IAchievementDefinition[]>("/achievements"),
+        /** Logros de cuenta (comunes a todos los clubes) */
+        getAccountDefinitions: () => api<IAchievementDefinition[]>("/achievements/account"),
     },
 
     totw: {

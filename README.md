@@ -28,7 +28,8 @@ Puedes ver el sistema en funcionamiento en el despliegue oficial de **Casemuro C
 ##### **shared** — Tipos, constantes y modelos
 - Fuente de verdad del dominio: interfaces (`IClubMember`, `IMatch`, `IPlayerStats`, `ITOTW`…), constantes (`PLAYER_POSITIONS`, `MATCH_TYPES`, `EVENT_KEYS`, `UserRole`…), contratos de la API (`ApiResponse`, `IPlayerProfile`), payloads de eventos y helpers puros.
 - `@trueno-proclub-services/shared/models`: esquemas mongoose que comparten api y worker.
-- `achievements.definitions.ts`: definiciones de los logros (el worker las sincroniza a la DB al arrancar).
+- `achievements.definitions.ts`: los logros **de club** (una línea por logro: qué mide, cuánto hace falta, puntos y apartado; la rareza sale de los puntos). Cuentan todos los partidos del jugador en el club, oficiales y amistosos juntos. El worker deja la DB igual al arrancar y, si aparece, desaparece o cambia de condiciones alguno, rehace los desbloqueados desde el historial.
+- `achievements.account.ts`: los logros **de cuenta**, comunes a todos los clubes y solo para cuentas vinculadas a su jugador (cuenta, entre clubes y colección). No se pierden nunca.
 
 ##### **eafcapi** — Cliente de la API de EA
 - Llamadas a `proclubs.ea.com` vía puppeteer (necesita Chrome).
@@ -49,6 +50,7 @@ Puedes ver el sistema en funcionamiento en el despliegue oficial de **Casemuro C
 
 ##### **worker** — Sincronización y cálculo
 - Cada `WORKER_INTERVAL` segundos trae los partidos nuevos de EA, los normaliza (`MatchDTO`), da de alta a los miembros que aparecen, acumula stats, evalúa logros y publica eventos en RabbitMQ.
+- **Logros**: los de club se evalúan con cada partido (totales, hazañas de un partido —del jugador o del equipo—, rachas y calendario); después de cada sincronización deja en la base compartida el resumen de sus jugadores y evalúa los logros de cuenta, pidiendo al auth los datos de cada cuenta con un token de API (`AUTH_API_TOKEN`).
 - Job semanal del equipo de la semana (HOF / HOS).
 - Enriquecimiento de miembros (`proName`, `proOverall`…) desde `members/stats` de EA sin pisar datos buenos con valores vacíos.
 
@@ -191,14 +193,14 @@ Las más importantes:
 | `DEVMODE` | api, auth | CORS abierto y cookies sin dominio, solo para desarrollo |
 | `RABBITMQ_URL` | worker, discordbot, api | Conexión a RabbitMQ (en el api: avisar al worker de recalcular stats; mismo vhost que el worker del club) |
 | `WORKER_INTERVAL` | worker | Segundos entre sincronizaciones con EA |
-| `FORCE_RECALCULATE` | worker | Recalcula todas las stats y logros desde el histórico al arrancar |
+| `FORCE_RECALCULATE` | worker | Recalcula todas las stats y logros desde el histórico al arrancar (también lo hace solo si cambian las condiciones de algún logro) |
 | `TOTW_CRON_SCHEDULE`, `TZ` | api, worker | Cuándo se calcula el equipo de la semana |
 | `CLUB_CACHE_MS`, `CLUB_RETRY_MS` | api | TTL de la caché de `/club` y espera tras un fallo de EA |
 | `CLUB_API_URL` | auth | Api de un club cualquiera (por defecto `https://api.casemuro.stream`): de ahí saca el jugador vinculado a cada cuenta para `GET /api/v1/accounts` |
 | `API_TOKEN_RATE_LIMIT` | auth | Peticiones por minuto y token de API (120 por defecto) |
 | `TWITCH_CLIENT_ID/SECRET`, `TWITCH_CHANNEL_ID` | auth | Proveedor Twitch y canal a seguir (`TWITCH_CHANNEL_ID` es el id **numérico** del canal) |
 | `DISCORD_CLIENT_ID/SECRET` | auth | App de Discord para **vincular** Discord a la cuenta (opcional; vale la del bot). En la app hay que añadir el redirect `<BETTER_AUTH_URL>/api/auth/callback/discord`. Sin ellas no se puede vincular |
-| `AUTH_URL`, `AUTH_API_TOKEN` | discordbot | Auth service y token de API (se crea en `/admin` de accounts) para saber el Discord de cada jugador. Sin token, el bot pone nombres en vez de menciones |
+| `AUTH_URL`, `AUTH_API_TOKEN` | discordbot, worker | Auth service y token de API (se crea en `/admin` de accounts). Bot: para saber el Discord de cada jugador (sin token pone nombres en vez de menciones). Worker: datos de cada cuenta para los logros de cuenta (sin token solo evalúa los que dependen del juego) |
 | `TWITCH_SYNC_INTERVAL_MINUTES`, `TWITCH_SYNC_STALE_MINUTES`, `TWITCH_SYNC_RETRY_MINUTES` | auth | Cada cuánto pasa el repaso de follow/sub (60), a partir de cuándo se consideran viejos los datos (360) y espera tras un intento fallido (10) |
 | `BETTER_AUTH_SECRET` | auth | Firma las sesiones y cifra los tokens de Twitch guardados. Si cambia, los usuarios tendrán que volver a conectar Twitch |
 | `PUPPETEER_EXECUTABLE_PATH` | api, worker, imagerenderer | Ruta a Chrome si no está en la ubicación por defecto |
@@ -271,7 +273,9 @@ Para usar las cuentas desde otra web (login compartido y sesión dentro de `case
 | `matches` | Partidos normalizados (`_id` = `matchId`) |
 | `member_stats_officials` / `member_stats_friendlies` | Stats acumuladas por jugador y posición |
 | `player_average_stats` | Medias del club por posición |
-| `achievements_definitions` / `achievements_unlocked` | Definiciones y desbloqueos de logros |
+| `achievements_definitions` / `achievements_unlocked` | Definiciones y desbloqueos de los logros de club |
+| `achievements_progress` | Estado por jugador para los logros de rachas y calendario |
+| `player_club_totals` / `account_achievements_unlocked` (base compartida) | Resumen de cada jugador en cada club y desbloqueos de los logros de cuenta |
 | `totw` / `member_totw_appearances` | Equipo de la semana y apariciones |
 
 Cada club tiene su base (la de `MONGO_URL`). Además hay una **base compartida** entre clubes (`SHARED_DB_NAME`, por defecto `tpcs27_shared`) para lo que es de la persona y no del club:
@@ -357,7 +361,7 @@ This project is an **evolution** of [Caracantosmeaos](https://github.com/Caracan
 #### `/apps`
 
 - **api** — Express + Mongoose REST API: club, members, matches, stats, achievements, HOF/HOS, position averages, account ↔ player link requests and an admin panel backend (player photo with a 400×450 crop editor uploading to Cloudflare R2, linked account, request approval). Protected routes validate the session against the auth service. 📖 **Endpoints: [docs/API.md](docs/API.md)**
-- **worker** — Every `WORKER_INTERVAL` seconds fetches new matches from EA, normalizes them (`MatchDTO`), registers the members that appear, accumulates stats, evaluates achievements and publishes RabbitMQ events. Weekly team-of-the-week job. Enriches members (`proName`, `proOverall`…) from EA without overwriting good data with empty values.
+- **worker** — Every `WORKER_INTERVAL` seconds fetches new matches from EA, normalizes them (`MatchDTO`), registers the members that appear, accumulates stats, evaluates achievements and publishes RabbitMQ events. Achievements come in two kinds, each with points, a rarity and a category: **club** ones (all of a player's matches in the club, official and friendly together: totals, single-match feats, streaks and calendar) and **account** ones (shared across clubs, only for accounts linked to a player, never lost; stored in the shared database). Weekly team-of-the-week job. Enriches members (`proName`, `proOverall`…) from EA without overwriting good data with empty values.
 - **auth** — Express + Better Auth + MongoDB: Twitch login, follow/sub/role sync (on sign-in, in the background when stale and in a periodic sweep), **Discord linking** (link only: sign-in is always Twitch), public users endpoint, admin user listing and **API tokens** for external services (`GET /api/v1/accounts`: from a Twitch account to its account and linked player; created and revoked in the admin panel).
 - **web** — Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5 frontend. Fully static, deployed to GitHub Pages (`.github/workflows/deploy-web.yml`, custom domain via a generated `CNAME`). Multi-club: one club per repository; other clubs live in satellite repos that only hold a workflow cloning this one, and a successful deploy here triggers them (`repository_dispatch`, `CLUB_PAGES_REPOS` variable and `CLUB_PAGES_DISPATCH_TOKEN` secret) so every club publishes the same commit. Dynamic pages take query params read client-side (`/jugador?id=<playerId>`, `/partido?id=<matchId>`, `/totw?semana=…&tipo=…`). `/admin` redirects to the admin panel in accounts (`accounts.casemuro.stream/admin?club=<id>`). Signing in and account settings live in **accounts** (below); the club site only keeps the theme (in the account menu) and the **Mi jugador** button, which opens the linked player's page in this club, is disabled when the account has a player who never played for this club, and links to accounts to request the link otherwise. `/micuenta` and `/login` are kept as redirects to accounts. Configured through `PUBLIC_*` env vars (`apps/web/.env.example`). The link preview image (`/og.png`, 1200×630 PNG) is generated at build time from the club crest over its `themeColor`.
 - **accounts-front** — `accounts.casemuro.stream`, shared by every club: sign-in (`/login?redirect=<url>`), profile and Twitch sync, connections (**connect / disconnect Discord**, so the bot knows who to mention), **Mi jugador** across all clubs (one account = one EA ID), privacy, account deletion and the privacy policy, plus the **admin panel** at `/admin` (`admin` role only), shared by every club: one list with the players of every club (each once, with the crests of the clubs they played for) and the pending link requests; club tabs only filter (`?club=city|united`). Photo and linked account are global: the link is saved through the api of a club the player is in and the photo is sent to all of them (`/admin/*`); accounts come from auth (`/api/admin/users`). Astro 7 + Vue 3 + Tailwind CSS 4 + DaisyUI 5, fully static, deployed as a static-assets **Cloudflare Worker** connected to the repo (Cloudflare builds and deploys every push to `main`; no GitHub Action or secrets; config in `apps/accounts-front/wrangler.jsonc`). Club sites send users here to sign in and get them back afterwards; `redirect` is only honoured for its own paths and `https://*.casemuro.stream` sites (no open redirect). The session cookie is on `.casemuro.stream`, so one sign-in works everywhere. Brand colours blend the City red (`#c80d0d`) into the United maroon (`#b90a34`) left to right. Worker settings: name `casemuro-accounts` (must match `wrangler.jsonc`), root = repo root, production branch `main`, build command `pnpm --filter @trueno-proclub-services/shared build && pnpm --filter @trueno-proclub-services/auth build && pnpm --filter @trueno-proclub-services/accounts-front build`, deploy command `npx wrangler deploy --config apps/accounts-front/wrangler.jsonc`, build variables `NODE_VERSION=24`, `PNPM_VERSION=10.32.1`, `PUPPETEER_SKIP_DOWNLOAD=true`, `PUBLIC_SITE_URL=https://accounts.casemuro.stream` (plus `PUBLIC_CLUBS=city` if a club has no API yet), build watch paths `apps/accounts-front/*`, `packages/shared/*`, `packages/auth/*`, custom domain `accounts.casemuro.stream`. Add that origin to `ALLOWED_ORIGINS` in auth and every club API.
@@ -430,12 +434,12 @@ Each app ships a commented `.env.example`: [`apps/api`](apps/api/.env.example), 
 | `DEVMODE` | api, auth | Open CORS and host-only cookies, development only |
 | `RABBITMQ_URL` | worker, discordbot, api | RabbitMQ connection (in the api: ask the worker to recalculate stats; same vhost as the club's worker) |
 | `WORKER_INTERVAL` | worker | Seconds between EA syncs |
-| `FORCE_RECALCULATE` | worker | Recompute all stats and achievements from match history on startup |
+| `FORCE_RECALCULATE` | worker | Recompute all stats and achievements from match history on startup (also happens on its own when an achievement's conditions change) |
 | `TOTW_CRON_SCHEDULE`, `TZ` | api, worker | When the team of the week is computed |
 | `CLUB_CACHE_MS`, `CLUB_RETRY_MS` | api | `/club` cache TTL and cooldown after an EA failure |
 | `TWITCH_CLIENT_ID/SECRET`, `TWITCH_CHANNEL_ID` | auth | Twitch provider and channel to follow (`TWITCH_CHANNEL_ID` is the **numeric** channel id) |
 | `DISCORD_CLIENT_ID/SECRET` | auth | Discord app used to **link** Discord to an account (optional; the bot's app works). Add the redirect `<BETTER_AUTH_URL>/api/auth/callback/discord` to the app. Without them linking is unavailable |
-| `AUTH_URL`, `AUTH_API_TOKEN` | discordbot | Auth service and API token (created in accounts `/admin`) to resolve each player's Discord. Without a token the bot prints names instead of mentions |
+| `AUTH_URL`, `AUTH_API_TOKEN` | discordbot, worker | Auth service and API token (created in accounts `/admin`). Bot: resolves each player's Discord (names instead of mentions without it). Worker: account data for account achievements (only game-based ones are evaluated without it) |
 | `TWITCH_SYNC_INTERVAL_MINUTES`, `TWITCH_SYNC_STALE_MINUTES`, `TWITCH_SYNC_RETRY_MINUTES` | auth | How often the follow/sub sweep runs (60), when data counts as stale (360) and the wait after a failed attempt (10) |
 | `BETTER_AUTH_SECRET` | auth | Signs sessions and encrypts stored Twitch tokens. Changing it forces users to reconnect Twitch |
 | `PUPPETEER_EXECUTABLE_PATH` | api, worker, imagerenderer | Chrome path if not in the default location |

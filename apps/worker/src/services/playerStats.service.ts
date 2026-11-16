@@ -1,6 +1,7 @@
 import { countsForPlayerStats, countsForStats, type IMatch, type IMatchPlayer, type IPlayerStats } from "@trueno-proclub-services/shared"
-import { AchievementUnlockedModel, MatchModel, PlayerStatsOfficialModel, PlayerStatsFriendlyModel } from "@trueno-proclub-services/shared/models"
+import { AchievementProgressModel, AchievementUnlockedModel, MatchModel, PlayerStatsOfficialModel, PlayerStatsFriendlyModel } from "@trueno-proclub-services/shared/models"
 import { processAchievements, recalculateAllTOTWAchievements } from "./achievement.service.js"
+import { advanceProgress, matchMetrics, progressMetrics } from "./achievementMetrics.js"
 import { Model } from "mongoose"
 
 /**
@@ -19,11 +20,14 @@ const SUMMABLE_FIELDS = [
 ] as const
 
 /**
- * Totales de un jugador sumando todas sus posiciones (los logros acumulativos
- * son del jugador, no de la posición).
+ * Totales de un jugador en el club: todas sus posiciones y todos sus partidos, oficiales y
+ * amistosos juntos (los logros son del jugador, no de la posición ni del tipo de partido).
  */
-async function getPlayerTotals(StatsModel: Model<IPlayerStats>, playerId: string) {
-    const docs = await StatsModel.find({ playerId }).lean()
+async function getPlayerTotals(playerId: string) {
+    const docs = (await Promise.all([
+        PlayerStatsOfficialModel.find({ playerId }).lean(),
+        PlayerStatsFriendlyModel.find({ playerId }).lean()
+    ])).flat()
     if (docs.length === 0) return null
     const totals: Record<string, number> = {}
     for (const field of SUMMABLE_FIELDS) {
@@ -88,12 +92,20 @@ const accumulateStatsFromMatch = async (match: IMatch, clubId: number, skipAchie
             { upsert: true }
         )
 
+        // Rachas y calendario: el estado avanza con cada partido que cuenta, se evalúen o no los logros
+        const previous = await AchievementProgressModel.findOne({ playerId: player.playerId }, { _id: 0, createdAt: 0, updatedAt: 0 }).lean()
+        const progress = advanceProgress(previous, match, player, clubId)
+        await AchievementProgressModel.updateOne({ playerId: player.playerId }, { $set: progress }, { upsert: true })
+
         if (!skipAchievements) {
-            const totals = await getPlayerTotals(StatsModel, player.playerId)
+            const totals = await getPlayerTotals(player.playerId)
             if (totals) {
-                await processAchievements(player.playerId, player.playerName, totals,
-                    { matchType: match.matchType === "friendly" ? "friendly" : "official", matchObj: match },
-                    silentAchievements)
+                await processAchievements(
+                    { playerId: player.playerId, playerName: player.playerName },
+                    { cumulative: { ...totals, ...progressMetrics(progress) }, match: matchMetrics(match, player, clubId) },
+                    match,
+                    silentAchievements
+                )
             }
         }
     }
@@ -114,6 +126,7 @@ const recalculateAllPlayerStats = async (clubId: number) => {
     await PlayerStatsOfficialModel.deleteMany({})
     await PlayerStatsFriendlyModel.deleteMany({})
     await AchievementUnlockedModel.deleteMany({})
+    await AchievementProgressModel.deleteMany({})
 
     // Process matches chronologically (los nulos los descarta accumulateStatsFromMatch)
     const allMatches = await MatchModel.find({}).sort({ timestamp: 1 }).lean()

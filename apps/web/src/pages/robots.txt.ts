@@ -7,7 +7,6 @@ export const GET: APIRoute = () => {
 Disallow: /404
 Disallow: /404.html
 Disallow: /imagegenerator
-Disallow: /logrosdef
 
 Sitemap: ${baseUrl}/sitemap.xml
 `;
