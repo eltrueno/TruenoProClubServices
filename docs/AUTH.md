@@ -206,6 +206,7 @@ const { data } = await res.json()
       "twitchNeedsReauth": false,
       "discordId": "234567890123456789",
       "discordName": "nombre.en.discord",
+      "createdAt": "2026-09-20T10:15:00.000Z",
       "playerId": "1003297613"
     }
   ]
@@ -214,6 +215,7 @@ const { data } = await res.json()
 
 - **Quien no tiene cuenta no viene en `data`** (no hay error ni entrada vacía). En el ejemplo, `987654321` no se ha registrado. Empareja por `twitchId`, no por posición.
 - `discordId` / `discordName`: la cuenta de Discord que el usuario ha conectado; `null` si no ha conectado ninguna.
+- `createdAt`: cuándo se creó la cuenta.
 - `playerId` es el EA ID del jugador vinculado, el mismo en todos los clubes; `null` si la cuenta no tiene jugador.
 - `role`: `visitor` \| `follower` \| `subscriber` \| `vip` \| `mod` \| `admin`. `twitchSubTier`: `"1000"` / `"2000"` / `"3000"` o `null`.
 - Follow y sub son los de la última comprobación (`twitchSyncedAt`); se refrescan cada pocas horas, no al momento. Con `twitchNeedsReauth: true` pueden estar desfasados hasta que el usuario vuelva a entrar.

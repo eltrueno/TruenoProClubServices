@@ -76,7 +76,7 @@ describe("accountLookupService", () => {
         // La privacidad (showPublicName) no se aplica aquí, y el email no sale nunca
         expect(byName.AnaGamer).toEqual({
             id: ana, name: "AnaGamer", image: "a.png", role: "subscriber", twitchId: "111",
-            twitchFollowing: true, twitchSub: true, twitchSubTier: "1000", twitchSyncedAt: null, twitchNeedsReauth: false, discordId: null, discordName: null, playerId: "EA-1"
+            twitchFollowing: true, twitchSub: true, twitchSubTier: "1000", twitchSyncedAt: null, twitchNeedsReauth: false, discordId: null, discordName: null, createdAt: null, playerId: "EA-1"
         })
         expect(byName.Bob_99).toMatchObject({ id: bob, role: "visitor", twitchFollowing: false, playerId: null, discordId: "900", discordName: "bob" })
         expect(byName.Cia.playerId).toBeNull()

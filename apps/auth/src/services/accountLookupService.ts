@@ -23,6 +23,8 @@ export interface ExternalAccount {
     /** cuenta de Discord vinculada (id y nombre de usuario), null si no tiene */
     discordId: string | null
     discordName: string | null
+    /** cuándo se creó la cuenta */
+    createdAt: Date | null
     /** EA ID del jugador vinculado (el mismo en todos los clubes), null si no tiene */
     playerId: string | null
 }
@@ -45,7 +47,7 @@ const clubApiUrl = () => (process.env.CLUB_API_URL || "https://api.casemuro.stre
 
 const PROJECTION = {
     name: 1, image: 1, role: 1, twitchId: 1, twitchFollowing: 1, twitchSub: 1, twitchSubTier: 1, twitchSyncedAt: 1, twitchNeedsReauth: 1,
-    discordId: 1, discordName: 1
+    discordId: 1, discordName: 1, createdAt: 1
 }
 
 /** userId -> playerId, preguntando al api (los vínculos viven en la base compartida de los clubes) */
@@ -104,6 +106,7 @@ export const accountLookupService = {
             twitchNeedsReauth: u.twitchNeedsReauth === true,
             discordId: u.discordId || null,
             discordName: u.discordName || null,
+            createdAt: u.createdAt ?? null,
             playerId: playerIds.get(id) ?? null,
         }))
         return { ok: true, data }

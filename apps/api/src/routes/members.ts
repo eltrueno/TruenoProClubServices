@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { getAllMembers, getMemberProfileById, getAllPlayerStats, getAllPlayerStatsByType, getMyMember, getMyIdentity, unlinkMyIdentity, getPlayersByUsers } from "../controllers/clubMember.controller.js"
+import { getAllMembers, getMemberProfileById, getAllPlayerStats, getAllPlayerStatsByType, getMyMember, getMyIdentity, unlinkMyIdentity, getPlayersByUsers, getMyAchievements } from "../controllers/clubMember.controller.js"
 import { requireAuth } from "../middleware/requireAdmin.js"
 import { getMyLinkRequest, createMyLinkRequest, cancelMyLinkRequest } from "../controllers/linkRequest.controller.js"
 
@@ -17,6 +17,8 @@ router.get("/me", requireAuth, getMyMember)
 router.get("/me/identity", requireAuth, getMyIdentity)
 // La cuenta suelta su jugador (accounts lo llama antes de borrar la cuenta)
 router.delete("/me/identity", requireAuth, unlinkMyIdentity)
+// Logros de cuenta y puntos (de cuenta y de cada club) de la cuenta con sesión
+router.get("/me/achievements", requireAuth, getMyAchievements)
 // Solicitud de vinculacion cuenta <-> jugador (la aprueba un admin)
 router.get("/me/link-request", requireAuth, getMyLinkRequest)
 router.post("/me/link-request", requireAuth, createMyLinkRequest)

@@ -5,6 +5,7 @@ import { useAccount } from "@/composables/useAccount"
 import ProfileCard from "./account/ProfileCard.vue"
 import ConnectionsCard from "./account/ConnectionsCard.vue"
 import MyPlayerCard from "./account/MyPlayerCard.vue"
+import AchievementsCard from "./account/AchievementsCard.vue"
 import PrivacyCard from "./account/PrivacyCard.vue"
 import DangerZoneCard from "./account/DangerZoneCard.vue"
 
@@ -22,6 +23,7 @@ watch([isPending, isLoggedIn], ([pending, logged]) => {
         <ProfileCard />
         <ConnectionsCard />
         <MyPlayerCard />
+        <AchievementsCard />
         <PrivacyCard />
         <DangerZoneCard />
     </div>

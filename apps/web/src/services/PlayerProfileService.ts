@@ -8,7 +8,7 @@ export default class PlayerProfileService extends FetchService<PlayerProfileEnti
     }
 
     protected async load() {
-        const { member, stats, achievements, totw } = await tpcsApi.members.getProfile(this.playerId)
-        return new PlayerProfileEntity(member, stats, achievements, totw)
+        const { member, stats, achievements, totw, account } = await tpcsApi.members.getProfile(this.playerId)
+        return new PlayerProfileEntity(member, stats, achievements, totw, account)
     }
 }

@@ -1,6 +1,7 @@
 import { countsForPlayerStats, countsForStats, type IMatch, type IMatchPlayer, type IPlayerStats } from "@trueno-proclub-services/shared"
-import { AchievementUnlockedModel, MatchModel, PlayerStatsOfficialModel, PlayerStatsFriendlyModel } from "@trueno-proclub-services/shared/models"
+import { AchievementProgressModel, AchievementUnlockedModel, MatchModel, PlayerStatsOfficialModel, PlayerStatsFriendlyModel } from "@trueno-proclub-services/shared/models"
 import { processAchievements, recalculateAllTOTWAchievements } from "./achievement.service.js"
+import { advanceProgress, matchMetrics, progressMetrics } from "./achievementMetrics.js"
 import { Model } from "mongoose"
 
 /**
@@ -91,10 +92,20 @@ const accumulateStatsFromMatch = async (match: IMatch, clubId: number, skipAchie
             { upsert: true }
         )
 
+        // Rachas y calendario: el estado avanza con cada partido que cuenta, se evalúen o no los logros
+        const previous = await AchievementProgressModel.findOne({ playerId: player.playerId }, { _id: 0, createdAt: 0, updatedAt: 0 }).lean()
+        const progress = advanceProgress(previous, match, player, clubId)
+        await AchievementProgressModel.updateOne({ playerId: player.playerId }, { $set: progress }, { upsert: true })
+
         if (!skipAchievements) {
             const totals = await getPlayerTotals(player.playerId)
             if (totals) {
-                await processAchievements(player.playerId, player.playerName, totals, { matchObj: match }, silentAchievements)
+                await processAchievements(
+                    { playerId: player.playerId, playerName: player.playerName },
+                    { cumulative: { ...totals, ...progressMetrics(progress) }, match: matchMetrics(match, player, clubId) },
+                    match,
+                    silentAchievements
+                )
             }
         }
     }
@@ -115,6 +126,7 @@ const recalculateAllPlayerStats = async (clubId: number) => {
     await PlayerStatsOfficialModel.deleteMany({})
     await PlayerStatsFriendlyModel.deleteMany({})
     await AchievementUnlockedModel.deleteMany({})
+    await AchievementProgressModel.deleteMany({})
 
     // Process matches chronologically (los nulos los descarta accumulateStatsFromMatch)
     const allMatches = await MatchModel.find({}).sort({ timestamp: 1 }).lean()

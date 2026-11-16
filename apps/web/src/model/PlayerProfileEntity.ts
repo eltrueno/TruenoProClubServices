@@ -1,4 +1,4 @@
-import type { IAchievementUnlocked, IClubMember, IMemberTotwAppearances, IPlayerProfile, IAchievementDefinition } from "@trueno-proclub-services/shared"
+import type { IAccountAchievements, IAchievementUnlocked, IClubMember, IMemberTotwAppearances, IPlayerProfile, IAchievementDefinition } from "@trueno-proclub-services/shared"
 import PlayerStatsEntity from "./PlayerStatsEntity"
 
 /** Logro desbloqueado tal y como lo devuelve /members/:id (con la definición embebida) */
@@ -8,11 +8,13 @@ export default class PlayerProfileEntity implements IPlayerProfile {
     member!: IClubMember
     stats: { official: PlayerStatsEntity[]; friendly: PlayerStatsEntity[] } = { official: [], friendly: [] }
     achievements: UnlockedAchievement[] = []
+    /** logros de cuenta y puntos; null si el jugador no tiene cuenta vinculada */
+    account: IAccountAchievements | null = null
     totw: IMemberTotwAppearances[] = []
     playedPositions: Record<string, number> = {}
     mostPlayedPosition: string = ""
 
-    constructor(member: IClubMember, stats: IPlayerProfile["stats"] | undefined, achievements: UnlockedAchievement[], totw: IMemberTotwAppearances[]) {
+    constructor(member: IClubMember, stats: IPlayerProfile["stats"] | undefined, achievements: UnlockedAchievement[], totw: IMemberTotwAppearances[], account: IAccountAchievements | null = null) {
         this.member = member
         if (stats) {
             this.stats = {
@@ -27,6 +29,7 @@ export default class PlayerProfileEntity implements IPlayerProfile {
             this.mostPlayedPosition = Object.entries(positions).sort(([, a], [, b]) => b - a)[0]?.[0] ?? ""
         }
         this.achievements = achievements || []
+        this.account = account ?? null
         this.totw = totw || []
     }
 }

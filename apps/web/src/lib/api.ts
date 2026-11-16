@@ -1,5 +1,5 @@
 import type {
-    ApiResponse, IAverageStats, IClub, IClubMember, ILinkRequest,
+    ApiResponse, IAchievementDefinition, IAverageStats, IClub, IClubMember, ILinkRequest,
     IMatch, IPlayerProfile, IPlayerStats, IPublicUser, ITOTW, IMemberTotwAppearances
 } from "@trueno-proclub-services/shared"
 import { CLUB } from "@/config/club"
@@ -82,6 +82,13 @@ export const tpcsApi = {
         getLatestByType: (type: string, limit?: number) => api<IMatch[]>(`/matches/ordered/${type}${limit ? `?limit=${limit}` : ""}`),
         getByPlayer: (playerId: string, limit?: number) => api<IMatch[]>(`/matches/player/${encodeURIComponent(playerId)}${limit ? `?limit=${limit}` : ""}`),
         getById: (matchId: number | string) => api<IMatch>(`/matches/${matchId}`),
+    },
+
+    achievements: {
+        /** Logros de club (los de este club) */
+        getDefinitions: () => api<IAchievementDefinition[]>("/achievements"),
+        /** Logros de cuenta (comunes a todos los clubes) */
+        getAccountDefinitions: () => api<IAchievementDefinition[]>("/achievements/account"),
     },
 
     totw: {

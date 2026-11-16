@@ -5,6 +5,7 @@ import { syncAchievementDefinitions } from "../services/achievement.service.js";
 import { PlayerStatsOfficialModel } from "@trueno-proclub-services/shared/models"
 import { computePlayerStatsAverages } from "../services/averageStats.service.js";
 import { migrateVoidMatches } from "../services/voidMatches.service.js";
+import { syncAccountAchievements } from "../services/accountAchievement.service.js";
 import { runExclusive } from "./exclusive.js";
 import dotenv from "dotenv"
 
@@ -50,6 +51,9 @@ function startWorker() {
             console.error("[Average Stats] Recalculation error:", err)
         )
         console.info("[Average Stats] Player averages recalculated")
+
+        // Resumen de este club a la base compartida y logros de cuenta (no falla: avisa y sigue)
+        await syncAccountAchievements(CLUBID)
     }).catch((err: unknown) => {
         console.error("[Member Worker] Startup error:", err)
     })
@@ -60,6 +64,8 @@ function startWorker() {
             await runExclusive(async () => {
                 await syncRecentMatches(CLUBID, PLATFORM);
                 await syncMembersFromEA(CLUBID, PLATFORM);
+                // También sin partidos nuevos: alguien puede haberse vinculado, conectado Discord o hecho sub
+                await syncAccountAchievements(CLUBID);
             });
         } catch (e) {
             console.error("[Match Finder Worker] Error during scheduled sync:", e);

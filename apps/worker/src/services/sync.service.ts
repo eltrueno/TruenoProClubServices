@@ -45,6 +45,10 @@ export const syncRecentMatches = async (clubId: number, platform: string) => {
             filterNew(playoffMatches, "playoffMatch");
             filterNew(friendlyMatches, "friendlyMatch");
 
+            // Liga, playoff y amistosos llegan en listas separadas: se ordenan por fecha, porque
+            // las rachas y los logros de calendario dependen de procesarlos en orden
+            matchesToInsert.sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
+
             for (const match of matchesToInsert) {
                 const inserted = new MatchDTO(match);
                 await insertMatch(match);
@@ -63,16 +67,16 @@ export const syncRecentMatches = async (clubId: number, platform: string) => {
             }
         } else {
             console.info("[Sync Service] No matches found in database. Performing initial ingest...");
-            // Ingest everything
-            const ingest = async (apiMatches: any[], type: string) => {
-                for (const match of apiMatches) {
-                    match.matchType = matchTypeMap[type];
-                    await insertMatch(match);
-                }
-            };
-            await ingest(leagueMatches, "leagueMatch");
-            await ingest(playoffMatches, "playoffMatch");
-            await ingest(friendlyMatches, "friendlyMatch");
+            // Todo, en orden cronológico (las rachas y los logros de calendario dependen del orden)
+            const tag = (apiMatches: any[], type: string) => apiMatches.map((match) => {
+                match.matchType = matchTypeMap[type];
+                return match;
+            });
+            const all = [...tag(leagueMatches, "leagueMatch"), ...tag(playoffMatches, "playoffMatch"), ...tag(friendlyMatches, "friendlyMatch")]
+                .sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
+            for (const match of all) {
+                await insertMatch(match);
+            }
             console.info(`[Sync Service] Initial ingest complete: ${leagueMatches.length + playoffMatches.length + friendlyMatches.length} matches`);
         }
     } catch (error) {

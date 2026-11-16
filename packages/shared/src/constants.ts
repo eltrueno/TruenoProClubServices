@@ -28,26 +28,97 @@ export const MIN_SECONDS_PLAYED = 15 * 60
 export const MATCH_VOIDED_BY = ["auto", "admin"] as const
 export type MatchVoidedBy = typeof MATCH_VOIDED_BY[number]
 
-export const ACHIEVEMENT_CATEGORIES = [
-    // acumulados del jugador (y, los que existen en el partido, también por partido)
+/**
+ * Qué mide un logro. El worker calcula estas métricas para el jugador (ver
+ * apps/worker/src/services/achievementMetrics.ts) y la definición solo dice cuál mira y
+ * cuánto hace falta (`step`, `threshold` o `exact`).
+ */
+export const ACHIEVEMENT_METRICS = [
+    // --- acumuladas: totales del jugador en el club (oficiales + amistosos) ---
     "gamesPlayed", "wins", "losses", "ties", "goals", "assists", "shots", "redCards", "passesMade", "passesSuccess",
     "tacklesMade", "tacklesSuccess", "manOfTheMatch", "hattricks", "pokers", "cleanSheets", "goalsConceded", "saves", "minutesPlayed",
-    // solo de un partido
+    // --- acumuladas: rachas y calendario (estado que se va actualizando partido a partido) ---
+    "winStreak", "unbeatenStreak", "lossStreak", "scoringStreak", "assistStreak", "forwardDrought", "sameScoreStreak",
+    "positionsPlayed", "positionsScored",
+    "dayMatches", "dayPerfectWins", "dayAllLosses", "dayGoals", "daysPlayed", "weekStreak", "weekDaysPlayed", "weekendPlayed",
+    "daysSinceLastMatch", "daysSinceFirstMatch",
+    // --- de un partido: del jugador ---
     "rating", "pass_accuracy", "shot_accuracy",
-    // equipo de la semana
-    "totwBest", "totwWorst"
+    "gkGoals", "gkAssists", "defenderGoals", "perfectHattrick", "goalAssistMotm", "goalsAndAssists", "cleanSheetSaves",
+    "metronome", "cleanTackles", "goalAndRedCard", "ghost", "shotsWithoutGoal", "gkConceded", "motmInLoss", "soloScorer",
+    // --- de un partido: del equipo ---
+    "winMargin", "shutoutWinMargin", "teamGoals", "totalGoals", "lossMargin", "goallessDraw", "highScoringDraw",
+    "penaltyWin", "dnfWin", "fullSquadWin", "outnumberedWin", "playoffWin", "teamScorers",
+    // --- de un partido: fechas señaladas ---
+    "christmasMatch", "newYearMatch", "halloweenMatch", "leapDayMatch",
+    // --- equipo de la semana ---
+    "totwBest", "totwWorst",
+    // --- de cuenta (los evalúa el worker con los datos del auth y los totales entre clubes) ---
+    "playerLinked", "discordLinked", "twitchFollower", "twitchSub", "twitchSubHighTier", "fullPack", "accountAgeDays",
+    "clubsPlayed", "minGamesPerClub", "clubsScored", "minGoalsPerClub", "sameDayClubs",
+    "totalGamesPlayed", "totalGoalsScored", "totalAssists", "totalWins", "clubAchievements", "clubPoints"
 ] as const
-export type AchievementCategory = typeof ACHIEVEMENT_CATEGORIES[number]
+export type AchievementMetric = typeof ACHIEVEMENT_METRICS[number]
 
+/** `cumulative`: sobre el acumulado o el estado del jugador. `match`: sobre un partido concreto */
 export const ACHIEVEMENT_SCOPES = ["cumulative", "match"] as const
 export type AchievementScope = typeof ACHIEVEMENT_SCOPES[number]
 
 /**
  * De quién es el logro: `club` (del jugador en un club, con todos sus partidos, oficiales y
- * amistosos juntos) o `account` (de la cuenta, común a todos los clubes).
+ * amistosos juntos) o `account` (de la cuenta, común a todos los clubes; hace falta tener la
+ * cuenta vinculada al jugador).
  */
 export const ACHIEVEMENT_TYPES = ["club", "account"] as const
 export type AchievementType = typeof ACHIEVEMENT_TYPES[number]
+
+/** Apartado en el que se enseña el logro (solo para agruparlos en pantalla) */
+export const ACHIEVEMENT_CATEGORIES = [
+    "milestones", "matches", "attack", "performance", "defense", "discipline", "team", "streaks", "expert", "curiosities",
+    "account", "global", "collection"
+] as const
+export type AchievementCategory = typeof ACHIEVEMENT_CATEGORIES[number]
+
+export const ACHIEVEMENT_CATEGORY_LABELS: Record<AchievementCategory, string> = {
+    milestones: "Hitos",
+    matches: "Partidos y victorias",
+    attack: "Goles y asistencias",
+    performance: "Partidazos",
+    defense: "Portería y defensa",
+    discipline: "Tarjetas",
+    team: "De equipo",
+    streaks: "Rachas",
+    expert: "Para expertos",
+    curiosities: "Curiosidades",
+    account: "Tu cuenta",
+    global: "Entre clubes",
+    collection: "Colección"
+}
+
+/**
+ * Rareza: sale de los puntos (así nunca se contradicen). En los hitos que se repiten, de los
+ * puntos de cada escalón.
+ */
+export const ACHIEVEMENT_RARITIES = ["common", "rare", "epic", "legendary"] as const
+export type AchievementRarity = typeof ACHIEVEMENT_RARITIES[number]
+
+export const ACHIEVEMENT_RARITY_LABELS: Record<AchievementRarity, string> = {
+    common: "Común",
+    rare: "Raro",
+    epic: "Épico",
+    legendary: "Legendario"
+}
+
+/** Hasta 10 puntos común, hasta 25 raro, hasta 50 épico y por encima legendario */
+/**
+ * Logros ocultos: mientras no se consiguen, la web enseña que existen pero no qué son.
+ * Lo son las curiosidades y los legendarios.
+ */
+export const isHiddenAchievement = (category: AchievementCategory, rarity: AchievementRarity): boolean =>
+    category === "curiosities" || rarity === "legendary"
+
+export const rarityFromPoints = (points: number): AchievementRarity =>
+    points <= 10 ? "common" : points <= 25 ? "rare" : points <= 50 ? "epic" : "legendary"
 
 export const ACHIEVEMENT_MODES = ["infinite", "unique"] as const
 export type AchievementMode = typeof ACHIEVEMENT_MODES[number]

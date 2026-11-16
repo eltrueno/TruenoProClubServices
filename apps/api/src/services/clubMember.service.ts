@@ -3,6 +3,7 @@ import type { IClubMember, IClubMemberAdminPatch } from "@trueno-proclub-service
 import * as PlayerIdentityService from "./playerIdentity.service.js"
 import * as PlayerStatsService from "./playerStats.service.js"
 import * as AchievementsService from "./achievements.service.js"
+import * as AccountAchievementsService from "./accountAchievements.service.js"
 import * as TOTWService from "./totw.service.js"
 
 /** Miembro de este club con su vínculo y su foto ya resueltos (identidad global + foto del club) */
@@ -25,6 +26,8 @@ const getProfileById = async (playerId: string) => {
         member,
         "stats": playerStats,
         "achievements": playerAchievements,
+        // Los de cuenta son solo para quien tiene la cuenta vinculada
+        "account": member.userId ? await AccountAchievementsService.getFor(member.userId, playerId) : null,
         "totw": totwAppearances
     }
 }
