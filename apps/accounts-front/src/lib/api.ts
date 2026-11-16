@@ -1,4 +1,4 @@
-import type { ApiResponse, IClubMember, IClubMemberAdminPatch, ILinkRequest, IPublicUser, ImageScope, UserRole } from "@trueno-proclub-services/shared"
+import type { ApiResponse, IAccountAchievements, IAchievementDefinition, IClubMember, IClubMemberAdminPatch, ILinkRequest, IPublicUser, ImageScope, UserRole } from "@trueno-proclub-services/shared"
 import { AUTH_URL, type ClubLink } from "@/config/site"
 
 /** Error de cualquier llamada: `code` estable (TWITCH_TOKEN_EXPIRED, ALREADY_LINKED…) + `httpStatus` */
@@ -89,6 +89,12 @@ export interface IApiToken {
     lastUsedAt: string | null
 }
 
+/** `GET /members/me/achievements` del api de un club */
+export interface IMyAchievements extends IAccountAchievements {
+    playerId: string | null
+    clubId: number | null
+}
+
 /** Usuario tal y como lo lista `GET /api/admin/users` del auth */
 export interface IAdminUser extends IPublicUser {
     role: UserRole | string
@@ -112,6 +118,9 @@ export const clubApi = (club: ClubLink) => {
         cancelLinkRequest: () => api<{ cancelled: boolean }>("/members/me/link-request", { method: "DELETE" }),
         /** Suelta el jugador vinculado y retira la solicitud pendiente (antes de borrar la cuenta) */
         unlinkMe: () => api<{ unlinked: boolean }>("/members/me/identity", { method: "DELETE" }),
+        /** Logros de cuenta y puntos de la cuenta con sesión. `clubId` es el id (de EA) de ESTE club */
+        myAchievements: () => api<IMyAchievements>("/members/me/achievements"),
+        accountAchievementDefinitions: () => api<IAchievementDefinition[]>("/achievements/account"),
 
         /** Panel admin (/admin): plantilla, fotos y solicitudes de vinculación de este club */
         admin: {

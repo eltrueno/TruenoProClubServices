@@ -99,7 +99,7 @@ const navTheme = isBase ? "nav-base bg-base-300 dark:bg-base-100 text-base-conte
     document.addEventListener("astro:after-swap", placeLinks);
 
     // Sección activa en cliente: cubre las páginas hijas (/jugador -> Plantilla, /partido -> Partidos)
-    const SECTION_OF: Record<string, string> = { "/jugador": "/plantilla", "/partido": "/partidos", "/logrosdef": "/totw" };
+    const SECTION_OF: Record<string, string> = { "/jugador": "/plantilla", "/partido": "/partidos" };
     function markActive() {
         const path = location.pathname.replace(/\.html$/, "").replace(/\/+$/, "") || "/";
         const section = SECTION_OF[path] ?? path;

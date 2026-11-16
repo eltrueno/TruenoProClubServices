@@ -57,9 +57,9 @@ Excepción: `GET /club` devuelve `{ "status": 200, "response": … }` o `{ "stat
 | `POST` | `/members/me/link-request` | sesión | Body `{ "playerId": string }`. Crea la solicitud (sustituye a la pendiente anterior si la había). `404` si el jugador no existe, `409 ALREADY_LINKED` si la cuenta ya tiene jugador, `409 PLAYER_TAKEN` si el jugador ya tiene cuenta. |
 | `DELETE` | `/members/me/link-request` | sesión | Cancela la solicitud pendiente. `{ cancelled: boolean }`. |
 | `GET` | `/members/by-user?ids=a,b` | — | Jugador vinculado a cada cuenta: `[{ userId, playerId }]`, solo las que tienen uno (las demás no vienen). Máx. 100 ids; `400` sin ids o con más. La vinculación es global: responde lo mismo el api de cualquier club. Lo usa el auth service para `GET /api/v1/accounts`. |
-| `GET` | `/members/:playerId` | — | Perfil completo (`IPlayerProfile`): `{ member, stats: { official, friendly }, achievements, totw }`. 404 si no existe. |
+| `GET` | `/members/:playerId` | — | Perfil completo (`IPlayerProfile`): `{ member, stats: { official, friendly }, achievements, account, totw }`. `achievements` son sus logros de club en este club; `account`, sus logros de cuenta y puntos (`IAccountAchievements`), o `null` si no tiene cuenta vinculada o la base compartida no responde. 404 si no existe. |
 
-`achievements` viene con la definición embebida: `{ playerId, playerName, achievementId, reached?, unlockedAt, matchId?, definition: IAchievementDefinition }`.
+`achievements` y `account.achievements` vienen con la definición embebida: `{ playerId, playerName, achievementId, reached?, unlockedAt, matchId?, definition }` (ver [Logros](#logros)).
 
 ### Partidos
 
@@ -75,9 +75,33 @@ Cada `IMatch` lleva `localClub`/`awayClub` con `matchStats`, `players[]` (`IMatc
 
 ### Logros
 
-| Método | Ruta | Descripción |
-|---|---|---|
-| `GET` | `/achievements` | Definiciones (`IAchievementDefinition[]`). La fuente es `packages/shared/src/achievements.definitions.ts`; el worker las sincroniza a la DB al arrancar. |
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| `GET` | `/achievements` | — | Definiciones de los logros **de club** (`IAchievementDefinition[]`). Salen de la DB, que el worker deja igual que `packages/shared/src/achievements.definitions.ts` al arrancar. |
+| `GET` | `/achievements/account` | — | Definiciones de los logros **de cuenta** (`packages/shared/src/achievements.account.ts`; no pasan por la DB). Iguales en el api de cualquier club. |
+| `GET` | `/members/me/achievements` | sesión | Logros de cuenta y puntos de la cuenta con sesión: `{ playerId, clubId, userId, achievements, points }` (`IAccountAchievements` más `playerId` —jugador vinculado o `null`— y `clubId` —el id de EA de ESTE club, para saber de qué club es cada entrada de `points.clubs`—). |
+
+**Definición** (`IAchievementDefinition`): `_id`, `name`, `description`, `type` (`club` \| `account`), `category` (apartado en el que se enseña: `milestones`, `matches`, `attack`, `performance`, `defense`, `discipline`, `team`, `streaks`, `expert`, `curiosities`, y para los de cuenta `account`, `global`, `collection`; etiquetas en `ACHIEVEMENT_CATEGORY_LABELS`), `points`, `rarity` (`common` ≤ 10 puntos, `rare` ≤ 25, `epic` ≤ 50, `legendary` por encima: sale de los puntos con `rarityFromPoints`), `hidden` (logro oculto: mientras no se consigue, la web enseña que existe pero no qué es; lo son las curiosidades y los legendarios, `isHiddenAchievement`. Es solo visual: la API devuelve la definición completa), `metric` (qué se mide, `ACHIEVEMENT_METRICS`), `scope` (`cumulative` \| `match`), `mode` (`unique` \| `infinite`) y `step` / `threshold` / `exact`.
+
+**Logros de club.** Cuentan todos los partidos del jugador en el club, oficiales y amistosos juntos (menos los nulos y los de menos de 15'). Hay de cuatro clases según de dónde sale la métrica:
+
+- totales del jugador (goles, partidos, victorias…),
+- un partido concreto, del jugador (5 goles, portero que marca, 100% de pases…) o del equipo (ganar por 5, 10 goles, tanda de penaltis, 11 del club…); los de equipo se los lleva cada jugador del club que juega ese partido,
+- rachas (victorias seguidas, partidos marcando, sequía de delantero…),
+- calendario, en la hora local del club (`TZ`): partidos en un día, días distintos, semanas seguidas, fin de semana, fechas señaladas…
+
+Para rachas y calendario el worker guarda un estado por jugador (`achievements_progress`, `IAchievementProgress`) que avanza con cada partido que cuenta, **en orden cronológico** (por eso los partidos nuevos se insertan ordenados por fecha). Los hitos (`mode: "infinite"`) dan un desbloqueo por cada escalón (`reached`: 25, 50…), cada uno con sus `points`.
+
+Si al arrancar el worker ve que ha desaparecido un logro, que le han cambiado las condiciones (`metric`, `scope`, `type`, `mode`, `step`, `threshold`, `exact`) o que hay uno nuevo, rehace stats, estado y logros desde el historial, en silencio y con la fecha del partido en que se consigue cada uno. Cambiar nombre, descripción, apartado o puntos no rehace nada. Ahora mismo no hay logros del equipo de la semana (el motor los sigue soportando: métricas `totwBest` / `totwWorst`).
+
+**Logros de cuenta.** Comunes a todos los clubes y solo para cuentas vinculadas a su jugador. Al vincularse se reciben de golpe los que ya se cumplan y **no se pierden nunca** (ni al dejar de ser sub, ni al desconectar Discord, ni al desvincularse). Viven en la base compartida:
+
+- `player_club_totals` (`IPlayerClubTotals`): lo que lleva cada jugador en cada club (partidos, victorias, goles, asistencias, último día jugado, logros de club y sus puntos). Cada worker escribe solo las filas de su club; juntas dan los totales "entre clubes" sin que un club lea la base de otro.
+- `account_achievements_unlocked` (`IAccountAchievementUnlocked`: `userId, playerId, achievementId, reached?, unlockedAt`), con índice único para que dos workers no dupliquen.
+
+Cada worker, al arrancar y después de cada sincronización (`WORKER_INTERVAL`), actualiza su resumen y evalúa a todas las cuentas vinculadas. Los datos de la cuenta (Discord, follow, sub y nivel, antigüedad) los pide al auth con un token de API (`AUTH_URL`, `AUTH_API_TOKEN`, `GET /api/v1/accounts?ids=`). Sin token, o si el auth no responde, se evalúan solo los que dependen del juego y los de la cuenta se dejan para la siguiente (no se da por hecho que alguien no es sub).
+
+**Puntos** (`IAccountAchievements.points`): `account` (logros de cuenta), `clubs[]` (`{ clubId, points, achievements }` de los logros de club en cada club) y `total`. Pensados para rankings y para la futura economía del canal.
 
 ### Equipo de la semana (HOF / HOS)
 
@@ -174,7 +198,7 @@ Formato: `{ "status": "success", "data": … }` o `{ "status": "error", "message
 | `GET` | `/api/admin/tokens` | sesión + `admin` | Tokens de API (`id`, `name`, `hint` —principio del token—, `createdAt`, `createdBy`, `lastUsedAt`). Nunca devuelve el token. |
 | `POST` | `/api/admin/tokens` | sesión + `admin` | Body `{ "name": string }` (máx. 60). Crea un token y lo devuelve en `token` **solo en esta respuesta** (`201`); en la base queda su hash SHA-256 (colección `api_tokens`). `400 INVALID_NAME`. |
 | `DELETE` | `/api/admin/tokens/:id` | sesión + `admin` | Revoca (borra) el token: deja de valer en el acto. `404 NOT_FOUND`. |
-| `GET` | `/api/v1/accounts?twitchIds=&twitchLogins=&discordIds=&ids=` | token de API | Para servicios externos (`Authorization: Bearer tpcs_…`), de servidor a servidor. Cuentas por id de Twitch, nombre de usuario de Twitch (sin distinguir mayúsculas), id de Discord o id de cuenta; máx. 100 valores. Devuelve `id`, `name`, `image`, `role`, `twitchId`, `twitchFollowing`, `twitchSub`, `twitchSubTier`, `twitchSyncedAt`, `twitchNeedsReauth`, `discordId`, `discordName` y `playerId` (jugador vinculado, lo pide a `CLUB_API_URL/members/by-user`). Las que no existen no vienen. Sin email y sin aplicar `showPublicName` / `showPublicImage`. Errores: `401 INVALID_TOKEN`, `400 NO_VALID_PARAMS` / `TOO_MANY`, `429 RATE_LIMITED` (`API_TOKEN_RATE_LIMIT` por minuto y token, 120 por defecto; en memoria), `502 PLAYERS_UNAVAILABLE`. Guía de uso en **[AUTH](AUTH#fuera-de-casemurostream-tokens-de-api)**. |
+| `GET` | `/api/v1/accounts?twitchIds=&twitchLogins=&discordIds=&ids=` | token de API | Para servicios externos (`Authorization: Bearer tpcs_…`), de servidor a servidor. Cuentas por id de Twitch, nombre de usuario de Twitch (sin distinguir mayúsculas), id de Discord o id de cuenta; máx. 100 valores. Devuelve `id`, `name`, `image`, `role`, `twitchId`, `twitchFollowing`, `twitchSub`, `twitchSubTier`, `twitchSyncedAt`, `twitchNeedsReauth`, `discordId`, `discordName`, `createdAt` y `playerId` (jugador vinculado, lo pide a `CLUB_API_URL/members/by-user`). Las que no existen no vienen. Sin email y sin aplicar `showPublicName` / `showPublicImage`. Errores: `401 INVALID_TOKEN`, `400 NO_VALID_PARAMS` / `TOO_MANY`, `429 RATE_LIMITED` (`API_TOKEN_RATE_LIMIT` por minuto y token, 120 por defecto; en memoria), `502 PLAYERS_UNAVAILABLE`. Guía de uso en **[AUTH](AUTH#fuera-de-casemurostream-tokens-de-api)**. |
 | `GET` | `/health` | — | `{ "status": "ok" }`. |
 | `GET` | `/api/dev/status` | — | **Solo en desarrollo** (`DEVMODE=true` + `DEV_LOGIN=true` + `BETTER_AUTH_URL` en localhost; si no, la ruta no existe). Usuarios de prueba disponibles. |
 | `POST` | `/api/dev/login` | — | **Solo en desarrollo.** Body `{ "preset": "visitante" \| "seguidor" \| "sub" \| "admin" }`. Crea (o reutiliza) ese usuario de prueba y deja la cookie de sesión, sin Twitch. Lo usa `pnpm dev:local`. |

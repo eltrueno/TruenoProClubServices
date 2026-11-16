@@ -5,6 +5,7 @@ import { syncAchievementDefinitions } from "../services/achievement.service.js";
 import { PlayerStatsOfficialModel } from "@trueno-proclub-services/shared/models"
 import { computePlayerStatsAverages } from "../services/averageStats.service.js";
 import { migrateVoidMatches } from "../services/voidMatches.service.js";
+import { syncAccountAchievements } from "../services/accountAchievement.service.js";
 import { runExclusive } from "./exclusive.js";
 import dotenv from "dotenv"
 
@@ -19,7 +20,11 @@ function startWorker() {
 
     // On startup: seed achievement definitions, enrich members from EA and recalculate stats if needed
     // Todo lo que toca stats va por runExclusive (ver utils/exclusive.ts)
-    runExclusive(() => syncAchievementDefinitions().then(() => syncMembersFromEA(CLUBID, PLATFORM)).then(async () => {
+    runExclusive(async () => {
+        // true = cambian logros que ya existían: los desbloqueados se rehacen desde cero
+        const achievementsChanged = await syncAchievementDefinitions()
+        await syncMembersFromEA(CLUBID, PLATFORM)
+
         // Una sola vez: partidos nulos / abandonos de amistosos ya guardados (recalcula si la hace)
         const migrated = await migrateVoidMatches(CLUBID).catch((err) => {
             console.error("[Void matches] Migration error:", err)
@@ -30,8 +35,10 @@ function startWorker() {
 
         if (migrated) {
             console.info("[Player Stats] Already recalculated by the void-matches migration.")
-        } else if (statsCount === 0 || FORCE_RECALCULATE) {
-            console.info("[Player Stats] Performing startup recalculation from match history...")
+        } else if (statsCount === 0 || FORCE_RECALCULATE || achievementsChanged) {
+            console.info(achievementsChanged
+                ? "[Player Stats] Achievement definitions changed: recalculating stats and achievements from match history..."
+                : "[Player Stats] Performing startup recalculation from match history...")
             await recalculateAllPlayerStats(CLUBID).catch(err =>
                 console.error("[Player Stats] Recalculation error:", err)
             )
@@ -44,7 +51,10 @@ function startWorker() {
             console.error("[Average Stats] Recalculation error:", err)
         )
         console.info("[Average Stats] Player averages recalculated")
-    })).catch((err: unknown) => {
+
+        // Resumen de este club a la base compartida y logros de cuenta (no falla: avisa y sigue)
+        await syncAccountAchievements(CLUBID)
+    }).catch((err: unknown) => {
         console.error("[Member Worker] Startup error:", err)
     })
 
@@ -54,6 +64,8 @@ function startWorker() {
             await runExclusive(async () => {
                 await syncRecentMatches(CLUBID, PLATFORM);
                 await syncMembersFromEA(CLUBID, PLATFORM);
+                // También sin partidos nuevos: alguien puede haberse vinculado, conectado Discord o hecho sub
+                await syncAccountAchievements(CLUBID);
             });
         } catch (e) {
             console.error("[Match Finder Worker] Error during scheduled sync:", e);

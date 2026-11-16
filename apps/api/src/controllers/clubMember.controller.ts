@@ -2,6 +2,7 @@ import * as ClubMemberService from "../services/clubMember.service.js"
 import * as PlayerStatsService from "../services/playerStats.service.js"
 import * as PlayerIdentityService from "../services/playerIdentity.service.js"
 import * as IdentityCleanupService from "../services/identityCleanup.service.js"
+import * as AccountAchievementsService from "../services/accountAchievements.service.js"
 import { NextFunction, Request, Response } from "express"
 
 async function getAllMembers(req: Request, res: Response, next: NextFunction) {
@@ -161,4 +162,28 @@ async function unlinkMyIdentity(req: Request, res: Response, next: NextFunction)
     }
 }
 
-export { getMyMember, getMyIdentity, unlinkMyIdentity }
+/**
+ * Logros de cuenta y puntos de la cuenta con sesión. Los de cuenta se conservan aunque se
+ * desvincule el jugador; los puntos de club solo salen mientras haya jugador vinculado.
+ */
+async function getMyAchievements(req: Request, res: Response, next: NextFunction) {
+    try {
+        if (!req.user) return next(new Error("ERROR_BAD_REQUEST"))
+        const identity = await PlayerIdentityService.getByUserId(req.user.id)
+        const response = await AccountAchievementsService.getFor(req.user.id, identity?.playerId ?? null)
+        if (!response) return next(new Error("ERROR_GETTING_MEMBER"))
+        res.json({
+            status: {
+                code: 200,
+                message: "Ok"
+            },
+            // `clubId`: el de ESTE club, para que quien llame sepa de qué club son los puntos de `points.clubs`
+            response: { playerId: identity?.playerId ?? null, clubId: Number(process.env.CLUBID) || null, ...response }
+        })
+    } catch (err) {
+        console.error(err)
+        next(new Error("ERROR_GETTING_MEMBER"))
+    }
+}
+
+export { getMyMember, getMyIdentity, unlinkMyIdentity, getMyAchievements }

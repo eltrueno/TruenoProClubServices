@@ -172,7 +172,7 @@
                         :currentFilter="filterMode"
                         :positionFilter="posFilter"
                     />
-                    <PlayerDetailWIP v-else-if="activeTab === 'achievements'" key="achievements" title="Logros y Premios" icon="🏆" />
+                    <PlayerDetailAchievements v-else-if="activeTab === 'achievements'" key="achievements" :profile="playerProfile" />
                     <PlayerDetailWIP v-else key="compare" title="Comparador" icon="⚔️" />
                 </Transition>
             </div>
@@ -219,6 +219,7 @@
     import PlayerDetailStats from "./PlayerDetailStats.vue";
     import PlayerDetailProgression from "./PlayerDetailProgression.vue";
     import PlayerDetailWIP from "./PlayerDetailWIP.vue";
+    import PlayerDetailAchievements from "./PlayerDetailAchievements.vue";
     import PlayerDetailSkeleton from "./PlayerDetailSkeleton.vue";
 
     // /jugador?id=<playerId>&tab=stats|form|achievements|compare
