@@ -101,7 +101,7 @@ Reglas relacionadas:
 
 ## 📊 Diagrama de la aplicación
 
-![Diagrama de la arquitectura](https://i.imgur.com/DhuslGk.png)
+[![Diagrama de la arquitectura](https://gitdiagram.com/eltrueno/truenoproclubservices/diagram.png)](https://gitdiagram.com/eltrueno/truenoproclubservices?utm_source=readme&utm_medium=picture)
 
 ### 🚀 Primeros Pasos
 
@@ -374,7 +374,7 @@ Related rules:
 
 ## 📊 Application Diagram
 
-![Application Diagram](https://i.imgur.com/DhuslGk.png)
+[![Application Diagram](https://gitdiagram.com/eltrueno/truenoproclubservices/diagram.png)](https://gitdiagram.com/eltrueno/truenoproclubservices?utm_source=readme&utm_medium=picture)
 
 ### 🚀 Getting Started
 
