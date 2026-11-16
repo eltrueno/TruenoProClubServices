@@ -287,6 +287,8 @@ La base de datos de auth (Better Auth) es independiente: `user`, `session`, `acc
 
 ### 🐳 Docker
 
+Cada push a `main` o `dev` publica las imágenes de `api`, `worker`, `auth`, `discordbot` e `imagerenderer` en GHCR (`.github/workflows/publish-images.yml`): `ghcr.io/eltrueno/tpcs-<app>:main` | `:dev` | `:<sha>` (y `:latest` en main). Si los paquetes salen privados, en el servidor hay que hacer `docker login ghcr.io` con un PAT `read:packages`.
+
 `api`, `worker` y `auth` incluyen `Dockerfile` (build multi-stage desde la raíz del repo):
 
 ```bash
@@ -449,6 +451,8 @@ To use the accounts from another website (shared login and session inside `casem
 MongoDB. Explicit collection names live in `packages/shared/src/models`: `clubs`, `members`, `matches`, `member_stats_officials`, `member_stats_friendlies`, `player_average_stats`, `achievements_definitions`, `achievements_unlocked`, `totw`, `member_totw_appearances`. Each club has its own database; a **shared database** (`SHARED_DB_NAME`, default `tpcs27_shared`) holds what belongs to the person rather than the club: `players` (global identity per `playerId`: linked account and default photo) and `link_requests`. A club can override a player's photo with its own (`members.imageUrl`). The api migrates the legacy link and photos out of `members` once per club database on startup. The auth database (Better Auth) is separate.
 
 ### 🐳 Docker
+
+Every push to `main` or `dev` publishes the `api`, `worker`, `auth`, `discordbot` and `imagerenderer` images to GHCR (`.github/workflows/publish-images.yml`): `ghcr.io/eltrueno/tpcs-<app>:main` | `:dev` | `:<sha>` (plus `:latest` on main). If the packages are private, run `docker login ghcr.io` on the server with a `read:packages` PAT.
 
 ```bash
 docker build -f apps/api/Dockerfile -t tpcs-api .
