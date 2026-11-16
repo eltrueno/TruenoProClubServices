@@ -1,0 +1,15 @@
+# Contexto de build: solo código. Los Dockerfile copian carpetas enteras (p. ej. apps/discordbot),
+# y un node_modules local (Windows/otra arquitectura) pisaría el del contenedor.
+**/node_modules
+**/dist
+**/.astro
+**/.wrangler
+.git
+.github
+.claude
+docs
+state
+**/.env
+**/.env.*
+!**/.env.example
+**/imagescache

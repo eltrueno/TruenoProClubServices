@@ -1,7 +1,8 @@
 name: Publish Docker images (GHCR)
 
 # Cada push a main o dev publica las imágenes en ghcr.io/<owner>/tpcs-<app>
-# con tres tags: la rama (main | dev), el sha corto del commit y, en main, latest.
+# (multi-arquitectura: linux/amd64 + linux/arm64) con los tags: la rama
+# (main | dev), el sha corto del commit y, en main, latest.
 on:
   push:
     branches: [main, dev]
@@ -25,6 +26,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # QEMU para compilar arm64 desde el runner amd64
+      - uses: docker/setup-qemu-action@v3
+
       - uses: docker/setup-buildx-action@v3
 
       - uses: docker/login-action@v3
@@ -47,6 +51,7 @@ jobs:
         with:
           context: .
           file: apps/${{ matrix.app }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -25,7 +25,7 @@ COPY packages/shared/tsconfig.json ./packages/shared/
 COPY packages/shared/src ./packages/shared/src
 
 # Instala dependencias desde la raíz (pnpm detecta workspaces)
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
 # Build de la app
 RUN pnpm --filter @trueno-proclub-services/shared build

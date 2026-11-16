@@ -287,7 +287,7 @@ La base de datos de auth (Better Auth) es independiente: `user`, `session`, `acc
 
 ### 🐳 Docker
 
-Cada push a `main` o `dev` publica las imágenes de `api`, `worker`, `auth`, `discordbot` e `imagerenderer` en GHCR (`.github/workflows/publish-images.yml`): `ghcr.io/eltrueno/tpcs-<app>:main` | `:dev` | `:<sha>` (y `:latest` en main). Si los paquetes salen privados, en el servidor hay que hacer `docker login ghcr.io` con un PAT `read:packages`.
+Cada push a `main` o `dev` publica las imágenes de `api`, `worker`, `auth`, `discordbot` e `imagerenderer` en GHCR (`.github/workflows/publish-images.yml`): `ghcr.io/eltrueno/tpcs-<app>:main` | `:dev` | `:<sha>` (y `:latest` en main), multi-arquitectura (`linux/amd64` + `linux/arm64`). Si los paquetes salen privados, en el servidor hay que hacer `docker login ghcr.io` con un PAT `read:packages`.
 
 `api`, `worker` y `auth` incluyen `Dockerfile` (build multi-stage desde la raíz del repo):
 
@@ -452,7 +452,7 @@ MongoDB. Explicit collection names live in `packages/shared/src/models`: `clubs`
 
 ### 🐳 Docker
 
-Every push to `main` or `dev` publishes the `api`, `worker`, `auth`, `discordbot` and `imagerenderer` images to GHCR (`.github/workflows/publish-images.yml`): `ghcr.io/eltrueno/tpcs-<app>:main` | `:dev` | `:<sha>` (plus `:latest` on main). If the packages are private, run `docker login ghcr.io` on the server with a `read:packages` PAT.
+Every push to `main` or `dev` publishes the `api`, `worker`, `auth`, `discordbot` and `imagerenderer` images to GHCR (`.github/workflows/publish-images.yml`): `ghcr.io/eltrueno/tpcs-<app>:main` | `:dev` | `:<sha>` (plus `:latest` on main), multi-arch (`linux/amd64` + `linux/arm64`). If the packages are private, run `docker login ghcr.io` on the server with a `read:packages` PAT.
 
 ```bash
 docker build -f apps/api/Dockerfile -t tpcs-api .

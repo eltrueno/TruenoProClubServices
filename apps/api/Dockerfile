@@ -25,8 +25,12 @@ COPY packages/shared/package.json ./packages/shared/
 COPY packages/shared/tsconfig.json ./packages/shared/
 COPY packages/shared/src ./packages/shared/src
 
+# El postinstall de puppeteer descarga Chrome for Testing, que no existe para linux/arm64 (y aquí sobra:
+# el runtime usa el chromium del sistema). Sin esto el build arm64 falla.
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
 # Instala dependencias desde la raíz (pnpm detecta workspaces)
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
 
 # Build de los packages compartidos y la app

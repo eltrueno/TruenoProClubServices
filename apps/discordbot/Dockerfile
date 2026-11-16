@@ -18,7 +18,7 @@ COPY packages/image-renderer-client ./packages/image-renderer-client
 COPY apps/discordbot ./apps/discordbot
 
 # Instalar todas las dependencias del workspace
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
 # Compilar el cliente para generar el /dist que usa el bot
 RUN pnpm --filter @trueno-proclub-services/imagerenderer-client build
