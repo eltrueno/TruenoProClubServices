@@ -80,7 +80,7 @@ onMounted(load)
 
 <template>
     <section class="text-left">
-        <h2 class="text-xl font-black tracking-tight">Tokens de API</h2>
+        <h2 class="sr-only">Tokens de API</h2>
         <p class="text-sm text-base-content/75 mt-1 max-w-3xl">
             Para webs de fuera de casemuro.stream y bots. Con un token pueden consultar, desde su servidor, la cuenta de un
             usuario de Twitch (nombre, avatar, rol, follow y sub) y su jugador vinculado. No da acceso al email ni permite cambiar nada.
