@@ -9,6 +9,7 @@ const achievementDefinitionSchema = new Schema<IAchievementDefinition>(
         description: { type: String },
         type: { type: String, enum: ACHIEVEMENT_TYPES, required: true },
         category: { type: String, enum: ACHIEVEMENT_CATEGORIES, required: true },
+        icon: { type: String },
         points: { type: Number, default: 0 },
         rarity: { type: String, enum: ACHIEVEMENT_RARITIES, required: true },
         hidden: { type: Boolean, default: false },

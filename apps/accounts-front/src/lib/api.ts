@@ -1,4 +1,4 @@
-import type { ApiResponse, IPlayerProfile, IAccountAchievements, IAchievementDefinition, IClubMember, IClubMemberAdminPatch, ILinkRequest, IPublicUser, ImageScope, UserRole } from "@trueno-proclub-services/shared"
+import type { ApiResponse, IPlayerProfile, IAccountAchievements, IAchievementDefinitionWithStats, IClubMember, IClubMemberAdminPatch, ILinkRequest, IPublicUser, ImageScope, UserRole } from "@trueno-proclub-services/shared"
 import { AUTH_URL, type ClubLink } from "@/config/site"
 
 /** Error de cualquier llamada: `code` estable (TWITCH_TOKEN_EXPIRED, ALREADY_LINKED…) + `httpStatus` */
@@ -122,7 +122,7 @@ export const clubApi = (club: ClubLink) => {
         unlinkMe: () => api<{ unlinked: boolean }>("/members/me/identity", { method: "DELETE" }),
         /** Logros de cuenta y puntos de la cuenta con sesión. `clubId` es el id (de EA) de ESTE club */
         myAchievements: () => api<IMyAchievements>("/members/me/achievements"),
-        accountAchievementDefinitions: () => api<IAchievementDefinition[]>("/achievements/account"),
+        accountAchievementDefinitions: () => api<IAchievementDefinitionWithStats[]>("/achievements/account"),
 
         /** Panel admin (/admin): plantilla, fotos y solicitudes de vinculación de este club */
         admin: {

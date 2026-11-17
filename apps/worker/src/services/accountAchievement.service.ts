@@ -1,10 +1,11 @@
-import { ACCOUNT_ACHIEVEMENT_DEFINITIONS, type IAccountAchievementUnlocked, type IPlayerClubTotals } from "@trueno-proclub-services/shared"
+import { ACCOUNT_ACHIEVEMENT_DEFINITIONS, accountMetrics, type AccountInfo, type IAccountAchievementUnlocked, type IPlayerClubTotals } from "@trueno-proclub-services/shared"
+
+export { accountMetrics, type AccountInfo }
 import {
     AccountAchievementUnlockedModel, AchievementDefinitionModel, AchievementProgressModel, AchievementUnlockedModel,
     PlayerClubTotalsModel, PlayerIdentityModel, PlayerStatsFriendlyModel, PlayerStatsOfficialModel
 } from "@trueno-proclub-services/shared/models"
 import { evaluateAchievements } from "./achievement.service.js"
-import type { Metrics } from "./achievementMetrics.js"
 
 /**
  * Logros de cuenta (comunes a todos los clubes, solo para cuentas vinculadas a su jugador).
@@ -23,16 +24,6 @@ const AUTH_URL = () => (process.env.AUTH_URL || "https://auth.casemuro.stream").
 const AUTH_API_TOKEN = () => process.env.AUTH_API_TOKEN || ""
 /** Máximo de cuentas por petición al auth */
 const CHUNK = 100
-
-/** Lo que hace falta de una cuenta (de `GET /api/v1/accounts` del auth) */
-export interface AccountInfo {
-    id: string
-    twitchFollowing?: boolean
-    twitchSub?: boolean
-    twitchSubTier?: string | null
-    discordId?: string | null
-    createdAt?: string | Date | null
-}
 
 // ---------------------------------------------------------------------------------------
 // Resumen de este club en la base compartida
@@ -88,52 +79,6 @@ export async function refreshClubTotals(clubId: number): Promise<number> {
 // ---------------------------------------------------------------------------------------
 // Métricas de una cuenta
 // ---------------------------------------------------------------------------------------
-
-const secondLargest = (values: number[]): number => [...values].sort((a, b) => b - a)[1] ?? 0
-
-/**
- * Lo que miran los logros de cuenta. `account` es null si no se ha podido preguntar al auth:
- * entonces solo salen las métricas de juego y las de la cuenta se quedan sin valor (no se
- * desbloquean, pero tampoco se da por hecho que no es sub).
- */
-export function accountMetrics(account: AccountInfo | null, clubs: Pick<IPlayerClubTotals, "gamesPlayed" | "wins" | "goals" | "assists" | "lastDay" | "achievements" | "points">[], now = new Date()): Metrics {
-    const sum = (f: "gamesPlayed" | "wins" | "goals" | "assists" | "achievements" | "points") => clubs.reduce((acc, c) => acc + (Number(c[f]) || 0), 0)
-    const played = clubs.filter((c) => c.gamesPlayed > 0)
-    const days = new Map<string, number>()
-    for (const c of played) if (c.lastDay) days.set(c.lastDay, (days.get(c.lastDay) ?? 0) + 1)
-
-    const metrics: Metrics = {
-        // Solo se evalúa a quien tiene la cuenta vinculada
-        playerLinked: 1,
-        clubsPlayed: played.length,
-        // "en cada uno de dos clubes": lo que lleva en su segundo club con más
-        minGamesPerClub: secondLargest(clubs.map((c) => c.gamesPlayed)),
-        clubsScored: clubs.filter((c) => c.goals > 0).length,
-        minGoalsPerClub: secondLargest(clubs.map((c) => c.goals)),
-        sameDayClubs: Math.max(0, ...days.values()),
-        totalGamesPlayed: sum("gamesPlayed"),
-        totalGoalsScored: sum("goals"),
-        totalAssists: sum("assists"),
-        totalWins: sum("wins"),
-        clubAchievements: sum("achievements"),
-        clubPoints: sum("points"),
-    }
-    if (!account) return metrics
-
-    const follower = !!account.twitchFollowing
-    const sub = !!account.twitchSub
-    const discord = !!account.discordId
-    const created = account.createdAt ? new Date(account.createdAt).getTime() : NaN
-    return {
-        ...metrics,
-        discordLinked: discord ? 1 : 0,
-        twitchFollower: follower ? 1 : 0,
-        twitchSub: sub ? 1 : 0,
-        twitchSubHighTier: sub && ["2000", "3000"].includes(String(account.twitchSubTier)) ? 1 : 0,
-        fullPack: discord && follower && sub ? 1 : 0,
-        accountAgeDays: Number.isFinite(created) ? Math.floor((now.getTime() - created) / 86_400_000) : 0,
-    }
-}
 
 // ---------------------------------------------------------------------------------------
 // Evaluación

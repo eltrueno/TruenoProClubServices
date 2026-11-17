@@ -1,4 +1,4 @@
-import type { IAccountAchievements, IAchievementUnlocked, IClubMember, IMemberTotwAppearances, IPlayerProfile, IAchievementDefinition } from "@trueno-proclub-services/shared"
+import type { IAchievementProgressValue, IAccountAchievements, IAchievementUnlocked, IClubMember, IMemberTotwAppearances, IPlayerProfile, IAchievementDefinition } from "@trueno-proclub-services/shared"
 import PlayerStatsEntity from "./PlayerStatsEntity"
 
 /** Logro desbloqueado tal y como lo devuelve /members/:id (con la definición embebida) */
@@ -8,13 +8,15 @@ export default class PlayerProfileEntity implements IPlayerProfile {
     member!: IClubMember
     stats: { official: PlayerStatsEntity[]; friendly: PlayerStatsEntity[] } = { official: [], friendly: [] }
     achievements: UnlockedAchievement[] = []
+    /** cuánto le falta para cada logro de club */
+    progress: Record<string, IAchievementProgressValue> = {}
     /** logros de cuenta y puntos; null si el jugador no tiene cuenta vinculada */
     account: IAccountAchievements | null = null
     totw: IMemberTotwAppearances[] = []
     playedPositions: Record<string, number> = {}
     mostPlayedPosition: string = ""
 
-    constructor(member: IClubMember, stats: IPlayerProfile["stats"] | undefined, achievements: UnlockedAchievement[], totw: IMemberTotwAppearances[], account: IAccountAchievements | null = null) {
+    constructor(member: IClubMember, stats: IPlayerProfile["stats"] | undefined, achievements: UnlockedAchievement[], totw: IMemberTotwAppearances[], account: IAccountAchievements | null = null, progress: Record<string, IAchievementProgressValue> = {}) {
         this.member = member
         if (stats) {
             this.stats = {
@@ -30,6 +32,7 @@ export default class PlayerProfileEntity implements IPlayerProfile {
         }
         this.achievements = achievements || []
         this.account = account ?? null
+        this.progress = progress ?? {}
         this.totw = totw || []
     }
 }

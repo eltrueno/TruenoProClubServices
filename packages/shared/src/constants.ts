@@ -43,12 +43,12 @@ export const ACHIEVEMENT_METRICS = [
     "dayMatches", "dayPerfectWins", "dayAllLosses", "dayGoals", "daysPlayed", "weekStreak", "weekDaysPlayed", "weekendPlayed",
     "daysSinceLastMatch", "daysSinceFirstMatch",
     // --- de un partido: del jugador ---
-    "rating", "pass_accuracy", "shot_accuracy",
+    "rating", "lowRating", "pass_accuracy", "shot_accuracy", "debutGoal", "hattrickMotm", "oneNilWinner",
     "gkGoals", "gkAssists", "defenderGoals", "perfectHattrick", "goalAssistMotm", "goalsAndAssists", "cleanSheetSaves",
     "metronome", "cleanTackles", "goalAndRedCard", "ghost", "shotsWithoutGoal", "gkConceded", "motmInLoss", "soloScorer",
     // --- de un partido: del equipo ---
     "winMargin", "shutoutWinMargin", "teamGoals", "totalGoals", "lossMargin", "goallessDraw", "highScoringDraw",
-    "penaltyWin", "dnfWin", "fullSquadWin", "outnumberedWin", "playoffWin", "teamScorers",
+    "penaltyWin", "dnfWin", "fullSquadWin", "outnumberedWin", "playoffWin", "teamScorers", "oneNilSaves", "robbery",
     // --- de un partido: fechas señaladas ---
     "christmasMatch", "newYearMatch", "halloweenMatch", "leapDayMatch",
     // --- equipo de la semana ---

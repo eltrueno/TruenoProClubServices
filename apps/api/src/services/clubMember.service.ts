@@ -26,6 +26,7 @@ const getProfileById = async (playerId: string) => {
         member,
         "stats": playerStats,
         "achievements": playerAchievements,
+        "progress": await AchievementsService.getProgressFor(playerId, playerAchievements),
         // Los de cuenta son solo para quien tiene la cuenta vinculada
         "account": member.userId ? await AccountAchievementsService.getFor(member.userId, playerId) : null,
         "totw": totwAppearances

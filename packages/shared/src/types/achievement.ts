@@ -10,6 +10,8 @@ export interface IAchievementDefinition {
     type: AchievementType
     /** apartado en el que se enseña */
     category: AchievementCategory
+    /** icono propio (ACHIEVEMENT_ICONS); sin él, el del apartado. Solo visual: cambiarlo no rehace nada */
+    icon?: string
     /** lo que vale (en los `infinite`, cada hito). Para rankings y la futura economía del canal */
     points: number
     /** sale de los puntos (`rarityFromPoints`) */

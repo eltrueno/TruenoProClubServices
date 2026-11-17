@@ -11,20 +11,21 @@
                     </div>
                 </div>
 
-                <div class="flex flex-wrap items-end gap-x-8 gap-y-2 mt-3">
+                <div class="flex flex-wrap items-end gap-x-10 gap-y-3 mt-3">
                     <p>
-                        <span class="text-5xl font-black tabular-nums">{{ clubUnlockedCount }}</span>
-                        <span v-if="clubDefinitions.length" class="text-2xl font-black text-base-content/40 tabular-nums"> / {{ clubDefinitions.length }}</span>
-                        <span class="block text-xs font-bold uppercase tracking-wide text-base-content/50">logros en este club</span>
+                        <span class="text-5xl font-black tabular-nums text-primary">{{ clubPoints }}</span>
+                        <span class="block text-xs font-bold uppercase tracking-wide text-base-content/75">puntos en este club</span>
                     </p>
                     <p>
-                        <span class="text-3xl font-black tabular-nums">{{ clubPoints }}</span>
-                        <span class="block text-xs font-bold uppercase tracking-wide text-base-content/50">puntos</span>
+                        <span class="text-4xl font-black tabular-nums">{{ clubUnlockedCount }}</span>
+                        <span v-if="clubDefinitions.length" class="text-xl font-black text-base-content/60 tabular-nums"> / {{ clubDefinitions.length }}</span>
+                        <span class="block text-xs font-bold uppercase tracking-wide text-base-content/75">logros</span>
+                    </p>
+                    <p v-if="profile.account">
+                        <span class="text-4xl font-black tabular-nums">{{ profile.account.points.total }}</span>
+                        <span class="block text-xs font-bold uppercase tracking-wide text-base-content/75">puntos en total</span>
                     </p>
                 </div>
-                <p v-if="profile.account" class="text-sm text-base-content/50 mt-1">
-                    {{ profile.account.points.total }} puntos sumando todos sus clubes y los logros de cuenta
-                </p>
 
                 <!-- Filtro por rareza (con lo conseguido de cada una) -->
                 <div class="flex flex-wrap gap-2 mt-3">
@@ -55,33 +56,8 @@
                 </div>
 
                 <ul class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                    <li
-                        v-for="item in group.visible"
-                        :key="item.id"
-                        class="rounded-xl border p-3 flex gap-3 items-start transition-opacity"
-                        :class="[item.unlocked ? RARITY_STYLE[item.def.rarity].card : 'border-base-content/10 bg-base-100/40 opacity-60']"
-                    >
-                        <div class="size-10 shrink-0 rounded-lg grid place-items-center font-black text-sm tabular-nums"
-                            :class="item.unlocked ? RARITY_STYLE[item.def.rarity].icon : 'bg-base-300 text-base-content/40'">
-                            {{ item.secret ? "?" : item.def.points }}
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <p class="font-bold leading-tight">
-                                {{ item.secret ? "Logro oculto" : item.def.name }}
-                                <span v-if="item.times > 1" class="badge badge-xs badge-neutral align-middle">×{{ item.times }}</span>
-                            </p>
-                            <p class="text-xs text-base-content/60 mt-0.5">{{ item.secret ? "Se desvela al conseguirlo" : item.def.description }}</p>
-                            <p class="text-[11px] mt-1 font-semibold" :class="item.unlocked ? RARITY_STYLE[item.def.rarity].text : 'text-base-content/40'">
-                                {{ ACHIEVEMENT_RARITY_LABELS[item.def.rarity] }}
-                                <template v-if="item.unlocked">
-                                    · <template v-if="item.reached">último hito: {{ item.reached }} · </template>
-                                    <a v-if="item.matchId" :href="matchUrl(item.matchId)" class="link link-hover" title="Ver el partido">{{ formatDate(item.unlockedAt) }}</a>
-                                    <template v-else>{{ formatDate(item.unlockedAt) }}</template>
-                                    <template v-if="item.times > 1"> · {{ item.def.points * item.times }} pts en total</template>
-                                </template>
-                                <template v-else>· sin conseguir</template>
-                            </p>
-                        </div>
+                    <li v-for="item in group.visible" :key="item.id" class="flex">
+                        <AchievementTile class="w-full" :item="item" :match-href="item.matchId ? matchUrl(item.matchId) : undefined" />
                     </li>
                 </ul>
                 <p v-if="group.visible.length === 0" class="text-sm text-base-content/50">Todavía ninguno en este apartado.</p>
@@ -104,15 +80,17 @@
 import { computed, onMounted, ref } from "vue"
 import {
     ACHIEVEMENT_CATEGORIES, ACHIEVEMENT_CATEGORY_LABELS, ACHIEVEMENT_RARITIES, ACHIEVEMENT_RARITY_LABELS,
-    type AchievementRarity, type IAchievementDefinition
+    achievementOwnershipLabel,
+    type AchievementRarity, type IAchievementDefinitionWithStats, type IAchievementProgressValue
 } from "@trueno-proclub-services/shared"
 import type PlayerProfileEntity from "@/model/PlayerProfileEntity"
 import { tpcsApi } from "@/lib/api"
 import { accountsUrl } from "@/lib/accounts"
+import AchievementTile from "@/components/achievements/AchievementTile.vue"
 
 const props = defineProps<{ profile: PlayerProfileEntity }>()
 
-type Definition = Omit<IAchievementDefinition, "_id">
+type Definition = Omit<IAchievementDefinitionWithStats, "_id" | "unlockedCount" | "unlockedPercent"> & Partial<Pick<IAchievementDefinitionWithStats, "unlockedCount" | "unlockedPercent">>
 interface Item {
     id: string
     def: Definition
@@ -125,6 +103,10 @@ interface Item {
     unlockedAt?: Date | string
     /** partido en que se consiguió (el último, en los hitos); no lo tienen los de cuenta */
     matchId?: string
+    /** cuánto le falta (o al siguiente escalón de un hito) */
+    progress?: IAchievementProgressValue
+    /** "Lo tiene el 12 % (3 jugadores)" */
+    ownership?: string
 }
 
 const RARITY_STYLE: Record<AchievementRarity, { card: string, icon: string, text: string, badge: string }> = {
@@ -134,11 +116,13 @@ const RARITY_STYLE: Record<AchievementRarity, { card: string, icon: string, text
     legendary: { card: "border-amber-500/50 bg-amber-500/10", icon: "bg-amber-500/25 text-amber-600 dark:text-amber-300", text: "text-amber-600 dark:text-amber-300", badge: "bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-500/30" },
 }
 
+/** Orden dentro de cada apartado: conseguidos primero y, dentro, los más especiales */
+const RARITY_RANK: Record<string, number> = { legendary: 3, epic: 2, rare: 1, common: 0 }
 const onlyUnlocked = ref(false)
 const rarityFilter = ref<AchievementRarity | null>(null)
 const matchUrl = (matchId: string) => `/partido?id=${encodeURIComponent(matchId)}&player=${encodeURIComponent(props.profile.member.playerId)}`
-const clubDefinitions = ref<IAchievementDefinition[]>([])
-const accountDefinitions = ref<IAchievementDefinition[]>([])
+const clubDefinitions = ref<IAchievementDefinitionWithStats[]>([])
+const accountDefinitions = ref<IAchievementDefinitionWithStats[]>([])
 const loadError = ref(false)
 
 onMounted(async () => {
@@ -155,7 +139,7 @@ onMounted(async () => {
 type Unlock = { achievementId: string, reached?: number, unlockedAt: Date | string, matchId?: string, definition?: Definition }
 
 /** Definiciones (las de la lista completa, o las que traen los desbloqueos si no ha cargado) + lo conseguido */
-function buildItems(definitions: IAchievementDefinition[], unlocks: Unlock[]): Item[] {
+function buildItems(definitions: IAchievementDefinitionWithStats[], unlocks: Unlock[], progress: Record<string, IAchievementProgressValue>, noun: { one: string, many: string }): Item[] {
     const defs = new Map<string, Definition>(definitions.map(({ _id, ...def }) => [_id, def]))
     for (const u of unlocks) if (!defs.has(u.achievementId) && u.definition) defs.set(u.achievementId, u.definition)
 
@@ -170,12 +154,14 @@ function buildItems(definitions: IAchievementDefinition[], unlocks: Unlock[]): I
             reached: mine.reduce<number | undefined>((max, u) => (u.reached && u.reached > (max ?? 0) ? u.reached : max), undefined),
             unlockedAt: last?.unlockedAt,
             matchId: last?.matchId || undefined,
+            progress: progress[id],
+            ownership: def.unlockedCount !== undefined ? achievementOwnershipLabel(def.unlockedCount, def.unlockedPercent ?? 0, noun) : undefined,
         }
     })
 }
 
-const clubItems = computed(() => buildItems(clubDefinitions.value, props.profile.achievements))
-const accountItems = computed(() => (props.profile.account ? buildItems(accountDefinitions.value, props.profile.account.achievements) : []))
+const clubItems = computed(() => buildItems(clubDefinitions.value, props.profile.achievements, props.profile.progress, { one: "jugador", many: "jugadores" }))
+const accountItems = computed(() => (props.profile.account ? buildItems(accountDefinitions.value, props.profile.account.achievements, props.profile.account.progress ?? {}, { one: "cuenta", many: "cuentas" }) : []))
 
 const groups = computed(() =>
     ACHIEVEMENT_CATEGORIES.map((key) => {
@@ -183,7 +169,7 @@ const groups = computed(() =>
         const items = (account ? accountItems.value : clubItems.value)
             .filter((i) => i.def.category === key)
             // Conseguidos primero; dentro, los que más valen
-            .sort((a, b) => Number(b.unlocked) - Number(a.unlocked) || Number(a.secret) - Number(b.secret) || b.def.points - a.def.points || a.def.name.localeCompare(b.def.name))
+            .sort((a, b) => Number(b.unlocked) - Number(a.unlocked) || Number(a.secret) - Number(b.secret) || RARITY_RANK[b.def.rarity] - RARITY_RANK[a.def.rarity] || b.def.points - a.def.points || a.def.name.localeCompare(b.def.name))
         return {
             key, account, items,
             label: ACHIEVEMENT_CATEGORY_LABELS[key],
