@@ -196,7 +196,7 @@ onMounted(load)
                 </div>
             </div>
 
-            <ul class="mt-4 divide-y divide-base-content/10 rounded-box border border-base-content/10 bg-base-100">
+            <ul class="mt-4 divide-y divide-base-content/10 rounded-box border border-base-content/10 bg-base-100 overflow-hidden">
                 <li v-for="m in memberships" :key="m.club.id">
                     <a :href="playerUrl(m.club, m.member.playerId)" class="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-primary/5">
                         <ClubCrest :club="m.club" class="size-6 shrink-0" />
