@@ -6,33 +6,25 @@
  */
 import { computed, onMounted, ref } from "vue"
 import {
-    ACHIEVEMENT_CATEGORY_LABELS, ACHIEVEMENT_RARITY_LABELS,
-    type AchievementCategory, type AchievementRarity, type IAchievementDefinition
+    ACHIEVEMENT_CATEGORY_LABELS,
+    achievementOwnershipLabel,
+    type AchievementCategory, type IAchievementDefinitionWithStats
 } from "@trueno-proclub-services/shared"
 import { CLUBS, type ClubLink } from "@/config/site"
 import { clubApi, type IMyAchievements } from "@/lib/api"
+import AchievementTile from "../achievements/AchievementTile.vue"
 
 const loading = ref(true)
 const failed = ref(false)
 const mine = ref<IMyAchievements | null>(null)
 /** id de EA de cada club (lo dice su api), para saber de qué club son los puntos */
 const clubById = ref(new Map<number, ClubLink>())
-const definitions = ref<IAchievementDefinition[]>([])
+const definitions = ref<IAchievementDefinitionWithStats[]>([])
 const showAll = ref(false)
 
+/** Orden dentro de cada apartado: conseguidos primero y, dentro, los más especiales */
+const RARITY_RANK: Record<string, number> = { legendary: 3, epic: 2, rare: 1, common: 0 }
 const ACCOUNT_CATEGORIES: AchievementCategory[] = ["account", "global", "collection"]
-const RARITY_TEXT: Record<AchievementRarity, string> = {
-    common: "text-base-content/75",
-    rare: "text-sky-600 dark:text-sky-300",
-    epic: "text-violet-600 dark:text-violet-300",
-    legendary: "text-amber-600 dark:text-amber-300",
-}
-const RARITY_ICON: Record<AchievementRarity, string> = {
-    common: "bg-base-300 text-base-content",
-    rare: "bg-sky-500/20 text-sky-600 dark:text-sky-300",
-    epic: "bg-violet-500/20 text-violet-600 dark:text-violet-300",
-    legendary: "bg-amber-500/25 text-amber-600 dark:text-amber-300",
-}
 
 onMounted(async () => {
     // La base es común: vale lo que responda el api de cualquier club. Se pregunta a todos
@@ -64,10 +56,13 @@ const items = computed(() => {
         const got = unlocks.filter((u) => u.achievementId === _id)
         return {
             id: _id, def,
+            unlockedAt: got.reduce<Date | string | undefined>((last, u) => (!last || new Date(u.unlockedAt) > new Date(last) ? u.unlockedAt : last), undefined),
             unlocked: got.length > 0,
             secret: !!def.hidden && got.length === 0,
             times: got.length,
             reached: got.reduce<number | undefined>((max, u) => (u.reached && u.reached > (max ?? 0) ? u.reached : max), undefined),
+            progress: mine.value?.progress?.[_id],
+            ownership: achievementOwnershipLabel(def.unlockedCount ?? 0, def.unlockedPercent ?? 0, { one: "cuenta", many: "cuentas" }),
         }
     })
 })
@@ -75,7 +70,7 @@ const items = computed(() => {
 const groups = computed(() =>
     ACCOUNT_CATEGORIES.map((key) => {
         const all = items.value.filter((i) => i.def.category === key)
-            .sort((a, b) => Number(b.unlocked) - Number(a.unlocked) || b.def.points - a.def.points)
+            .sort((a, b) => Number(b.unlocked) - Number(a.unlocked) || Number(a.secret) - Number(b.secret) || RARITY_RANK[b.def.rarity] - RARITY_RANK[a.def.rarity] || b.def.points - a.def.points)
         return { key, label: ACHIEVEMENT_CATEGORY_LABELS[key], unlocked: all.filter((i) => i.unlocked).length, total: all.length, items: showAll.value ? all : all.filter((i) => i.unlocked) }
     }).filter((g) => g.total > 0)
 )
@@ -103,9 +98,17 @@ const clubPoints = computed(() =>
 
         <template v-else-if="mine">
             <!-- Puntos -->
-            <p class="text-base-content/75">
-                <span class="text-4xl font-black tabular-nums text-brand">{{ mine.points.total }}</span> puntos
-            </p>
+            <div class="flex flex-wrap items-end gap-x-8 gap-y-2">
+                <p>
+                    <span class="text-5xl font-black tabular-nums text-brand">{{ mine.points.total }}</span>
+                    <span class="block text-xs font-bold uppercase tracking-wide text-base-content/75">puntos</span>
+                </p>
+                <p v-if="mine.playerId">
+                    <span class="text-3xl font-black tabular-nums">{{ unlockedCount }}</span>
+                    <span class="text-lg font-black text-base-content/60 tabular-nums"> / {{ items.length }}</span>
+                    <span class="block text-xs font-bold uppercase tracking-wide text-base-content/75">logros de cuenta</span>
+                </p>
+            </div>
             <p v-if="mine.playerId" class="text-xs text-base-content/75 mt-1">
                 {{ mine.points.account }} de logros de cuenta<template v-for="c in clubPoints" :key="c.clubId"> · {{ c.points }} en {{ c.club?.name ?? "otro club" }}</template>
             </p>
@@ -125,19 +128,8 @@ const clubPoints = computed(() =>
                     <span class="text-xs font-bold text-base-content/75 tabular-nums">{{ g.unlocked }} / {{ g.total }}</span>
                 </div>
                 <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <li v-for="i in g.items" :key="i.id" class="rounded-xl bg-base-100 p-3 flex gap-3 items-start" :class="{ 'opacity-50': !i.unlocked }">
-                        <div class="size-9 shrink-0 rounded-lg grid place-items-center font-black text-xs tabular-nums"
-                            :class="i.unlocked ? RARITY_ICON[i.def.rarity] : 'bg-base-300 text-base-content/60'">{{ i.secret ? "?" : i.def.points }}</div>
-                        <div class="min-w-0">
-                            <p class="font-bold text-sm leading-tight">
-                                {{ i.secret ? "Logro oculto" : i.def.name }}
-                                <span v-if="i.times > 1" class="badge badge-xs badge-neutral align-middle">×{{ i.times }}</span>
-                            </p>
-                            <p class="text-xs text-base-content/75 mt-0.5">{{ i.secret ? "Se desvela al conseguirlo" : i.def.description }}</p>
-                            <p class="text-xs font-semibold mt-0.5" :class="i.unlocked ? RARITY_TEXT[i.def.rarity] : 'text-base-content/60'">
-                                {{ ACHIEVEMENT_RARITY_LABELS[i.def.rarity] }}<template v-if="i.reached"> · último hito: {{ i.reached }}</template><template v-if="!i.unlocked"> · sin conseguir</template>
-                            </p>
-                        </div>
+                    <li v-for="i in g.items" :key="i.id" class="flex">
+                        <AchievementTile class="w-full" :item="i" />
                     </li>
                 </ul>
             </div>

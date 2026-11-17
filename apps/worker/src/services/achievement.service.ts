@@ -178,7 +178,7 @@ const syncAchievementDefinitions = async (): Promise<boolean> => {
     await AchievementDefinitionModel.bulkWrite(
         ACHIEVEMENT_DEFINITIONS.map((def) => {
             // Lo que la definición ya no lleva (p. ej. `exact`) se quita, no se queda de antes
-            const unset = Object.fromEntries(CONDITION_FIELDS.filter((f) => field(def, f) === undefined).map((f) => [f, "" as const]))
+            const unset = Object.fromEntries([...CONDITION_FIELDS, "icon"].filter((f) => field(def, f) === undefined).map((f) => [f, "" as const]))
             return {
                 updateOne: {
                     filter: { _id: def._id },

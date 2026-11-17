@@ -20,14 +20,19 @@ const getAllDefinitions = async (req: Request, res: Response, next: NextFunction
 
 
 /** Definiciones de los logros de cuenta (comunes a todos los clubes; salen del repo, no de la DB) */
-const getAccountDefinitions = (_req: Request, res: Response) => {
-    res.json({
-        status: {
-            code: 200,
-            message: "Ok"
-        },
-        response: AccountAchievementsService.getDefinitions()
-    })
+const getAccountDefinitions = async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+        res.json({
+            status: {
+                code: 200,
+                message: "Ok"
+            },
+            response: await AccountAchievementsService.getDefinitions()
+        })
+    } catch (err) {
+        console.error(err)
+        next(new Error("ERROR_GETTING_ACHIEVEMENT_DEFINITIONS"))
+    }
 }
 
 export { getAllDefinitions, getAccountDefinitions }

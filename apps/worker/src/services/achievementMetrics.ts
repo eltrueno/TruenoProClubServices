@@ -1,4 +1,6 @@
-import type { AchievementMetric, IAchievementProgress, IMatch, IMatchPlayer } from "@trueno-proclub-services/shared"
+import { localDay, progressMetrics, type IAchievementProgress, type IMatch, type IMatchPlayer, type Metrics } from "@trueno-proclub-services/shared"
+
+export { localDay, progressMetrics }
 
 /**
  * Las métricas que miran los logros de club (ver ACHIEVEMENT_METRICS en shared). Aquí no hay
@@ -11,7 +13,7 @@ import type { AchievementMetric, IAchievementProgress, IMatch, IMatchPlayer } fr
  *     partidos anteriores. Se guarda un estado por jugador y se avanza partido a partido,
  *     SIEMPRE en orden cronológico.
  */
-export type Metrics = Partial<Record<AchievementMetric, number>>
+export type { Metrics } from "@trueno-proclub-services/shared"
 
 /** Partido "entero": a partir del minuto 80 (los partidos pueden acabar antes del 90) */
 const FULL_MATCH_SECONDS = 80 * 60
@@ -19,30 +21,6 @@ const FULL_MATCH_SECONDS = 80 * 60
 // ---------------------------------------------------------------------------------------
 // Calendario (en la hora local del club: un partido a las 00:30 es del día siguiente)
 // ---------------------------------------------------------------------------------------
-
-const TIME_ZONE = process.env.TZ || "Europe/Madrid"
-const dateFormat = new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" })
-
-export interface LocalDay {
-    /** YYYY-MM-DD */
-    key: string
-    month: number
-    day: number
-    /** días desde 1970-01-01, para restar fechas */
-    index: number
-    /** semanas (de lunes a domingo) desde 1970, para saber si dos semanas son seguidas */
-    week: number
-    /** 1 = lunes … 7 = domingo */
-    weekday: number
-}
-
-export function localDay(timestampSeconds: number): LocalDay {
-    const key = dateFormat.format(new Date(timestampSeconds * 1000))
-    const [y, m, d] = key.split("-").map(Number)
-    const index = Math.round(Date.UTC(y, m - 1, d) / 86_400_000)
-    // 1970-01-01 fue jueves: el lunes de esa semana es el día -3
-    return { key, month: m, day: d, index, week: Math.floor((index + 3) / 7), weekday: ((index + 3) % 7 + 7) % 7 + 1 }
-}
 
 // ---------------------------------------------------------------------------------------
 // Un partido
@@ -192,30 +170,5 @@ export function advanceProgress(prev: IAchievementProgress | null | undefined, m
         firstMatchAt: p.firstMatchAt ?? match.timestamp,
         lastMatchAt: match.timestamp,
         daysSinceLastMatch: p.lastMatchAt ? Math.max(0, day.index - localDay(p.lastMatchAt).index) : 0,
-    }
-}
-
-/** Lo que miran los logros a partir del estado */
-export function progressMetrics(p: IAchievementProgress): Metrics {
-    return {
-        winStreak: p.winStreak,
-        unbeatenStreak: p.unbeatenStreak,
-        lossStreak: p.lossStreak,
-        scoringStreak: p.scoringStreak,
-        assistStreak: p.assistStreak,
-        forwardDrought: p.forwardDrought,
-        sameScoreStreak: p.sameScoreStreak,
-        positionsPlayed: p.positionsPlayed.length,
-        positionsScored: p.positionsScored.length,
-        dayMatches: p.dayMatches,
-        dayPerfectWins: p.dayWins === p.dayMatches ? p.dayWins : 0,
-        dayAllLosses: p.dayLosses === p.dayMatches ? p.dayLosses : 0,
-        dayGoals: p.dayGoals,
-        daysPlayed: p.daysPlayed,
-        weekStreak: p.weekStreak,
-        weekDaysPlayed: p.weekDays.length,
-        weekendPlayed: p.weekDays.includes(6) && p.weekDays.includes(7) ? 1 : 0,
-        daysSinceLastMatch: p.daysSinceLastMatch,
-        daysSinceFirstMatch: p.firstMatchAt && p.lastMatchAt ? localDay(p.lastMatchAt).index - localDay(p.firstMatchAt).index : 0,
     }
 }

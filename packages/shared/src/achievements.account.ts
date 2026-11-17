@@ -25,12 +25,12 @@ export const ACCOUNT_ACHIEVEMENT_DEFINITIONS: IAchievementDefinition[] = [
     // ---- Tu cuenta ----
     once("account")({ _id: "account_playerLinked", name: "Fichado", description: "Vincula tu cuenta a tu jugador", metric: "playerLinked", threshold: 1, points: 20 }),
     once("account")({ _id: "account_discordLinked", name: "En el grupo", description: "Conecta tu Discord", metric: "discordLinked", threshold: 1, points: 10 }),
-    once("account")({ _id: "account_follower", name: "De la casa", description: "Sigue el canal de Twitch", metric: "twitchFollower", threshold: 1, points: 5 }),
+    once("account")({ _id: "account_follower", icon: "heart", name: "De la casa", description: "Sigue el canal de Twitch", metric: "twitchFollower", threshold: 1, points: 5 }),
     once("account")({ _id: "account_sub", name: "Socio", description: "Suscríbete al canal de Twitch (con una vez vale)", metric: "twitchSub", threshold: 1, points: 25 }),
     once("account")({ _id: "account_subHighTier", name: "Socio de oro", description: "Suscríbete al canal con nivel 2 o 3", metric: "twitchSubHighTier", threshold: 1, points: 40 }),
     once("account")({ _id: "account_fullPack", name: "Pack completo", description: "Jugador vinculado, Discord conectado, siguiendo el canal y sub, todo a la vez", metric: "fullPack", threshold: 1, points: 30 }),
-    once("account")({ _id: "account_age365", name: "Un año por aquí", description: "Un año con cuenta", metric: "accountAgeDays", threshold: 365, points: 20 }),
-    once("account")({ _id: "account_age730", name: "De toda la vida", description: "Dos años con cuenta", metric: "accountAgeDays", threshold: 730, points: 40 }),
+    once("account")({ _id: "account_age365", icon: "cake", name: "Un año por aquí", description: "Un año con cuenta", metric: "accountAgeDays", threshold: 365, points: 20 }),
+    once("account")({ _id: "account_age730", icon: "cake", name: "De toda la vida", description: "Dos años con cuenta", metric: "accountAgeDays", threshold: 730, points: 40 }),
 
     // ---- Entre clubes ----
     once("global")({ _id: "global_2clubs", name: "Doble agente", description: "Juega en dos clubes de Casemuro", metric: "clubsPlayed", threshold: 2, points: 30 }),
