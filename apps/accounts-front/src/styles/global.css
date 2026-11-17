@@ -211,3 +211,13 @@
     animation: skeleton-shimmer 1.6s linear infinite;
   }
 }
+
+/* Diálogos modales: que el desplazamiento dentro del diálogo o sobre el fondo no mueva la
+   página de detrás (sin tocar el overflow de html/body, que quita la barra y desplaza todo) */
+dialog:modal {
+    overscroll-behavior: contain;
+}
+dialog::backdrop {
+    overflow: hidden;
+    overscroll-behavior: contain;
+}

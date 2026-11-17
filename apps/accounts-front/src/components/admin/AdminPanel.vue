@@ -21,6 +21,7 @@ import AdminSkeleton from "./AdminSkeleton.vue"
 import ClubCrest from "./ClubCrest.vue"
 import ApiTokens from "./ApiTokens.vue"
 import Toaster from "../ui/Toaster.vue"
+import PanelTabs, { type PanelTab } from "../ui/PanelTabs.vue"
 import { toast } from "@/lib/toast"
 
 
@@ -45,6 +46,26 @@ function selectFilter(f: ClubFilter) {
     if (f === "all") url.searchParams.delete("club")
     else url.searchParams.set("club", f)
     history.replaceState(history.state, "", url)
+}
+
+// ---- Pestañas (?tab=solicitudes|jugadores|tokens) ----
+type TabId = "solicitudes" | "jugadores" | "tokens"
+const TAB_IDS: TabId[] = ["solicitudes", "jugadores", "tokens"]
+const initialTab = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null
+/** null hasta saber si hay solicitudes: sin pestaña en la URL, se abre en Solicitudes solo si hay alguna */
+const tab = ref<TabId | null>(TAB_IDS.includes(initialTab as TabId) ? (initialTab as TabId) : null)
+const activeTab = computed<TabId>(() => tab.value ?? "jugadores")
+function selectTab(id: string) {
+    tab.value = id as TabId
+    const url = new URL(window.location.href)
+    url.searchParams.set("tab", id)
+    history.replaceState(history.state, "", url)
+}
+// Iconos: Heroicons outline
+const ICONS = {
+    requests: "M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z",
+    players: "M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z",
+    tokens: "M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z",
 }
 
 // ---- Datos ----
@@ -172,12 +193,53 @@ async function resolveRequest(r: ILinkRequest, action: "approve" | "reject") {
     }
 }
 
+/** Filtro rápido de la lista: los que más se buscan son los que aún no tienen cuenta o foto */
+type StatusFilter = "all" | "noAccount" | "noPhoto"
+const statusFilter = ref<StatusFilter>("all")
+const STATUS_FILTERS: { id: StatusFilter, label: string }[] = [
+    { id: "all", label: "Todos" },
+    { id: "noAccount", label: "Sin cuenta" },
+    { id: "noPhoto", label: "Sin foto" },
+]
+const matchesStatus = (m: IClubMember, f: StatusFilter) =>
+    f === "all" || (f === "noAccount" ? !m.userId : !m.imageUrl)
+const statusCount = (f: StatusFilter) => members.value.filter((m) => inFilter(m.playerId) && matchesStatus(m, f)).length
+
 const filteredMembers = computed(() => {
     const q = search.value.trim().toLowerCase()
     return members.value.filter((m) =>
-        inFilter(m.playerId) && (!q || m.playerName.toLowerCase().includes(q) || (m.proName ?? "").toLowerCase().includes(q))
+        inFilter(m.playerId) && matchesStatus(m, statusFilter.value)
+        && (!q || m.playerName.toLowerCase().includes(q) || (m.proName ?? "").toLowerCase().includes(q))
     )
 })
+
+const tabs = computed<PanelTab[]>(() => [
+    { id: "solicitudes", label: "Solicitudes", icon: ICONS.requests, count: loading.value ? undefined : visibleRequests.value.length || undefined },
+    { id: "jugadores", label: "Jugadores", icon: ICONS.players },
+    { id: "tokens", label: "Tokens de API", icon: ICONS.tokens },
+])
+
+// ---- Ventana de edición de un jugador (foto + cuenta) ----
+const editDialog = ref<HTMLDialogElement | null>(null)
+const editing = ref<IClubMember | null>(null)
+async function openEdit(m: IClubMember) {
+    editing.value = m
+    draftFor(m)
+    // Se abre con el contenido ya pintado, para que el foco vaya a su botón con autofocus
+    await nextTick()
+    editDialog.value?.showModal()
+}
+/** Al cerrarse (Esc, clic fuera, Cancelar o tras guardar): lo no guardado se descarta */
+function onEditClosed() {
+    const m = editing.value
+    if (m && !saving.value[m.playerId]) drafts.value[m.playerId] = draftOf(m)
+}
+async function saveEdit() {
+    const m = editing.value
+    if (!m) return
+    await save(m)
+    if (!rowMessage.value[m.playerId] || rowMessage.value[m.playerId].ok) editDialog.value?.close()
+}
 
 const draftOf = (m: IClubMember) => ({ imageUrl: m.imageUrl ?? "", userId: m.userId ?? "" })
 
@@ -291,6 +353,11 @@ watch([isPending, isAdmin], ([pending, admin]) => {
     if (admin) load()
     else loading.value = false
 }, { immediate: true })
+
+// Sin pestaña en la URL: a Solicitudes si hay pendientes, si no a Jugadores
+watch(loading, (l) => {
+    if (!l && tab.value === null) tab.value = visibleRequests.value.length ? "solicitudes" : "jugadores"
+})
 </script>
 
 <template>
@@ -315,150 +382,192 @@ watch([isPending, isAdmin], ([pending, admin]) => {
             </ul>
         </div>
 
-        <header class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+        <header class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
             <div>
                 <h1 class="text-3xl lg:text-4xl font-black tracking-tight">Panel admin</h1>
-                <p class="text-sm text-base-content/75 mt-1">Solicitudes de vinculación, foto y cuenta vinculada de cada jugador. Los cambios de las filas se guardan por fila.</p>
-                <!-- Filtro por club: los datos son los mismos, solo cambia qué jugadores se ven -->
-                <div v-if="CLUBS.length > 1" role="tablist" class="flex flex-wrap gap-2 mt-4">
-                    <button type="button" role="tab" :aria-selected="clubFilter === 'all'"
-                        class="btn btn-sm gap-2" :class="clubFilter === 'all' ? 'btn-primary' : 'btn-ghost'" @click="selectFilter('all')">
-                        <span class="flex -space-x-1.5">
-                            <ClubCrest v-for="c in CLUBS" :key="c.id" :club="c" :on-brand="clubFilter === 'all'" class="size-5" />
-                        </span>
-                        Todos
-                        <span v-if="!loading && pendingCount('all')" class="badge badge-xs badge-warning">{{ pendingCount("all") }}</span>
-                    </button>
-                    <button v-for="c in CLUBS" :key="c.id" type="button" role="tab" :aria-selected="clubFilter === c.id"
-                        class="btn btn-sm gap-2" :class="clubFilter === c.id ? 'btn-primary' : 'btn-ghost'" @click="selectFilter(c.id)">
-                        <ClubCrest :club="c" :on-brand="clubFilter === c.id" class="size-5" />
-                        {{ c.name }}
-                        <span v-if="!loading && pendingCount(c.id)" class="badge badge-xs badge-warning">{{ pendingCount(c.id) }}</span>
-                    </button>
-                </div>
+                <p class="text-sm text-base-content/75 mt-1">Vinculaciones, fotos y tokens. Lo que cambies se aplica al jugador en todos los clubes.</p>
             </div>
-            <div class="flex items-center gap-2 w-full md:w-auto">
-                <input v-model="search" type="search" aria-label="Buscar jugador o pro" placeholder="Buscar jugador o pro" class="input input-bordered input-sm w-full md:w-64" />
-                <button class="btn btn-sm btn-ghost" @click="load" :disabled="loading">Recargar</button>
-            </div>
+            <button class="btn btn-sm btn-ghost gap-1.5 self-start md:self-auto" :disabled="loading" @click="load">
+                <svg class="size-4" :class="{ 'animate-spin': loading }" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                </svg>
+                Recargar
+            </button>
         </header>
 
-        <!-- Skeleton: bloque de solicitudes + filas de jugadores -->
-        <AdminSkeleton v-if="loading" body-only />
+        <PanelTabs :tabs="tabs" :model-value="activeTab" label="Secciones del panel" @update:model-value="selectTab" />
 
-        <div v-else-if="loadError" class="alert alert-error">
+        <div v-if="failedClubs.length" role="alert" class="alert alert-warning alert-soft text-sm mt-4">
+            No responde el api de {{ failedClubs.map((c) => c.name).join(" y ") }}: faltan sus jugadores y solicitudes.
+        </div>
+
+        <!-- Filtro por club (Solicitudes y Jugadores): los datos son los mismos, solo cambia qué se ve -->
+        <div v-if="CLUBS.length > 1 && activeTab !== 'tokens'" class="flex flex-wrap gap-2 mt-4" role="group" aria-label="Filtrar por club">
+            <button type="button" :aria-pressed="clubFilter === 'all'"
+                class="btn btn-sm gap-2" :class="clubFilter === 'all' ? 'btn-primary' : 'btn-ghost'" @click="selectFilter('all')">
+                <span class="flex -space-x-1.5">
+                    <ClubCrest v-for="c in CLUBS" :key="c.id" :club="c" :on-brand="clubFilter === 'all'" class="size-5" />
+                </span>
+                Todos los clubes
+            </button>
+            <button v-for="c in CLUBS" :key="c.id" type="button" :aria-pressed="clubFilter === c.id"
+                class="btn btn-sm gap-2" :class="clubFilter === c.id ? 'btn-primary' : 'btn-ghost'" @click="selectFilter(c.id)">
+                <ClubCrest :club="c" :on-brand="clubFilter === c.id" class="size-5" />
+                {{ c.name }}
+            </button>
+        </div>
+
+        <!-- ═══ Tokens (no depende de cargar jugadores) ═══ -->
+        <section v-if="activeTab === 'tokens'" role="tabpanel" aria-labelledby="tab-tokens" class="mt-6">
+            <ApiTokens />
+        </section>
+
+        <AdminSkeleton v-else-if="loading" body-only class="mt-6" />
+
+        <div v-else-if="loadError" role="alert" class="alert alert-error mt-6">
             <span>No se han podido cargar los datos ({{ loadError }}). ¿Sesión caducada o api caído?</span>
         </div>
 
-        <div v-else class="flex flex-col gap-3">
-            <div v-if="failedClubs.length" role="alert" class="alert alert-warning alert-soft text-sm">
-                No responde el api de {{ failedClubs.map((c) => c.name).join(" y ") }}: faltan sus jugadores y solicitudes.
+        <!-- ═══ Solicitudes ═══ -->
+        <section v-else-if="activeTab === 'solicitudes'" role="tabpanel" aria-labelledby="tab-solicitudes" class="mt-6">
+            <div v-if="visibleRequests.length === 0" class="rounded-box bg-base-200 p-10 text-center">
+                <p class="font-bold">No hay solicitudes pendientes</p>
+                <p class="text-sm text-base-content/75 mt-1">Cuando alguien pida vincular su cuenta a un jugador, aparecerá aquí.</p>
             </div>
-
-            <!-- Solicitudes de vinculación -->
-            <section class="rounded-2xl border border-warning/30 bg-warning/5 p-4 mb-3">
-                <div class="flex items-center justify-between gap-2 mb-2">
-                    <h2 class="font-black uppercase tracking-wider text-sm">Solicitudes de vinculación</h2>
-                    <span class="badge badge-sm" :class="visibleRequests.length ? 'badge-warning' : 'badge-ghost'">{{ visibleRequests.length }}</span>
-                </div>
-                <p v-if="visibleRequests.length === 0" class="text-xs text-base-content/75">No hay solicitudes pendientes.</p>
-                <ul v-else class="flex flex-col gap-2">
-                    <li v-for="r in visibleRequests" :key="r.id" class="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl bg-base-200 p-3">
-                        <div class="flex items-center gap-2 min-w-0 flex-1">
-                            <div class="avatar shrink-0">
-                                <div class="w-8 rounded-full bg-base-300">
-                                    <img v-if="r.userImage" :src="r.userImage" :alt="r.userName" />
-                                </div>
+            <ul v-else class="flex flex-col gap-3">
+                <li v-for="r in visibleRequests" :key="r.id" class="rounded-box bg-base-200 p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="avatar shrink-0">
+                            <div class="w-10 rounded-full bg-base-300">
+                                <img v-if="r.userImage" :src="r.userImage" :alt="r.userName" />
                             </div>
-                            <p class="text-sm min-w-0 truncate">
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm">
                                 <span class="font-bold">{{ r.userName }}</span>
                                 <span class="text-base-content/75"> quiere ser </span>
                                 <a :href="playerUrl(r.playerId)" target="_blank" rel="noopener" class="font-bold hover-text-brand">{{ r.playerName }}</a>
                             </p>
-                            <span class="flex -space-x-1 shrink-0">
-                                <img v-for="c in clubsFor(r.playerId)" :key="c.id" :src="c.logo" :alt="c.name" :title="c.name" class="size-4 object-contain" />
-                            </span>
-                            <span class="text-xs text-base-content/60 shrink-0 hidden md:inline">{{ new Date(r.createdAt).toLocaleDateString("es-ES") }}</span>
+                            <p class="text-xs text-base-content/75 mt-0.5 flex items-center gap-1.5">
+                                <span class="flex -space-x-1">
+                                    <img v-for="c in clubsFor(r.playerId)" :key="c.id" :src="c.logo" :alt="c.name" :title="c.name" class="size-4 object-contain" />
+                                </span>
+                                Pedida el {{ new Date(r.createdAt).toLocaleDateString("es-ES") }}
+                            </p>
                         </div>
-                        <div class="flex gap-2">
-                            <button class="btn btn-sm btn-success" :disabled="requestBusy[r.id]" @click="resolveRequest(r, 'approve')">
-                                <span v-if="requestBusy[r.id]" class="loading loading-spinner loading-xs"></span>
-                                Aprobar
-                            </button>
-                            <button class="btn btn-sm btn-ghost text-error" :disabled="requestBusy[r.id]" @click="resolveRequest(r, 'reject')">Rechazar</button>
-                        </div>
-                    </li>
-                </ul>
-                <p v-if="requestError" class="text-xs text-error mt-2">No se ha podido resolver la solicitud ({{ requestError }})</p>
-            </section>
-
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3">
-                <p class="text-xs text-base-content/75">{{ filteredMembers.length }} jugadores · {{ users.length }} cuentas</p>
-                <p class="text-xs text-base-content/60">Fotos y cuentas vinculadas se aplican al jugador en todos los clubes.</p>
-            </div>
-
-            <div v-for="m in filteredMembers" :key="m.playerId"
-                class="rounded-2xl bg-base-200 border border-transparent shadow-sm p-4 grid grid-cols-1 lg:grid-cols-[auto_1fr_1fr_auto] gap-4 items-center"
-                :class="{ 'border-brand-soft': isDirty(m) }">
-                <!-- Jugador, con los escudos de los clubes donde aparece -->
-                <PlayerCard class="lg:w-64" :member="m" :image="draftFor(m).imageUrl || null" size="md" :link="playerUrl(m.playerId)" show-id>
-                    <span v-if="CLUBS.length > 1" class="flex gap-1 mt-1">
-                        <img v-for="c in clubsFor(m.playerId)" :key="c.id" :src="c.logo" :alt="c.name" :title="c.name" class="size-4 object-contain" />
-                    </span>
-                </PlayerCard>
-
-                <!-- Foto: cualquier URL pasa por el editor para encuadrarla a 400x450 y subirla al CDN -->
-                <div class="form-control w-full">
-                    <span class="label-text text-xs uppercase font-black tracking-wider text-base-content/75 mb-1">Foto</span>
-                    <div class="join w-full">
-                        <input
-                            aria-label="URL de la foto del jugador"
-                            v-model="draftFor(m).imageUrl"
-                            type="url"
-                            placeholder="Pega una URL y pulsa Enter, o Cambiar…"
-                            class="input input-bordered input-sm join-item w-full font-mono text-xs"
-                            @keydown.enter.prevent="openImageEditor(m, draftFor(m).imageUrl)"
-                        />
-                        <button type="button" class="btn btn-sm join-item" @click="openImageEditor(m, draftFor(m).imageUrl)">Cambiar…</button>
                     </div>
-                    <span class="text-xs text-base-content/60 mt-1">Al pulsar Enter se abre el editor para ajustar la foto a la escala del club. Vacía y guarda para quitarla.</span>
-                </div>
+                    <div class="flex gap-2 sm:shrink-0">
+                        <button class="btn sm:btn-sm btn-primary flex-1 sm:flex-none" :disabled="requestBusy[r.id]" @click="resolveRequest(r, 'approve')">
+                            <span v-if="requestBusy[r.id]" class="loading loading-spinner loading-xs"></span>
+                            Aprobar
+                        </button>
+                        <button class="btn sm:btn-sm btn-ghost text-error flex-1 sm:flex-none" :disabled="requestBusy[r.id]" @click="resolveRequest(r, 'reject')">Rechazar</button>
+                    </div>
+                </li>
+            </ul>
+            <p v-if="requestError" role="alert" class="text-sm text-error mt-3">No se ha podido resolver la solicitud ({{ requestError }})</p>
+        </section>
 
-                <!-- Cuenta: el botón abre el selector compartido (ver openAccountPicker) -->
-                <div class="form-control w-full">
-                    <span class="label-text text-xs uppercase font-black tracking-wider text-base-content/75 mb-1">Cuenta vinculada</span>
-                    <button type="button" class="btn btn-outline btn-sm w-full justify-between font-normal" @click="openAccountPicker(m)">
-                        <span class="flex items-center gap-2 min-w-0">
-                            <img v-if="usersById.get(draftFor(m).userId)?.image" :src="usersById.get(draftFor(m).userId)!.image!" alt="" class="size-5 rounded-full shrink-0 object-cover" loading="lazy" />
-                            <span class="truncate" :class="{ 'opacity-50': !usersById.get(draftFor(m).userId) }">{{ usersById.get(draftFor(m).userId)?.name ?? "— Sin vincular —" }}</span>
-                        </span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+        <!-- ═══ Jugadores ═══ -->
+        <section v-else role="tabpanel" aria-labelledby="tab-jugadores" class="mt-6">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+                <label class="input input-sm w-full sm:w-72">
+                    <svg class="size-4 opacity-60" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    </svg>
+                    <input v-model="search" type="search" aria-label="Buscar jugador o pro" placeholder="Buscar jugador o pro" />
+                </label>
+                <div class="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar jugadores">
+                    <button v-for="f in STATUS_FILTERS" :key="f.id" type="button" :aria-pressed="statusFilter === f.id"
+                        class="btn btn-sm rounded-full" :class="statusFilter === f.id ? 'btn-neutral' : 'btn-ghost'" @click="statusFilter = f.id">
+                        {{ f.label }}
+                        <span class="text-xs opacity-70 tabular-nums">{{ statusCount(f.id) }}</span>
                     </button>
-                    <span v-if="draftFor(m).userId && linkedElsewhere(draftFor(m).userId, m.playerId)" class="text-xs text-warning mt-1">
-                        Esta cuenta está vinculada a {{ linkedElsewhere(draftFor(m).userId, m.playerId)!.playerName }}; al guardar pasará a este jugador.
-                    </span>
-                </div>
-
-                <!-- Guardar -->
-                <div class="flex lg:flex-col items-center gap-2 lg:w-28">
-                    <button class="btn btn-primary btn-sm w-full" :disabled="!isDirty(m) || saving[m.playerId]" @click="save(m)">
-                        <span v-if="saving[m.playerId]" class="loading loading-spinner loading-xs"></span>
-                        <span v-else>Guardar</span>
-                    </button>
-                    <span v-if="rowMessage[m.playerId]?.text" class="text-xs font-bold" :class="rowMessage[m.playerId].ok ? 'text-success' : 'text-error'">
-                        {{ rowMessage[m.playerId].text }}
-                    </span>
-                    <span v-else-if="m.userId && usersById.get(m.userId)" class="text-xs text-base-content/60 text-center truncate w-full" :title="usersById.get(m.userId)!.name">
-                        {{ usersById.get(m.userId)!.name }}
-                    </span>
                 </div>
             </div>
 
-            <p v-if="filteredMembers.length === 0" class="text-center text-base-content/75 py-8">Ningún jugador coincide con la búsqueda.</p>
-        </div>
-
-        <ApiTokens class="mt-12 pt-8 border-t border-base-300" />
+            <ul v-if="filteredMembers.length" class="rounded-box bg-base-200 divide-y divide-base-content/10 overflow-hidden">
+                <li v-for="m in filteredMembers" :key="m.playerId">
+                    <button type="button" class="w-full text-left flex items-center gap-3 px-4 py-3 transition-colors hover:bg-base-content/5 focus-visible:bg-base-content/5"
+                        :aria-label="`Editar ${m.playerName}`" @click="openEdit(m)">
+                        <PlayerCard class="min-w-0 flex-1" :member="m" :image="m.imageUrl || null" size="sm" no-dates>
+                            <span class="flex flex-wrap items-center gap-1.5 mt-1">
+                                <img v-for="c in (CLUBS.length > 1 ? clubsFor(m.playerId) : [])" :key="c.id" :src="c.logo" :alt="c.name" :title="c.name" class="size-4 object-contain" />
+                                <span v-if="!m.imageUrl" class="badge badge-xs badge-ghost">Sin foto</span>
+                                <span v-if="!m.userId" class="badge badge-xs badge-ghost sm:hidden">Sin cuenta</span>
+                            </span>
+                        </PlayerCard>
+                        <span class="hidden sm:flex items-center gap-2 min-w-0 w-48 shrink-0">
+                            <template v-if="m.userId && usersById.get(m.userId)">
+                                <img v-if="usersById.get(m.userId)!.image" :src="usersById.get(m.userId)!.image!" alt="" class="size-6 rounded-full object-cover shrink-0" loading="lazy" />
+                                <span class="text-sm truncate">{{ usersById.get(m.userId)!.name }}</span>
+                            </template>
+                            <span v-else class="text-sm text-base-content/60">Sin cuenta</span>
+                        </span>
+                        <svg class="size-4 text-base-content/60 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7" />
+                        </svg>
+                    </button>
+                </li>
+            </ul>
+            <p v-else class="rounded-box bg-base-200 p-10 text-center text-base-content/75">Ningún jugador coincide.</p>
+        </section>
     </div>
+
+    <!-- Editar un jugador: foto y cuenta vinculada -->
+    <dialog ref="editDialog" class="modal modal-bottom sm:modal-middle" closedby="any" aria-labelledby="edit-title" @close="onEditClosed">
+        <div v-if="editing" class="modal-box text-left">
+            <h3 id="edit-title" class="sr-only">Editar {{ editing.playerName }}</h3>
+            <PlayerCard :member="editing" :image="draftFor(editing).imageUrl || null" size="md" :link="playerUrl(editing.playerId)" show-id>
+                <span v-if="CLUBS.length > 1" class="flex gap-1 mt-1">
+                    <img v-for="c in clubsFor(editing.playerId)" :key="c.id" :src="c.logo" :alt="c.name" :title="c.name" class="size-4 object-contain" />
+                </span>
+            </PlayerCard>
+
+            <div class="mt-6">
+                <p class="text-xs font-black uppercase tracking-wider text-base-content/75">Foto</p>
+                <div class="flex flex-wrap gap-2 mt-2">
+                    <button type="button" class="btn btn-sm btn-primary" autofocus @click="openImageEditor(editing)">{{ editing.imageUrl ? "Cambiar foto…" : "Añadir foto…" }}</button>
+                    <button v-if="draftFor(editing).imageUrl" type="button" class="btn btn-sm btn-ghost text-error" @click="draftFor(editing).imageUrl = ''">Quitar foto</button>
+                </div>
+                <p class="text-xs text-base-content/75 mt-2">
+                    {{ !draftFor(editing).imageUrl && editing.imageUrl
+                        ? "Se quitará al guardar."
+                        : "Pega una URL o sube una imagen y encuádrala a la escala del club. Se guarda al momento." }}
+                </p>
+            </div>
+
+            <div class="mt-6">
+                <p class="text-xs font-black uppercase tracking-wider text-base-content/75">Cuenta vinculada</p>
+                <div class="flex flex-wrap items-center gap-2 mt-2">
+                    <button type="button" class="btn btn-sm btn-outline justify-between font-normal min-w-0 flex-1" @click="openAccountPicker(editing)">
+                        <span class="flex items-center gap-2 min-w-0">
+                            <img v-if="usersById.get(draftFor(editing).userId)?.image" :src="usersById.get(draftFor(editing).userId)!.image!" alt="" class="size-5 rounded-full shrink-0 object-cover" />
+                            <span class="truncate" :class="{ 'text-base-content/60': !usersById.get(draftFor(editing).userId) }">{{ usersById.get(draftFor(editing).userId)?.name ?? "Elegir cuenta…" }}</span>
+                        </span>
+                        <svg class="size-4 shrink-0 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    <button v-if="draftFor(editing).userId" type="button" class="btn btn-sm btn-ghost text-error" @click="draftFor(editing).userId = ''">Desvincular</button>
+                </div>
+                <p v-if="draftFor(editing).userId && linkedElsewhere(draftFor(editing).userId, editing.playerId)" class="text-xs text-warning mt-2">
+                    Esta cuenta está vinculada a {{ linkedElsewhere(draftFor(editing).userId, editing.playerId)!.playerName }}; al guardar pasará a este jugador.
+                </p>
+            </div>
+
+            <p v-if="rowMessage[editing.playerId]?.text && !rowMessage[editing.playerId].ok" role="alert" class="text-sm text-error mt-4">
+                {{ rowMessage[editing.playerId].text }}
+            </p>
+
+            <div class="modal-action">
+                <form method="dialog"><button class="btn btn-ghost">{{ isDirty(editing) ? "Cancelar" : "Cerrar" }}</button></form>
+                <button type="button" class="btn btn-primary" :disabled="!isDirty(editing) || saving[editing.playerId]" @click="saveEdit">
+                    <span v-if="saving[editing.playerId]" class="loading loading-spinner loading-xs"></span>
+                    Guardar cambios
+                </button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop"><button tabindex="-1">Cerrar</button></form>
+    </dialog>
 
     <PlayerImageEditor
         ref="imageEditor"
