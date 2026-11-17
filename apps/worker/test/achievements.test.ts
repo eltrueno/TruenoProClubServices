@@ -208,6 +208,50 @@ describe("logros por partido", () => {
     })
 })
 
+describe("métricas nuevas", () => {
+    beforeEach(async () => { await syncAchievementDefinitions() })
+
+    it("Haramball: ganar 1-0 con 8 paradas del equipo (sumando las de todos)", async () => {
+        await play(match({ saves: 3 }, { score: [1, 0], teammates: [{ position: "goalkeeper", saves: 4 }] }))
+        expect(await unlocked("t0")).not.toContain("haramball_achievement")
+        await play(match({ saves: 2 }, { score: [2, 0], teammates: [{ position: "goalkeeper", saves: 9 }] }))
+        expect(await unlocked("t0")).not.toContain("haramball_achievement") // 2-0 no vale
+        await play(match({ saves: 1 }, { score: [1, 0], teammates: [{ position: "goalkeeper", saves: 7 }] }))
+        expect(await unlocked("t0")).toContain("haramball_achievement")
+        expect(await unlocked()).toContain("haramball_achievement")
+    })
+
+    it("Siuuu, Iniesta de mi vida y Ha sido un robo", async () => {
+        await play(match({ goals: 3, shots: 4, manOfTheMatch: true }, { score: [3, 0] }))
+        expect(await unlocked()).toContain("hattrickMotm_achievement")
+
+        // 1-0 con gol de un compañero: a p1 no le cuenta
+        await play(match({}, { score: [1, 0], teammates: [{ goals: 1, shots: 1 }] }))
+        expect(await unlocked()).not.toContain("oneNilWinner_achievement")
+        expect(await unlocked("t0")).toContain("oneNilWinner_achievement")
+
+        // Robo: ganar con 3 tiros contra 6 (y no con 4 contra 6)
+        const robo = (ours: number, theirs: number) => {
+            const m = match({ goals: 1, shots: 1 }, { score: [1, 0] }) as any
+            m.localClub.matchStats.shots = ours
+            m.awayClub.matchStats.shots = theirs
+            return m
+        }
+        await play(robo(4, 6))
+        expect(await unlocked()).not.toContain("robbery_achievement")
+        await play(robo(3, 6))
+        expect(await unlocked()).toContain("robbery_achievement")
+    })
+
+    it("El Niño Maravilla: solo si marca en su primer partido", async () => {
+        await play(match({ goals: 0 }))
+        await play(match({ goals: 2, shots: 2 }))
+        expect(await unlocked()).not.toContain("debutGoal_achievement")
+        await play(match({ playerId: "p9", playerName: "Nuevo", goals: 1, shots: 1 }))
+        expect(await unlocked("p9")).toContain("debutGoal_achievement")
+    })
+})
+
 describe("rachas", () => {
     beforeEach(async () => { await syncAchievementDefinitions() })
 

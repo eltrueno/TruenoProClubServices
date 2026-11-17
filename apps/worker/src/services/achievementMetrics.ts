@@ -68,6 +68,8 @@ export function matchMetrics(match: IMatch, player: IMatchPlayer, clubId: number
         passesSuccess: num(player.passesSuccess),
         goalsConceded: num(player.goalsConceded),
         rating: num(player.rating),
+        // Nota por debajo de 4 (la de EA lleva decimales: mejor un umbral que un valor exacto)
+        lowRating: flag(num(player.rating) > 0 && num(player.rating) < 4),
         manOfTheMatch: flag(!!player.manOfTheMatch),
         cleanSheets: flag(!!player.cleanSheet),
         // -1 = sin el mínimo de intentos: ni llega a un `threshold` ni clava un `exact: 0`
@@ -90,6 +92,9 @@ export function matchMetrics(match: IMatch, player: IMatchPlayer, clubId: number
         gkConceded: isKeeper ? num(player.goalsConceded) : 0,
         motmInLoss: flag(loss && !!player.manOfTheMatch),
         soloScorer: goals === score.ours ? goals : 0,
+        hattrickMotm: flag(goals >= 3 && !!player.manOfTheMatch),
+        // El gol de un 1-0 es suyo
+        oneNilWinner: flag(win && score.ours === 1 && score.theirs === 0 && goals === 1),
 
         // --- del equipo ---
         winMargin: win ? score.ours - score.theirs : 0,
@@ -105,6 +110,10 @@ export function matchMetrics(match: IMatch, player: IMatchPlayer, clubId: number
         outnumberedWin: flag(win && theirs.players.length > 0 && ours.players.length < theirs.players.length),
         playoffWin: flag(win && match.matchType === "playoff"),
         teamScorers: ours.players.filter((p) => num(p.goals) >= 1).length,
+        // Ganar 1-0: las paradas de todo el equipo (si no, 0)
+        // Ganar sin merecerlo: como mucho la mitad de tiros que el rival, y él al menos 6
+        robbery: flag(win && num(theirs.matchStats?.shots) >= 6 && num(ours.matchStats?.shots) * 2 <= num(theirs.matchStats?.shots)),
+        oneNilSaves: win && score.ours === 1 && score.theirs === 0 ? ours.players.reduce((sum, p) => sum + num(p.saves), 0) : 0,
 
         // --- fechas señaladas ---
         christmasMatch: flag(day.month === 12 && (day.day === 24 || day.day === 25)),

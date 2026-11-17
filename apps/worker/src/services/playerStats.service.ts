@@ -102,7 +102,14 @@ const accumulateStatsFromMatch = async (match: IMatch, clubId: number, skipAchie
             if (totals) {
                 await processAchievements(
                     { playerId: player.playerId, playerName: player.playerName },
-                    { cumulative: { ...totals, ...progressMetrics(progress) }, match: matchMetrics(match, player, clubId) },
+                    {
+                        cumulative: {
+                            ...totals, ...progressMetrics(progress),
+                            // Gol en su primer partido (el que se acaba de sumar)
+                            debutGoal: totals.gamesPlayed === 1 && (player.goals || 0) >= 1 ? 1 : 0,
+                        },
+                        match: matchMetrics(match, player, clubId)
+                    },
                     match,
                     silentAchievements
                 )
