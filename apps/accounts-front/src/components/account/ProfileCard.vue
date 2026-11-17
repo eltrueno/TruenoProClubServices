@@ -71,10 +71,7 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
                 <div class="-mt-12 size-24 rounded-full border-4 border-base-200 bg-base-300 overflow-hidden shadow-lg shrink-0">
                     <img v-if="user?.image" :src="user.image" :alt="user?.name ?? 'Avatar'" class="size-full object-cover" referrerpolicy="no-referrer" />
                 </div>
-                <div class="flex items-center gap-2 mt-3">
-                    <a v-if="user?.role === 'admin'" href="/admin" class="btn btn-xs btn-primary font-bold">Panel admin</a>
-                    <span class="badge badge-primary badge-sm uppercase font-bold tracking-wide">{{ roleLabel(user?.role) }}</span>
-                </div>
+                <span class="badge badge-primary badge-sm uppercase font-bold tracking-wide mt-3">{{ roleLabel(user?.role) }}</span>
             </div>
 
             <div class="mt-3">
@@ -84,8 +81,8 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
                         <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" />
                     </svg>
                 </h1>
-                <p class="text-sm text-base-content/50 mt-0.5">{{ maskEmail(user?.email) }}</p>
-                <p v-if="!needsReauth && syncedLabel" class="text-xs text-base-content/40 mt-1">Datos de Twitch actualizados {{ syncedLabel }}</p>
+                <p class="text-sm text-base-content/75 mt-0.5">{{ maskEmail(user?.email) }}</p>
+                <p v-if="!needsReauth && syncedLabel" class="text-xs text-base-content/60 mt-1">Datos de Twitch actualizados {{ syncedLabel }}</p>
             </div>
 
             <div v-if="needsReauth" role="alert" class="alert alert-warning alert-soft mt-4 text-sm">
@@ -95,20 +92,37 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
             <p v-else-if="syncError" class="text-xs text-warning mt-3">{{ syncError }}</p>
 
             <div class="mt-5 pt-4 border-t border-base-content/10 flex flex-col sm:flex-row gap-2">
-                <button class="btn btn-sm btn-primary flex-1 font-bold gap-1.5" :disabled="syncing || cooldown > 0 || needsReauth" @click="sync">
+                <button class="btn sm:btn-sm btn-primary sm:flex-1 font-bold gap-1.5" :disabled="syncing || cooldown > 0 || needsReauth" @click="sync">
                     <span v-if="syncing" class="loading loading-spinner loading-xs"></span>
                     <svg v-else class="size-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 0 0 4.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 0 1-15.357-2m15.357 2H15" />
                     </svg>
                     {{ cooldown > 0 ? `Sincronizar de nuevo en ${cooldown}s` : "Sincronizar con Twitch" }}
                 </button>
-                <button class="btn btn-sm btn-ghost flex-1 font-bold gap-1.5 text-base-content/60 hover:text-error hover:bg-error/10" @click="logout">
+                <button class="btn sm:btn-sm btn-ghost sm:flex-1 font-bold gap-1.5 text-base-content/75 hover:text-error hover:bg-error/10" @click="logout">
                     <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0-4-4m4 4H7m6 4v1a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v1" />
                     </svg>
                     Cerrar sesión
                 </button>
             </div>
+
+            <!-- Solo admins: acceso al panel, separado de los datos de la cuenta -->
+            <a v-if="user?.role === 'admin'" href="/admin"
+                class="group mt-4 flex items-center gap-3 rounded-box border border-base-content/10 bg-base-100 px-4 py-3 transition-colors hover:border-primary/50 hover:bg-primary/5">
+                <span class="size-9 shrink-0 rounded-lg bg-brand text-white grid place-items-center" aria-hidden="true">
+                    <svg class="size-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+                    </svg>
+                </span>
+                <span class="min-w-0 flex-1">
+                    <span class="block font-bold text-sm">Panel de administración</span>
+                    <span class="block text-xs text-base-content/75">Vinculaciones, fotos de jugadores y tokens de API</span>
+                </span>
+                <svg class="size-4 text-base-content/60 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7" />
+                </svg>
+            </a>
         </div>
     </section>
 </template>

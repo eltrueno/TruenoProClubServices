@@ -2,6 +2,7 @@
 import { computed, ref, watch } from "vue"
 import { useAccount } from "@/composables/useAccount"
 import { updatePrivacySettings } from "@/lib/auth"
+import { toast } from "@/lib/toast"
 
 const { user } = useAccount()
 
@@ -31,9 +32,11 @@ const save = async () => {
         errorText.value = error.status === 403 ? "El servicio de cuentas ha rechazado el cambio" : "No se ha podido guardar"
         showPublicName.value = savedName.value
         showPublicImage.value = savedImage.value
+        toast(errorText.value, "error")
     } else {
         if (user.value) Object.assign(user.value, { showPublicName: showPublicName.value, showPublicImage: showPublicImage.value })
         status.value = "saved"
+        toast("Privacidad guardada")
         setTimeout(() => { if (status.value === "saved") status.value = "" }, 2500)
     }
     saving.value = false
@@ -42,8 +45,8 @@ const save = async () => {
 
 <template>
     <section class="rounded-box bg-base-200 shadow-md p-6" aria-labelledby="privacidad">
-        <h2 id="privacidad" class="text-xs font-black text-base-content/60 mb-2 uppercase tracking-widest">Privacidad</h2>
-        <p class="text-xs text-base-content/50 mb-4 leading-relaxed">
+        <h2 id="privacidad" class="text-xs font-black text-base-content/75 mb-2 uppercase tracking-widest">Privacidad</h2>
+        <p class="text-xs text-base-content/75 mb-4 leading-relaxed">
             Cuando tu cuenta aparece vinculada a tu jugador en la web de un club, elige qué se muestra públicamente.
         </p>
         <div class="flex flex-col gap-3">
@@ -57,7 +60,7 @@ const save = async () => {
             </label>
         </div>
         <div class="flex items-center justify-end gap-3 mt-4">
-            <span v-if="saving" class="text-xs text-base-content/60">Guardando…</span>
+            <span v-if="saving" class="text-xs text-base-content/75">Guardando…</span>
             <span v-else-if="status === 'saved'" class="text-xs font-bold text-success">Guardado</span>
             <span v-else-if="status === 'error'" class="text-xs font-bold text-error">{{ errorText }}</span>
             <button class="btn btn-sm btn-primary font-bold" :disabled="!dirty || saving" @click="save">

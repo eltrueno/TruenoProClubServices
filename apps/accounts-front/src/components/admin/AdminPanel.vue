@@ -20,6 +20,8 @@ import PlayerImageEditor from "./PlayerImageEditor.vue"
 import AdminSkeleton from "./AdminSkeleton.vue"
 import ClubCrest from "./ClubCrest.vue"
 import ApiTokens from "./ApiTokens.vue"
+import Toaster from "../ui/Toaster.vue"
+import { toast } from "@/lib/toast"
 
 
 const { user, isPending, isLoggedIn, authUnavailable } = useAccount()
@@ -72,6 +74,8 @@ const usersById = computed(() => new Map(users.value.map((u) => [u.id, u])))
 
 function flash(playerId: string, ok: boolean, text: string) {
     rowMessage.value[playerId] = { ok, text }
+    const name = members.value.find((m) => m.playerId === playerId)?.playerName
+    toast(name ? `${name}: ${text}` : text, ok ? "success" : "error")
     if (ok) setTimeout(() => { if (rowMessage.value[playerId]?.ok) rowMessage.value[playerId] = { ok: true, text: "" } }, 2500)
 }
 
@@ -299,7 +303,7 @@ watch([isPending, isAdmin], ([pending, admin]) => {
 
     <div v-else-if="!isAdmin" class="w-full min-h-[50vh] flex flex-col items-center justify-center gap-4 text-center">
         <h2 class="text-3xl font-black">Solo para admins</h2>
-        <p class="text-base-content/60">Tu cuenta no tiene permisos para ver este panel.</p>
+        <p class="text-base-content/75">Tu cuenta no tiene permisos para ver este panel.</p>
         <a href="/" class="btn btn-primary btn-sm">Volver a mi cuenta</a>
     </div>
 
@@ -314,7 +318,7 @@ watch([isPending, isAdmin], ([pending, admin]) => {
         <header class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
             <div>
                 <h1 class="text-3xl lg:text-4xl font-black tracking-tight">Panel admin</h1>
-                <p class="text-sm text-base-content/60 mt-1">Solicitudes de vinculación, foto y cuenta vinculada de cada jugador. Los cambios de las filas se guardan por fila.</p>
+                <p class="text-sm text-base-content/75 mt-1">Solicitudes de vinculación, foto y cuenta vinculada de cada jugador. Los cambios de las filas se guardan por fila.</p>
                 <!-- Filtro por club: los datos son los mismos, solo cambia qué jugadores se ven -->
                 <div v-if="CLUBS.length > 1" role="tablist" class="flex flex-wrap gap-2 mt-4">
                     <button type="button" role="tab" :aria-selected="clubFilter === 'all'"
@@ -334,7 +338,7 @@ watch([isPending, isAdmin], ([pending, admin]) => {
                 </div>
             </div>
             <div class="flex items-center gap-2 w-full md:w-auto">
-                <input v-model="search" type="text" placeholder="Buscar jugador o pro" class="input input-bordered input-sm w-full md:w-64" />
+                <input v-model="search" type="search" aria-label="Buscar jugador o pro" placeholder="Buscar jugador o pro" class="input input-bordered input-sm w-full md:w-64" />
                 <button class="btn btn-sm btn-ghost" @click="load" :disabled="loading">Recargar</button>
             </div>
         </header>
@@ -357,7 +361,7 @@ watch([isPending, isAdmin], ([pending, admin]) => {
                     <h2 class="font-black uppercase tracking-wider text-sm">Solicitudes de vinculación</h2>
                     <span class="badge badge-sm" :class="visibleRequests.length ? 'badge-warning' : 'badge-ghost'">{{ visibleRequests.length }}</span>
                 </div>
-                <p v-if="visibleRequests.length === 0" class="text-xs text-base-content/50">No hay solicitudes pendientes.</p>
+                <p v-if="visibleRequests.length === 0" class="text-xs text-base-content/75">No hay solicitudes pendientes.</p>
                 <ul v-else class="flex flex-col gap-2">
                     <li v-for="r in visibleRequests" :key="r.id" class="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl bg-base-200 p-3">
                         <div class="flex items-center gap-2 min-w-0 flex-1">
@@ -368,13 +372,13 @@ watch([isPending, isAdmin], ([pending, admin]) => {
                             </div>
                             <p class="text-sm min-w-0 truncate">
                                 <span class="font-bold">{{ r.userName }}</span>
-                                <span class="text-base-content/50"> quiere ser </span>
+                                <span class="text-base-content/75"> quiere ser </span>
                                 <a :href="playerUrl(r.playerId)" target="_blank" rel="noopener" class="font-bold hover-text-brand">{{ r.playerName }}</a>
                             </p>
                             <span class="flex -space-x-1 shrink-0">
                                 <img v-for="c in clubsFor(r.playerId)" :key="c.id" :src="c.logo" :alt="c.name" :title="c.name" class="size-4 object-contain" />
                             </span>
-                            <span class="text-[10px] text-base-content/40 shrink-0 hidden md:inline">{{ new Date(r.createdAt).toLocaleDateString("es-ES") }}</span>
+                            <span class="text-xs text-base-content/60 shrink-0 hidden md:inline">{{ new Date(r.createdAt).toLocaleDateString("es-ES") }}</span>
                         </div>
                         <div class="flex gap-2">
                             <button class="btn btn-sm btn-success" :disabled="requestBusy[r.id]" @click="resolveRequest(r, 'approve')">
@@ -389,8 +393,8 @@ watch([isPending, isAdmin], ([pending, admin]) => {
             </section>
 
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3">
-                <p class="text-xs text-base-content/50">{{ filteredMembers.length }} jugadores · {{ users.length }} cuentas</p>
-                <p class="text-[10px] text-base-content/40">Fotos y cuentas vinculadas se aplican al jugador en todos los clubes.</p>
+                <p class="text-xs text-base-content/75">{{ filteredMembers.length }} jugadores · {{ users.length }} cuentas</p>
+                <p class="text-xs text-base-content/60">Fotos y cuentas vinculadas se aplican al jugador en todos los clubes.</p>
             </div>
 
             <div v-for="m in filteredMembers" :key="m.playerId"
@@ -405,9 +409,10 @@ watch([isPending, isAdmin], ([pending, admin]) => {
 
                 <!-- Foto: cualquier URL pasa por el editor para encuadrarla a 400x450 y subirla al CDN -->
                 <div class="form-control w-full">
-                    <span class="label-text text-[10px] uppercase font-black tracking-wider text-base-content/50 mb-1">Foto</span>
+                    <span class="label-text text-xs uppercase font-black tracking-wider text-base-content/75 mb-1">Foto</span>
                     <div class="join w-full">
                         <input
+                            aria-label="URL de la foto del jugador"
                             v-model="draftFor(m).imageUrl"
                             type="url"
                             placeholder="Pega una URL y pulsa Enter, o Cambiar…"
@@ -416,12 +421,12 @@ watch([isPending, isAdmin], ([pending, admin]) => {
                         />
                         <button type="button" class="btn btn-sm join-item" @click="openImageEditor(m, draftFor(m).imageUrl)">Cambiar…</button>
                     </div>
-                    <span class="text-[10px] text-base-content/40 mt-1">Al pulsar Enter se abre el editor para ajustar la foto a la escala del club. Vacía y guarda para quitarla.</span>
+                    <span class="text-xs text-base-content/60 mt-1">Al pulsar Enter se abre el editor para ajustar la foto a la escala del club. Vacía y guarda para quitarla.</span>
                 </div>
 
                 <!-- Cuenta: el botón abre el selector compartido (ver openAccountPicker) -->
                 <div class="form-control w-full">
-                    <span class="label-text text-[10px] uppercase font-black tracking-wider text-base-content/50 mb-1">Cuenta vinculada</span>
+                    <span class="label-text text-xs uppercase font-black tracking-wider text-base-content/75 mb-1">Cuenta vinculada</span>
                     <button type="button" class="btn btn-outline btn-sm w-full justify-between font-normal" @click="openAccountPicker(m)">
                         <span class="flex items-center gap-2 min-w-0">
                             <img v-if="usersById.get(draftFor(m).userId)?.image" :src="usersById.get(draftFor(m).userId)!.image!" alt="" class="size-5 rounded-full shrink-0 object-cover" loading="lazy" />
@@ -429,7 +434,7 @@ watch([isPending, isAdmin], ([pending, admin]) => {
                         </span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
                     </button>
-                    <span v-if="draftFor(m).userId && linkedElsewhere(draftFor(m).userId, m.playerId)" class="text-[10px] text-warning mt-1">
+                    <span v-if="draftFor(m).userId && linkedElsewhere(draftFor(m).userId, m.playerId)" class="text-xs text-warning mt-1">
                         Esta cuenta está vinculada a {{ linkedElsewhere(draftFor(m).userId, m.playerId)!.playerName }}; al guardar pasará a este jugador.
                     </span>
                 </div>
@@ -443,13 +448,13 @@ watch([isPending, isAdmin], ([pending, admin]) => {
                     <span v-if="rowMessage[m.playerId]?.text" class="text-xs font-bold" :class="rowMessage[m.playerId].ok ? 'text-success' : 'text-error'">
                         {{ rowMessage[m.playerId].text }}
                     </span>
-                    <span v-else-if="m.userId && usersById.get(m.userId)" class="text-[10px] text-base-content/40 text-center truncate w-full" :title="usersById.get(m.userId)!.name">
+                    <span v-else-if="m.userId && usersById.get(m.userId)" class="text-xs text-base-content/60 text-center truncate w-full" :title="usersById.get(m.userId)!.name">
                         {{ usersById.get(m.userId)!.name }}
                     </span>
                 </div>
             </div>
 
-            <p v-if="filteredMembers.length === 0" class="text-center text-base-content/50 py-8">Ningún jugador coincide con la búsqueda.</p>
+            <p v-if="filteredMembers.length === 0" class="text-center text-base-content/75 py-8">Ningún jugador coincide con la búsqueda.</p>
         </div>
 
         <ApiTokens class="mt-12 pt-8 border-t border-base-300" />
@@ -462,6 +467,7 @@ watch([isPending, isAdmin], ([pending, admin]) => {
         :player-name="editingMember?.playerName ?? ''"
         @uploaded="onImageUploaded"
     />
+    <Toaster />
     <PlayerPickerModal
         ref="accountPicker"
         :trigger="false"

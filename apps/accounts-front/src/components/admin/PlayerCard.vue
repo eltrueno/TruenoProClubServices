@@ -59,12 +59,12 @@ const lastSeen = computed(() => fmt(props.member.lastSeenAt))
                     :title="translatePosition(pos)"
                 >{{ POSITION_SHORT[pos] }}</span>
             </p>
-            <p v-if="!noDates && (since || lastSeen)" class="text-xs text-base-content/60 truncate">
+            <p v-if="!noDates && (since || lastSeen)" class="text-xs text-base-content/75 truncate">
                 <span v-if="since">Desde {{ since }}</span>
                 <span v-if="since && lastSeen"> · </span>
                 <span v-if="lastSeen">Última vez {{ lastSeen }}</span>
             </p>
-            <p v-if="showId && member.playerId" class="text-[10px] text-base-content/30 font-mono truncate" :title="member.playerId">{{ member.playerId }}</p>
+            <p v-if="showId && member.playerId" class="text-xs text-base-content/60 font-mono truncate" :title="member.playerId">{{ member.playerId }}</p>
             <slot />
         </div>
     </div>

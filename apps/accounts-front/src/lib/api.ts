@@ -1,4 +1,4 @@
-import type { ApiResponse, IAccountAchievements, IAchievementDefinition, IClubMember, IClubMemberAdminPatch, ILinkRequest, IPublicUser, ImageScope, UserRole } from "@trueno-proclub-services/shared"
+import type { ApiResponse, IPlayerProfile, IAccountAchievements, IAchievementDefinition, IClubMember, IClubMemberAdminPatch, ILinkRequest, IPublicUser, ImageScope, UserRole } from "@trueno-proclub-services/shared"
 import { AUTH_URL, type ClubLink } from "@/config/site"
 
 /** Error de cualquier llamada: `code` estable (TWITCH_TOKEN_EXPIRED, ALREADY_LINKED…) + `httpStatus` */
@@ -111,6 +111,8 @@ export const clubApi = (club: ClubLink) => {
         request<ApiResponse<T>>(`${club.apiUrl}${path}`, options).then((r) => r.response as T)
     return {
         members: () => api<IClubMember[]>("/members"),
+        /** Ficha completa de un jugador en este club (stats por posición, logros…) */
+        profile: (playerId: string) => api<IPlayerProfile>(`/members/${encodeURIComponent(playerId)}`),
         /** Jugador vinculado a la cuenta, si juega en este club (null si no) */
         mine: () => api<IClubMember | null>("/members/me"),
         myLinkRequest: () => api<ILinkRequest | null>("/members/me/link-request"),

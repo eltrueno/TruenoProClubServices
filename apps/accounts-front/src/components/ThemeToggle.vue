@@ -40,7 +40,7 @@ onMounted(() => {
             :aria-label="o.label"
             :title="o.label"
             class="join-item btn btn-sm btn-circle border-none shadow-none"
-            :class="current === o.value ? 'bg-brand text-white' : 'btn-ghost text-base-content/60'"
+            :class="current === o.value ? 'bg-brand text-white' : 'btn-ghost text-base-content/75'"
             @click="choose(o.value)"
         >
             <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">

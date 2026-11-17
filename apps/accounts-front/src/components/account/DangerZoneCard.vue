@@ -51,7 +51,7 @@ onMounted(() => {
         <div class="flex flex-col sm:flex-row items-start justify-between gap-6">
             <div>
                 <p class="font-medium text-sm">Eliminar cuenta</p>
-                <p class="text-xs text-base-content/50 mt-1 leading-relaxed">
+                <p class="text-xs text-base-content/75 mt-1 leading-relaxed">
                     Se borran tu cuenta y tus conexiones en todas las webs de Casemuro. Tu jugador queda sin cuenta vinculada; sus estadísticas no se tocan. No se puede deshacer.
                 </p>
             </div>
@@ -62,7 +62,7 @@ onMounted(() => {
             <div class="modal-box bg-base-200 border border-error/20">
                 <h3 class="font-bold text-lg text-error">¿Eliminar tu cuenta?</h3>
                 <template v-if="needsReauth">
-                    <p class="py-4 text-sm text-base-content/70">
+                    <p class="py-4 text-sm text-base-content/75">
                         Por seguridad, para borrar la cuenta tienes que haber iniciado sesión hace poco. Vuelve a entrar con Twitch y te traemos de vuelta aquí.
                     </p>
                     <div class="modal-action">
@@ -71,7 +71,7 @@ onMounted(() => {
                     </div>
                 </template>
                 <template v-else>
-                    <p class="py-4 text-sm text-base-content/70">
+                    <p class="py-4 text-sm text-base-content/75">
                         Se borrarán tu cuenta, tus conexiones y tus ajustes, y tu jugador quedará libre para que pueda volver a vincularse. <strong class="text-base-content">Esta acción no se puede deshacer.</strong>
                     </p>
                     <p v-if="errorText" class="text-xs text-error mb-2">{{ errorText }}</p>
