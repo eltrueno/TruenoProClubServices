@@ -48,7 +48,7 @@ const onImgError = (e: Event) => {
             <img :src="selected.image || PLAYER_PLACEHOLDER" alt="" class="size-6 rounded object-cover object-top" @error="onImgError" />
             <span class="truncate font-bold">{{ selected.name }}</span>
         </span>
-        <span v-else class="text-base-content/50">Elige tu jugador…</span>
+        <span v-else class="text-base-content/75">Elige tu jugador…</span>
         <svg class="size-4 opacity-50" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" /></svg>
     </button>
 
@@ -56,7 +56,7 @@ const onImgError = (e: Event) => {
         <div class="modal-box bg-base-200 p-0 flex flex-col max-h-[80dvh]">
             <div class="p-4 border-b border-base-300">
                 <h3 class="font-bold text-lg">¿Quién eres?</h3>
-                <p class="text-xs text-base-content/50 mt-0.5">Jugadores de todos los clubes que aún no tienen cuenta vinculada</p>
+                <p class="text-xs text-base-content/75 mt-0.5">Jugadores de todos los clubes que aún no tienen cuenta vinculada</p>
                 <input ref="input" v-model="search" type="search" class="input input-sm w-full mt-3" placeholder="Buscar por nombre…" />
             </div>
             <ul class="overflow-y-auto p-2 flex-1 min-h-0">
@@ -70,11 +70,11 @@ const onImgError = (e: Event) => {
                         <img :src="item.image || PLAYER_PLACEHOLDER" alt="" class="w-10 h-12 rounded-lg object-cover object-top bg-base-300 shrink-0" loading="lazy" @error="onImgError" />
                         <span class="min-w-0">
                             <span class="block font-bold text-sm truncate">{{ item.name }}</span>
-                            <span v-if="item.subtitle" class="block text-xs text-base-content/50 truncate">{{ item.subtitle }}</span>
+                            <span v-if="item.subtitle" class="block text-xs text-base-content/75 truncate">{{ item.subtitle }}</span>
                         </span>
                     </button>
                 </li>
-                <li v-if="filtered.length === 0" class="p-6 text-center text-sm text-base-content/50">Ningún jugador libre coincide</li>
+                <li v-if="filtered.length === 0" class="p-6 text-center text-sm text-base-content/75">Ningún jugador libre coincide</li>
             </ul>
         </div>
         <form method="dialog" class="modal-backdrop"><button>Cerrar</button></form>

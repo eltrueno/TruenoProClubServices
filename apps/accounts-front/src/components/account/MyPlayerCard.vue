@@ -6,13 +6,23 @@
  * Las solicitudes las aprueba un admin desde el /admin del club donde juega.
  */
 import { computed, onMounted, ref } from "vue"
+import ClubCrest from "../admin/ClubCrest.vue"
 import type { IClubMember, ILinkRequest } from "@trueno-proclub-services/shared"
 import { CLUBS, type ClubLink } from "@/config/site"
 import { ApiError, clubApi } from "@/lib/api"
 import { PLAYER_PLACEHOLDER } from "@/lib/format"
 import PlayerPicker, { type PickerItem } from "./PlayerPicker.vue"
 
-interface Membership { club: ClubLink; member: IClubMember }
+interface Membership {
+    club: ClubLink
+    member: IClubMember
+    /** partidos en este club (oficiales + amistosos) y por posición; null si no se han podido cargar */
+    games: number | null
+    byPosition: Record<string, number>
+}
+
+const POSITION_LABELS: Record<string, string> = { goalkeeper: "Portero", defender: "Defensa", midfielder: "Centrocampista", forward: "Delantero" }
+const monthYear = new Intl.DateTimeFormat("es-ES", { month: "long", year: "numeric" })
 
 const loading = ref(true)
 const unreachable = ref(false)
@@ -24,6 +34,24 @@ const busy = ref(false)
 const errorText = ref("")
 
 const linked = computed(() => memberships.value[0]?.member ?? null)
+/** Sumando todos sus clubes */
+const totalGames = computed(() => memberships.value.reduce((sum, m) => sum + (m.games ?? 0), 0))
+const mainPosition = computed(() => {
+    const byPosition: Record<string, number> = {}
+    for (const m of memberships.value) for (const [pos, n] of Object.entries(m.byPosition)) byPosition[pos] = (byPosition[pos] ?? 0) + n
+    const top = Object.entries(byPosition).sort(([, a], [, b]) => b - a)[0]
+    return top && top[1] > 0 ? POSITION_LABELS[top[0]] ?? null : null
+})
+/** Desde cuándo existe el jugador (el primer club en que apareció) */
+const since = computed(() => {
+    const dates = memberships.value.map((m) => new Date(m.member.createdAt ?? "").getTime()).filter(Number.isFinite)
+    return dates.length ? monthYear.format(new Date(Math.min(...dates))) : null
+})
+const summary = computed(() => [
+    mainPosition.value,
+    totalGames.value > 0 ? `${totalGames.value} ${totalGames.value === 1 ? "partido" : "partidos"}` : null,
+    since.value ? `desde ${since.value}` : null,
+].filter(Boolean).join(" · "))
 const pickerItems = computed<PickerItem[]>(() =>
     candidates.value.map(({ member, clubs }) => ({
         id: member.playerId,
@@ -52,7 +80,20 @@ async function load() {
     loading.value = true
     unreachable.value = false
     const mine = await Promise.allSettled(CLUBS.map((c) => clubApi(c).mine()))
-    memberships.value = mine.flatMap((r, i) => (r.status === "fulfilled" && r.value ? [{ club: CLUBS[i], member: r.value }] : []))
+    const found = mine.flatMap((r, i) => (r.status === "fulfilled" && r.value ? [{ club: CLUBS[i], member: r.value }] : []))
+    // Partidos y posiciones de cada club (de su ficha); si una falla, ese club sale sin números
+    memberships.value = await Promise.all(found.map(async ({ club, member }): Promise<Membership> => {
+        try {
+            const { stats } = await clubApi(club).profile(member.playerId)
+            const byPosition: Record<string, number> = {}
+            for (const s of [...(stats?.official ?? []), ...(stats?.friendly ?? [])]) {
+                if (s.position) byPosition[s.position] = (byPosition[s.position] ?? 0) + (Number(s.gamesPlayed) || 0)
+            }
+            return { club, member, byPosition, games: Object.values(byPosition).reduce((a, b) => a + b, 0) }
+        } catch {
+            return { club, member, byPosition: {}, games: null }
+        }
+    }))
     if (mine.every((r) => r.status === "rejected")) unreachable.value = true
 
     if (!linked.value && !unreachable.value) {
@@ -127,8 +168,8 @@ onMounted(load)
 </script>
 
 <template>
-    <section id="mi-jugador" class="rounded-box bg-base-200 shadow-md p-6 scroll-mt-6" aria-labelledby="mi-jugador-title">
-        <h2 id="mi-jugador-title" class="text-xs font-black text-base-content/60 mb-5 uppercase tracking-widest">Mi jugador</h2>
+    <section id="mi-jugador" tabindex="-1" class="focus:outline-none rounded-box bg-base-200 shadow-md p-6 scroll-mt-20 sm:scroll-mt-6" aria-labelledby="mi-jugador-title">
+        <h2 id="mi-jugador-title" class="text-xs font-black text-base-content/75 mb-5 uppercase tracking-widest">Mi jugador</h2>
 
         <div v-if="loading" class="flex items-center gap-3">
             <div class="skeleton w-12 h-14 rounded-lg shrink-0"></div>
@@ -142,21 +183,36 @@ onMounted(load)
             No podemos consultar las plantillas de los clubes ahora mismo. Inténtalo en un rato.
         </div>
 
-        <!-- Vinculado: dónde juega y enlace a su ficha en cada club -->
-        <div v-else-if="linked" class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <!-- Vinculado: quién es, y una fila por club con su ficha -->
+        <div v-else-if="linked">
             <div class="flex items-center gap-3">
                 <img :src="linked.imageUrl || PLAYER_PLACEHOLDER" :alt="linked.playerName" class="w-12 h-14 rounded-lg object-cover object-top bg-base-300" @error="onImgError" />
-                <div>
-                    <p class="font-bold">{{ linked.playerName }}</p>
-                    <p class="text-xs text-base-content/50 mt-0.5">Vinculado a tu cuenta · juegas en {{ memberships.map((m) => m.club.name).join(" y ") }}</p>
+                <div class="min-w-0">
+                    <p class="font-bold flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span class="truncate">{{ linked.playerName }}</span>
+                        <span class="badge badge-xs badge-success badge-soft">Vinculado</span>
+                    </p>
+                    <p v-if="summary" class="text-xs text-base-content/75 mt-0.5">{{ summary }}</p>
                 </div>
             </div>
-            <div class="flex flex-wrap gap-2">
-                <a v-for="m in memberships" :key="m.club.id" :href="playerUrl(m.club, m.member.playerId)" class="btn btn-sm btn-primary font-bold gap-1.5">
-                    <img :src="m.club.logo" alt="" class="size-4 object-contain" />
-                    Ficha en {{ m.club.name.replace("Casemuro ", "") }}
-                </a>
-            </div>
+
+            <ul class="mt-4 divide-y divide-base-content/10 rounded-box border border-base-content/10 bg-base-100">
+                <li v-for="m in memberships" :key="m.club.id">
+                    <a :href="playerUrl(m.club, m.member.playerId)" class="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-primary/5">
+                        <ClubCrest :club="m.club" class="size-6 shrink-0" />
+                        <span class="min-w-0 flex-1">
+                            <span class="block font-bold text-sm truncate">{{ m.club.name }}</span>
+                            <span v-if="m.games !== null" class="block text-xs text-base-content/75">{{ m.games }} {{ m.games === 1 ? "partido" : "partidos" }}</span>
+                        </span>
+                        <span class="text-xs font-bold text-base-content/75 group-hover:text-primary flex items-center gap-1">
+                            Ver ficha
+                            <svg class="size-3.5 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7" />
+                            </svg>
+                        </span>
+                    </a>
+                </li>
+            </ul>
         </div>
 
         <!-- Solicitud pendiente -->
@@ -165,7 +221,7 @@ onMounted(load)
                 <img :src="PLAYER_PLACEHOLDER" alt="" class="w-12 h-14 rounded-lg object-cover object-top bg-base-300" />
                 <div>
                     <p class="font-bold">{{ request.playerName }}</p>
-                    <p class="text-xs text-base-content/50 mt-0.5"><span class="badge badge-warning badge-xs mr-1"></span>Solicitud pendiente de que un admin la apruebe</p>
+                    <p class="text-xs text-base-content/75 mt-0.5"><span class="badge badge-warning badge-xs mr-1"></span>Solicitud pendiente de que un admin la apruebe</p>
                 </div>
             </div>
             <button class="btn btn-sm btn-outline font-bold" :disabled="busy" @click="cancelRequest">
@@ -176,7 +232,7 @@ onMounted(load)
 
         <!-- Sin vincular: elegir jugador y pedirlo -->
         <div v-else>
-            <p class="text-sm text-base-content/70">¿Juegas en algún club de Casemuro? Pide vincular tu cuenta a tu jugador y lo verás en todas las webs.</p>
+            <p class="text-sm text-base-content/75">¿Juegas en algún club de Casemuro? Pide vincular tu cuenta a tu jugador y lo verás en todas las webs.</p>
             <form class="mt-4 flex flex-col sm:flex-row gap-2" @submit.prevent="requestLink">
                 <div class="sm:flex-1">
                     <PlayerPicker v-model="selectedId" :items="pickerItems" :disabled="pickerItems.length === 0" />

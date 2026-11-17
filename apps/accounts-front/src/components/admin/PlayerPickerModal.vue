@@ -172,12 +172,12 @@ defineExpose({ open, close })
                     <kbd v-if="search" class="kbd kbd-xs cursor-pointer" @click="search = ''">✕</kbd>
                 </label>
                 <div v-if="hasPositions" class="flex flex-wrap gap-1">
-                    <button type="button" class="btn btn-xs" :class="positionFilter === null ? 'btn-primary' : 'btn-ghost'" @click="positionFilter = null">Todas</button>
+                    <button type="button" class="btn btn-sm" :class="positionFilter === null ? 'btn-primary' : 'btn-ghost'" @click="positionFilter = null">Todas</button>
                     <button
                         v-for="pos in PLAYER_POSITIONS"
                         :key="pos"
                         type="button"
-                        class="btn btn-xs"
+                        class="btn btn-sm"
                         :class="positionFilter === pos ? 'btn-primary' : 'btn-ghost'"
                         @click="positionFilter = positionFilter === pos ? null : pos"
                     >{{ translatePosition(pos) }}</button>
@@ -207,8 +207,8 @@ defineExpose({ open, close })
                                 :positions="item.positions"
                                 :zoom="zoom"
                             >
-                                <p v-if="item.subtitle" class="text-xs text-base-content/60 truncate">{{ item.subtitle }}</p>
-                                <p v-if="item.hint" class="text-[10px] text-warning truncate">{{ item.hint }}</p>
+                                <p v-if="item.subtitle" class="text-xs text-base-content/75 truncate">{{ item.subtitle }}</p>
+                                <p v-if="item.hint" class="text-xs text-warning truncate">{{ item.hint }}</p>
                             </PlayerCard>
                             <template v-else>
                                 <div class="shrink-0 overflow-hidden bg-base-300 size-10 rounded-full">
@@ -217,7 +217,7 @@ defineExpose({ open, close })
                                 <div class="min-w-0 flex-1">
                                     <p class="font-bold text-sm truncate">{{ item.name }}</p>
                                     <p v-if="item.subtitle" class="text-xs opacity-60 truncate">{{ item.subtitle }}</p>
-                                    <p v-if="item.hint" class="text-[10px] text-warning truncate">{{ item.hint }}</p>
+                                    <p v-if="item.hint" class="text-xs text-warning truncate">{{ item.hint }}</p>
                                 </div>
                             </template>
                             <input v-if="multiple" type="checkbox" class="checkbox checkbox-primary checkbox-sm pointer-events-none" :checked="isChecked(item.id)" tabindex="-1" />

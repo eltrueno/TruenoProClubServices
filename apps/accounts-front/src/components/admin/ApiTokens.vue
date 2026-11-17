@@ -81,7 +81,7 @@ onMounted(load)
 <template>
     <section class="text-left">
         <h2 class="text-xl font-black tracking-tight">Tokens de API</h2>
-        <p class="text-sm text-base-content/60 mt-1 max-w-3xl">
+        <p class="text-sm text-base-content/75 mt-1 max-w-3xl">
             Para webs de fuera de casemuro.stream y bots. Con un token pueden consultar, desde su servidor, la cuenta de un
             usuario de Twitch (nombre, avatar, rol, follow y sub) y su jugador vinculado. No da acceso al email ni permite cambiar nada.
         </p>
@@ -100,8 +100,8 @@ onMounted(load)
             <div class="flex flex-col sm:flex-row gap-2 w-full">
                 <code class="bg-base-100 text-base-content rounded px-2 py-1 text-xs break-all flex-1 select-all">{{ created.token }}</code>
                 <div class="flex gap-2">
-                    <button type="button" class="btn btn-xs btn-primary" @click="copy">{{ copied ? "Copiado" : "Copiar" }}</button>
-                    <button type="button" class="btn btn-xs btn-ghost" @click="created = null">Ya lo tengo</button>
+                    <button type="button" class="btn btn-sm btn-primary" @click="copy">{{ copied ? "Copiado" : "Copiar" }}</button>
+                    <button type="button" class="btn btn-sm btn-ghost" @click="created = null">Ya lo tengo</button>
                 </div>
             </div>
         </div>
@@ -114,12 +114,12 @@ onMounted(load)
             <template v-if="loading">
                 <div v-for="i in 2" :key="i" class="skeleton on-page h-14 w-full rounded-box"></div>
             </template>
-            <p v-else-if="tokens.length === 0 && !error" class="text-sm text-base-content/50">Todavía no hay ningún token.</p>
+            <p v-else-if="tokens.length === 0 && !error" class="text-sm text-base-content/75">Todavía no hay ningún token.</p>
             <div v-for="t in tokens" v-else :key="t.id"
                 class="flex flex-col sm:flex-row sm:items-center gap-2 bg-base-100 border border-base-300 rounded-box px-4 py-3">
                 <div class="min-w-0 flex-1">
                     <p class="font-bold truncate">{{ t.name }}</p>
-                    <p class="text-xs text-base-content/60">
+                    <p class="text-xs text-base-content/75">
                         <code>{{ t.hint }}…</code>
                         · creado {{ relativeTime(t.createdAt) ?? "" }}
                         · {{ t.lastUsedAt ? `usado ${relativeTime(t.lastUsedAt)}` : "sin usar" }}
@@ -127,14 +127,14 @@ onMounted(load)
                 </div>
                 <div class="flex items-center gap-2">
                     <template v-if="confirming === t.id">
-                        <span class="text-xs text-base-content/60">Dejará de funcionar ya.</span>
-                        <button type="button" class="btn btn-xs btn-error" :disabled="revoking === t.id" @click="revoke(t)">
+                        <span class="text-xs text-base-content/75">Dejará de funcionar ya.</span>
+                        <button type="button" class="btn btn-sm btn-error" :disabled="revoking === t.id" @click="revoke(t)">
                             <span v-if="revoking === t.id" class="loading loading-spinner loading-xs"></span>
                             <span v-else>Revocar</span>
                         </button>
-                        <button type="button" class="btn btn-xs btn-ghost" :disabled="revoking === t.id" @click="confirming = null">Cancelar</button>
+                        <button type="button" class="btn btn-sm btn-ghost" :disabled="revoking === t.id" @click="confirming = null">Cancelar</button>
                     </template>
-                    <button v-else type="button" class="btn btn-xs btn-ghost text-error" @click="confirming = t.id">Revocar</button>
+                    <button v-else type="button" class="btn btn-sm btn-ghost text-error" @click="confirming = t.id">Revocar</button>
                 </div>
             </div>
         </div>

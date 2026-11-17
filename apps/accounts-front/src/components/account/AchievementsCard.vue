@@ -22,7 +22,7 @@ const showAll = ref(false)
 
 const ACCOUNT_CATEGORIES: AchievementCategory[] = ["account", "global", "collection"]
 const RARITY_TEXT: Record<AchievementRarity, string> = {
-    common: "text-base-content/60",
+    common: "text-base-content/75",
     rare: "text-sky-600 dark:text-sky-300",
     epic: "text-violet-600 dark:text-violet-300",
     legendary: "text-amber-600 dark:text-amber-300",
@@ -88,8 +88,8 @@ const clubPoints = computed(() =>
 <template>
     <section class="rounded-box bg-base-200 shadow-md p-6" aria-labelledby="mis-logros">
         <div class="flex items-center justify-between gap-3 mb-5">
-            <h2 id="mis-logros" class="text-xs font-black text-base-content/60 uppercase tracking-widest">Mis logros</h2>
-            <button v-if="!loading && !failed && mine?.playerId" class="btn btn-xs btn-ghost" @click="showAll = !showAll">
+            <h2 id="mis-logros" class="text-xs font-black text-base-content/75 uppercase tracking-widest">Mis logros</h2>
+            <button v-if="!loading && !failed && mine?.playerId" class="btn btn-sm btn-ghost" @click="showAll = !showAll">
                 {{ showAll ? "Solo los conseguidos" : "Ver todos" }}
             </button>
         </div>
@@ -99,22 +99,22 @@ const clubPoints = computed(() =>
             <div class="skeleton h-10 w-full"></div>
         </div>
 
-        <p v-else-if="failed" role="alert" class="text-sm text-base-content/60">No se han podido cargar tus logros ahora mismo.</p>
+        <p v-else-if="failed" role="alert" class="text-sm text-base-content/75">No se han podido cargar tus logros ahora mismo.</p>
 
         <template v-else-if="mine">
             <!-- Puntos -->
-            <p class="text-base-content/70">
+            <p class="text-base-content/75">
                 <span class="text-4xl font-black tabular-nums text-brand">{{ mine.points.total }}</span> puntos
             </p>
-            <p v-if="mine.playerId" class="text-xs text-base-content/50 mt-1">
+            <p v-if="mine.playerId" class="text-xs text-base-content/75 mt-1">
                 {{ mine.points.account }} de logros de cuenta<template v-for="c in clubPoints" :key="c.clubId"> · {{ c.points }} en {{ c.club?.name ?? "otro club" }}</template>
             </p>
 
-            <p v-if="!mine.playerId" class="text-sm text-base-content/60 mt-4">
+            <p v-if="!mine.playerId" class="text-sm text-base-content/75 mt-4">
                 Los logros de cuenta son para quien tiene su cuenta vinculada a su jugador. Pide la vinculación en
                 <a href="#mi-jugador" class="link">Mi jugador</a> y, cuando un admin la apruebe, recibirás de golpe todos los que ya te correspondan.
             </p>
-            <p v-else-if="unlockedCount === 0 && !showAll" class="text-sm text-base-content/60 mt-4">
+            <p v-else-if="unlockedCount === 0 && !showAll" class="text-sm text-base-content/75 mt-4">
                 Todavía no tienes logros de cuenta. Si te acabas de vincular, aparecen en unos minutos.
             </p>
 
@@ -122,19 +122,19 @@ const clubPoints = computed(() =>
             <div v-for="g in groups" v-show="g.items.length" :key="g.key" class="mt-5">
                 <div class="flex items-baseline justify-between gap-2 mb-2">
                     <h3 class="text-sm font-black uppercase tracking-wide">{{ g.label }}</h3>
-                    <span class="text-[11px] font-bold text-base-content/50 tabular-nums">{{ g.unlocked }} / {{ g.total }}</span>
+                    <span class="text-xs font-bold text-base-content/75 tabular-nums">{{ g.unlocked }} / {{ g.total }}</span>
                 </div>
                 <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <li v-for="i in g.items" :key="i.id" class="rounded-xl bg-base-100 p-3 flex gap-3 items-start" :class="{ 'opacity-50': !i.unlocked }">
                         <div class="size-9 shrink-0 rounded-lg grid place-items-center font-black text-xs tabular-nums"
-                            :class="i.unlocked ? RARITY_ICON[i.def.rarity] : 'bg-base-300 text-base-content/40'">{{ i.secret ? "?" : i.def.points }}</div>
+                            :class="i.unlocked ? RARITY_ICON[i.def.rarity] : 'bg-base-300 text-base-content/60'">{{ i.secret ? "?" : i.def.points }}</div>
                         <div class="min-w-0">
                             <p class="font-bold text-sm leading-tight">
                                 {{ i.secret ? "Logro oculto" : i.def.name }}
                                 <span v-if="i.times > 1" class="badge badge-xs badge-neutral align-middle">×{{ i.times }}</span>
                             </p>
-                            <p class="text-xs text-base-content/60 mt-0.5">{{ i.secret ? "Se desvela al conseguirlo" : i.def.description }}</p>
-                            <p class="text-[11px] font-semibold mt-0.5" :class="i.unlocked ? RARITY_TEXT[i.def.rarity] : 'text-base-content/40'">
+                            <p class="text-xs text-base-content/75 mt-0.5">{{ i.secret ? "Se desvela al conseguirlo" : i.def.description }}</p>
+                            <p class="text-xs font-semibold mt-0.5" :class="i.unlocked ? RARITY_TEXT[i.def.rarity] : 'text-base-content/60'">
                                 {{ ACHIEVEMENT_RARITY_LABELS[i.def.rarity] }}<template v-if="i.reached"> · último hito: {{ i.reached }}</template><template v-if="!i.unlocked"> · sin conseguir</template>
                             </p>
                         </div>
@@ -142,7 +142,7 @@ const clubPoints = computed(() =>
                 </ul>
             </div>
 
-            <p v-if="mine.playerId" class="text-xs text-base-content/50 mt-5">
+            <p v-if="mine.playerId" class="text-xs text-base-content/75 mt-5">
                 Los logros de cada club se ven en la ficha de tu jugador, en la web de ese club.
             </p>
         </template>

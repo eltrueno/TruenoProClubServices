@@ -81,11 +81,11 @@ const login = async () => {
                 <!-- Comprobando sesión / volviendo -->
                 <div v-if="isPending || (isLoggedIn && leaving)" class="flex flex-col items-center gap-4 py-8">
                     <span class="loading loading-spinner loading-lg text-primary"></span>
-                    <p class="text-sm font-bold uppercase tracking-widest text-base-content/60">
+                    <p class="text-sm font-bold uppercase tracking-widest text-base-content/75">
                         <template v-if="isLoggedIn">Hola, {{ user?.name }}</template>
                         <template v-else>Comprobando sesión</template>
                     </p>
-                    <p v-if="isLoggedIn" class="text-xs text-base-content/50">
+                    <p v-if="isLoggedIn" class="text-xs text-base-content/75">
                         Volviendo{{ targetHost ? ` a ${targetHost}` : " a tu cuenta" }}…
                     </p>
                 </div>
@@ -99,7 +99,7 @@ const login = async () => {
 
                     <div class="space-y-1.5">
                         <h1 class="text-2xl font-black tracking-tight uppercase">Inicia sesión</h1>
-                        <p class="text-sm text-base-content/60 leading-relaxed">
+                        <p class="text-sm text-base-content/75 leading-relaxed">
                             Una sola cuenta para todas las webs de Casemuro: tu perfil, tus conexiones y tu jugador.
                         </p>
                     </div>
@@ -111,7 +111,7 @@ const login = async () => {
                         No se ha podido iniciar sesión con Twitch. Vuelve a intentarlo.
                     </div>
 
-                    <label class="flex items-center justify-center gap-2 cursor-pointer select-none text-xs text-base-content/70">
+                    <label class="flex items-center justify-center gap-2 cursor-pointer select-none text-xs text-base-content/75">
                         <input v-model="accepted" type="checkbox" class="checkbox checkbox-primary checkbox-sm" />
                         <span>
                             He leído y acepto la
@@ -134,13 +134,13 @@ const login = async () => {
                         </button>
                     </div>
 
-                    <p v-if="targetHost" class="text-xs text-base-content/50">
-                        Después volverás a <span class="font-bold text-base-content/70">{{ targetHost }}</span>
+                    <p v-if="targetHost" class="text-xs text-base-content/75">
+                        Después volverás a <span class="font-bold text-base-content/75">{{ targetHost }}</span>
                     </p>
 
                     <!-- Solo con pnpm dev:local: entrar como usuario de prueba, sin Twitch -->
                     <div v-if="devPresets.length" class="w-full rounded-field border border-dashed border-warning/60 bg-warning/5 p-3 text-left">
-                        <p class="text-[11px] font-black uppercase tracking-widest text-warning">Desarrollo · entrar sin Twitch</p>
+                        <p class="text-xs font-black uppercase tracking-widest text-warning">Desarrollo · entrar sin Twitch</p>
                         <div class="grid grid-cols-2 gap-2 mt-2">
                             <button
                                 v-for="p in devPresets"

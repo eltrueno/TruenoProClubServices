@@ -229,7 +229,7 @@ defineExpose({ open, close })
             <div class="px-5 py-4 border-b border-base-300 shrink-0 flex items-center justify-between gap-2">
                 <div class="min-w-0">
                     <h3 class="font-bold text-lg truncate">Foto de {{ playerName }}</h3>
-                    <p class="text-xs text-base-content/60">Encuadra el busto dentro del marco de {{ FRAME_W }}×{{ FRAME_H }} usando la silueta como guía</p>
+                    <p class="text-xs text-base-content/75">Encuadra el busto dentro del marco de {{ FRAME_W }}×{{ FRAME_H }} usando la silueta como guía</p>
                 </div>
                 <button type="button" class="btn btn-ghost btn-sm btn-circle" aria-label="Cerrar" @click="close">✕</button>
             </div>
@@ -251,22 +251,22 @@ defineExpose({ open, close })
                         <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-base-300/70">
                             <span class="loading loading-spinner loading-lg text-primary"></span>
                         </div>
-                        <p v-else-if="!ready" class="absolute inset-0 flex items-center justify-center text-xs text-base-content/50 text-center px-6">
+                        <p v-else-if="!ready" class="absolute inset-0 flex items-center justify-center text-xs text-base-content/75 text-center px-6">
                             Carga una imagen por URL o desde un fichero
                         </p>
                     </div>
                     <div v-if="ready" class="mt-3 flex items-center gap-3">
-                        <span class="text-xs text-base-content/60">Zoom</span>
+                        <span class="text-xs text-base-content/75">Zoom</span>
                         <input type="range" class="range range-primary range-xs flex-1" :min="minScale" :max="maxScale" :step="0.001" v-model.number="sliderValue"
                             :style="{ '--range-pos': maxScale > minScale ? (sliderValue - minScale) / (maxScale - minScale) : 0 }" />
-                        <button type="button" class="btn btn-ghost btn-xs" @click="fit">Ajustar</button>
+                        <button type="button" class="btn btn-ghost btn-sm" @click="fit">Ajustar</button>
                     </div>
                 </div>
 
                 <!-- Fuente + opciones -->
                 <div class="flex flex-col gap-4 min-w-0">
                     <label class="form-control w-full">
-                        <span class="label-text text-[10px] uppercase font-black tracking-wider text-base-content/50 mb-1">Desde una URL</span>
+                        <span class="label-text text-xs uppercase font-black tracking-wider text-base-content/75 mb-1">Desde una URL</span>
                         <div class="join w-full">
                             <input v-model="urlInput" type="url" placeholder="https://…/foto.png" class="input input-bordered input-sm join-item w-full font-mono text-xs" @keydown.enter.prevent="loadUrl(urlInput)" />
                             <button type="button" class="btn btn-sm join-item" :disabled="!urlInput || loading" @click="loadUrl(urlInput)">Cargar</button>
@@ -274,7 +274,7 @@ defineExpose({ open, close })
                     </label>
 
                     <label class="form-control w-full">
-                        <span class="label-text text-[10px] uppercase font-black tracking-wider text-base-content/50 mb-1">O desde un fichero</span>
+                        <span class="label-text text-xs uppercase font-black tracking-wider text-base-content/75 mb-1">O desde un fichero</span>
                         <input ref="fileInput" type="file" accept="image/*" class="file-input file-input-bordered file-input-sm w-full" @change="onFile" />
                     </label>
 
@@ -283,7 +283,7 @@ defineExpose({ open, close })
                         Mostrar silueta guía
                     </label>
 
-                    <p class="text-xs text-base-content/50 leading-relaxed">
+                    <p class="text-xs text-base-content/75 leading-relaxed">
                         Arrastra para mover y usa la rueda o el slider para el zoom. Se guarda un PNG de {{ FRAME_W }}×{{ FRAME_H }} en el CDN y se asigna al jugador al instante.
                     </p>
 
