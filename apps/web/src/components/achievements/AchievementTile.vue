@@ -92,9 +92,9 @@ const formatNumber = (n: number) => n.toLocaleString("es-ES")
                         <div class="radial-progress" :class="ringClass"
                             :style="`--value: ${percentDone}; --size: 2.5rem; --thickness: 3px`"
                             role="img" :aria-label="`Progreso: ${item.progress.current} de ${item.progress.target} (${percentDone} %)`">
-                            <svg class="col-start-1 row-start-1 size-5 text-base-content/70 transition-opacity duration-150 group-hover:opacity-0 group-focus-visible:opacity-0 motion-reduce:transition-none"
+                            <svg class="size-5 text-base-content/70 transition-opacity duration-150 group-hover:opacity-0 group-focus-visible:opacity-0 motion-reduce:transition-none"
                                 fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true" v-html="icon.outline"></svg>
-                            <span class="col-start-1 row-start-1 text-xs font-black tabular-nums text-base-content opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none"
+                            <span class="absolute inset-0 grid place-items-center text-xs font-black tabular-nums text-base-content opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none"
                                 aria-hidden="true">{{ percentDone }}%</span>
                         </div>
                     </div>
