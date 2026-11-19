@@ -6,6 +6,19 @@ name: Publish Docker images (GHCR)
 on:
   push:
     branches: [main, dev]
+    # Solo lo que acaba dentro de alguna imagen: los cambios de web, accounts, docs, etc. no
+    # recompilan nada. Para forzarlo, ejecútalo a mano (workflow_dispatch)
+    paths:
+      - "apps/api/**"
+      - "apps/worker/**"
+      - "apps/auth/**"
+      - "apps/discordbot/**"
+      - "apps/imagerenderer/**"
+      - "packages/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/publish-images.yml"
   workflow_dispatch:
 
 permissions:
