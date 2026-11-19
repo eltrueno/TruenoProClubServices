@@ -48,12 +48,16 @@ const topRare = computed(() => props.item.unlocked && !legendary.value && props.
     && (props.item.def.outOf ?? 0) >= TOP_MIN_PEOPLE && (props.item.def.unlockedPercent ?? 100) < TOP_PERCENT)
 const special = computed(() => legendary.value || topRare.value)
 
-/** `tint`: el color de la rareza encima de un fondo opaco (para las tarjetas con halo) */
+/**
+ * `tint`: el fondo de las tarjetas con halo. Tiene que ser opaco (si no, el halo se ve a
+ * través) y parecerse al de la misma rareza sin halo: la común, el mismo fondo; las demás, su
+ * color encima del fondo de la sección.
+ */
 const RARITY: Record<AchievementRarity, { card: string, border: string, tint: string, icon: string, text: string }> = {
-    common: { card: "border-base-content/15 bg-base-100", border: "border-base-content/15", tint: "", icon: "bg-base-300 text-base-content", text: "text-base-content/75" },
-    rare: { card: "border-sky-500/40 bg-sky-500/5", border: "border-sky-500/40", tint: "bg-linear-to-b from-sky-500/10 to-sky-500/5", icon: "bg-sky-500/20 text-sky-600 dark:text-sky-300", text: "text-sky-600 dark:text-sky-300" },
-    epic: { card: "border-violet-500/60 bg-violet-500/10", border: "border-violet-500/60", tint: "bg-linear-to-b from-violet-500/15 to-violet-500/5", icon: "bg-violet-500/25 text-violet-700 dark:text-violet-200", text: "text-violet-700 dark:text-violet-300" },
-    legendary: { card: "border-amber-500/70 bg-amber-500/10", border: "border-amber-500/70", tint: "bg-linear-to-b from-amber-500/15 to-amber-500/5", icon: "bg-amber-400/30 text-amber-700 dark:text-amber-200", text: "text-amber-700 dark:text-amber-300" },
+    common: { card: "border-base-content/15 bg-base-100", border: "border-base-content/15", tint: "bg-base-100", icon: "bg-base-300 text-base-content", text: "text-base-content/75" },
+    rare: { card: "border-sky-500/40 bg-sky-500/5", border: "border-sky-500/40", tint: "bg-base-200 bg-linear-to-b from-sky-500/10 to-sky-500/5", icon: "bg-sky-500/20 text-sky-600 dark:text-sky-300", text: "text-sky-600 dark:text-sky-300" },
+    epic: { card: "border-violet-500/60 bg-violet-500/10", border: "border-violet-500/60", tint: "bg-base-200 bg-linear-to-b from-violet-500/15 to-violet-500/5", icon: "bg-violet-500/25 text-violet-700 dark:text-violet-200", text: "text-violet-700 dark:text-violet-300" },
+    legendary: { card: "border-amber-500/70 bg-amber-500/10", border: "border-amber-500/70", tint: "bg-base-200 bg-linear-to-b from-amber-500/15 to-amber-500/5", icon: "bg-amber-400/30 text-amber-700 dark:text-amber-200", text: "text-amber-700 dark:text-amber-300" },
 }
 
 /** Icono del logro (el candado si es oculto y no se tiene); relleno o contorno según se tenga */
@@ -79,7 +83,7 @@ const formatNumber = (n: number) => n.toLocaleString("es-ES")
             <div
                 class="h-full rounded-xl border p-3 flex gap-3 items-start"
                 :class="[
-                    special ? `bg-base-200 text-base-content ${RARITY[item.def.rarity].border} ${RARITY[item.def.rarity].tint}` : item.unlocked ? RARITY[item.def.rarity].card : 'border-base-content/10 bg-base-100/40',
+                    special ? `text-base-content ${RARITY[item.def.rarity].border} ${RARITY[item.def.rarity].tint}` : item.unlocked ? RARITY[item.def.rarity].card : 'border-base-content/10 bg-base-100/40',
                     item.secret ? 'border-dashed' : '',
                 ]"
             >
