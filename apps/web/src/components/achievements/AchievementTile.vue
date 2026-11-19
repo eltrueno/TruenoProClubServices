@@ -6,7 +6,8 @@
  *   anillo de progreso si no; candado si es oculto y no se tiene.
  * - Los especiales lucen más, con efectos de daisyUI: legendario conseguido = borde dorado que
  *   gira (`aura-gold`) y tarjeta que se inclina con el ratón (`hover-3d`); muy raro (lo tiene
- *   menos del 5 % y lo tienes) = borde holográfico (`aura-holo`). Si el sistema pide menos
+ *   menos del 5 % y lo tienes; no en los hitos que se repiten) = halo con el degradado de la
+ *   marca (`aura` de daisyUI con los colores de la marca: `aura-brand`, abajo). Si el sistema pide menos
  *   movimiento, daisyUI ya ralentiza el borde.
  * - Los puntos, discretos.
  */
@@ -43,15 +44,16 @@ const props = defineProps<{
 const TOP_PERCENT = 5
 const TOP_MIN_PEOPLE = 15
 const legendary = computed(() => props.item.unlocked && props.item.def.rarity === "legendary")
-const topRare = computed(() => props.item.unlocked && !legendary.value
+const topRare = computed(() => props.item.unlocked && !legendary.value && props.item.def.category !== "milestones"
     && (props.item.def.outOf ?? 0) >= TOP_MIN_PEOPLE && (props.item.def.unlockedPercent ?? 100) < TOP_PERCENT)
 const special = computed(() => legendary.value || topRare.value)
 
-const RARITY: Record<AchievementRarity, { card: string, border: string, icon: string, text: string }> = {
-    common: { card: "border-base-content/15 bg-base-100", border: "border-base-content/15", icon: "bg-base-300 text-base-content", text: "text-base-content/75" },
-    rare: { card: "border-sky-500/40 bg-sky-500/5", border: "border-sky-500/40", icon: "bg-sky-500/20 text-sky-600 dark:text-sky-300", text: "text-sky-600 dark:text-sky-300" },
-    epic: { card: "border-violet-500/60 bg-violet-500/10", border: "border-violet-500/60", icon: "bg-violet-500/25 text-violet-700 dark:text-violet-200", text: "text-violet-700 dark:text-violet-300" },
-    legendary: { card: "border-amber-500/70 bg-amber-500/10", border: "border-amber-500/70", icon: "bg-amber-400/30 text-amber-700 dark:text-amber-200", text: "text-amber-700 dark:text-amber-300" },
+/** `tint`: el color de la rareza encima de un fondo opaco (para las tarjetas con halo) */
+const RARITY: Record<AchievementRarity, { card: string, border: string, tint: string, icon: string, text: string }> = {
+    common: { card: "border-base-content/15 bg-base-100", border: "border-base-content/15", tint: "", icon: "bg-base-300 text-base-content", text: "text-base-content/75" },
+    rare: { card: "border-sky-500/40 bg-sky-500/5", border: "border-sky-500/40", tint: "bg-linear-to-b from-sky-500/10 to-sky-500/5", icon: "bg-sky-500/20 text-sky-600 dark:text-sky-300", text: "text-sky-600 dark:text-sky-300" },
+    epic: { card: "border-violet-500/60 bg-violet-500/10", border: "border-violet-500/60", tint: "bg-linear-to-b from-violet-500/15 to-violet-500/5", icon: "bg-violet-500/25 text-violet-700 dark:text-violet-200", text: "text-violet-700 dark:text-violet-300" },
+    legendary: { card: "border-amber-500/70 bg-amber-500/10", border: "border-amber-500/70", tint: "bg-linear-to-b from-amber-500/15 to-amber-500/5", icon: "bg-amber-400/30 text-amber-700 dark:text-amber-200", text: "text-amber-700 dark:text-amber-300" },
 }
 
 /** Icono del logro (el candado si es oculto y no se tiene); relleno o contorno según se tenga */
@@ -61,7 +63,8 @@ const percentDone = computed(() => {
     const p = props.item.progress
     return p && p.target > 0 ? Math.min(100, Math.round((p.current / p.target) * 100)) : 0
 })
-const ringColor = computed(() => (props.item.unlocked ? "text-success" : "text-primary"))
+/** Anillo de progreso: dorado en los legendarios, el degradado de la marca en el resto */
+const ringClass = computed(() => (props.item.def.rarity === "legendary" ? "ring-gold" : "ring-brand"))
 
 const dateFormat = new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short", year: "numeric" })
 const formatDate = (value?: Date | string) => (value ? dateFormat.format(new Date(value)) : "")
@@ -70,23 +73,30 @@ const formatNumber = (n: number) => n.toLocaleString("es-ES")
 
 <template>
     <!-- Borde animado solo en los especiales; el resto, tarjeta normal -->
-    <div class="w-full" :class="legendary ? 'aura aura-gold aura-sm' : topRare ? 'aura aura-holo aura-sm' : ''" :style="special ? '--aura-radius: 0.75rem' : undefined">
+    <div class="w-full" :class="legendary ? 'aura aura-gold aura-sm' : topRare ? 'aura aura-sm aura-brand' : ''" :style="special ? '--aura-radius: 0.75rem' : undefined">
         <div class="w-full h-full" :class="legendary ? 'hover-3d' : ''">
             <!-- Dentro del borde animado, fondo opaco (si no, el brillo se ve a través) -->
             <div
                 class="h-full rounded-xl border p-3 flex gap-3 items-start"
                 :class="[
-                    special ? `bg-base-200 ${RARITY[item.def.rarity].border}` : item.unlocked ? RARITY[item.def.rarity].card : 'border-base-content/10 bg-base-100/40',
+                    special ? `bg-base-200 text-base-content ${RARITY[item.def.rarity].border} ${RARITY[item.def.rarity].tint}` : item.unlocked ? RARITY[item.def.rarity].card : 'border-base-content/10 bg-base-100/40',
                     item.secret ? 'border-dashed' : '',
                 ]"
             >
                 <!-- Icono: conseguido (color + marca), en progreso (anillo), oculto (candado) -->
                 <div class="relative shrink-0">
+                    <!-- Al pasar el ratón (o llegar con el teclado), el porcentaje sustituye al icono -->
                     <div v-if="!item.unlocked && item.progress && !item.secret"
-                        class="radial-progress" :class="ringColor"
-                        :style="`--value: ${percentDone}; --size: 3rem; --thickness: 3px`"
-                        role="img" :aria-label="`Progreso: ${item.progress.current} de ${item.progress.target}`">
-                        <svg class="size-6 text-base-content/70" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true" v-html="icon.outline"></svg>
+                        class="group size-12 rounded-xl bg-base-300 grid place-items-center cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        tabindex="0">
+                        <div class="radial-progress" :class="ringClass"
+                            :style="`--value: ${percentDone}; --size: 2.5rem; --thickness: 3px`"
+                            role="img" :aria-label="`Progreso: ${item.progress.current} de ${item.progress.target} (${percentDone} %)`">
+                            <svg class="col-start-1 row-start-1 size-5 text-base-content/70 transition-opacity duration-150 group-hover:opacity-0 group-focus-visible:opacity-0 motion-reduce:transition-none"
+                                fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true" v-html="icon.outline"></svg>
+                            <span class="col-start-1 row-start-1 text-xs font-black tabular-nums text-base-content opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none"
+                                aria-hidden="true">{{ percentDone }}%</span>
+                        </div>
                     </div>
                     <div v-else class="size-12 rounded-xl grid place-items-center"
                         :class="item.unlocked ? RARITY[item.def.rarity].icon : 'bg-base-300 text-base-content/70'">
@@ -134,3 +144,40 @@ const formatNumber = (n: number) => n.toLocaleString("es-ES")
         </div>
     </div>
 </template>
+
+<style scoped>
+/*
+ * Colores de la marca: rojo del City → granate del United (los de accounts). En accounts
+ * salen de sus variables; en la web de los clubes, de estos valores.
+ */
+.aura-brand,
+.ring-brand {
+    --brand-a: var(--brand-from, #c80d0d);
+    --brand-b: var(--brand-to, #b90a34);
+}
+
+/* Halo de daisyUI (`aura`) con los dos colores de la marca en vez de uno solo */
+.aura-brand {
+    background-image: conic-gradient(from var(--aura-angle), transparent 200deg, var(--brand-a) 290deg, var(--brand-b));
+}
+
+/* Anillo de progreso de daisyUI (`radial-progress`) en degradado */
+.ring-brand,
+.ring-gold {
+    color: var(--brand-b);
+}
+.ring-brand::before {
+    background:
+        radial-gradient(farthest-side, var(--brand-a) 98%, #0000) top / var(--thickness) var(--thickness) no-repeat,
+        conic-gradient(var(--brand-a), var(--brand-b) var(--radialprogress), #0000 0);
+}
+.ring-gold {
+    --brand-a: #fcd34d;
+    --brand-b: #d97706;
+}
+.ring-gold::before {
+    background:
+        radial-gradient(farthest-side, var(--brand-a) 98%, #0000) top / var(--thickness) var(--thickness) no-repeat,
+        conic-gradient(var(--brand-a), var(--brand-b) var(--radialprogress), #0000 0);
+}
+</style>
