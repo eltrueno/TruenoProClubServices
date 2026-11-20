@@ -14,5 +14,8 @@ export const accountsLoginUrl = (returnTo?: string) => {
     return `${CLUB.accountsUrl}/login?redirect=${encodeURIComponent(back)}`
 }
 
+/** Política de privacidad (una para todas las webs de la comunidad) */
+export const privacyUrl = () => `${CLUB.accountsUrl}/privacidad`
+
 /** Panel admin (común a todos los clubes), abierto en este club */
 export const accountsAdminUrl = () => `${CLUB.accountsUrl}/admin?club=${CLUB.id}`

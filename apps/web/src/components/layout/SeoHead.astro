@@ -1,0 +1,78 @@
+---
+/**
+ * Todo lo que leen los buscadores y las vistas previas de enlaces en el <head>: canónica,
+ * descripción, Open Graph, Twitter y datos estructurados (JSON-LD). Lo usa Layout.astro.
+ */
+import { CLUB } from "@/config/club";
+import { breadcrumbJsonLd, serializeJsonLd, type BreadcrumbItem, type JsonLd } from "@/lib/structuredData";
+
+interface Props {
+	title: string;
+	description: string;
+	/** Migas de pan tras "Inicio" (BreadcrumbList) */
+	breadcrumb?: BreadcrumbItem[];
+	/** Datos estructurados propios de la página */
+	jsonLd?: JsonLd[];
+	/** Imagen para compartir (ruta de la web, 1200×630 PNG); por defecto la del club */
+	ogImage?: string;
+	/** Texto alternativo de esa imagen */
+	ogImageAlt?: string;
+}
+
+const { title, description, breadcrumb, jsonLd = [], ogImage, ogImageAlt } = Astro.props;
+
+// URL limpia, la misma que el sitemap: con build.format "file" Astro da /plantilla.html y
+// /index.html, que también se sirven (Pages); la canónica dice a Google cuál es la buena
+const pathname = Astro.url.pathname
+	.replace(/\/index\.html$/, "/")
+	.replace(/\.html$/, "")
+	.replace(/\/+$/, "");
+const canonicalUrl = `${CLUB.siteUrl}${pathname || "/"}`;
+
+// Imagen: la de la página, la propia del club o la generada en el build (pages/og.png.ts).
+// Las generadas son PNG de 1200×630; de la propia del club no sabemos el tamaño
+const image = ogImage ?? CLUB.ogImage ?? "/og.png";
+const imageUrl = image.startsWith("http") ? image : `${CLUB.siteUrl}${image}`;
+const generatedImage = Boolean(ogImage) || !CLUB.ogImage;
+
+const structuredData = [...jsonLd, ...(breadcrumb?.length ? [breadcrumbJsonLd(breadcrumb)] : [])];
+
+let twitterDomain = "";
+try {
+	twitterDomain = CLUB.siteUrl ? new URL(CLUB.siteUrl).hostname : "";
+} catch {
+	twitterDomain = "";
+}
+---
+
+<link rel="canonical" href={canonicalUrl} />
+<meta name="description" content={description} />
+
+<!-- Open Graph -->
+<meta property="og:type" content="website" />
+<meta property="og:locale" content="es_ES" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonicalUrl} />
+<meta property="og:site_name" content={CLUB.name} />
+<meta property="og:image" content={imageUrl} />
+{generatedImage && (
+	<>
+		<meta property="og:image:type" content="image/png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+	</>
+)}
+<meta property="og:image:alt" content={ogImageAlt ?? `Escudo de ${CLUB.name}`} />
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image" />
+{twitterDomain && <meta name="twitter:domain" content={twitterDomain} />}
+<meta name="twitter:site" content="@elh_trueno" />
+<meta name="twitter:creator" content="@elh_trueno" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:url" content={canonicalUrl} />
+<meta name="twitter:image" content={imageUrl} />
+
+{structuredData.length > 0 && <script type="application/ld+json" set:html={serializeJsonLd(structuredData)} />}

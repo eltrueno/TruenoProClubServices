@@ -2,19 +2,27 @@
 import TotwContainer from "@components/totw/TotwContainer.vue";
 import Layout from "@layouts/Layout.astro";
 import { CLUB } from "@/config/club";
+import TotwSummary from "@components/seo/TotwSummary.astro";
+import { buildLatestTotw } from "@/lib/buildData";
+
+// Resumen para quien no ejecuta JS, con los datos del build (ver lib/buildData.ts)
+const totw = await buildLatestTotw();
 
 // /totw?semana=<iso>&tipo=best|worst — lo lee TotwContainer en cliente
 ---
 
 <Layout
-    title={`${CLUB.name}: Equipo de la semana`}
+    title={`Equipo de la semana de ${CLUB.name} · Salón de la fama`}
     isindex={false}
-    description="Mejores y peores jugadores de la semana"
-    keywords={[...CLUB.keywords, "fifa", "eafc", "fifa23", "fifa24", "eafc24", "club", "pro", "clubespro", "proclubs", "inicio", "plantilla", "jugadores", "totw", "mejores", "peores", "semana"].join(", ")}
+    description={`El equipo de la semana de ${CLUB.name}: los mejores y peores jugadores de cada semana en Clubes Pro de EA SPORTS FC, según su valoración media.`}
+    breadcrumb={[{ name: "Salón de la fama", path: "/totw" }]}
+    ogImage="/og/totw.png"
+    ogImageAlt={`Salón de la fama de ${CLUB.name}`}
 >
     <section>
         <container class="flex px-2 py-4 justify-center items-center">
             <TotwContainer client:only="vue" />
+            <noscript><TotwSummary totw={totw} /></noscript>
         </container>
     </section>
 </Layout>

@@ -2,28 +2,36 @@
 import MatchesContainer from "@/components/match/MatchesContainer.vue";
 import Layout from "@layouts/Layout.astro";
 import { CLUB } from "@/config/club";
+import MatchesSummary from "@components/seo/MatchesSummary.astro";
+import { buildLatestMatches } from "@/lib/buildData";
+
+// Resumen para quien no ejecuta JS, con los datos del build (ver lib/buildData.ts)
+const latestMatches = await buildLatestMatches(20);
 
 // Filtros por query (?id, ?desde, ?hasta, ?liga, ?playoff, ?amistoso): los lee MatchesContainer en cliente
 ---
 
 <Layout
-	title={`${CLUB.name}: Partidos`}
+	title={`Partidos de ${CLUB.name} · Resultados y estadísticas`}
 	isindex={false}
-	description="Historial y estadísticas de nuestros últimos partidos"
-	keywords={[...CLUB.keywords, "fifa", "eafc", "fifa23", "fifa24", "eafc24", "club", "pro", "clubespro", "proclubs", "inicio", "partidos", "estadísticas", "stats"].join(", ")}
+	description={`Resultados e historial de partidos de ${CLUB.name} en Clubes Pro de EA SPORTS FC: liga, playoffs y amistosos, con las estadísticas de cada jugador.`}
+	breadcrumb={[{ name: "Partidos", path: "/partidos" }]}
+	ogImage="/og/partidos.png"
+	ogImageAlt={`Partidos de ${CLUB.name}`}
 >
 
 	<header class="container mx-auto mb-10">
 		<h1 class="text-primary font-bold text-3xl text-center mt-8 p-8">
 			Partidos
 		</h1>
-		<h2 class="font-bold text-2xl text-center">
+		<p class="font-bold text-2xl text-center">
 			Aquí se muestra el historial de nuestros últimos partidos
-		</h2>
+		</p>
 	</header>
 	<section>
 		<container class="flex px-2 py-4 justify-center items-center">
 			<MatchesContainer client:only="vue" />
+			<noscript><MatchesSummary matches={latestMatches} /></noscript>
 		</container>
 	</section>
 </Layout>

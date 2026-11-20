@@ -1,0 +1,37 @@
+---
+/**
+ * El último equipo de la semana dentro de <noscript>, para quien no ejecuta JS (los buscadores que no lo hacen; ver lib/buildData.ts). Con JS se ve TotwContainer, como siempre.
+ */
+import type { ITOTW } from "@trueno-proclub-services/shared";
+import { translatePosition } from "@/i18n/translations";
+import { routes } from "@/lib/query";
+import { CLUB } from "@/config/club";
+
+interface Props {
+    totw: ITOTW | null;
+}
+
+const { totw } = Astro.props;
+const rating = (n: number) => n.toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+---
+
+{totw?.bestPlayers?.length ? (
+    <section class="w-full max-w-4xl mx-auto">
+        <!-- El h1 de esta página lo pinta Vue (TotwTitle); sin JS, este -->
+        <h1 class="text-3xl font-black tracking-tight text-center mb-6">Salón de la fama de {CLUB.name}</h1>
+        <h2 class="text-xl font-black tracking-tight mb-3">Mejores de la semana {totw.weekNumber}</h2>
+        <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {totw.bestPlayers.map((p) => (
+                <li>
+                    <a href={routes.player(p.playerId)} class="flex items-center justify-between gap-3 rounded-xl bg-base-200 px-4 py-3 hover:bg-base-300 transition-colors">
+                        <span class="min-w-0">
+                            <span class="block font-bold truncate">{p.playerName}</span>
+                            <span class="block text-sm text-base-content/60">{translatePosition(p.position)} · {p.gamesPlayed} {p.gamesPlayed === 1 ? "partido" : "partidos"}</span>
+                        </span>
+                        <span class="text-lg font-black tabular-nums shrink-0">{rating(p.avgRating)}</span>
+                    </a>
+                </li>
+            ))}
+        </ul>
+    </section>
+) : null}
