@@ -4,11 +4,14 @@
  * mueven despacio, las líneas de un campo que se desplazan con el scroll y un punteado fino.
  * Envuelve el contenido: <HomeBackdrop> ... </HomeBackdrop>. Todo es aria-hidden y sin eventos.
  * Con prefers-reduced-motion se queda quieto.
+ * Ocupa todo el ancho de la ventana aunque el contenido vaya en <main> con ancho máximo: la capa
+ * sale del contenedor, centrada, con el ancho de la ventana menos la barra de scroll (--sbw, que
+ * mide el script de abajo), así que no desborda ni abre scroll horizontal.
  */
 ---
 
-<div class="relative isolate overflow-x-clip">
-	<div aria-hidden="true" class="backdrop pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+<div class="relative isolate">
+	<div aria-hidden="true" class="home-backdrop pointer-events-none absolute inset-y-0 -z-10 overflow-hidden">
 		<div class="glow glow-1"></div>
 		<div class="glow glow-2"></div>
 		<div class="glow glow-3"></div>
@@ -32,7 +35,25 @@
 	<slot />
 </div>
 
+<script>
+	// Ancho de la barra de scroll vertical (0 en móvil y con barras superpuestas), para .home-backdrop
+	function measureScrollbar() {
+		document.documentElement.style.setProperty("--sbw", `${window.innerWidth - document.documentElement.clientWidth}px`);
+	}
+	measureScrollbar();
+	window.addEventListener("resize", measureScrollbar, { passive: true });
+	document.addEventListener("astro:after-swap", measureScrollbar);
+</script>
+
 <style>
+	/* A todo el ancho de la ventana, no solo del contenedor. 100vw incluye la barra de scroll vertical:
+	   se le resta para no desbordar (main va centrado en ese mismo ancho, así que left 50% cuadra) */
+	.home-backdrop {
+		left: 50%;
+		width: calc(100vw - var(--sbw, 0px));
+		translate: -50% 0;
+	}
+
 	.glow {
 		position: absolute;
 		width: min(52rem, 120vw);

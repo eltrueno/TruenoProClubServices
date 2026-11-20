@@ -17,5 +17,11 @@ export const accountsLoginUrl = (returnTo?: string) => {
 /** Política de privacidad (una para todas las webs de la comunidad) */
 export const privacyUrl = () => `${CLUB.accountsUrl}/privacidad`
 
+/** Aviso legal y descargo de responsabilidad (uno para todas las webs de la comunidad) */
+export const legalUrl = () => `${CLUB.accountsUrl}/aviso-legal`
+
+/** Créditos y licencias de las librerías y recursos de terceros */
+export const licensesUrl = () => `${CLUB.accountsUrl}/licencias`
+
 /** Panel admin (común a todos los clubes), abierto en este club */
 export const accountsAdminUrl = () => `${CLUB.accountsUrl}/admin?club=${CLUB.id}`

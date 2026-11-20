@@ -1,0 +1,784 @@
+[
+  {
+    "name": "@astrojs/check",
+    "version": "0.9.10",
+    "license": "MIT",
+    "url": "https://github.com/withastro/astro/tree/main/packages/language-tools/astro-check",
+    "description": "Type checking and diagnostics for Astro projects",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "@astrojs/vue",
+    "version": "7.0.3",
+    "license": "MIT",
+    "url": "https://docs.astro.build/en/guides/integrations-guide/vue/",
+    "description": "Use Vue components within Astro",
+    "dev": false,
+    "areas": [
+      "webs"
+    ]
+  },
+  {
+    "name": "@aws-sdk/client-s3",
+    "version": "3.1136.0",
+    "license": "Apache-2.0",
+    "url": "https://github.com/aws/aws-sdk-js-v3/tree/main/clients/client-s3",
+    "description": "AWS SDK for JavaScript S3 Client for Node.js, Browser and React Native",
+    "dev": false,
+    "areas": [
+      "servidores"
+    ]
+  },
+  {
+    "name": "@getify/eslint-plugin-proper-arrows",
+    "version": "11.0.3",
+    "license": "MIT",
+    "url": "https://github.com/getify/eslint-plugin-proper-arrows",
+    "description": "ESLint rules to ensure proper arrow function definitions",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "@orzechowskid/eslint-plugin-typelint",
+    "version": "0.8.0",
+    "license": "MIT",
+    "url": "https://github.com/orzechowskid/eslint-plugin-typelint",
+    "description": "type linting for Javascript with JSDoc",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "@tailwindcss/typography",
+    "version": "0.5.19",
+    "license": "MIT",
+    "url": "https://github.com/tailwindlabs/tailwindcss-typography",
+    "description": "A Tailwind CSS plugin for automatically styling plain HTML content with beautiful typographic defaults.",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "@tailwindcss/vite",
+    "version": "4.3.2",
+    "license": "MIT",
+    "url": "https://tailwindcss.com",
+    "description": "A utility-first CSS framework for rapidly building custom user interfaces.",
+    "dev": false,
+    "areas": [
+      "webs"
+    ]
+  },
+  {
+    "name": "@types/amqplib",
+    "version": "0.10.8",
+    "license": "MIT",
+    "url": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/amqplib",
+    "description": "TypeScript definitions for amqplib",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "@types/body-parser",
+    "version": "1.19.6",
+    "license": "MIT",
+    "url": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/body-parser",
+    "description": "TypeScript definitions for body-parser",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "@types/cors",
+    "version": "2.8.19",
+    "license": "MIT",
+    "url": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/cors",
+    "description": "TypeScript definitions for cors",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "@types/express",
+    "version": "4.17.25",
+    "license": "MIT",
+    "url": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/express",
+    "description": "TypeScript definitions for express",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "@types/jest",
+    "version": "29.5.14",
+    "license": "MIT",
+    "url": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/jest",
+    "description": "TypeScript definitions for jest",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "@types/node",
+    "version": "20.19.37",
+    "license": "MIT",
+    "url": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node",
+    "description": "TypeScript definitions for node",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "@types/node-cron",
+    "version": "3.0.11",
+    "license": "MIT",
+    "url": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node-cron",
+    "description": "TypeScript definitions for node-cron",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "@typescript-eslint/eslint-plugin",
+    "version": "5.62.0",
+    "license": "MIT",
+    "url": "https://github.com/typescript-eslint/typescript-eslint",
+    "description": "TypeScript plugin for ESLint",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "@typescript-eslint/parser",
+    "version": "5.62.0",
+    "license": "BSD-2-Clause",
+    "url": "https://github.com/typescript-eslint/typescript-eslint",
+    "description": "An ESLint custom parser which leverages TypeScript ESTree",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "amqplib",
+    "version": "0.10.9",
+    "license": "MIT",
+    "url": "http://amqp-node.github.io/amqplib/",
+    "description": "An AMQP 0-9-1 (e.g., RabbitMQ) library and client.",
+    "dev": false,
+    "areas": [
+      "servidores"
+    ]
+  },
+  {
+    "name": "astro",
+    "version": "7.3.3",
+    "license": "MIT",
+    "url": "https://astro.build",
+    "description": "Astro is a modern site builder with web best practices, performance, and DX front-of-mind.",
+    "dev": false,
+    "areas": [
+      "webs"
+    ]
+  },
+  {
+    "name": "atropos",
+    "version": "2.0.2",
+    "license": "MIT",
+    "url": "https://atroposjs.com",
+    "description": "Touch-friendly 3D parallax hover effects",
+    "dev": false,
+    "areas": [
+      "webs"
+    ]
+  },
+  {
+    "name": "axios",
+    "version": "1.13.6",
+    "license": "MIT",
+    "url": "https://axios-http.com",
+    "description": "Promise based HTTP client for the browser and node.js",
+    "dev": false,
+    "areas": [
+      "servidores"
+    ]
+  },
+  {
+    "name": "better-auth",
+    "version": "1.7.18",
+    "license": "MIT",
+    "url": "https://better-auth.com",
+    "description": "The most comprehensive authentication framework for TypeScript.",
+    "dev": false,
+    "areas": [
+      "servidores",
+      "webs"
+    ]
+  },
+  {
+    "name": "body-parser",
+    "version": "1.20.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/body-parser",
+    "description": "Node.js body parsing middleware",
+    "dev": false,
+    "areas": [
+      "servidores"
+    ]
+  },
+  {
+    "name": "cally",
+    "version": "0.9.2",
+    "license": "MIT",
+    "url": "https://github.com/WickyNilliams/cally",
+    "description": "small, feature-rich calendar components",
+    "dev": false,
+    "areas": [
+      "webs"
+    ]
+  },
+  {
+    "name": "chalk",
+    "version": "4.1.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/chalk",
+    "description": "Terminal string styling done right",
+    "dev": false,
+    "areas": [
+      "servidores"
+    ]
+  },
+  {
+    "name": "chart.js",
+    "version": "4.5.1",
+    "license": "MIT",
+    "url": "https://www.chartjs.org",
+    "description": "Simple HTML5 charts using the canvas element.",
+    "dev": false,
+    "areas": [
+      "webs"
+    ]
+  },
+  {
+    "name": "cors",
+    "version": "2.8.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/cors",
+    "description": "Node.js CORS middleware",
+    "dev": false,
+    "areas": [
+      "servidores"
+    ]
+  },
+  {
+    "name": "cron-parser",
+    "version": "5.5.0",
+    "license": "MIT",
+    "url": "https://github.com/harrisiirak/cron-parser",
+    "description": "Node.js library for parsing crontab instructions",
+    "dev": false,
+    "areas": [
+      "servidores"
+    ]
+  },
+  {
+    "name": "daisyui",
+    "version": "5.7.42",
+    "license": "MIT",
+    "url": "https://daisyui.com",
+    "description": "daisyUI 5 - The Tailwind CSS Component Library",
+    "dev": false,
+    "areas": [
+      "webs"
+    ]
+  },
+  {
+    "name": "date-fns",
+    "version": "4.1.0",
+    "license": "MIT",
+    "url": "https://github.com/date-fns/date-fns",
+    "description": "Modern JavaScript date utility library",
+    "dev": false,
+    "areas": [
+      "servidores"
+    ]
+  },
+  {
+    "name": "date-fns-tz",
+    "version": "3.2.0",
+    "license": "MIT",
+    "url": "https://github.com/marnusw/date-fns-tz",
+    "description": "Time zone support for date-fns v3 with the Intl API",
+    "dev": false,
+    "areas": [
+      "servidores"
+    ]
+  },
+  {
+    "name": "discord.js",
+    "version": "14.25.1",
+    "license": "Apache-2.0",
+    "url": "https://discord.js.org",
+    "description": "A powerful library for interacting with the Discord API",
+    "dev": false,
+    "areas": [
+      "servidores"
+    ]
+  },
+  {
+    "name": "dotenv",
+    "version": "16.6.1",
+    "license": "BSD-2-Clause",
+    "url": "https://github.com/motdotla/dotenv#readme",
+    "description": "Loads environment variables from .env file",
+    "dev": false,
+    "areas": [
+      "servidores"
+    ]
+  },
+  {
+    "name": "eslint",
+    "version": "8.57.1",
+    "license": "MIT",
+    "url": "https://eslint.org",
+    "description": "An AST-based pattern checker for JavaScript.",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "eslint-plugin-compat",
+    "version": "4.2.0",
+    "license": "MIT",
+    "url": "https://github.com/amilajack/eslint-plugin-compat#readme",
+    "description": "Lint browser compatibility of API used",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "eslint-plugin-deprecate",
+    "version": "0.7.0",
+    "license": "MIT",
+    "url": "https://github.com/AlexMost/eslint-plugin-deprecate#readme",
+    "description": "",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "eslint-plugin-es5",
+    "version": "1.5.0",
+    "license": "MIT",
+    "url": "https://github.com/nkt/eslint-plugin-es5#readme",
+    "description": "ESLint plugin for ES5 users.",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "eslint-plugin-eslint-plugin",
+    "version": "5.5.1",
+    "license": "MIT",
+    "url": "https://github.com/eslint-community/eslint-plugin-eslint-plugin#readme",
+    "description": "An ESLint plugin for linting ESLint plugins",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "eslint-plugin-html",
+    "version": "7.1.0",
+    "license": "ISC",
+    "url": "https://github.com/BenoitZugmeyer/eslint-plugin-html",
+    "description": "A ESLint plugin to lint and fix inline scripts contained in HTML files.",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "eslint-plugin-import",
+    "version": "2.32.0",
+    "license": "MIT",
+    "url": "https://github.com/import-js/eslint-plugin-import",
+    "description": "Import with sanity.",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "eslint-plugin-jsdoc",
+    "version": "39.9.1",
+    "license": "BSD-3-Clause",
+    "url": "https://github.com/gajus/eslint-plugin-jsdoc",
+    "description": "JSDoc linting rules for ESLint.",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "eslint-plugin-json",
+    "version": "3.1.0",
+    "license": "MIT",
+    "url": "https://github.com/azeemba/eslint-plugin-json",
+    "description": "eslint plugin for JSON files",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "eslint-plugin-mocha",
+    "version": "10.5.0",
+    "license": "MIT",
+    "url": "https://github.com/lo1tuma/eslint-plugin-mocha",
+    "description": "Eslint rules for mocha.",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "eslint-plugin-node",
+    "version": "11.1.0",
+    "license": "MIT",
+    "url": "https://github.com/mysticatea/eslint-plugin-node#readme",
+    "description": "Additional ESLint's rules for Node.js",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "eslint-plugin-promise",
+    "version": "6.6.0",
+    "license": "ISC",
+    "url": "https://github.com/eslint-community/eslint-plugin-promise",
+    "description": "Enforce best practices for JavaScript promises",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "eslint-plugin-simple-import-sort",
+    "version": "8.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/eslint-plugin-simple-import-sort",
+    "description": "Easy autofixable import sorting",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "eslint-plugin-tsdoc",
+    "version": "0.2.17",
+    "license": "MIT",
+    "url": "https://tsdoc.org/",
+    "description": "An ESLint plugin that validates TypeScript doc comments",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "express",
+    "version": "4.22.1",
+    "license": "MIT",
+    "url": "http://expressjs.com/",
+    "description": "Fast, unopinionated, minimalist web framework",
+    "dev": false,
+    "areas": [
+      "servidores"
+    ]
+  },
+  {
+    "name": "glob",
+    "version": "10.5.0",
+    "license": "ISC",
+    "url": "https://github.com/isaacs/node-glob",
+    "description": "the most correct and second fastest glob implementation in JavaScript",
+    "dev": false,
+    "areas": [
+      "servidores"
+    ]
+  },
+  {
+    "name": "jest",
+    "version": "29.7.0",
+    "license": "MIT",
+    "url": "https://jestjs.io/",
+    "description": "Delightful JavaScript Testing.",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "mongodb",
+    "version": "6.20.0",
+    "license": "Apache-2.0",
+    "url": "https://github.com/mongodb/node-mongodb-native",
+    "description": "The official MongoDB driver for Node.js",
+    "dev": false,
+    "areas": [
+      "servidores"
+    ]
+  },
+  {
+    "name": "mongodb-memory-server",
+    "version": "10.4.3",
+    "license": "MIT",
+    "url": "https://github.com/typegoose/mongodb-memory-server",
+    "description": "MongoDB Server for testing (auto-download latest version). The server will allow you to connect your favourite ODM or client library to the MongoDB Server and run parallel integration tests isolated from each other.",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "mongoose",
+    "version": "8.23.0",
+    "license": "MIT",
+    "url": "https://mongoosejs.com",
+    "description": "Mongoose MongoDB ODM",
+    "dev": false,
+    "areas": [
+      "servidores"
+    ]
+  },
+  {
+    "name": "node-cron",
+    "version": "4.2.1",
+    "license": "ISC",
+    "url": "https://github.com/merencia/node-cron",
+    "description": "A Lightweight Task Scheduler for Node.js",
+    "dev": false,
+    "areas": [
+      "servidores"
+    ]
+  },
+  {
+    "name": "p-limit",
+    "version": "3.1.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/p-limit",
+    "description": "Run multiple promise-returning & async functions with limited concurrency",
+    "dev": false,
+    "areas": [
+      "servidores"
+    ]
+  },
+  {
+    "name": "puppeteer",
+    "version": "24.40.0",
+    "license": "Apache-2.0",
+    "url": "https://github.com/puppeteer/puppeteer/tree/main/packages/puppeteer",
+    "description": "A high-level API to control headless Chrome over the DevTools Protocol",
+    "dev": false,
+    "areas": [
+      "servidores"
+    ]
+  },
+  {
+    "name": "sharp",
+    "version": "0.35.5",
+    "license": "Apache-2.0",
+    "url": "https://sharp.pixelplumbing.com",
+    "description": "High performance Node.js image processing, the fastest module to resize JPEG, PNG, WebP, GIF, AVIF and TIFF images",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "tailwindcss",
+    "version": "4.3.2",
+    "license": "MIT",
+    "url": "https://tailwindcss.com",
+    "description": "A utility-first CSS framework for rapidly building custom user interfaces.",
+    "dev": false,
+    "areas": [
+      "webs"
+    ]
+  },
+  {
+    "name": "three",
+    "version": "0.177.0",
+    "license": "MIT",
+    "url": "https://threejs.org/",
+    "description": "JavaScript 3D library",
+    "dev": false,
+    "areas": [
+      "webs"
+    ]
+  },
+  {
+    "name": "ts-jest",
+    "version": "29.4.6",
+    "license": "MIT",
+    "url": "https://kulshekhar.github.io/ts-jest",
+    "description": "A Jest transformer with source map support that lets you use Jest to test projects written in TypeScript",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "ts-node",
+    "version": "10.9.2",
+    "license": "MIT",
+    "url": "https://typestrong.org/ts-node",
+    "description": "TypeScript execution environment and REPL for node.js, with source map support",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "tsc-alias",
+    "version": "1.8.16",
+    "license": "MIT",
+    "url": "https://github.com/justkey007/tsc-alias.git",
+    "description": "Replace alias paths with relative paths after typescript compilation.",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "tsconfig-paths",
+    "version": "4.2.0",
+    "license": "MIT",
+    "url": "https://github.com/dividab/tsconfig-paths",
+    "description": "Load node modules according to tsconfig paths, in run-time or via API.",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "tsx",
+    "version": "4.23.15",
+    "license": "MIT",
+    "url": "https://tsx.hirok.io",
+    "description": "TypeScript Execute (tsx): Node.js enhanced with esbuild to run TypeScript & ESM files",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "typedoc",
+    "version": "0.23.28",
+    "license": "Apache-2.0",
+    "url": "https://typedoc.org",
+    "description": "Create api documentation for TypeScript projects.",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "typescript",
+    "version": "5.9.3",
+    "license": "Apache-2.0",
+    "url": "https://www.typescriptlang.org/",
+    "description": "TypeScript is a language for application scale JavaScript development",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "vite-svg-loader",
+    "version": "5.1.3",
+    "license": "MIT",
+    "url": "https://github.com/jpkleemans/vite-svg-loader#readme",
+    "description": "Vite plugin to load SVG files as Vue components",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "vitest",
+    "version": "3.2.7",
+    "license": "MIT",
+    "url": "https://github.com/vitest-dev/vitest#readme",
+    "description": "Next generation testing framework powered by Vite",
+    "dev": true,
+    "areas": [
+      "desarrollo"
+    ]
+  },
+  {
+    "name": "vue",
+    "version": "3.5.43",
+    "license": "MIT",
+    "url": "https://vuejs.org/",
+    "description": "The progressive JavaScript framework for building modern web UI.",
+    "dev": false,
+    "areas": [
+      "webs"
+    ]
+  },
+  {
+    "name": "vue-chartjs",
+    "version": "5.3.3",
+    "license": "MIT",
+    "url": "http://vue-chartjs.org",
+    "description": "Vue.js wrapper for chart.js for creating beautiful charts.",
+    "dev": false,
+    "areas": [
+      "webs"
+    ]
+  },
+  {
+    "name": "vue-countup-v3",
+    "version": "1.4.2",
+    "license": "MIT",
+    "url": "https://github.com/jizai1125/vue-countup-v3/#readme",
+    "description": "Vue 3 component wrap for countUp.js，and expand some features.",
+    "dev": false,
+    "areas": [
+      "webs"
+    ]
+  },
+  {
+    "name": "vue-css-donut-chart",
+    "version": "2.1.0",
+    "license": "MIT",
+    "url": "https://dumptyd.github.io/vue-css-donut-chart/",
+    "description": "Lightweight Vue component for creating donut charts",
+    "dev": false,
+    "areas": [
+      "webs"
+    ]
+  }
+]

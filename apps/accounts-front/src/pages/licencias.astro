@@ -1,0 +1,88 @@
+---
+/**
+ * Créditos y licencias de terceros de todas las webs y servicios de la comunidad.
+ * La lista de librerías sale de src/data/licenses.json, que genera scripts/generate-licenses.mjs
+ * (hay que volver a ejecutarlo al cambiar dependencias).
+ */
+import Layout from "../layouts/Layout.astro";
+import libraries from "../data/licenses.json";
+
+interface Library {
+	name: string;
+	version: string;
+	license: string;
+	url: string;
+	description: string;
+	areas: string[];
+	dev: boolean;
+}
+
+const all = libraries as Library[];
+const groups = [
+	{ id: "webs", title: "En las webs", text: "Lo que llega a tu navegador: las webs de los clubes y la de la cuenta.", items: all.filter((l) => l.areas.includes("webs")) },
+	{ id: "servidores", title: "En los servidores y bots", text: "La API de cada club, el cálculo de estadísticas, la cuenta, el bot de Discord y el generador de imágenes.", items: all.filter((l) => !l.dev && l.areas.includes("servidores")) },
+	{ id: "desarrollo", title: "Herramientas de desarrollo", text: "Se usan para construir y probar el proyecto, no llegan a las webs.", items: all.filter((l) => l.dev) },
+];
+
+// Recursos que no son paquetes de npm
+const assets = [
+	{ name: "Heroicons", by: "Tailwind Labs", license: "MIT", url: "https://heroicons.com", use: "Iconos de los logros, de la portada y de varias tarjetas." },
+	{ name: "Flowbite Icons", by: "Flowbite", license: "MIT", url: "https://flowbite.com/icons/", use: "Iconos de la navegación y de la interfaz de las webs de los clubes." },
+	{ name: "unDraw", by: "Katerina Limpitsouni", license: "Licencia de unDraw", url: "https://undraw.co/license", use: "Ilustraciones de las páginas de error y de estados vacíos." },
+];
+---
+
+<Layout title="Créditos y licencias · Casemuro" description="Librerías y recursos de terceros que usan las webs de la comunidad Casemuro, con sus licencias.">
+	<article class="rounded-box bg-base-200 shadow-md p-6 sm:p-8 prose dark:prose-invert prose-sm max-w-none">
+		<h1 class="text-brand">Créditos y licencias</h1>
+		<p>
+			Las webs, la cuenta y los servicios de la comunidad se apoyan en software libre y en recursos de terceros.
+			Gracias a sus autores. Aquí están todos, con su licencia y un enlace a su web, donde está el texto completo de cada licencia.
+		</p>
+		<p>
+			Los datos de los partidos son de EA SPORTS FC (Electronic Arts); el inicio de sesión usa Twitch y la conexión con Discord, Discord.
+			No hay relación con ninguno de ellos: lo explica el <a href="/aviso-legal">aviso legal</a>.
+		</p>
+
+		<h2>Iconos e ilustraciones</h2>
+		<ul class="not-prose grid gap-2 sm:grid-cols-2">
+			{assets.map((a) => (
+				<li class="rounded-xl bg-base-100 p-4">
+					<div class="flex items-baseline justify-between gap-3">
+						<a href={a.url} class="font-bold link link-hover">{a.name}</a>
+						<span class="badge badge-sm badge-soft badge-primary shrink-0">{a.license}</span>
+					</div>
+					<p class="text-xs text-base-content/70 mt-1">{a.by} · {a.use}</p>
+				</li>
+			))}
+		</ul>
+
+		{groups.map((g) => (
+			<section>
+				<h2 id={g.id}>{g.title} <span class="text-base-content/50 font-normal">({g.items.length})</span></h2>
+				<p>{g.text}</p>
+				<details open={g.id !== "desarrollo"} class="not-prose">
+					<summary class="cursor-pointer text-sm font-semibold text-base-content/70 mb-2">
+						Lista de librerías
+					</summary>
+					<ul class="divide-y divide-base-content/10 rounded-xl bg-base-100">
+						{g.items.map((l) => (
+							<li class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 px-4 py-2.5">
+								<span class="min-w-0 flex-1">
+									<a href={l.url} class="font-semibold link link-hover break-all">{l.name}</a>
+									<span class="text-xs text-base-content/50 ml-1.5 tabular-nums">{l.version}</span>
+									{l.description && <span class="block text-xs text-base-content/60 truncate">{l.description}</span>}
+								</span>
+								<span class="badge badge-sm badge-ghost shrink-0 self-start sm:self-center">{l.license}</span>
+							</li>
+						))}
+					</ul>
+				</details>
+			</section>
+		))}
+
+		<p class="text-base-content/60">
+			¿Falta algo o ves un error en una licencia? Escribe a truenodeveloper@gmail.com.
+		</p>
+	</article>
+</Layout>
