@@ -84,7 +84,7 @@ describe("rangeFromDates", () => {
 })
 
 describe("createRangeWheelHandler", () => {
-    const setup = (initial: IndexRange, count = 100) => {
+    const setup = (initial: IndexRange, count = 100, verticalPans = false) => {
         let range = initial
         const setRange = vi.fn((r: IndexRange) => { range = r })
         const handler = createRangeWheelHandler({
@@ -94,6 +94,7 @@ describe("createRangeWheelHandler", () => {
             minSize: 3,
             pxPerPoint: () => 10,
             anchorAt: () => 0.5,
+            verticalPans,
         })
         const wheel = (init: Partial<WheelEvent>) => {
             const e = { deltaX: 0, deltaY: 0, deltaMode: 0, ctrlKey: false, metaKey: false, shiftKey: false, preventDefault: vi.fn(), ...init } as unknown as WheelEvent
@@ -152,5 +153,23 @@ describe("createRangeWheelHandler", () => {
         const all = setup({ start: 0, end: 99 })
         const e = all.wheel({ deltaX: 50 })
         expect(e.preventDefault).not.toHaveBeenCalled()
+    })
+
+    it("con verticalPans, la rueda normal desplaza hasta el borde y luego deja bajar la página", () => {
+        const t = setup({ start: 85, end: 94 }, 100, true)
+        const e = t.wheel({ deltaY: 30 })
+        expect(e.preventDefault).toHaveBeenCalled()
+        expect(t.range).toEqual({ start: 88, end: 97 })
+        t.wheel({ deltaY: 100 })
+        expect(t.range).toEqual({ start: 90, end: 99 })
+        // Ya al final: la rueda vuelve a ser de la página
+        const atEnd = t.wheel({ deltaY: 100 })
+        expect(atEnd.preventDefault).not.toHaveBeenCalled()
+        // Hacia arriba sí se mueve
+        t.wheel({ deltaY: -20 })
+        expect(t.range).toEqual({ start: 88, end: 97 })
+        // Sin zoom, nada
+        const all = setup({ start: 0, end: 99 }, 100, true)
+        expect(all.wheel({ deltaY: 100 }).preventDefault).not.toHaveBeenCalled()
     })
 })
