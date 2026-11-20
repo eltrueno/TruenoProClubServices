@@ -9,7 +9,7 @@ import HeartIcon from "../icons/heart.svg";
 import { BRAND_CLUBS, CASEMURO_SOCIALS, DEV_SOCIALS } from "../config/site";
 
 interface Props {
-	/** en el login: solo la banda, la privacidad y los créditos */
+	/** en el login: solo la banda, lo legal (privacidad, aviso legal y licencias) y los créditos */
 	compact?: boolean;
 }
 const { compact = false } = Astro.props;
@@ -97,6 +97,10 @@ const people = [
 				<span>© {year} Casemuro &amp; el_trueno</span>
 				<span class="hidden sm:inline">·</span>
 				<a href="/privacidad" class="inline-flex items-center min-h-11 sm:min-h-6 hover:text-base-content transition-colors">Política de privacidad</a>
+				<span class="hidden sm:inline">·</span>
+				<a href="/aviso-legal" class="inline-flex items-center min-h-11 sm:min-h-6 hover:text-base-content transition-colors">Aviso legal</a>
+				<span class="hidden sm:inline">·</span>
+				<a href="/licencias" class="inline-flex items-center min-h-11 sm:min-h-6 hover:text-base-content transition-colors">Créditos</a>
 			</div>
 			<div class="flex items-center justify-center gap-1">
 				Hecho con mucho <HeartIcon class="size-3.5 text-primary animate-pulse" /> por

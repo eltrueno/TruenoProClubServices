@@ -6,6 +6,7 @@
     "build": "pnpm -r build",
     "check": "pnpm --filter @trueno-proclub-services/web check",
     "dev:local": "node scripts/dev-local.mjs",
+    "licenses": "node scripts/generate-licenses.mjs",
     "test": "pnpm --filter @trueno-proclub-services/shared build && pnpm --filter @trueno-proclub-services/auth build && vitest run",
     "test:watch": "vitest"
   },
