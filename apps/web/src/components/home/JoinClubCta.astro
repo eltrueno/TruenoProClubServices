@@ -1,0 +1,77 @@
+---
+/**
+ * "¿Juegas en el club?" de la portada: qué ganas vinculando tu cuenta y el botón a accounts.
+ */
+import { accountsUrl } from "@/lib/accounts";
+
+// Iconos: Heroicons outline (24×24)
+const benefits = [
+	{ title: "Tus estadísticas", text: "Goles, asistencias y valoración de cada partido", icon: "M3 13.13C3 12.5 3.5 12 4.13 12h2.25c.62 0 1.12.5 1.12 1.13v6.75C7.5 20.5 7 21 6.38 21H4.13C3.5 21 3 20.5 3 19.88v-6.75ZM9.75 8.63c0-.63.5-1.13 1.13-1.13h2.25c.62 0 1.12.5 1.12 1.13v11.25c0 .62-.5 1.12-1.12 1.12h-2.25c-.63 0-1.13-.5-1.13-1.12V8.63ZM16.5 4.13c0-.63.5-1.13 1.13-1.13h2.25C20.5 3 21 3.5 21 4.13v15.75c0 .62-.5 1.12-1.12 1.12h-2.25c-.63 0-1.13-.5-1.13-1.12V4.13Z" },
+	{ title: "Tu progresión", text: "Cómo vas partido a partido, con gráficas", icon: "M2.25 18 9 11.25l4.31 4.31a11.95 11.95 0 0 1 5.81-5.52l2.74-1.22m0 0-5.94-2.28m5.94 2.28-2.28 5.94" },
+	{ title: "Tus logros", text: "Desbloquea logros y compara tu ficha con la del resto", icon: "M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.38c0-.62-.5-1.12-1.13-1.12h-.87m-5.25 4.5v-3.38c0-.62.5-1.12 1.13-1.12h.86m7.5-10.42c.98.14 1.95.32 2.92.52a6 6 0 0 1-5.9 5.5M7.5 4.24c-.98.14-1.95.32-2.92.52a6 6 0 0 0 5.9 5.5m0 0a6.73 6.73 0 0 0 2.75.98m-2.75-.98a6.75 6.75 0 0 1-3-5.6V3.75h12v.9a6.75 6.75 0 0 1-3 5.6m-3 .98a6.73 6.73 0 0 1-2.75-.98" },
+];
+const TWITCH = "M11.64 5.93h1.43v4.28h-1.43m3.93-4.28H17v4.28h-1.43M7 2 3.43 5.57v12.86h4.28V22l3.58-3.57h2.85L20.57 12V2m-1.43 9.29-2.85 2.85h-2.86l-2.5 2.5v-2.5H7.71V3.43h11.43Z";
+---
+
+<div class="cta reveal-zoom relative overflow-hidden rounded-3xl border border-base-content/5 grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+	<div class="p-6 lg:p-10">
+		<span class="text-xs uppercase font-black tracking-[0.25em] text-primary">¿Juegas en el club?</span>
+		<h2 class="mt-2 text-2xl lg:text-4xl font-black tracking-tighter">Tu ficha, tus números, tus logros</h2>
+		<ul class="mt-6 grid gap-5 sm:grid-cols-3 reveal-stagger">
+			{benefits.map((b) => (
+				<li class="flex flex-col gap-2">
+					<span class="size-10 rounded-xl bg-primary/10 text-primary grid place-items-center">
+						<svg class="size-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+							<path stroke-linecap="round" stroke-linejoin="round" d={b.icon} />
+						</svg>
+					</span>
+					<span class="font-black">{b.title}</span>
+					<span class="text-sm text-base-content/60 leading-snug">{b.text}</span>
+				</li>
+			))}
+		</ul>
+	</div>
+
+	<div class="relative p-6 lg:p-10 flex flex-col justify-center items-center gap-4 bg-primary text-primary-content text-center overflow-hidden">
+		<!-- El logo de Twitch, grande y de fondo, girando apenas con el scroll -->
+		<svg aria-hidden="true" class="cta-mark absolute -right-10 -bottom-10 size-56 opacity-15" viewBox="0 0 24 24" fill="currentColor"><path d={TWITCH} /></svg>
+		<p class="relative text-lg font-bold">Vincula tu cuenta de Twitch con tu jugador</p>
+		<a href={accountsUrl("mi-jugador")} class="cta-button relative btn btn-lg rounded-xl bg-white text-black border-none hover:bg-white font-black gap-2">
+			<svg class="size-5 text-[#9146FF]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d={TWITCH} /></svg>
+			Vincular mi cuenta
+		</a>
+		<span class="relative text-xs opacity-80">Tarda un minuto</span>
+	</div>
+</div>
+
+<style>
+	.cta {
+		background: color-mix(in oklab, var(--color-base-200) 90%, transparent);
+		backdrop-filter: blur(6px);
+	}
+	.cta-button {
+		transition: translate 0.2s, box-shadow 0.2s;
+	}
+	.cta-button:hover {
+		translate: 0 -2px;
+		box-shadow: 0 10px 25px -10px rgb(0 0 0 / 0.45);
+	}
+
+	@keyframes cta-mark-turn {
+		from { rotate: -14deg; translate: 1.5rem 1.5rem; }
+		to { rotate: 8deg; translate: 0 0; }
+	}
+	@supports (animation-timeline: view()) {
+		@media (prefers-reduced-motion: no-preference) {
+			/* Medido con la tarjeta: los bloques recortan (overflow hidden) y view() dentro no avanzaría */
+			.cta {
+				view-timeline: --cta block;
+			}
+			.cta-mark {
+				animation: cta-mark-turn linear both;
+				animation-timeline: --cta;
+				animation-range: entry 0% cover 60%;
+			}
+		}
+	}
+</style>

@@ -1,7 +1,9 @@
 ---
-import Indexarticle from "@components/Indexarticle.astro";
 import Layout from "@layouts/Layout.astro";
-import ClubStats from "@components/ClubStats.vue";
+import ClubNumbers from "@components/home/ClubNumbers.vue";
+import ClubStory from "@components/home/ClubStory.astro";
+import JoinClubCta from "@components/home/JoinClubCta.astro";
+import HomeBackdrop from "@components/home/HomeBackdrop.astro";
 import ClubHighlights from "@components/home/ClubHighlights.vue";
 import LastMatches from "@components/home/LastMatches.vue";
 import ClubRecords from "@components/home/ClubRecords.vue";
@@ -10,13 +12,11 @@ import SectionTitle from "@components/layout/SectionTitle.astro";
 import { CLUB } from "@/config/club";
 import ClubSummary from "@components/seo/ClubSummary.astro";
 import MatchesSummary from "@components/seo/MatchesSummary.astro";
-import { buildClub, buildLatestMatches } from "@/lib/buildData";
+import { buildClub, buildLatestMatches, buildRoster } from "@/lib/buildData";
 import { clubJsonLd } from "@/lib/structuredData";
-import originImage from "@/assets/home/origin.png";
-import stadiumImage from "@/assets/home/stadium.png";
 
-// Resumen para quien no ejecuta JS, con los datos del build (ver lib/buildData.ts)
-const [club, latestMatches] = await Promise.all([buildClub(), buildLatestMatches(5)]);
+// Datos del build (ver lib/buildData.ts): el resumen para quien no ejecuta JS y las cifras de "Hoy" en la historia
+const [club, latestMatches, roster] = await Promise.all([buildClub(), buildLatestMatches(5), buildRoster()]);
 ---
 
 <Layout
@@ -25,7 +25,8 @@ const [club, latestMatches] = await Promise.all([buildClub(), buildLatestMatches
 	description={`Web oficial de ${CLUB.name}, el club de Clubes Pro de EA SPORTS FC de la comunidad de Mr Casemuro: resultados, plantilla, estadísticas y récords al día.`}
 	jsonLd={clubJsonLd()}
 >
-	<!-- overflow-x-clip: las tarjetas que entran de lado (reveal-sides) no deben abrir scroll horizontal -->
+	<!-- Fondo animado solo de la portada. overflow-x-clip: lo que entra de lado (reveal-sides) no abre scroll horizontal -->
+	<HomeBackdrop>
 	<div class="w-full max-w-[100rem] mx-auto px-4 lg:px-8 flex flex-col gap-12 lg:gap-16 py-8 lg:py-12 overflow-x-clip">
 		<!-- Hero -->
 		<header class="text-center reveal-stagger">
@@ -72,44 +73,21 @@ const [club, latestMatches] = await Promise.all([buildClub(), buildLatestMatches
 		<!-- Todos los números (stats completas de EA) -->
 		<section>
 			<SectionTitle>Todos los números</SectionTitle>
-			<ClubStats client:only="vue" class="overflow-clip" />
+			<ClubNumbers client:only="vue" />
+		</section>
+
+		<!-- Nuestra historia: la de cada club, de config/club.ts (si no tiene, no sale) -->
+		{CLUB.story && (
+			<section>
+				<SectionTitle>Nuestra historia</SectionTitle>
+				<ClubStory story={CLUB.story} gamesPlayed={club?.stats?.gamesPlayed} players={roster?.length} />
+			</section>
+		)}
+
+		<!-- CTA: vincular cuenta -->
+		<section class="pb-4 lg:pb-8">
+			<JoinClubCta />
 		</section>
 	</div>
-
-	<!-- Historia del club: la de cada club, de config/club.ts (si no tiene, no sale) -->
-	{CLUB.story && (
-		<section class="overflow-x-clip">
-			<Indexarticle
-				id="origen"
-				reverse={false}
-				gradientText="bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500"
-				image={originImage}
-			>
-				<p slot="title">Origen</p>
-				{CLUB.story.origin}
-			</Indexarticle>
-			<Indexarticle
-				id="objetivo"
-				reverse
-				gradientText="bg-gradient-to-r from-rose-400 via-fuchsia-500 to-indigo-500"
-				image={stadiumImage}
-			>
-				<p slot="title">Objetivo</p>
-				{CLUB.story.goal}
-			</Indexarticle>
-		</section>
-	)}
-
-	<!-- CTA: vincular cuenta -->
-	<section class="w-full max-w-[100rem] mx-auto px-4 lg:px-8 py-12 lg:py-16">
-		<div class="reveal-zoom rounded-2xl bg-base-200 p-6 lg:p-10 flex flex-col lg:flex-row items-center gap-6 text-center lg:text-left">
-			<div class="flex-1">
-				<h2 class="text-2xl lg:text-3xl font-black tracking-tighter">¿Juegas en el club?</h2>
-				<p class="mt-2 text-base-content/70 leading-relaxed">
-					Vincula tu cuenta de Twitch con tu jugador y consulta tus estadísticas, tu progresión y tus logros.
-				</p>
-			</div>
-			<a href={`${CLUB.accountsUrl}/#mi-jugador`} class="btn btn-primary rounded-xl font-bold">Vincular mi cuenta</a>
-		</div>
-	</section>
+	</HomeBackdrop>
 </Layout>
