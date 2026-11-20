@@ -1,0 +1,33 @@
+---
+/**
+ * La plantilla dentro de <noscript>, para quien no ejecuta JS (los buscadores que no lo hacen; ver lib/buildData.ts). Con JS se ve PlayersContainer, como siempre.
+ */
+import type { RosterEntry } from "@/lib/buildData";
+import { translatePosition } from "@/i18n/translations";
+import { routes } from "@/lib/query";
+
+interface Props {
+    roster: RosterEntry[] | null;
+}
+
+const { roster } = Astro.props;
+---
+
+{roster?.length ? (
+    <section class="w-full">
+        <p class="text-sm text-base-content/60 mb-3">{roster.length} jugadores con partidos en el club</p>
+        <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {roster.map((p) => (
+                <li>
+                    <a href={routes.player(p.playerId)} class="flex items-center justify-between gap-3 rounded-xl bg-base-200 px-4 py-3 hover:bg-base-300 transition-colors">
+                        <span class="min-w-0">
+                            <span class="block font-bold truncate">{p.name}</span>
+                            {p.position && <span class="block text-sm text-base-content/60">{translatePosition(p.position)}</span>}
+                        </span>
+                        <span class="text-sm text-base-content/60 tabular-nums shrink-0">{p.gamesPlayed} {p.gamesPlayed === 1 ? "partido" : "partidos"}</span>
+                    </a>
+                </li>
+            ))}
+        </ul>
+    </section>
+) : null}

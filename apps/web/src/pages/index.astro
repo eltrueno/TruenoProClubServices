@@ -8,6 +8,12 @@ import ClubRecords from "@components/home/ClubRecords.vue";
 import ClubPulse from "@components/home/ClubPulse.vue";
 import SectionTitle from "@components/layout/SectionTitle.astro";
 import { CLUB } from "@/config/club";
+import ClubSummary from "@components/seo/ClubSummary.astro";
+import MatchesSummary from "@components/seo/MatchesSummary.astro";
+import { buildClub, buildLatestMatches } from "@/lib/buildData";
+
+// Resumen para quien no ejecuta JS, con los datos del build (ver lib/buildData.ts)
+const [club, latestMatches] = await Promise.all([buildClub(), buildLatestMatches(5)]);
 ---
 
 <Layout
@@ -39,11 +45,13 @@ import { CLUB } from "@/config/club";
 		<section>
 			<SectionTitle id="datos">Datos, no opiniones</SectionTitle>
 			<ClubHighlights client:only="vue" />
+			<noscript><ClubSummary club={club} /></noscript>
 		</section>
 
 		<!-- Último partido y jugador del momento -->
 		<section>
 			<LastMatches client:only="vue" />
+			<noscript><MatchesSummary matches={latestMatches} title="Últimos partidos" /></noscript>
 		</section>
 
 		<!-- El club en datos -->
@@ -65,37 +73,29 @@ import { CLUB } from "@/config/club";
 		</section>
 	</div>
 
-	<section class="overflow-x-clip">
-		<Indexarticle
-			id="origen"
-			reverse={false}
-			,
-			gradientText="bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500"
-			imageUrl="/origin.png"
-		>
-			<p slot="title">Origen</p>
-			El Casemuro City nació en FIFA 22 y nuestra identidad quedó marcada desde
-			el principio. Elegimos al Wrexham AFC para representarnos, usando aquella
-			mítica camiseta azul con el patrocinio de TikTok, que nos acompaña en
-			cada directo. Desde entonces, el equipo no ha parado de crecer y el resto
-			ya es historia. Si buscas un sitio donde disfrutar de Clubes Pro de verdad,
-			con buen ambiente y nivel, has llegado al lugar indicado.
-		</Indexarticle>
-		<Indexarticle
-			id="objetivo"
-			reverse
-			gradientText="bg-gradient-to-r from-rose-400 via-fuchsia-500 to-indigo-500"
-			imageUrl="/stadium.png"
-		>
-			<p slot="title">Objetivo</p>
-			Tenemos un objetivo claro: visitar el estadio del Wrexham. Queremos estar
-			allí, en las gradas, y vivir desde dentro toda la magia de este equipo
-			que nos dio nuestra identidad en el Casemuro City. Lo mejor de todo es
-			que este viaje no sería posible sin vosotros, sois los que hacéis que
-			el club siga vivo y que este sueño tenga sentido. ¿Lo conseguiremos? Estoy
-			convencido de que sí.
-		</Indexarticle>
-	</section>
+	<!-- Historia del club: la de cada club, de config/club.ts (si no tiene, no sale) -->
+	{CLUB.story && (
+		<section class="overflow-x-clip">
+			<Indexarticle
+				id="origen"
+				reverse={false}
+				gradientText="bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500"
+				imageUrl="/origin.png"
+			>
+				<p slot="title">Origen</p>
+				{CLUB.story.origin}
+			</Indexarticle>
+			<Indexarticle
+				id="objetivo"
+				reverse
+				gradientText="bg-gradient-to-r from-rose-400 via-fuchsia-500 to-indigo-500"
+				imageUrl="/stadium.png"
+			>
+				<p slot="title">Objetivo</p>
+				{CLUB.story.goal}
+			</Indexarticle>
+		</section>
+	)}
 
 	<!-- CTA: vincular cuenta -->
 	<section class="w-full max-w-[100rem] mx-auto px-4 lg:px-8 py-12 lg:py-16">

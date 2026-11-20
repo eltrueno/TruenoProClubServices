@@ -2,6 +2,11 @@
 import Layout from "@layouts/Layout.astro";
 import PlayersContainer from "@components/player/PlayersContainer.vue";
 import { CLUB } from "@/config/club";
+import RosterSummary from "@components/seo/RosterSummary.astro";
+import { buildRoster } from "@/lib/buildData";
+
+// Resumen para quien no ejecuta JS, con los datos del build (ver lib/buildData.ts)
+const roster = await buildRoster();
 // /plantilla?id=<playerId> abre el detalle de ese jugador (se lee en cliente)
 ---
 
@@ -21,8 +26,13 @@ import { CLUB } from "@/config/club";
 		</h2>
 	</header>
 	<section>
-		<container class="flex px-2 py-4 justify-center items-center">
+		<container id="squad-app" class="flex px-2 py-4 justify-center items-center">
 			<PlayersContainer client:load />
 		</container>
+		<!-- Sin JS: fuera la plantilla de siempre (se quedaría vacía y cargando) y en su lugar el resumen -->
+		<noscript>
+			<style>#squad-app { display: none; }</style>
+			<div class="px-4 py-4"><RosterSummary roster={roster} /></div>
+		</noscript>
 	</section>
 </Layout>

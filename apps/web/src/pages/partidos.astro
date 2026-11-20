@@ -2,6 +2,11 @@
 import MatchesContainer from "@/components/match/MatchesContainer.vue";
 import Layout from "@layouts/Layout.astro";
 import { CLUB } from "@/config/club";
+import MatchesSummary from "@components/seo/MatchesSummary.astro";
+import { buildLatestMatches } from "@/lib/buildData";
+
+// Resumen para quien no ejecuta JS, con los datos del build (ver lib/buildData.ts)
+const latestMatches = await buildLatestMatches(20);
 
 // Filtros por query (?id, ?desde, ?hasta, ?liga, ?playoff, ?amistoso): los lee MatchesContainer en cliente
 ---
@@ -24,6 +29,7 @@ import { CLUB } from "@/config/club";
 	<section>
 		<container class="flex px-2 py-4 justify-center items-center">
 			<MatchesContainer client:only="vue" />
+			<noscript><MatchesSummary matches={latestMatches} /></noscript>
 		</container>
 	</section>
 </Layout>

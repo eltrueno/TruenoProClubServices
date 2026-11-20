@@ -2,6 +2,11 @@
 import TotwContainer from "@components/totw/TotwContainer.vue";
 import Layout from "@layouts/Layout.astro";
 import { CLUB } from "@/config/club";
+import TotwSummary from "@components/seo/TotwSummary.astro";
+import { buildLatestTotw } from "@/lib/buildData";
+
+// Resumen para quien no ejecuta JS, con los datos del build (ver lib/buildData.ts)
+const totw = await buildLatestTotw();
 
 // /totw?semana=<iso>&tipo=best|worst — lo lee TotwContainer en cliente
 ---
@@ -15,6 +20,7 @@ import { CLUB } from "@/config/club";
     <section>
         <container class="flex px-2 py-4 justify-center items-center">
             <TotwContainer client:only="vue" />
+            <noscript><TotwSummary totw={totw} /></noscript>
         </container>
     </section>
 </Layout>

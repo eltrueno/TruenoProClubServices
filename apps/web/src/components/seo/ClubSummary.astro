@@ -1,0 +1,44 @@
+---
+/**
+ * Balance del club dentro de <noscript>, para quien no ejecuta JS (los buscadores que no lo hacen; ver lib/buildData.ts). Con JS se ve ClubHighlights, como siempre.
+ */
+import type { IClub } from "@trueno-proclub-services/shared";
+import { CLUB } from "@/config/club";
+import { translateDivision } from "@/i18n/translations";
+
+interface Props {
+    club: IClub | null;
+}
+
+const { club } = Astro.props;
+const s = club?.stats;
+const winRate = s?.gamesPlayed ? Math.round((s.wins / s.gamesPlayed) * 100) : 0;
+const items = s
+    ? [
+          { label: "Partidos oficiales", value: s.gamesPlayed },
+          { label: "Victorias", value: `${s.wins} (${winRate} %)` },
+          { label: "Empates", value: s.ties },
+          { label: "Derrotas", value: s.losses },
+          { label: "Goles a favor", value: s.goals },
+          { label: "Goles en contra", value: s.goalsAgainst },
+          { label: "Mejor división", value: translateDivision(s.bestDivision) },
+          { label: "Ascensos", value: s.promotions },
+      ]
+    : [];
+---
+
+{s ? (
+    <div class="w-full">
+        <p class="text-base-content/70 mb-4">
+            {CLUB.name} lleva {s.gamesPlayed} partidos oficiales en Clubes Pro: {s.wins} victorias, {s.ties} empates y {s.losses} derrotas, con {s.goals} goles a favor y {s.goalsAgainst} en contra.
+        </p>
+        <dl class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {items.map((item) => (
+                <div class="rounded-xl bg-base-200 p-4 text-center">
+                    <dt class="text-xs uppercase font-black tracking-widest text-base-content/50">{item.label}</dt>
+                    <dd class="text-2xl font-black mt-1">{item.value}</dd>
+                </div>
+            ))}
+        </dl>
+    </div>
+) : null}

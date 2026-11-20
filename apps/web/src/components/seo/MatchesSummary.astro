@@ -1,0 +1,39 @@
+---
+/**
+ * Lista sencilla de partidos dentro de <noscript>, para quien no ejecuta JS (los buscadores que no lo hacen; ver lib/buildData.ts). Con JS se ven los componentes de siempre (LastMatches, MatchesContainer).
+ */
+import type { IMatch } from "@trueno-proclub-services/shared";
+import { formatDay, matchSides, resultLabel } from "@/lib/buildData";
+import { translateMatchType } from "@/i18n/translations";
+import { routes } from "@/lib/query";
+
+interface Props {
+    matches: IMatch[] | null;
+    /** encabezado de la lista (h2); sin él, solo la lista */
+    title?: string;
+}
+
+const { matches, title } = Astro.props;
+const RESULT_CLASS: Record<string, string> = { win: "badge-success", tie: "badge-neutral", loose: "badge-error" };
+---
+
+{matches?.length ? (
+    <section class="w-full max-w-4xl mx-auto">
+        {title && <h2 class="text-xl font-black tracking-tight mb-3">{title}</h2>}
+        <ol class="flex flex-col gap-2">
+            {matches.map((m) => {
+                const { ours, rival } = matchSides(m);
+                return (
+                    <li>
+                        <a href={routes.match(m.matchId)} class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-base-200 px-4 py-3 hover:bg-base-300 transition-colors">
+                            <span class={`badge badge-sm ${RESULT_CLASS[m.result] ?? ""}`}>{resultLabel(m.result)}</span>
+                            <span class="font-bold tabular-nums">{ours.matchStats.goals}–{rival.matchStats.goals}</span>
+                            <span class="flex-1 min-w-0 truncate">contra {rival.name}</span>
+                            <span class="text-sm text-base-content/60">{translateMatchType(m.matchType)} · <time datetime={new Date(m.timestamp * 1000).toISOString()}>{formatDay(m.timestamp)}</time></span>
+                        </a>
+                    </li>
+                );
+            })}
+        </ol>
+    </section>
+) : null}

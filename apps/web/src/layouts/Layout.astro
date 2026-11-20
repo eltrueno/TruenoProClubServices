@@ -15,8 +15,13 @@ interface Props {
 
 const { title, isindex, description, keywords } = Astro.props;
 
-const pathname = Astro.url.pathname.replace(/\/+$/, "") || "";
-const canonicalUrl = `${CLUB.siteUrl}${pathname}`;
+// URL limpia, la misma que el sitemap: con build.format "file" Astro da /plantilla.html y
+// /index.html, que también se sirven (Pages); la canónica dice a Google cuál es la buena
+const pathname = Astro.url.pathname
+	.replace(/\/index\.html$/, "/")
+	.replace(/\.html$/, "")
+	.replace(/\/+$/, "");
+const canonicalUrl = `${CLUB.siteUrl}${pathname || "/"}`;
 // Imagen de las vistas previas de enlaces: la propia del club o la generada en el build (pages/og.png.ts)
 const ogImage = CLUB.ogImage ?? "/og.png";
 const ogImageUrl = ogImage.startsWith("http") ? ogImage : `${CLUB.siteUrl}${ogImage}`;
@@ -121,6 +126,15 @@ try {
 		{isindex && <Mainheader />}
 		<Navbar isindex={isindex} />
 		<main class="flex-1 w-full max-w-[100rem] 4xl:max-w-[112rem] 5xl:max-w-[125rem] mx-auto">
+			<!-- Sin JS solo se ve un resumen (ver lib/buildData.ts): por si es una persona, que sepa por qué -->
+			<noscript>
+				<div role="alert" class="alert alert-warning mx-4 mt-4 lg:mx-8">
+					<span>
+						<strong>Activa JavaScript</strong> para ver la web completa: estadísticas, gráficas y filtros.
+						Sin él solo verás un resumen.
+					</span>
+				</div>
+			</noscript>
 			<slot />
 		</main>
 		<Footer />
