@@ -103,13 +103,19 @@ export interface RangeWheelTarget {
     pxPerPoint: () => number
     /** dónde está el ratón respecto a la ventana: 0 = su borde izquierdo, 1 = el derecho */
     anchorAt: (e: WheelEvent) => number
+    /**
+     * La rueda normal (vertical) también desplaza: hacia abajo, a lo más nuevo. Al llegar al
+     * final (o sin zoom) la deja pasar, para que la página siga bajando. Para elementos pequeños
+     * como la barra del navegador; en una gráfica grande atraparía el scroll de la página.
+     */
+    verticalPans?: boolean
 }
 
 /**
  * Rueda del ratón / trackpad sobre una gráfica con ventana:
  * - Ctrl (o ⌘) + rueda, o pellizcar en el trackpad: zoom alrededor del ratón.
  * - Rueda horizontal (o Mayús + rueda): desplazar.
- * La rueda normal no se toca: sigue moviendo la página.
+ * La rueda normal no se toca (sigue moviendo la página), salvo con `verticalPans`.
  * Los trackpads mandan muchos movimientos pequeños: se acumulan hasta que llegan a un punto.
  */
 export function createRangeWheelHandler(target: RangeWheelTarget) {
@@ -139,8 +145,13 @@ export function createRangeWheelHandler(target: RangeWheelTarget) {
             return
         }
 
-        const horizontal = e.shiftKey ? dx || dy : Math.abs(dx) > Math.abs(dy) ? dx : 0
+        const horizontal = e.shiftKey || target.verticalPans ? dx || dy : Math.abs(dx) > Math.abs(dy) ? dx : 0
         if (!horizontal || rangeSize(range) >= count) return
+        // Ya en el borde hacia el que se mueve: que siga la página
+        if (target.verticalPans && (horizontal > 0 ? range.end >= count - 1 : range.start <= 0)) {
+            panAcc = 0
+            return
+        }
         e.preventDefault()
         zoomAcc = 1
         panAcc += horizontal

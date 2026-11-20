@@ -7,7 +7,7 @@
               agarrar la ventana para moverla. Cambian el zoom.
             - Arrastrar la ventana la mueve; pulsar fuera la centra ahí (y se puede seguir arrastrando).
               En táctil, solo con un toque o un deslizamiento horizontal: el scroll de la página no la mueve.
-            - Ctrl + rueda o pellizcar el trackpad: zoom; rueda horizontal o Mayús + rueda: mover.
+            - Ctrl + rueda o pellizcar el trackpad: zoom; rueda (también la normal): mover.
         -->
         <!--
             Modo "chart": encima, la gráfica grande con solo el tramo elegido. Arrastrar sobre ella
@@ -159,7 +159,7 @@ const clipId = `nav-clip-${useId()}`
 const lineWidth = 1.5
 const hintText = computed(() => props.hint ?? (props.variant === "chart"
     ? "Arrastra sobre la gráfica para acercar un tramo; doble clic para verlo todo"
-    : "Arrastra la ventana o sus bordes; Ctrl + rueda para acercar"))
+    : "Arrastra la ventana o sus bordes o usa la rueda; Ctrl + rueda para acercar"))
 const strip = ref<HTMLElement | null>(null)
 const plot = ref<HTMLElement | null>(null)
 
@@ -301,6 +301,8 @@ const onWheel = createRangeWheelHandler({
     setRange: set,
     get minSize() { return props.minSize },
     pxPerPoint,
+    // La barra es pequeña: la rueda normal también desplaza la ventana
+    verticalPans: true,
     anchorAt: (e) => {
         const { start, end } = model.value
         return end > start ? (pointAt(e.clientX) - start) / (end - start) : 0.5

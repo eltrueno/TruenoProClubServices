@@ -153,8 +153,8 @@
                     </div>
                 </div>
 
-                <!-- Ctrl + rueda (o pellizcar el trackpad): zoom; rueda horizontal: mover; con zoom, arrastrar con el ratón: mover -->
-                <div ref="mainChartContainer" class="w-full h-[280px] sm:h-[300px] relative" v-on="zoomPan.listeners">
+                <!-- Ctrl + rueda (o pellizcar el trackpad / la pantalla): zoom; rueda horizontal: mover; con zoom, arrastrar con el ratón: mover -->
+                <div ref="mainChartContainer" class="w-full h-[280px] sm:h-[300px] relative touch-pan-y" v-on="zoomPan.listeners">
                     <Line
                         ref="evolutionChart"
                         v-if="evolutionChartData"
@@ -193,16 +193,17 @@
 
                 </div>
 
-                <!-- Zoom y desplazamiento: minigráfica con todos sus partidos y la ventana de lo que se ve arriba -->
+                <!-- Zoom y desplazamiento: barra con todos sus partidos y la ventana de lo que se ve arriba -->
                 <ChartRangeNavigator
                     v-if="showNavigator && viewRange"
+                    variant="controls"
                     class="mt-3 sm:mt-4"
                     :model-value="viewRange"
-                    :values="overviewValues"
+                    :count="evolutionMatches.length"
                     :min-size="MIN_VISIBLE_MATCHES"
                     :value-text="navigatorValueText"
                     :unit="{ one: 'partido', many: 'partidos' }"
-                    hint="Arrastra la ventana o sus bordes, o usa Ctrl + rueda sobre la gráfica"
+                    hint="Arrastra la ventana o sus bordes, o usa la rueda sobre ella; Ctrl + rueda sobre la gráfica para acercar"
                     label="Zoom de la gráfica de evolución"
                     start-label="Primer partido de la gráfica"
                     end-label="Último partido de la gráfica"
@@ -292,7 +293,10 @@
                         <div v-for="h in highlightStats" :key="h.label"
                              class="dark:bg-base-100 bg-base-300 border border-base-content/5 rounded-xl p-3 flex flex-col items-center text-center gap-1 group hover:-translate-y-0.5 hover:shadow-md hover:border-primary/25 transition-all duration-300 relative"
                              :class="{ 'cursor-pointer hover:border-primary/40': h.matchId }">
-                            <span class="text-xl group-hover:scale-110 transition-transform duration-300">{{ h.icon }}</span>
+                            <span class="size-9 rounded-full bg-primary/10 text-primary grid place-items-center group-hover:scale-110 transition-transform duration-300 motion-reduce:transition-none">
+                                <svg v-if="typeof h.icon === 'string'" class="size-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="h.icon"></svg>
+                                <component :is="h.icon" v-else class="size-5" />
+                            </span>
                             <span class="text-base-content/50 uppercase text-[0.65rem] lg:text-[0.7rem] font-black tracking-widest leading-tight">{{ h.label }}</span>
                             <AnimatedNumber class="text-lg font-black mt-0.5" :value="h.value" :decimals="h.decimals ?? 0" />
                             
@@ -595,6 +599,8 @@
     import { useChartExternalTooltip } from '@/composables/useChartExternalTooltip'
     import MatchChartTooltip from '@/components/player/detail/charts/MatchChartTooltip.vue'
     import ChartRangeNavigator from '@/components/ui/ChartRangeNavigator.vue'
+    import { ACHIEVEMENT_CATEGORY_ICONS, ACHIEVEMENT_ICONS } from '@trueno-proclub-services/shared'
+    import SoccerBallIcon from '@/icons/soccer-ball.svg?component'
     import { fullRange, lastRange } from '@/lib/chartRange'
     import { useChartWindow, type ChartWindowPreset } from '@/composables/useChartWindow'
     import { useChartZoomPan } from '@/composables/useChartZoomPan'
@@ -843,6 +849,18 @@
     // ═══════════════════════════════════════════
     // ── MEJORES REGISTROS (Highlight Stats) ──
     // ═══════════════════════════════════════════
+    /** Iconos de "Mejores registros": los Heroicons de los logros (en relleno) y, para goles, el balón */
+    const HL_ICONS = {
+        star: ACHIEVEMENT_CATEGORY_ICONS.performance.solid,  // star
+        goals: SoccerBallIcon,
+        assists: ACHIEVEMENT_CATEGORY_ICONS.team.solid,      // user-group
+        streak: ACHIEVEMENT_CATEGORY_ICONS.streaks.solid,    // bolt
+        ga: ACHIEVEMENT_ICONS.rocket.solid,                  // rocket-launch
+        mvp: ACHIEVEMENT_CATEGORY_ICONS.collection.solid,    // trophy
+        average: ACHIEVEMENT_CATEGORY_ICONS.expert.solid,    // sparkles
+        perMatch: ACHIEVEMENT_ICONS.target.solid,            // viewfinder-circle
+    }
+
     const highlightStats = computed(() => {
         const matches = filteredMatchesWithPlayer.value
         if (!matches.length) return []
@@ -880,14 +898,14 @@
             else tmpStreak = 0
         }
         return [
-            { icon: '⭐', label: 'Mejor Valoración', value: bestRating, decimals: 1, sub: `vs ${bestRatingRival}`, matchId: bestRatingMatchId },
-            { icon: '⚽', label: 'Máx. Goles', value: bestGoals, sub: `vs ${bestGoalsRival}`, matchId: bestGoalsMatchId },
-            { icon: '🅰️', label: 'Máx. Asistencias', value: bestAssists, sub: `vs ${bestAssistsRival}`, matchId: bestAssistsMatchId },
-            { icon: '🔥', label: 'Racha Victorias', value: currentStreak > 0 ? `${currentStreak} actual` : `${maxStreak} mejor`, sub: currentStreak > 0 ? 'Racha activa' : 'Récord histórico' },
-            { icon: '💥', label: 'Máx. G+A', value: bestGA, sub: `vs ${bestGARival}`, matchId: bestGAMatchId },
-            { icon: '🏅', label: 'MVPs Totales', value: totalMvp, sub: `${matches.length} partidos` },
-            { icon: '📊', label: 'Media Valoración', value: props.stats?.ratingAve ?? 0, decimals: 2, sub: 'Histórica' },
-            { icon: '🎯', label: 'G+A / Partido', value: props.stats?.goalsPlusAssistsPerMatch ?? 0, decimals: 2, sub: 'Media por partido' },
+            { icon: HL_ICONS.star, label: 'Mejor Valoración', value: bestRating, decimals: 1, sub: `vs ${bestRatingRival}`, matchId: bestRatingMatchId },
+            { icon: HL_ICONS.goals, label: 'Máx. Goles', value: bestGoals, sub: `vs ${bestGoalsRival}`, matchId: bestGoalsMatchId },
+            { icon: HL_ICONS.assists, label: 'Máx. Asistencias', value: bestAssists, sub: `vs ${bestAssistsRival}`, matchId: bestAssistsMatchId },
+            { icon: HL_ICONS.streak, label: 'Racha Victorias', value: currentStreak > 0 ? `${currentStreak} actual` : `${maxStreak} mejor`, sub: currentStreak > 0 ? 'Racha activa' : 'Récord histórico' },
+            { icon: HL_ICONS.ga, label: 'Máx. G+A', value: bestGA, sub: `vs ${bestGARival}`, matchId: bestGAMatchId },
+            { icon: HL_ICONS.mvp, label: 'MVPs Totales', value: totalMvp, sub: `${matches.length} partidos` },
+            { icon: HL_ICONS.average, label: 'Media Valoración', value: props.stats?.ratingAve ?? 0, decimals: 2, sub: 'Histórica' },
+            { icon: HL_ICONS.perMatch, label: 'G+A / Partido', value: props.stats?.goalsPlusAssistsPerMatch ?? 0, decimals: 2, sub: 'Media por partido' },
         ]
     })
 
@@ -929,9 +947,6 @@
     // ═══════════════════════════════════════
     // ── EVOLUCIÓN (Line Chart) ──
     // ═══════════════════════════════════════
-    /** La métrica elegida en todos los partidos, para la minigráfica del navegador */
-    const overviewValues = computed(() => evolutionMatches.value.map(m => getMetricValue(findPlayer(m), evolutionMetric.value)))
-
     const navigatorValueText = (index: number) => {
         const m = evolutionMatches.value[index]
         return m ? `Partido ${index + 1} de ${evolutionMatches.value.length}: ${formatDate(m.timestamp)} contra ${getRivalName(m)}` : ''
