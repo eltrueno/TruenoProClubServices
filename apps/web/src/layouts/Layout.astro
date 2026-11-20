@@ -4,49 +4,24 @@ import Navbar from "../components/layout/Navbar.astro";
 import Mainheader from "../components/layout/Mainheader.astro";
 import Footer from "../components/layout/Footer.astro";
 import { ClientRouter } from "astro:transitions";
+import SeoHead from "../components/layout/SeoHead.astro";
 import { CLUB } from "../config/club";
+import type { BreadcrumbItem, JsonLd } from "../lib/structuredData";
 
 interface Props {
 	title: string;
 	description: string;
 	isindex: boolean;
-	/** Migas de pan para Google (BreadcrumbList): las páginas tras "Inicio", p. ej. [{ name: "Plantilla", path: "/plantilla" }] */
-	breadcrumb?: { name: string; path: string }[];
-	/** Datos estructurados propios de la página (schema.org), además de las migas */
-	jsonLd?: Record<string, unknown>[];
+	/** Migas de pan para Google: las páginas tras "Inicio", p. ej. [{ name: "Plantilla", path: "/plantilla" }] */
+	breadcrumb?: BreadcrumbItem[];
+	/** Datos estructurados propios de la página (ver lib/structuredData.ts) */
+	jsonLd?: JsonLd[];
+	/** Imagen para compartir de la página (ver pages/og/[page].png.ts) y su texto alternativo */
+	ogImage?: string;
+	ogImageAlt?: string;
 }
 
-const { title, isindex, description, breadcrumb, jsonLd = [] } = Astro.props;
-
-// URL limpia, la misma que el sitemap: con build.format "file" Astro da /plantilla.html y
-// /index.html, que también se sirven (Pages); la canónica dice a Google cuál es la buena
-const pathname = Astro.url.pathname
-	.replace(/\/index\.html$/, "/")
-	.replace(/\.html$/, "")
-	.replace(/\/+$/, "");
-const canonicalUrl = `${CLUB.siteUrl}${pathname || "/"}`;
-// Imagen de las vistas previas de enlaces: la propia del club o la generada en el build (pages/og.png.ts)
-const ogImage = CLUB.ogImage ?? "/og.png";
-const ogImageUrl = ogImage.startsWith("http") ? ogImage : `${CLUB.siteUrl}${ogImage}`;
-
-// Datos estructurados (JSON-LD): lo que Google lee para entender la página y enseñarla mejor
-const structuredData = [
-	...jsonLd,
-	...(breadcrumb?.length
-		? [{
-			"@context": "https://schema.org",
-			"@type": "BreadcrumbList",
-			itemListElement: [{ name: "Inicio", path: "/" }, ...breadcrumb].map((item, i) => ({
-				"@type": "ListItem",
-				position: i + 1,
-				name: item.name,
-				item: `${CLUB.siteUrl}${item.path}`,
-			})),
-		}]
-		: []),
-];
-// Dentro de <script>: que un "</" en los datos no pueda cerrarlo
-const structuredDataJson = structuredData.length ? JSON.stringify(structuredData).replace(/</g, "\\u003c") : "";
+const { title, isindex, description, breadcrumb, jsonLd, ogImage, ogImageAlt } = Astro.props;
 
 // Variables del club por tema: colores de marca y, si el club los define, sus fondos (ver config/club.ts)
 const c = CLUB.colors;
@@ -64,14 +39,6 @@ const themeVars = (theme: "light" | "dark") => {
 	].filter(Boolean).join("");
 };
 const clubThemeCss = `:root[data-theme="light"]{${themeVars("light")}}:root[data-theme="dark"]{${themeVars("dark")}}`;
-let twitterDomain = "";
-try {
-	if (CLUB.siteUrl) {
-		twitterDomain = new URL(CLUB.siteUrl).hostname;
-	}
-} catch {
-	twitterDomain = "";
-}
 ---
 
 <!doctype html>
@@ -80,11 +47,10 @@ try {
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="icon" type={CLUB.logo.endsWith(".svg") ? "image/svg+xml" : "image/webp"} href={CLUB.logo} />
-		<link rel="canonical" href={canonicalUrl} />
 		<meta name="generator" content={Astro.generator} />
 		<meta name="author" content="Raúl Jiménez 'el_trueno'" />
-		<meta name="description" content={description} />
 		<title>{title}</title>
+		<SeoHead title={title} description={description} breadcrumb={breadcrumb} jsonLd={jsonLd} ogImage={ogImage} ogImageAlt={ogImageAlt} />
 		<ClientRouter />
 		<script is:inline>
 			const applyTheme = () => {
@@ -113,34 +79,6 @@ try {
 		     única fuente de verdad, así cada build sale con los suyos. La
 		     especificidad de :root[data-theme] gana a la que genera DaisyUI. -->
 		<style set:html={clubThemeCss}></style>
-
-		<!-- Facebook / Open Graph Meta Tags -->
-		<meta property="og:type" content="website" />
-		<meta property="og:title" content={title} />
-		<meta property="og:description" content={description} />
-		<meta property="og:url" content={canonicalUrl} />
-		<meta property="og:site_name" content={CLUB.name} />
-		<meta property="og:image" content={ogImageUrl} />
-		{!CLUB.ogImage && (
-			<>
-				<meta property="og:image:type" content="image/png" />
-				<meta property="og:image:width" content="1200" />
-				<meta property="og:image:height" content="630" />
-			</>
-		)}
-		<meta property="og:image:alt" content={`Escudo de ${CLUB.name}`} />
-
-		<!-- Twitter Meta Tags -->
-		<meta name="twitter:card" content="summary_large_image" />
-		{twitterDomain && <meta name="twitter:domain" content={twitterDomain} />}
-		<meta name="twitter:site" content="@elh_trueno" />
-		<meta name="twitter:creator" content="@elh_trueno" />
-		<meta name="twitter:title" content={title} />
-		<meta name="twitter:description" content={description} />
-		<meta name="twitter:url" content={canonicalUrl} />
-		<meta name="twitter:image" content={ogImageUrl} />
-
-		{structuredDataJson && <script type="application/ld+json" set:html={structuredDataJson} />}
 
 		<slot name="metadata" />
 	</head>
