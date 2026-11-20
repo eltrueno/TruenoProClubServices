@@ -3,8 +3,8 @@
 
         <!-- ═══ EVOLUCIÓN (Line Chart) ═══ -->
         <div ref="chartCard" class="reveal card bg-base-200 shadow-md relative">
-            <div class="card-body p-6">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+            <div class="card-body p-4 sm:p-6">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
                     <h2 class="card-title text-xl font-black uppercase border-l-4 border-primary pl-4">Evolución</h2>
 
                     <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto sm:justify-end">
@@ -126,44 +126,47 @@
                 </div>
 
                 <!-- Date Range and Zoom Filter Controls -->
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-3 dark:bg-base-100/40 bg-base-300/30 border border-base-content/5 rounded-2xl mb-6 sm:mx-0">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-2 sm:p-3 dark:bg-base-100/40 bg-base-300/30 border border-base-content/5 rounded-2xl mb-4 sm:mb-6">
                     <div class="flex flex-wrap items-center gap-3 text-xs w-full md:w-auto">
                         <span class="font-black uppercase tracking-wider text-base-content/50 flex items-center gap-1">
                         Rango de fechas
                         </span>
 
                         <div class="relative w-full md:w-[260px]">
-                            <DateRangePicker v-model="dateFilter" class="text-xs font-bold" />
+                            <DateRangePicker :model-value="dateFilter" class="text-xs font-bold" @update:model-value="setDates" />
                         </div>
                     </div>
 
-                    <!-- Quick Presets -->
-                    <div class="join dark:bg-base-100 bg-base-300 p-1 rounded-2xl w-full md:w-auto justify-around md:justify-start">
+                    <!-- Atajos (se empieza por los últimos 20) -->
+                    <div ref="presetBar" class="join dark:bg-base-100 bg-base-300 p-1 rounded-2xl w-full md:w-auto">
                         <button
-                            v-for="preset in [
-                                { val: 'all', label: 'Todo' },
-                                { val: 5, label: 'Últ. 5' },
-                                { val: 10, label: 'Últ. 10' },
-                                { val: 20, label: 'Últ. 20' }
-                            ]"
-                            :key="preset.val"
-                            @click="setQuickRange(preset.val as any)"
-                            class="btn btn-xs join-item capitalize border-none px-4 lg:px-6"
-                            :class="activeQuickRange === preset.val ? 'btn-primary shadow-sm' : 'btn-ghost'"
+                            v-for="preset in EVOLUTION_PRESETS"
+                            :key="preset.key"
+                            type="button"
+                            @click="setPreset(preset.key)"
+                            class="btn btn-xs join-item border-none flex-1 md:flex-none px-1.5 sm:px-3 lg:px-5"
+                            :class="activePreset === preset.key ? 'btn-primary shadow-sm' : 'btn-ghost'"
+                            :aria-pressed="activePreset === preset.key"
                         >
                             {{ preset.label }}
                         </button>
                     </div>
                 </div>
 
-                <div ref="mainChartContainer" class="w-full h-[260px] sm:h-[300px] relative">
+                <!-- Ctrl + rueda (o pellizcar el trackpad): zoom; rueda horizontal: mover; con zoom, arrastrar con el ratón: mover -->
+                <div ref="mainChartContainer" class="w-full h-[280px] sm:h-[300px] relative" v-on="zoomPan.listeners">
                     <Line
                         ref="evolutionChart"
                         v-if="evolutionChartData"
                         :data="evolutionChartData"
                         :options="evolutionOptions"
+                        :update-mode="chartUpdateMode"
                         @click="handleMainChartClick"
                     />
+                    <div v-else-if="evolutionMatches.length" class="h-full grid place-content-center justify-items-center gap-3 text-center">
+                        <p class="text-sm font-medium text-base-content/75">No hay partidos suyos entre esas fechas con estos filtros.</p>
+                        <button type="button" class="btn btn-sm btn-ghost" @click="showWholeChartAndFocus">Ver todas las fechas</button>
+                    </div>
 
                     <MatchChartTooltip
                         v-if="activeTooltipMatch"
@@ -189,6 +192,22 @@
                     />
 
                 </div>
+
+                <!-- Zoom y desplazamiento: minigráfica con todos sus partidos y la ventana de lo que se ve arriba -->
+                <ChartRangeNavigator
+                    v-if="showNavigator && viewRange"
+                    class="mt-3 sm:mt-4"
+                    :model-value="viewRange"
+                    :values="overviewValues"
+                    :min-size="MIN_VISIBLE_MATCHES"
+                    :value-text="navigatorValueText"
+                    :unit="{ one: 'partido', many: 'partidos' }"
+                    hint="Arrastra la ventana o sus bordes, o usa Ctrl + rueda sobre la gráfica"
+                    label="Zoom de la gráfica de evolución"
+                    start-label="Primer partido de la gráfica"
+                    end-label="Último partido de la gráfica"
+                    @update:model-value="setViewRange"
+                />
             </div>
         </div>
 
@@ -575,6 +594,10 @@
 
     import { useChartExternalTooltip } from '@/composables/useChartExternalTooltip'
     import MatchChartTooltip from '@/components/player/detail/charts/MatchChartTooltip.vue'
+    import ChartRangeNavigator from '@/components/ui/ChartRangeNavigator.vue'
+    import { fullRange, lastRange } from '@/lib/chartRange'
+    import { useChartWindow, type ChartWindowPreset } from '@/composables/useChartWindow'
+    import { useChartZoomPan } from '@/composables/useChartZoomPan'
     const mainChartContainer = ref<HTMLElement | null>(null)
     const { tooltip, externalTooltipHandler, setHoveringTooltip, pinTooltip, closeTooltip } = useChartExternalTooltip()
 
@@ -606,16 +629,6 @@
         return props.player.mostPlayedPosition === 'goalkeeper' || 
             (props.player.playedPositions && props.player.playedPositions['goalkeeper'] > 0)
     })
-
-    // Filtro de fechas del gráfico (DateRangePicker)
-    const dateFilter = ref({
-        startDate: '',
-        endDate: ''
-    })
-
-
-
-    const activeQuickRange = ref<'all' | 5 | 10 | 20>('all')
 
     const isMobile = ref(false)
     const updateMobile = () => { isMobile.value = window.innerWidth < 640 }
@@ -683,6 +696,8 @@
     const handleMainChartClick = (event: MouseEvent) => {
         const chartInstance = evolutionChart.value?.chart
         if (!chartInstance) return
+        // Soltar después de arrastrar para mover la gráfica no es pulsar un punto
+        if (zoomPan.consumeDragClick()) return
 
         const elements = chartInstance.getElementsAtEventForMode(event, 'index', { intersect: false }, true)
         if (!elements || elements.length === 0) return
@@ -715,6 +730,12 @@
         const month = String(date.getMonth() + 1).padStart(2, '0')
         const year = date.getFullYear()
         return `${day}/${month}/${year}`
+    }
+
+    /** HH:mm */
+    const formatTime = (timestamp: number) => {
+        const date = new Date(timestamp * 1000)
+        return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
     }
 
     const formatToDatePicker = (timestamp: number) => {
@@ -762,116 +783,62 @@
     })
 
     // ═══════════════════════════════════════════
-    // ── CHART DATE FILTERING ──
+    // ── VENTANA DEL GRÁFICO (zoom, desplazamiento, fechas y atajos) ──
     // ═══════════════════════════════════════════
-    const minMatchDateStr = computed(() => {
-        if (!filteredMatches.value.length) return ''
-        const timestamps = filteredMatches.value.map(m => m.timestamp)
-        return formatToDatePicker(Math.min(...timestamps))
+    /** Lo mínimo que se ve de una vez al acercar */
+    const MIN_VISIBLE_MATCHES = 3
+
+    /** Partidos que jugó (con los filtros de tipo y posición), del más antiguo al más nuevo: la base del gráfico y del navegador */
+    const evolutionMatches = computed(() => [...filteredMatchesWithPlayer.value].sort((a, b) => a.timestamp - b.timestamp))
+    const evolutionTimestamps = computed(() => evolutionMatches.value.map(m => m.timestamp))
+
+    /** Atajos de encima del gráfico. Se empieza por los últimos 20 */
+    const EVOLUTION_PRESETS: ChartWindowPreset[] = [
+        { key: 'all', label: 'Todo', range: (ts) => fullRange(ts.length) },
+        { key: 5, label: 'Últ. 5', range: (ts) => lastRange(ts.length, 5) },
+        { key: 10, label: 'Últ. 10', range: (ts) => lastRange(ts.length, 10) },
+        { key: 20, label: 'Últ. 20', range: (ts) => lastRange(ts.length, 20) },
+    ]
+
+    // viewRange: qué partidos se ven (índices de evolutionMatches); dateFilter va sincronizado con ella
+    const {
+        range: viewRange, setRange: setViewRange, dateFilter, setDates, updateMode: chartUpdateMode,
+        animateNextUpdate, activePreset, setPreset, showAll: showWholeChart, slice: sliceVisible,
+    } = useChartWindow({ timestamps: evolutionTimestamps, presets: EVOLUTION_PRESETS, initialPreset: 20 })
+
+    const chartMatchesOldestFirst = computed(() => sliceVisible(evolutionMatches.value))
+
+    /** Con pocos partidos no hay nada que acercar */
+    const showNavigator = computed(() => evolutionMatches.value.length >= 6)
+
+    // Al cambiar de métrica, la gráfica sí se anima
+    watch(evolutionMetric, animateNextUpdate)
+
+    // El tooltip (fijado o no) apunta a un partido por su posición en la gráfica, que ya es otro
+    watch(viewRange, () => {
+        if (tooltip.value.visible) closeTooltip()
+        // Un cambio sin animación no corta la animación que esté en marcha (p. ej. la de cambiar de
+        // métrica): al acabar dejaría los puntos donde iban antes. Se corta aquí, antes de repintar
+        if (chartUpdateMode.value === 'none') evolutionChart.value?.chart?.stop()
     })
 
-    const maxMatchDateStr = computed(() => {
-        if (!filteredMatches.value.length) return ''
-        const timestamps = filteredMatches.value.map(m => m.timestamp)
-        return formatToDatePicker(Math.max(...timestamps))
-    })
-
-    const chartFilteredMatches = computed(() => {
-        const matches = filteredMatches.value
-        if (!matches.length) return []
-
-        const parseDatePickerDate = (dateStr: string) => {
-            if (!dateStr) return null
-            const parts = dateStr.split('/')
-            if (parts.length === 3) {
-                const d = Number(parts[0])
-                const m = Number(parts[1])
-                const y = Number(parts[2])
-                return new Date(y, m - 1, d)
-            }
-            return null
-        }
-
-        const start = parseDatePickerDate(dateFilter.value.startDate)
-        const end = parseDatePickerDate(dateFilter.value.endDate)
-        if (end) {
-            end.setHours(23, 59, 59, 999)
-        }
-
-        return matches.filter(m => {
-            const matchDate = new Date(m.timestamp * 1000)
-            if (start && matchDate < start) return false
-            if (end && matchDate > end) return false
-            return true
-        })
-    })
-
-    const chartMatchesOldestFirst = computed(() => {
-        return [...chartFilteredMatches.value].reverse().filter(m => !!findPlayer(m)?.played)
-    })
-
-    const setQuickRange = (range: 'all' | 5 | 10 | 20) => {
-        activeQuickRange.value = range
-        if (!filteredMatches.value.length) return
-
-        if (range === 'all') {
-            dateFilter.value = {
-                startDate: minMatchDateStr.value,
-                endDate: maxMatchDateStr.value
-            }
-        } else {
-            const slice = filteredMatches.value.slice(0, range)
-            if (slice.length) {
-                const timestamps = slice.map(m => m.timestamp)
-                const minT = Math.min(...timestamps)
-                const maxT = Math.max(...timestamps)
-                dateFilter.value = {
-                    startDate: formatToDatePicker(minT),
-                    endDate: formatToDatePicker(maxT)
-                }
-            }
-        }
+    // "Ver todas las fechas" desaparece al pulsarlo: el foco pasa al atajo que queda marcado
+    const presetBar = ref<HTMLElement | null>(null)
+    const showWholeChartAndFocus = async () => {
+        showWholeChart()
+        await nextTick()
+        presetBar.value?.querySelector<HTMLElement>('[aria-pressed="true"]')?.focus()
     }
 
-    const checkActivePreset = () => {
-        if (!filteredMatches.value.length) return
-
-        if (dateFilter.value.startDate === minMatchDateStr.value && dateFilter.value.endDate === maxMatchDateStr.value) {
-            activeQuickRange.value = 'all'
-            return
-        }
-
-        for (const range of [5, 10, 20] as const) {
-            const slice = filteredMatches.value.slice(0, range)
-            if (slice.length) {
-                const timestamps = slice.map(m => m.timestamp)
-                const minStr = formatToDatePicker(Math.min(...timestamps))
-                const maxStr = formatToDatePicker(Math.max(...timestamps))
-                if (dateFilter.value.startDate === minStr && dateFilter.value.endDate === maxStr) {
-                    activeQuickRange.value = range
-                    return
-                }
-            }
-        }
-
-        activeQuickRange.value = '' as any
-    }
-
-    // Watch filteredMatches to set default dates
-    watch(filteredMatches, (newMatches) => {
-        if (newMatches && newMatches.length) {
-            dateFilter.value = {
-                startDate: minMatchDateStr.value,
-                endDate: maxMatchDateStr.value
-            }
-            activeQuickRange.value = 'all'
-        }
-    }, { immediate: true })
-
-    // Watch dates to synchronize quick range active state
-    watch(() => dateFilter.value, () => {
-        checkActivePreset()
-    }, { deep: true })
+    // Rueda y arrastre sobre la propia gráfica
+    const zoomPan = useChartZoomPan({
+        chart: () => evolutionChart.value?.chart,
+        range: viewRange,
+        count: () => evolutionMatches.value.length,
+        setRange: setViewRange,
+        minSize: MIN_VISIBLE_MATCHES,
+        enabled: () => showNavigator.value,
+    })
 
     // ═══════════════════════════════════════════
     // ── MEJORES REGISTROS (Highlight Stats) ──
@@ -962,12 +929,24 @@
     // ═══════════════════════════════════════
     // ── EVOLUCIÓN (Line Chart) ──
     // ═══════════════════════════════════════
+    /** La métrica elegida en todos los partidos, para la minigráfica del navegador */
+    const overviewValues = computed(() => evolutionMatches.value.map(m => getMetricValue(findPlayer(m), evolutionMetric.value)))
+
+    const navigatorValueText = (index: number) => {
+        const m = evolutionMatches.value[index]
+        return m ? `Partido ${index + 1} de ${evolutionMatches.value.length}: ${formatDate(m.timestamp)} contra ${getRivalName(m)}` : ''
+    }
+
     const evolutionChartData = computed(() => {
         const matches = chartMatchesOldestFirst.value
         if (matches.length === 0) return null
 
         const dataPoints: number[] = []
-        const labels: string[] = []
+        const labels: (string | string[])[] = []
+        // Con zoom se ven varios partidos del mismo día y las fechas se repetirían: debajo va la hora
+        const withTime = matches.length <= 30 && new Set(matches.map(m => formatDate(m.timestamp))).size < matches.length
+        // En el móvil sin el año: cabe más y no hay que girar las etiquetas (el tooltip lleva la fecha entera)
+        const day = (ts: number) => (isMobile.value ? formatDate(ts).slice(0, 5) : formatDate(ts))
 
         matches.forEach((m) => {
             const p = findPlayer(m)
@@ -976,10 +955,13 @@
             const val = getMetricValue(p, evolutionMetric.value)
 
             dataPoints.push(val)
-            labels.push(formatDate(m.timestamp))
+            labels.push(withTime ? [day(m.timestamp), formatTime(m.timestamp)] : day(m.timestamp))
         })
 
         const avg = dataPoints.length > 0 ? dataPoints.reduce((a, b) => a + b, 0) / dataPoints.length : 0
+        // Con muchos partidos a la vista los puntos se amontonan: más pequeños (al pasar por encima se ven igual)
+        const roomy = isMobile.value ? 0.45 : 1 // en el móvil caben la mitad
+        const dense = dataPoints.length > 90 * roomy ? 2 : dataPoints.length > 45 * roomy ? 1 : 0
 
         return {
             labels,
@@ -989,10 +971,10 @@
                     data: dataPoints,
                     borderColor: CLUB.colors.primary,
                     backgroundColor: hexToRgba(CLUB.colors.primary, 0.08),
-                    borderWidth: 3,
+                    borderWidth: dense === 2 ? 2 : 3,
                     pointBackgroundColor: CLUB.colors.primary,
                     pointBorderColor: '#fff',
-                    pointRadius: 4,
+                    pointRadius: [4, 2.5, 0][dense],
                     pointHoverRadius: 6,
                     fill: true,
                     tension: 0.3
@@ -1030,7 +1012,7 @@
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         layout: {
-            padding: { left: 4, right: 4, top: 4, bottom: 0 }
+            padding: isMobile.value ? { left: 0, right: 2, top: 4, bottom: 0 } : { left: 4, right: 4, top: 4, bottom: 0 }
         },
         onHover: (event, elements) => {
             if (event.native && event.native.target) {
@@ -1049,15 +1031,19 @@
                     font: { size: 10, weight: 'bold' },
                     maxTicksLimit: isMobile.value ? 5 : 10,
                     autoSkipPadding: 8,
+                    // Sin girar: giradas, la primera etiqueta se come el ancho y el alto de la gráfica (en el móvil, casi la mitad).
+                    // "inner": la primera y la última no se salen por los lados (y no hace falta dejarles hueco)
+                    maxRotation: 0,
+                    align: 'inner',
                 }
             },
             y: {
                 grid: { color: 'rgba(166, 173, 187, 0.08)' },
                 ticks: {
                     color: 'rgba(166, 173, 187, 0.5)',
-                    padding: 4,             
-                    maxTicksLimit: 6, 
-                    font: { size: 11 },
+                    padding: isMobile.value ? 2 : 4,
+                    maxTicksLimit: 6,
+                    font: { size: isMobile.value ? 10 : 11 },
                     stepSize: evolutionMetric.value === 'rating' ? 1 : undefined,
                     callback: (value) => {
                         const m = evolutionMetric.value
@@ -1096,7 +1082,7 @@
         const average = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0
 
         return {
-            date: formatDate(m.timestamp),
+            date: `${formatDate(m.timestamp)} · ${formatTime(m.timestamp)}`,
             rival: getRivalName(m),
             position: translatePosition(p.position),
             result: m.result,
