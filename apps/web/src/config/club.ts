@@ -49,15 +49,29 @@ export interface ClubData {
     /** Fondos propios por tema; sin ellos, los de global.css */
     surfaces?: { light?: ClubThemeSurfaces; dark?: ClubThemeSurfaces };
     socials: ClubSocials;
-    /** Textos "Origen" y "Objetivo" de la portada, con el nombre de cada club. Sin ellos no sale
-     *  esa sección (nunca la de otro club: confunde y es texto duplicado para Google) */
-    story?: { origin: string; goal: string };
+    /** "Nuestra historia" de la portada: los pasos de la línea de tiempo (el último, "Hoy", lo pone la
+     *  portada con los datos del club) y el objetivo. Sin ella no sale esa sección */
+    story?: ClubStory;
+}
+
+export interface ClubStory {
+    /** Pasos de la línea de tiempo: etiqueta corta (año, "Identidad"…), título y texto */
+    steps: { kicker: string; title: string; text: string }[];
+    /** El banner del objetivo, sobre la foto del estadio */
+    goal: { kicker: string; title: string; text: string };
 }
 
 /** La historia de la portada: la misma en todos los clubes de la comunidad, con el nombre de cada uno */
-const clubStory = (name: string) => ({
-    origin: `El ${name} nació en FIFA 22 y nuestra identidad quedó marcada desde el principio. Elegimos al Wrexham AFC para representarnos, usando aquella mítica camiseta azul con el patrocinio de TikTok, que nos acompaña en cada directo. Desde entonces, el equipo no ha parado de crecer y el resto ya es historia. Si buscas un sitio donde disfrutar de Clubes Pro de verdad, con buen ambiente y nivel, has llegado al lugar indicado.`,
-    goal: `Tenemos un objetivo claro: visitar el estadio del Wrexham. Queremos estar allí, en las gradas, y vivir desde dentro toda la magia de este equipo que nos dio nuestra identidad en el ${name}. Lo mejor de todo es que este viaje no sería posible sin vosotros, sois los que hacéis que el club siga vivo y que este sueño tenga sentido. ¿Lo conseguiremos? Estoy convencido de que sí.`,
+const clubStory = (name: string): ClubStory => ({
+    steps: [
+        { kicker: "FIFA 22", title: `Nace el ${name}`, text: "Un club de Clubes Pro para la comunidad de Mr Casemuro, en directo desde el primer partido." },
+        { kicker: "Identidad", title: "Wrexham AFC", text: "Elegimos al Wrexham y aquella mítica camiseta azul con el patrocinio de TikTok, que nos acompaña en cada directo." },
+    ],
+    goal: {
+        kicker: "Próxima parada",
+        title: "El estadio del Wrexham",
+        text: "Queremos estar allí, en las gradas, y vivir desde dentro la magia del equipo que nos dio nuestra identidad. Este viaje no sería posible sin vosotros, que hacéis que el club siga vivo. ¿Lo conseguiremos? Estamos convencidos de que sí.",
+    },
 });
 
 export interface ClubConfig extends ClubData {

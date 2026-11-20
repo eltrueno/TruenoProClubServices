@@ -60,18 +60,19 @@ const navTheme = isBase ? "nav-base bg-base-300 dark:bg-base-100 text-base-conte
 
     <!-- w-max + nowrap: al ir en absoluto (y en el index centrado con right:50%) solo tendría media pantalla
          de ancho disponible y el último botón saltaba de línea por debajo de la nav -->
-    <div id="navbar-links" class="space-x-1 absolute w-max flex flex-nowrap" class:list={[{ "links-anim": isindex }, { "right-(--links-right)": !isindex }]}>
+    <div id="navbar-links" class="gap-0.5 sm:gap-1 absolute w-max flex flex-nowrap" class:list={[{ "links-anim": isindex }, { "right-(--links-right)": !isindex }]}>
         {links.map((link) => {
             const Icon = link.icon;
             return (
                 <a
                     href={link.href}
-                    class="btn btn-ghost uppercase"
+                    class="btn btn-ghost uppercase max-sm:px-2.5"
                     class:list={[{ "hidden md:inline-flex": link.homeOnly, "nav-active": isActive(link.href) }]}
                     aria-label={link.aria}
                 >
                     <Icon class="w-6 h-6" />
-                    <!-- Texto desde lg: con los cuatro en una línea, por debajo de ~880px pisarían el botón de cuenta -->
+                    <!-- Texto desde lg: con los cuatro en una línea, por debajo de ~880px pisarían el botón de cuenta.
+                         En móvil, botones más estrechos: a ~340px los tres iconos pisaban el escudo o la cuenta -->
                     <span class="hidden lg:inline">{link.label}</span>
                 </a>
             );

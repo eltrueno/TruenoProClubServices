@@ -1,0 +1,83 @@
+---
+/**
+ * Fondo decorativo de la portada (solo de la portada): manchas de luz del color del club que se
+ * mueven despacio, las líneas de un campo que se desplazan con el scroll y un punteado fino.
+ * Envuelve el contenido: <HomeBackdrop> ... </HomeBackdrop>. Todo es aria-hidden y sin eventos.
+ * Con prefers-reduced-motion se queda quieto.
+ */
+---
+
+<div class="relative isolate overflow-x-clip">
+	<div aria-hidden="true" class="backdrop pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+		<div class="glow glow-1"></div>
+		<div class="glow glow-2"></div>
+		<div class="glow glow-3"></div>
+		<div class="glow glow-4"></div>
+
+		<svg class="pitch absolute left-1/2 w-[150%] max-w-[1900px] text-primary" viewBox="0 0 1050 680" fill="none" stroke="currentColor" stroke-width="2">
+			<rect x="5" y="5" width="1040" height="670" rx="6" />
+			<line x1="525" y1="5" x2="525" y2="675" />
+			<circle cx="525" cy="340" r="92" />
+			<circle cx="525" cy="340" r="4" fill="currentColor" />
+			<rect x="5" y="138" width="165" height="404" />
+			<rect x="5" y="248" width="55" height="184" />
+			<rect x="880" y="138" width="165" height="404" />
+			<rect x="990" y="248" width="55" height="184" />
+			<path d="M170 272a92 92 0 0 1 0 136M880 272a92 92 0 0 0 0 136" />
+		</svg>
+
+		<div class="dots absolute inset-0"></div>
+	</div>
+
+	<slot />
+</div>
+
+<style>
+	.glow {
+		position: absolute;
+		width: min(52rem, 120vw);
+		aspect-ratio: 1;
+		border-radius: 9999px;
+		background: radial-gradient(circle, color-mix(in oklab, var(--color-primary) 38%, transparent), transparent 65%);
+		filter: blur(40px);
+		opacity: 0.85;
+	}
+	.glow-1 { top: -10rem; left: -16rem; animation: drift-a 22s ease-in-out infinite alternate; }
+	.glow-2 { top: 28%; right: -18rem; animation: drift-b 26s ease-in-out infinite alternate; }
+	.glow-3 { top: 55%; left: -18rem; opacity: 0.6; animation: drift-b 30s ease-in-out infinite alternate-reverse; }
+	.glow-4 { top: 82%; right: -14rem; opacity: 0.7; animation: drift-a 24s ease-in-out infinite alternate-reverse; }
+
+	.pitch {
+		top: 24rem;
+		translate: -50% 0;
+		opacity: 0.1;
+	}
+
+	.dots {
+		background-image: radial-gradient(color-mix(in oklab, var(--color-base-content) 14%, transparent) 1px, transparent 1px);
+		background-size: 22px 22px;
+		mask-image: linear-gradient(to bottom, transparent, black 8%, black 92%, transparent);
+		opacity: 0.5;
+	}
+
+	@keyframes drift-a { to { transform: translate(10rem, 6rem) scale(1.1); } }
+	@keyframes drift-b { to { transform: translate(-8rem, -5rem) scale(0.95); } }
+
+	/* El campo baja más despacio que la página y gira apenas: da profundidad al hacer scroll */
+	@keyframes pitch-drift {
+		from { translate: -50% 0; rotate: -4deg; }
+		to { translate: -50% 140vh; rotate: 6deg; }
+	}
+	@supports (animation-timeline: scroll()) {
+		@media (prefers-reduced-motion: no-preference) {
+			.pitch {
+				animation: pitch-drift linear both;
+				animation-timeline: scroll(root block);
+			}
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.glow { animation: none; }
+	}
+</style>

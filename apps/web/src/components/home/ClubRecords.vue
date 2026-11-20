@@ -184,8 +184,8 @@ const curiosities = computed(() => {
                     :key="r.label"
                     :is="r.href ? 'a' : 'div'"
                     :href="r.href"
-                    class="rounded-xl bg-base-200 p-4 transition-all duration-300"
-                    :class="r.href ? 'hover:bg-base-300/60 hover:-translate-y-1' : ''"
+                    class="rounded-xl bg-base-200 p-4 ring-1 ring-transparent transition-all duration-300"
+                    :class="r.href ? 'hover:bg-primary/10 hover:ring-primary/60 hover:-translate-y-1 focus-visible:ring-primary/60' : ''"
                 >
                     <p class="text-[11px] uppercase tracking-widest font-black text-base-content/50">{{ r.label }}</p>
                     <AnimatedNumber class="text-2xl lg:text-3xl font-black tracking-tight mt-1 block" :value="r.value" :decimals="typeof r.value === 'number' ? 0 : 1" />
@@ -204,17 +204,19 @@ const curiosities = computed(() => {
                         <div class="flex-1 space-y-2"><div class="skeleton h-3 w-24"></div><div class="skeleton h-4 w-20"></div></div>
                     </div>
                 </template>
-                <div v-for="a in loading ? [] : awards" :key="a.label" class="rounded-xl bg-base-200 p-4 transition-transform duration-300 hover:-translate-y-1">
+                <!-- Toda la tarjeta lleva a la ficha del jugador (el nombre ya no es un enlace aparte: no se pueden anidar) -->
+                <a v-for="a in loading ? [] : awards" :key="a.label" :href="routes.player(a.playerId)"
+                    class="group block rounded-xl bg-base-200 p-4 ring-1 ring-transparent transition-all duration-300 hover:-translate-y-1 hover:bg-primary/10 hover:ring-primary/60 focus-visible:outline-none focus-visible:ring-primary/60">
                     <p class="text-[11px] uppercase tracking-widest font-black text-primary mb-2">{{ a.label }}</p>
                     <PlayerCard
                         :member="memberFor(a.playerId) ?? { playerId: a.playerId, playerName: a.playerName }"
                         :positions="positionsOf(a.playerId)"
-                        link
                         no-dates
+                        class="[&_.leading-tight]:transition-colors group-hover:[&_.leading-tight]:text-primary"
                     >
                         <p class="text-xs text-base-content/60 mt-0.5">{{ a.detail }}</p>
                     </PlayerCard>
-                </div>
+                </a>
             </div>
         </div>
 
