@@ -12,15 +12,37 @@ import ClubSummary from "@components/seo/ClubSummary.astro";
 import MatchesSummary from "@components/seo/MatchesSummary.astro";
 import { buildClub, buildLatestMatches } from "@/lib/buildData";
 
+// Quién es el club, para Google: el equipo y la web
+const sameAs = Object.values(CLUB.socials).filter(Boolean);
+const homeJsonLd = [
+	{
+		"@context": "https://schema.org",
+		"@type": "SportsTeam",
+		name: CLUB.name,
+		url: `${CLUB.siteUrl}/`,
+		logo: CLUB.logo.startsWith("http") ? CLUB.logo : `${CLUB.siteUrl}${CLUB.logo}`,
+		sport: "EA SPORTS FC Clubes Pro",
+		description: `Club de Clubes Pro de EA SPORTS FC de la comunidad de Mr Casemuro.`,
+		...(sameAs.length ? { sameAs } : {}),
+	},
+	{
+		"@context": "https://schema.org",
+		"@type": "WebSite",
+		name: CLUB.name,
+		url: `${CLUB.siteUrl}/`,
+		inLanguage: "es",
+	},
+];
+
 // Resumen para quien no ejecuta JS, con los datos del build (ver lib/buildData.ts)
 const [club, latestMatches] = await Promise.all([buildClub(), buildLatestMatches(5)]);
 ---
 
 <Layout
-	title={CLUB.name}
+	title={`${CLUB.name} · Club de Clubes Pro de EA SPORTS FC`}
 	isindex
-	description={`${CLUB.name} Web oficial: Inicio. Nuestros números y nuestros valores`}
-	keywords={[...CLUB.keywords, "fifa", "eafc", "fifa23", "fifa24", "eafc24", "eafc25", "eafc26", "ea fc", "club", "pro", "clubespro", "proclubs", "eltrueno", "el_trueno", "inicio", "valores", "web"].join(", ")}
+	description={`Web oficial de ${CLUB.name}, el club de Clubes Pro de EA SPORTS FC de la comunidad de Mr Casemuro: resultados, plantilla, estadísticas y récords al día.`}
+	jsonLd={homeJsonLd}
 >
 	<!-- overflow-x-clip: las tarjetas que entran de lado (reveal-sides) no deben abrir scroll horizontal -->
 	<div class="w-full max-w-[100rem] mx-auto px-4 lg:px-8 flex flex-col gap-12 lg:gap-16 py-8 lg:py-12 overflow-x-clip">

@@ -48,12 +48,17 @@ export interface ClubData {
     headerStyle: "primary" | "base";
     /** Fondos propios por tema; sin ellos, los de global.css */
     surfaces?: { light?: ClubThemeSurfaces; dark?: ClubThemeSurfaces };
-    keywords: string[];
     socials: ClubSocials;
-    /** Textos "Origen" y "Objetivo" de la portada, propios de cada club. Sin ellos no sale esa
-     *  sección (mejor nada que la historia de otro club: confunde y es texto duplicado para Google) */
+    /** Textos "Origen" y "Objetivo" de la portada, con el nombre de cada club. Sin ellos no sale
+     *  esa sección (nunca la de otro club: confunde y es texto duplicado para Google) */
     story?: { origin: string; goal: string };
 }
+
+/** La historia de la portada: la misma en todos los clubes de la comunidad, con el nombre de cada uno */
+const clubStory = (name: string) => ({
+    origin: `El ${name} nació en FIFA 22 y nuestra identidad quedó marcada desde el principio. Elegimos al Wrexham AFC para representarnos, usando aquella mítica camiseta azul con el patrocinio de TikTok, que nos acompaña en cada directo. Desde entonces, el equipo no ha parado de crecer y el resto ya es historia. Si buscas un sitio donde disfrutar de Clubes Pro de verdad, con buen ambiente y nivel, has llegado al lugar indicado.`,
+    goal: `Tenemos un objetivo claro: visitar el estadio del Wrexham. Queremos estar allí, en las gradas, y vivir desde dentro toda la magia de este equipo que nos dio nuestra identidad en el ${name}. Lo mejor de todo es que este viaje no sería posible sin vosotros, sois los que hacéis que el club siga vivo y que este sueño tenga sentido. ¿Lo conseguiremos? Estoy convencido de que sí.`,
+});
 
 export interface ClubConfig extends ClubData {
     siteUrl: string;
@@ -78,11 +83,7 @@ const clubs: Record<ClubId, ClubData> = {
             secondaryContent: "#ffffff",
         },
         headerStyle: "primary",
-        keywords: ["casemuro city", "casemurocity"],
-        story: {
-            origin: "El Casemuro City nació en FIFA 22 y nuestra identidad quedó marcada desde el principio. Elegimos al Wrexham AFC para representarnos, usando aquella mítica camiseta azul con el patrocinio de TikTok, que nos acompaña en cada directo. Desde entonces, el equipo no ha parado de crecer y el resto ya es historia. Si buscas un sitio donde disfrutar de Clubes Pro de verdad, con buen ambiente y nivel, has llegado al lugar indicado.",
-            goal: "Tenemos un objetivo claro: visitar el estadio del Wrexham. Queremos estar allí, en las gradas, y vivir desde dentro toda la magia de este equipo que nos dio nuestra identidad en el Casemuro City. Lo mejor de todo es que este viaje no sería posible sin vosotros, sois los que hacéis que el club siga vivo y que este sueño tenga sentido. ¿Lo conseguiremos? Estoy convencido de que sí.",
-        },
+        story: clubStory("Casemuro City"),
         socials: {
             twitch: "https://www.twitch.tv/mr_casemuro",
             youtube: "https://www.youtube.com/channel/UC33K1p2-9FwNclOSbQHFSpA/featured",
@@ -119,7 +120,7 @@ const clubs: Record<ClubId, ClubData> = {
                 baseContent: "oklch(24% 0.012 60)",
             },
         },
-        keywords: ["casemuro united", "casemuro city", "casemurocity"],
+        story: clubStory("Casemuro United"),
         socials: {
             twitch: "https://www.twitch.tv/mr_casemuro",
             youtube: "https://www.youtube.com/channel/UC33K1p2-9FwNclOSbQHFSpA/featured",

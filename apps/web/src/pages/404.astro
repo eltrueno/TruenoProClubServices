@@ -1,14 +1,15 @@
 ---
 import Layout from "@layouts/Layout.astro";
+import { CLUB } from "@/config/club";
 ---
 
-<Layout title="404" isindex={false} description="Página no encontrada">
+<Layout title={`Página no encontrada · ${CLUB.name}`} isindex={false} description={`Esta página no existe en la web de ${CLUB.name}.`}>
 	<div class="flex-1 w-full flex flex-col items-center justify-center py-10 lg:py-16">
 		<h1 class="text-4xl font-black text-primary mb-8">404</h1>
 		<p class="text-lg opacity-60">
 			¡Nos has metido un gol! No se ha encontrado la página que buscas
 		</p>
-		<img src="/illustrations/goal.svg" alt="404 error image" class="mt-8" />
+		<img src="/illustrations/goal.svg" alt="Ilustración de un gol: página no encontrada" class="mt-8" />
 		<a href="/" class="btn btn-primary mt-8">Volver al inicio</a>
 	</div>
 </Layout>

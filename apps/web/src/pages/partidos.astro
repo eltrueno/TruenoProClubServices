@@ -12,19 +12,19 @@ const latestMatches = await buildLatestMatches(20);
 ---
 
 <Layout
-	title={`${CLUB.name}: Partidos`}
+	title={`Partidos de ${CLUB.name} · Resultados y estadísticas`}
 	isindex={false}
-	description="Historial y estadísticas de nuestros últimos partidos"
-	keywords={[...CLUB.keywords, "fifa", "eafc", "fifa23", "fifa24", "eafc24", "club", "pro", "clubespro", "proclubs", "inicio", "partidos", "estadísticas", "stats"].join(", ")}
+	description={`Resultados e historial de partidos de ${CLUB.name} en Clubes Pro de EA SPORTS FC: liga, playoffs y amistosos, con las estadísticas de cada jugador.`}
+	breadcrumb={[{ name: "Partidos", path: "/partidos" }]}
 >
 
 	<header class="container mx-auto mb-10">
 		<h1 class="text-primary font-bold text-3xl text-center mt-8 p-8">
 			Partidos
 		</h1>
-		<h2 class="font-bold text-2xl text-center">
+		<p class="font-bold text-2xl text-center">
 			Aquí se muestra el historial de nuestros últimos partidos
-		</h2>
+		</p>
 	</header>
 	<section>
 		<container class="flex px-2 py-4 justify-center items-center">

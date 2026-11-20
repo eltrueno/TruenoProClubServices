@@ -12,10 +12,10 @@ const totw = await buildLatestTotw();
 ---
 
 <Layout
-    title={`${CLUB.name}: Equipo de la semana`}
+    title={`Equipo de la semana de ${CLUB.name} · Salón de la fama`}
     isindex={false}
-    description="Mejores y peores jugadores de la semana"
-    keywords={[...CLUB.keywords, "fifa", "eafc", "fifa23", "fifa24", "eafc24", "club", "pro", "clubespro", "proclubs", "inicio", "plantilla", "jugadores", "totw", "mejores", "peores", "semana"].join(", ")}
+    description={`El equipo de la semana de ${CLUB.name}: los mejores y peores jugadores de cada semana en Clubes Pro de EA SPORTS FC, según su valoración media.`}
+    breadcrumb={[{ name: "Salón de la fama", path: "/totw" }]}
 >
     <section>
         <container class="flex px-2 py-4 justify-center items-center">

@@ -9,11 +9,14 @@ import { CLUB } from "../config/club";
 interface Props {
 	title: string;
 	description: string;
-	keywords?: string;
 	isindex: boolean;
+	/** Migas de pan para Google (BreadcrumbList): las páginas tras "Inicio", p. ej. [{ name: "Plantilla", path: "/plantilla" }] */
+	breadcrumb?: { name: string; path: string }[];
+	/** Datos estructurados propios de la página (schema.org), además de las migas */
+	jsonLd?: Record<string, unknown>[];
 }
 
-const { title, isindex, description, keywords } = Astro.props;
+const { title, isindex, description, breadcrumb, jsonLd = [] } = Astro.props;
 
 // URL limpia, la misma que el sitemap: con build.format "file" Astro da /plantilla.html y
 // /index.html, que también se sirven (Pages); la canónica dice a Google cuál es la buena
@@ -25,6 +28,25 @@ const canonicalUrl = `${CLUB.siteUrl}${pathname || "/"}`;
 // Imagen de las vistas previas de enlaces: la propia del club o la generada en el build (pages/og.png.ts)
 const ogImage = CLUB.ogImage ?? "/og.png";
 const ogImageUrl = ogImage.startsWith("http") ? ogImage : `${CLUB.siteUrl}${ogImage}`;
+
+// Datos estructurados (JSON-LD): lo que Google lee para entender la página y enseñarla mejor
+const structuredData = [
+	...jsonLd,
+	...(breadcrumb?.length
+		? [{
+			"@context": "https://schema.org",
+			"@type": "BreadcrumbList",
+			itemListElement: [{ name: "Inicio", path: "/" }, ...breadcrumb].map((item, i) => ({
+				"@type": "ListItem",
+				position: i + 1,
+				name: item.name,
+				item: `${CLUB.siteUrl}${item.path}`,
+			})),
+		}]
+		: []),
+];
+// Dentro de <script>: que un "</" en los datos no pueda cerrarlo
+const structuredDataJson = structuredData.length ? JSON.stringify(structuredData).replace(/</g, "\\u003c") : "";
 
 // Variables del club por tema: colores de marca y, si el club los define, sus fondos (ver config/club.ts)
 const c = CLUB.colors;
@@ -56,14 +78,12 @@ try {
 <html lang="es" class="min-h-screen">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="icon" type={CLUB.logo.endsWith(".svg") ? "image/svg+xml" : "image/webp"} href={CLUB.logo} />
 		<link rel="canonical" href={canonicalUrl} />
 		<meta name="generator" content={Astro.generator} />
 		<meta name="author" content="Raúl Jiménez 'el_trueno'" />
 		<meta name="description" content={description} />
-		{keywords && <meta name="keywords" content={keywords} />}
-		{!keywords && <meta name="keywords" content={title} />}
 		<title>{title}</title>
 		<ClientRouter />
 		<script is:inline>
@@ -119,6 +139,8 @@ try {
 		<meta name="twitter:description" content={description} />
 		<meta name="twitter:url" content={canonicalUrl} />
 		<meta name="twitter:image" content={ogImageUrl} />
+
+		{structuredDataJson && <script type="application/ld+json" set:html={structuredDataJson} />}
 
 		<slot name="metadata" />
 	</head>
