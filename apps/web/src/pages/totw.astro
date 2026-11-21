@@ -1,28 +1,20 @@
 ---
-import TotwContainer from "@components/totw/TotwContainer.vue";
 import Layout from "@layouts/Layout.astro";
-import { CLUB } from "@/config/club";
-import TotwSummary from "@components/seo/TotwSummary.astro";
-import { buildLatestTotw } from "@/lib/buildData";
+import { CLUB, OTHER_CLUBS } from "@/config/club";
+import DerbyTotwTeaser from "@components/totw/DerbyTotwTeaser.astro";
 
-// Resumen para quien no ejecuta JS, con los datos del build (ver lib/buildData.ts)
-const totw = await buildLatestTotw();
-
-// /totw?semana=<iso>&tipo=best|worst — lo lee TotwContainer en cliente
+// El TOTW de siempre está desactivado: vuelve como "TOTW del derbi" (solo partidos City vs United).
+// Mientras, solo un "Próximamente". El de antes sigue en components/totw/TotwContainer.vue
+// (con /totw?semana=…&tipo=…), listo para volver a usarlo.
 ---
 
 <Layout
-    title={`Equipo de la semana de ${CLUB.name} · Salón de la fama`}
+    title={`TOTW del derbi · ${CLUB.name}`}
     isindex={false}
-    description={`El equipo de la semana de ${CLUB.name}: los mejores y peores jugadores de cada semana en Clubes Pro de EA SPORTS FC, según su valoración media.`}
-    breadcrumb={[{ name: "Salón de la fama", path: "/totw" }]}
+    description={`Próximamente: el equipo de la semana de ${CLUB.name} contando solo los derbis contra ${OTHER_CLUBS[0]?.name ?? "el otro club de la comunidad"}. Un once mixto con lo mejor de los dos clubes.`}
+    breadcrumb={[{ name: "TOTW", path: "/totw" }]}
     ogImage="/og/totw.png"
-    ogImageAlt={`Salón de la fama de ${CLUB.name}`}
+    ogImageAlt={`TOTW del derbi de ${CLUB.name}`}
 >
-    <section>
-        <container class="flex px-2 py-4 justify-center items-center">
-            <TotwContainer client:only="vue" />
-            <noscript><TotwSummary totw={totw} /></noscript>
-        </container>
-    </section>
+    <DerbyTotwTeaser />
 </Layout>

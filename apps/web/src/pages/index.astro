@@ -4,6 +4,7 @@ import ClubNumbers from "@components/home/ClubNumbers.vue";
 import ClubStory from "@components/home/ClubStory.astro";
 import JoinClubCta from "@components/home/JoinClubCta.astro";
 import HomeBackdrop from "@components/home/HomeBackdrop.astro";
+import MadeByCard from "@components/home/MadeByCard.astro";
 import ClubHighlights from "@components/home/ClubHighlights.vue";
 import LastMatches from "@components/home/LastMatches.vue";
 import ClubRecords from "@components/home/ClubRecords.vue";
@@ -85,8 +86,13 @@ const [club, latestMatches, roster] = await Promise.all([buildClub(), buildLates
 		)}
 
 		<!-- CTA: vincular cuenta -->
-		<section class="pb-4 lg:pb-8">
+		<section>
 			<JoinClubCta />
+		</section>
+
+		<!-- Hecho por: el código es abierto (estrella, fork, seguir) -->
+		<section class="pb-4 lg:pb-8">
+			<MadeByCard />
 		</section>
 	</div>
 	</HomeBackdrop>

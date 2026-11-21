@@ -3,6 +3,7 @@
 import { watch } from "vue"
 import { useAccount } from "@/composables/useAccount"
 import ProfileCard from "./account/ProfileCard.vue"
+import SupportProjectCard from "./account/SupportProjectCard.vue"
 import ConnectionsCard from "./account/ConnectionsCard.vue"
 import MyPlayerCard from "./account/MyPlayerCard.vue"
 import AchievementsCard from "./account/AchievementsCard.vue"
@@ -33,6 +34,8 @@ watch([isPending, isLoggedIn], ([pending, logged]) => {
     <div v-if="isLoggedIn" class="space-y-5">
         <SectionNav :sections="SECTIONS" />
         <ProfileCard id="perfil" tabindex="-1" class="scroll-mt-20 focus:outline-none" />
+        <!-- Solo en las primeras semanas de la cuenta, y se puede cerrar -->
+        <SupportProjectCard />
         <ConnectionsCard id="conexiones-card" tabindex="-1" class="scroll-mt-20 focus:outline-none" />
         <MyPlayerCard />
         <AchievementsCard id="logros-card" tabindex="-1" class="scroll-mt-20 focus:outline-none" />

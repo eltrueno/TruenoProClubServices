@@ -9,7 +9,14 @@
             </ul>
         </div>
         <!-- Hero Section -->
-        <section class="bg-base-200 rounded-2xl shadow-md">
+        <section class="relative bg-base-200 rounded-2xl shadow-md">
+            <!-- Jugador sin cuenta vinculada: invitación discreta a vincularla, solo a quien aún no tiene
+                 jugador (o no ha entrado). Arriba a la derecha y en absoluto: no mueve nada al aparecer -->
+            <a v-if="showClaimHint" :href="claimHref"
+                class="claim-hint absolute top-3 right-3 z-10 hidden sm:inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold bg-base-100/70 text-base-content/70 ring-1 ring-base-content/10 hover:text-primary hover:ring-primary/50 hover:bg-primary/10 transition-colors">
+                <LinkIcon class="size-3.5" />
+                ¿Eres {{ playerProfile.member.playerName }}? Vincula tu cuenta
+            </a>
             <div class=" mx-auto px-4 py-6 lg:py-10">
                 <div class="flex flex-row items-end gap-4 lg:gap-8">
                     <!-- Avatar/Player Photo -->
@@ -218,6 +225,8 @@
     import OptionToggle from "@/components/ui/OptionToggle.vue";
     import AnimatedNumber from "@/components/ui/AnimatedNumber.vue";
     import LinkIcon from "@/icons/link.svg?component";
+    import { useAuth } from "@/composables/useAuth";
+    import { accountsUrl } from "@/lib/accounts";
     import { MATCH_SCOPE_OPTIONS, type MatchScope } from "@/lib/matchScope";
     import { Position, translatePosition } from "@/i18n/translations";
     import { getQueryParam, setQueryParams } from "@/lib/query";
@@ -361,6 +370,13 @@
             console.warn("[PlayerDetail] linked user unavailable", e)
         }
     })
+
+    // "¿Eres tú? Vincula tu cuenta": en jugadores sin cuenta, para quien no ha entrado o aún no tiene jugador
+    const { isLoggedIn, isPending: authPending, myPlayerId, myMemberLoaded } = useAuth()
+    const claimHref = accountsUrl("mi-jugador")
+    const showClaimHint = computed(() =>
+        !!playerProfile.value && !playerProfile.value.member.userId && !authPending.value &&
+        (!isLoggedIn.value || (myMemberLoaded.value && !myPlayerId.value)))
 
     const filteredStats = computed(() => {
         const { official, friendly } = playerProfile.value.stats

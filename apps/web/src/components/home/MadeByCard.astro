@@ -1,0 +1,60 @@
+---
+/**
+ * "Hecho por" al final de la portada: quién hace la web, que el código es abierto y cómo
+ * apoyarlo (estrella, fork, seguir). Una sola vez y al final, sin interrumpir nada.
+ */
+import GithubRepoButtons from "@/components/ui/GithubRepoButtons.vue";
+import GithubIcon from "@/icons/github.svg";
+import TwitterIcon from "@/icons/x.svg";
+import InstagramIcon from "@/icons/instagram.svg";
+import { DEVELOPER, REPO } from "@/config/developer";
+
+const ICONS = { github: GithubIcon, x: TwitterIcon, instagram: InstagramIcon } as const;
+---
+
+<div class="made-by reveal relative overflow-hidden rounded-3xl border border-base-content/5 p-6 lg:p-8">
+	<!-- Llaves de código de fondo, muy suaves -->
+	<span aria-hidden="true" class="made-by-mark absolute -right-4 -top-6 text-[10rem] leading-none font-black text-primary/10 select-none">&#123;&#125;</span>
+
+	<div class="relative flex flex-col md:flex-row md:items-center gap-6">
+		<div class="flex items-center gap-4 min-w-0 flex-1">
+			<img src={DEVELOPER.avatar} alt={`Foto de ${DEVELOPER.handle}`} width="64" height="64" loading="lazy" decoding="async"
+				class="size-16 shrink-0 rounded-2xl ring-2 ring-primary/40 object-cover bg-base-300" />
+			<div class="min-w-0">
+				<span class="text-xs uppercase font-black tracking-[0.25em] text-primary">Hecho por</span>
+				<p class="text-xl lg:text-2xl font-black tracking-tight leading-tight">
+					{DEVELOPER.name} <span class="text-base-content/50 font-bold">· {DEVELOPER.handle}</span>
+				</p>
+				<p class="mt-1 text-sm text-base-content/70 leading-relaxed max-w-xl">
+					Esta web es de código abierto: las webs, la API, el bot y las estadísticas están en <a href={REPO.url} target="_blank" rel="noopener" class="link link-hover font-semibold text-base-content">GitHub</a>.
+					Si te gusta, dale una estrella o haz un fork para tu club.
+				</p>
+			</div>
+		</div>
+
+		<div class="flex flex-col items-start md:items-end gap-3 shrink-0">
+			<GithubRepoButtons client:visible fork />
+			<div class="flex items-center gap-1 text-sm">
+				<a href={DEVELOPER.github} target="_blank" rel="noopener" class="font-semibold text-base-content/70 hover:text-primary transition-colors mr-1">
+					Sígueme
+				</a>
+				{DEVELOPER.socials.map((s) => {
+					const Icon = ICONS[s.id];
+					return (
+						<a href={s.href} target="_blank" rel="noopener" aria-label={`${DEVELOPER.handle} en ${s.label}`}
+							class="btn btn-ghost btn-sm btn-square text-base-content/70 hover:text-primary">
+							<Icon class="size-4" />
+						</a>
+					);
+				})}
+			</div>
+		</div>
+	</div>
+</div>
+
+<style>
+	.made-by {
+		background: color-mix(in oklab, var(--color-base-200) 90%, transparent);
+		backdrop-filter: blur(6px);
+	}
+</style>

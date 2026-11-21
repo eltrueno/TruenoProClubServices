@@ -9,6 +9,8 @@ import GithubIcon from "@/icons/github.svg";
 import HeartIcon from "@/icons/heart.svg";
 import { CLUB, OTHER_CLUBS } from "@/config/club";
 import { accountsUrl, legalUrl, licensesUrl, privacyUrl } from "@/lib/accounts";
+import { DEVELOPER, REPO } from "@/config/developer";
+import GithubRepoButtons from "@/components/ui/GithubRepoButtons.vue";
 
 const year = new Date().getFullYear();
 
@@ -16,7 +18,7 @@ const navigation = [
     { href: "/", label: "Inicio" },
     { href: "/plantilla", label: "Plantilla" },
     { href: "/partidos", label: "Partidos" },
-    { href: "/totw", label: "Hall of Fame" },
+    { href: "/totw", label: "TOTW del derbi" },
 ];
 
 const socialMap = [
@@ -31,11 +33,8 @@ const clubSocials = socialMap
     .filter((s) => Boolean(CLUB.socials[s.key]))
     .map((s) => ({ href: CLUB.socials[s.key]!, label: s.label, icon: s.icon }));
 
-const technical = [
-    { href: "https://github.com/eltrueno", label: "GitHub", icon: GithubIcon },
-    { href: "https://x.com/elh_trueno", label: "X / Twitter", icon: TwitterIcon },
-    { href: "https://www.instagram.com/rauljimenezgal/", label: "Instagram", icon: InstagramIcon },
-];
+const SOCIAL_ICONS = { github: GithubIcon, x: TwitterIcon, instagram: InstagramIcon } as const;
+const technical = DEVELOPER.socials.map((s) => ({ href: s.href, label: s.label, icon: SOCIAL_ICONS[s.id] }));
 ---
 
 <!-- Superficie elevada como las cards: base-200 en ambos temas (más clara que el fondo en dark, más oscura en light) -->
@@ -97,6 +96,13 @@ const technical = [
                 <h3 class="footer-title text-primary">Partner técnico</h3>
                 <p class="font-semibold">el_trueno</p>
                 <p class="mt-2 text-sm opacity-70 leading-relaxed">Desarrollo de la web, sincronización con EA, estadísticas y servicios del club.</p>
+                <!-- El código es abierto: estrella en GitHub (con el número) -->
+                <p class="mt-3 text-xs opacity-70">
+                    Código abierto en <a href={REPO.url} target="_blank" rel="noopener" class="underline underline-offset-2 hover:text-primary">GitHub</a>
+                </p>
+                <div class="mt-2">
+                    <GithubRepoButtons client:visible size="sm" />
+                </div>
                 <div class="mt-2 flex md:justify-center flex-wrap w-full">
                     {technical.map((item) => {
                         const Icon = item.icon;

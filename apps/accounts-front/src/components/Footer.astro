@@ -6,7 +6,8 @@ import InstagramIcon from "../icons/instagram.svg";
 import TiktokIcon from "../icons/tiktok.svg";
 import GithubIcon from "../icons/github.svg";
 import HeartIcon from "../icons/heart.svg";
-import { BRAND_CLUBS, CASEMURO_SOCIALS, DEV_SOCIALS } from "../config/site";
+import { BRAND_CLUBS, CASEMURO_SOCIALS, DEV_SOCIALS, REPO } from "../config/site";
+import GithubRepoButtons from "./ui/GithubRepoButtons.vue";
 
 interface Props {
 	/** en el login: solo la banda, lo legal (privacidad, aviso legal y licencias) y los créditos */
@@ -29,6 +30,7 @@ const people = [
 		name: "el_trueno",
 		text: "Desarrollo de las webs, las cuentas, la sincronización con EA y los bots.",
 		socials: DEV_SOCIALS,
+		repo: true,
 	},
 ];
 ---
@@ -84,6 +86,14 @@ const people = [
 							);
 						})}
 					</div>
+					{"repo" in p && p.repo && (
+						<>
+							<p class="mt-3 text-xs text-base-content/75">
+								Código abierto en <a href={REPO.url} target="_blank" rel="noopener" class="underline underline-offset-2 hover:text-base-content">GitHub</a>
+							</p>
+							<div class="mt-2"><GithubRepoButtons client:visible size="sm" /></div>
+						</>
+					)}
 				</section>
 			))}
 		</div>
