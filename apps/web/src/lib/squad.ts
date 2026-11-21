@@ -80,14 +80,14 @@ const normalize = (text: string | undefined | null) => (text ?? "").toLowerCase(
 
 export interface SquadFilter {
     search: string
-    /** posición en la que ha jugado (principal o no); null = todas */
-    position: PlayerPosition | null
+    /** posiciones en las que ha jugado (principal o no; vale cualquiera de ellas); vacío = todas */
+    positions: PlayerPosition[]
 }
 
-export function filterSquad(squad: SquadPlayer[], { search, position }: SquadFilter): SquadPlayer[] {
+export function filterSquad(squad: SquadPlayer[], { search, positions }: SquadFilter): SquadPlayer[] {
     const q = normalize(search.trim())
     return squad.filter((p) =>
-        (!position || p.positions.includes(position)) &&
+        (!positions.length || positions.some((pos) => p.positions.includes(pos))) &&
         (!q || normalize(p.member.playerName).includes(q) || normalize(p.member.proName).includes(q) ||
             (p.member.nameHistory ?? []).some((n) => normalize(n).includes(q))))
 }
@@ -104,3 +104,7 @@ export function sortSquad(squad: SquadPlayer[], key: SquadSortKey, direction: "a
 }
 
 export const isRegular = (p: SquadPlayer) => p.stats.gamesPlayed >= REGULAR_MIN_GAMES
+
+/** Cartas por página: 4 filas de 5 en escritorio (menos cartas montadas a la vez, y menos Atropos) */
+export const SQUAD_PAGE_SIZE = 20
+

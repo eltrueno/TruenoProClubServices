@@ -1,119 +1,57 @@
-<template>
-    <div class="join">
-        <button class="join-item btn btn-sm" @click="firstPage()" :disabled="isInFirstPage">1</button>
-        <button class="join-item btn btn-sm" @click="previousPage()" :disabled="isInFirstPage">
-            <svg class="w-6 h-6 " aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m14 8-4 4 4 4"/>
-            </svg>
-
-        </button>
-
-        <div class="join">
-            <input v-for="page in pagination.pages" :key="page" class="join-item btn btn-square btn-sm" type="radio" name="pageradio"
-            :aria-label="page.toString()" @click="setPage(page)" :checked="page===currentPage"
-            :class="{
-                'pointer-events-none': page===currentPage,
-                'select-none': page===currentPage,
-            }"
-            />
-        </div>
-
-        <button class="join-item btn btn-sm" @click="nextPage()" :disabled="isInLastPage">
-            <svg class="w-6 h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m10 16 4-4-4-4"/>
-            </svg>
-
-        </button>
-        <button class="join-item btn btn-sm" @click="lastPage()" :disabled="isInLastPage">{{ pageCount }}</button>
-    </div>
-</template>
 <script setup lang="ts">
-import { computed } from 'vue';
-    
-    const emit = defineEmits<{
-        (e: 'pagechange', number:number)
-    }>()
+/**
+ * Paginador genérico: anterior / páginas / siguiente (join de daisyUI) y, debajo, "21–40 de 131".
+ * Siempre la primera y la última, la actual con sus vecinas y "…" donde se salta (ver pageItems en
+ * lib/pagination.ts); el número de botones no cambia al moverse. No pinta nada con una sola página.
+ *
+ *   <Paginator :items-count="lista.length" :items-per-page="20" :current-page="page" @pagechange="page = $event" />
+ *
+ * Para cortar la lista, paginate() de lib/pagination.ts.
+ */
+import { computed } from "vue"
+import { clampPage, pageCount, pageItems } from "@/lib/pagination"
 
-    interface IProps {
-        maxButtons?: number
-        itemsPerPage: number
-        currentPage: number,
-        itemsCount: number
-    }
+const props = withDefaults(defineProps<{
+    itemsCount: number
+    itemsPerPage: number
+    currentPage: number
+    /** páginas a cada lado de la actual */
+    siblings?: number
+    /** "21–40 de 131" debajo */
+    showRange?: boolean
+    /** qué se pagina, para los lectores de pantalla ("Páginas de la plantilla") */
+    label?: string
+}>(), { siblings: 1, showRange: true, label: "Páginas" })
 
-    const props = withDefaults(defineProps<IProps>(), {
-        maxButtons: 3,
-    })
+const emit = defineEmits<{ pagechange: [page: number] }>()
 
-    const pageCount = computed(() =>
-        Math.ceil(props.itemsCount / props.itemsPerPage)
-    );
-    
-    /**https://github.com/peshanghiwa/vue-awesome-paginate */
-    const pagination = computed(() => {
-        let startPage: number, endPage: number;
+const pages = computed(() => pageCount(props.itemsCount, props.itemsPerPage))
+const page = computed(() => clampPage(props.currentPage, pages.value))
+const items = computed(() => pageItems(page.value, pages.value, props.siblings))
+const from = computed(() => (page.value - 1) * props.itemsPerPage + 1)
+const to = computed(() => Math.min(page.value * props.itemsPerPage, props.itemsCount))
 
-        if (pageCount.value <= props.maxButtons) {
-            startPage = 1;
-            endPage = pageCount.value;
-        } else {
-            let maxPagesShownBeforeCurrentPage = Math.floor(props.maxButtons / 2);
-            let maxPagesShownAfterCurrentPage = Math.ceil(props.maxButtons / 2) - 1;
-            if (props.currentPage <= maxPagesShownBeforeCurrentPage) {
-            // current page is at the start of the pagination
-            startPage = 1;
-            endPage = props.maxButtons;
-            } else if (
-            props.currentPage + maxPagesShownAfterCurrentPage >=
-            pageCount.value
-            ) {
-            // current page is at the end of the pagination
-            startPage = pageCount.value - props.maxButtons + 1;
-            endPage = pageCount.value;
-            } else {
-            // current page is somewhere in the middle of the pagination
-            startPage = props.currentPage - maxPagesShownBeforeCurrentPage;
-            endPage = props.currentPage + maxPagesShownAfterCurrentPage;
-            }
-        }
-        // create an array of pages to be displayed
-        let pages = Array.from(Array(endPage + 1 - startPage).keys()).map(
-            (i) => startPage + i
-        );
-
-        return {
-            startPage: startPage,
-            endPage: endPage,
-            pages: pages,
-        };
-    });
-
-    const isInFirstPage = computed(()=>{
-        return props.currentPage === 1
-    })
-
-    const isInLastPage = computed(()=>{
-        return props.currentPage === pageCount.value
-    })
-
-    function firstPage(){
-        emit('pagechange', 1)
-    }
-
-    function previousPage(){
-        emit('pagechange', props.currentPage - 1)
-    }
-
-    function setPage(pagenumber: number){
-        emit('pagechange', pagenumber)
-    }
-
-    function nextPage(){
-        emit('pagechange', props.currentPage + 1)
-    }
-
-    function lastPage(){
-        emit('pagechange', pageCount.value)
-    }
-
+const go = (n: number) => {
+    const target = clampPage(n, pages.value)
+    if (target !== page.value) emit("pagechange", target)
+}
 </script>
+
+<template>
+    <nav v-if="pages > 1" :aria-label="label" class="flex flex-col items-center gap-2">
+        <div class="join">
+            <button type="button" class="join-item btn btn-sm" :disabled="page === 1" aria-label="Página anterior" @click="go(page - 1)">
+                <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m15 6-6 6 6 6" /></svg>
+            </button>
+            <template v-for="(n, k) in items" :key="`${n}-${k}`">
+                <span v-if="n === '…'" class="join-item btn btn-sm btn-disabled px-2" aria-hidden="true">…</span>
+                <button v-else type="button" class="join-item btn btn-sm min-w-9 tabular-nums" :class="n === page && 'btn-primary'"
+                    :aria-current="n === page ? 'page' : undefined" :aria-label="`Página ${n}`" @click="go(n)">{{ n }}</button>
+            </template>
+            <button type="button" class="join-item btn btn-sm" :disabled="page === pages" aria-label="Página siguiente" @click="go(page + 1)">
+                <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m9 6 6 6-6 6" /></svg>
+            </button>
+        </div>
+        <p v-if="showRange" class="text-xs text-base-content/50 tabular-nums">{{ from }}–{{ to }} de {{ itemsCount }}</p>
+    </nav>
+</template>

@@ -4,7 +4,9 @@
  * posición, oficiales/todos/amistosos y "solo habituales"). En pantallas grandes los tres primeros
  * van solos en un podio. Los de menos de REGULAR_MIN_GAMES partidos van plegados en "Han pasado por
  * el club". Tu jugador (con sesión) va marcado, y una burbuja lleva hasta él cuando no se ve.
- * El orden, la dirección, la posición, el ámbito y "todos" van en la URL (?orden=&dir=&pos=&tipo=&todos=).
+ * Va paginada (SQUAD_PAGE_SIZE cartas por página: menos cartas y menos Atropos montados a la vez).
+ * El orden, la dirección, las posiciones, el ámbito, "todos" y la página van en la URL
+ * (?orden=&dir=&pos=defender,midfielder&tipo=&todos=&pagina=).
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import type { PlayerPosition } from "@trueno-proclub-services/shared"
@@ -13,11 +15,13 @@ import { usePlayerStats } from "@/composables/usePlayerStats"
 import { useAuth } from "@/composables/useAuth"
 import OptionToggle from "@/components/ui/OptionToggle.vue"
 import SquadCard from "./SquadCard.vue"
+import Paginator from "@/components/Paginator.vue"
 import { MATCH_SCOPE_OPTIONS, type MatchScope } from "@/lib/matchScope"
 import { getQueryParam, routes, setQueryParams } from "@/lib/query"
 import { playerImage } from "@/lib/playerImage"
+import { paginate } from "@/lib/pagination"
 import {
-    DEFAULT_SORT, REGULAR_MIN_GAMES, SQUAD_SORTS, buildSquad, filterSquad, isRegular, sortByKey, sortSquad,
+    DEFAULT_SORT, REGULAR_MIN_GAMES, SQUAD_PAGE_SIZE, SQUAD_SORTS, buildSquad, filterSquad, isRegular, sortByKey, sortSquad,
     type SquadSortKey,
 } from "@/lib/squad"
 
@@ -32,8 +36,7 @@ const loading = computed(() => !membersLoaded.value || playerStats.loading.value
 const hasError = computed(() => playerStats.hasError.value)
 
 // ── Filtros y orden (con su valor inicial de la URL) ──
-const POSITIONS: { value: PlayerPosition | null; label: string }[] = [
-    { value: null, label: "Todas" },
+const POSITIONS: { value: PlayerPosition; label: string }[] = [
     { value: "goalkeeper", label: "POR" },
     { value: "defender", label: "DEF" },
     { value: "midfielder", label: "MED" },
@@ -44,33 +47,63 @@ const SCOPES: MatchScope[] = ["official", "all", "friendly"]
 const search = ref("")
 const sortKey = ref<SquadSortKey>(sortByKey(getQueryParam("orden", DEFAULT_SORT)).key)
 const direction = ref<"asc" | "desc">(getQueryParam("dir") === "asc" ? "asc" : "desc")
-const position = ref<PlayerPosition | null>(POSITIONS.find((p) => p.value === getQueryParam("pos"))?.value ?? null)
+/** Posiciones elegidas (chips, varias a la vez); vacío = todas. En la URL: ?pos=defender,midfielder */
+const positions = ref<PlayerPosition[]>(
+    (getQueryParam("pos") ?? "").split(",").filter((v): v is PlayerPosition => POSITIONS.some((p) => p.value === v)))
 const scope = ref<MatchScope>(SCOPES.find((s) => s === getQueryParam("tipo")) ?? "all")
 const onlyRegulars = ref(getQueryParam("todos") !== "1")
+const page = ref(Math.max(1, Number(getQueryParam("pagina")) || 1))
 
-watch([sortKey, direction, position, scope, onlyRegulars], () =>
+const togglePosition = (pos: PlayerPosition) => {
+    positions.value = positions.value.includes(pos)
+        ? positions.value.filter((p) => p !== pos)
+        // En el orden de siempre (POR, DEF, MED, DEL), para que la URL no dependa del orden de los clics
+        : POSITIONS.map((p) => p.value).filter((p) => p === pos || positions.value.includes(p))
+}
+
+// Al cambiar cualquier filtro o el orden, a la primera página
+watch([sortKey, direction, positions, scope, onlyRegulars, search], () => { page.value = 1 })
+
+watch([sortKey, direction, positions, scope, onlyRegulars, page], () =>
     setQueryParams({
         orden: sortKey.value === DEFAULT_SORT ? null : sortKey.value,
         dir: direction.value === "asc" ? "asc" : null,
-        pos: position.value,
+        pos: positions.value.length ? positions.value.join(",") : null,
         tipo: scope.value === "all" ? null : scope.value,
         todos: onlyRegulars.value ? null : "1",
+        pagina: page.value > 1 ? String(page.value) : null,
     }))
 
 const sort = computed(() => sortByKey(sortKey.value))
 
 // ── La plantilla ──
 const squad = computed(() => buildSquad(members.value, playerStats.stats.value, scope.value))
-const filtered = computed(() => sortSquad(filterSquad(squad.value, { search: search.value, position: position.value }), sortKey.value, direction.value))
+const filtered = computed(() => sortSquad(filterSquad(squad.value, { search: search.value, positions: positions.value }), sortKey.value, direction.value))
 const shown = computed(() => (onlyRegulars.value ? filtered.value.filter(isRegular) : filtered.value))
 const casuals = computed(() => (onlyRegulars.value ? filtered.value.filter((p) => !isRegular(p)) : []))
 const regularsTotal = computed(() => squad.value.filter(isRegular).length)
 
-/** Podio (y halos): solo si se ordena de más a menos y no se está buscando */
-const podium = computed(() => direction.value === "desc" && !search.value.trim())
+// ── Paginación: solo se montan las cartas de la página (cada una con su Atropos) ──
+const paged = computed(() => paginate(shown.value, page.value, SQUAD_PAGE_SIZE))
+const gridTop = ref<HTMLElement | null>(null)
+function goToPage(n: number) {
+    if (n === paged.value.page) return
+    page.value = n
+    // Al principio de la cuadrícula (bajo la barra pegada), no arriba del todo
+    nextTick(() => {
+        const el = gridTop.value
+        if (!el) return
+        const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches
+        const top = el.getBoundingClientRect().top + scrollY - 190
+        if (top < scrollY) scrollTo({ top, behavior: reduce ? "auto" : "smooth" })
+    })
+}
+
+/** Podio (y halos): solo en la primera página, si se ordena de más a menos y no se está buscando */
+const podium = computed(() => paged.value.page === 1 && direction.value === "desc" && !search.value.trim())
 
 /** Filtros cambiados respecto a lo de siempre (para el número del botón "Filtros" en móvil) */
-const activeFilters = computed(() => Number(position.value !== null) + Number(scope.value !== "all") + Number(!onlyRegulars.value))
+const activeFilters = computed(() => Number(positions.value.length > 0) + Number(scope.value !== "all") + Number(!onlyRegulars.value))
 
 // ── Tu jugador ──
 const myId = computed(() => myMember.value?.playerId ?? null)
@@ -93,7 +126,7 @@ const observeMine = async () => {
     }, { threshold: 0.2 })
     mineObserver.observe(el)
 }
-watch([shown, myId], observeMine)
+watch([() => paged.value.items, myId], observeMine)
 onBeforeUnmount(() => mineObserver?.disconnect())
 
 // ── Barra pegada: con una medida en el scroll (como la de la ficha de jugador) ──
@@ -114,16 +147,20 @@ onBeforeUnmount(() => {
     removeEventListener("resize", updateStuck)
 })
 
-/** Lleva a tu carta: si un filtro la esconde, lo quita antes */
+/** Lleva a tu carta: si un filtro la esconde, lo quita antes, y pasa a la página donde está */
 async function goToMine() {
     if (!mineInGrid.value) {
         const me = squad.value.find((p) => p.member.playerId === myId.value)
         if (!me) return
         search.value = ""
-        if (position.value && me.positions[0] !== position.value) position.value = null
+        if (positions.value.length && !positions.value.some((pos) => me.positions.includes(pos))) positions.value = []
         if (onlyRegulars.value && !isRegular(me)) onlyRegulars.value = false
         await nextTick()
     }
+    // Después de los filtros (que vuelven a la página 1): la página de tu carta
+    const index = shown.value.findIndex((p) => p.member.playerId === myId.value)
+    if (index >= 0) page.value = Math.floor(index / SQUAD_PAGE_SIZE) + 1
+    await nextTick()
     const el = document.getElementById("squad-me")
     if (!el) return
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -149,10 +186,11 @@ const AURA = ["aura-gold", "aura-silver", "aura-bronze"]
 </script>
 
 <template>
-    <!-- Todo sobre un bloque con fondo (--squad-bg: el mismo que el de las pestañas de la ficha de jugador) -->
+    <!-- Todo sobre un bloque con fondo (--squad-bg: el mismo que el de las pestañas de la ficha de jugador; la barra de controles, --toolbar-bg, un tono distinto para que se separe) -->
     <div class="w-full flex flex-col gap-6 rounded-3xl bg-(--squad-bg) px-3 pb-4 lg:px-5 lg:pb-6
         [--squad-bg:color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-100))]
-        dark:[--squad-bg:color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-300))]">
+        dark:[--squad-bg:color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-300))]
+        [--toolbar-bg:color-mix(in_oklab,var(--color-base-200)_94%,var(--color-base-content))] dark:[--toolbar-bg:color-mix(in_oklab,var(--color-base-200)_92%,var(--color-base-content))]">
         <!-- Marcador justo encima de la barra: cuando pasa bajo el menú, la barra está pegada -->
         <div ref="toolbarSentinel" aria-hidden="true" class="h-0 -mb-6"></div>
         <!-- Barra de filtros (fija al bajar). Sin pegar: parte del bloque. Pegada: lámina medio translúcida que se
@@ -160,8 +198,8 @@ const AURA = ["aura-gold", "aura-silver", "aura-bronze"]
         <div role="toolbar" aria-label="Filtrar y ordenar la plantilla"
             class="sticky top-[4.25rem] z-30 -mx-3 lg:-mx-5 px-3 lg:px-5 py-3 flex flex-wrap items-center gap-2 transition-[border-radius,background-color,box-shadow] duration-300"
             :class="toolbarStuck
-                ? 'rounded-b-2xl bg-[color-mix(in_oklab,var(--squad-bg)_78%,transparent)] backdrop-blur-md shadow-lg shadow-black/25'
-                : 'rounded-t-3xl bg-(--squad-bg)'">
+                ? 'rounded-b-2xl bg-[color-mix(in_oklab,var(--toolbar-bg)_88%,transparent)] backdrop-blur-md shadow-lg shadow-black/25'
+                : 'rounded-t-3xl bg-(--toolbar-bg)'">
             <label class="input input-sm rounded-xl flex-1 min-w-40 bg-base-100">
                 <svg class="size-4 opacity-60" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" /></svg>
                 <input v-model="search" type="search" placeholder="Buscar jugador o pro" aria-label="Buscar jugador" />
@@ -185,10 +223,15 @@ const AURA = ["aura-gold", "aura-silver", "aura-bronze"]
             </div>
 
             <div class="hidden md:flex flex-wrap items-center gap-2">
-                <div role="group" aria-label="Posición" class="flex gap-1">
-                    <button v-for="p in POSITIONS" :key="p.label" type="button" :aria-pressed="position === p.value"
-                        class="btn btn-sm rounded-full font-bold" :class="position === p.value ? 'btn-primary' : 'btn-ghost bg-base-100/60'"
-                        @click="position = p.value">{{ p.label }}</button>
+                <!-- Chips de posición: se pueden marcar varias; sin ninguna, todas -->
+                <div role="group" aria-label="Posición (puedes marcar varias)" class="flex items-center gap-1">
+                    <button v-for="p in POSITIONS" :key="p.value" type="button" :aria-pressed="positions.includes(p.value)"
+                        class="pos-chip btn btn-sm rounded-full font-bold gap-1" :class="positions.includes(p.value) ? 'btn-primary' : 'btn-ghost bg-base-100/60'"
+                        @click="togglePosition(p.value)">
+                        <svg class="pos-check size-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+                        {{ p.label }}
+                    </button>
+                    <button v-if="positions.length" type="button" class="btn btn-xs btn-ghost rounded-full text-base-content/60" @click="positions = []">Quitar</button>
                 </div>
                 <OptionToggle v-model="scope" :options="MATCH_SCOPE_OPTIONS" size="sm" />
                 <!-- Tooltip con el criterio (también con el foco del teclado); el lector de pantalla lo lee por aria-describedby -->
@@ -224,23 +267,30 @@ const AURA = ["aura-gold", "aura-silver", "aura-bronze"]
 
         <template v-else>
             <!-- TransitionGroup: al reordenar o filtrar, las cartas se deslizan a su nuevo sitio -->
-            <TransitionGroup v-if="shown.length" tag="ul" name="squad" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-5" :aria-label="`Jugadores, ordenados por ${sort.label.toLowerCase()}`">
+            <div ref="gridTop" aria-hidden="true" class="-mb-6"></div>
+            <!-- :duration="0": las que salen se desmontan al momento. Si no, Vue espera a que acabe su
+                 animación, y la del halo del podio es infinita: se quedaban montadas (con su Atropos) -->
+            <TransitionGroup v-if="shown.length" tag="ul" name="squad" :duration="0" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-5" :aria-label="`Jugadores, ordenados por ${sort.label.toLowerCase()}${paged.pages > 1 ? `, página ${paged.page} de ${paged.pages}` : ''}`">
                 <!-- Huecos a los lados del podio (solo con 5 columnas): así el #4 y siguientes empiezan en la fila 2 -->
-                <template v-if="podium && shown.length > 3">
+                <template v-if="podium && paged.items.length > 3">
                     <li key="spacer-l" aria-hidden="true" class="hidden xl:block xl:col-start-1 xl:row-start-1"></li>
                     <li key="spacer-r" aria-hidden="true" class="hidden xl:block xl:col-start-5 xl:row-start-1"></li>
                 </template>
-                <li v-for="(p, i) in shown" :key="p.member.playerId" :id="p.member.playerId === myId ? 'squad-me' : undefined"
+                <li v-for="(p, i) in paged.items" :key="p.member.playerId" :id="p.member.playerId === myId ? 'squad-me' : undefined"
                     class="squad-cell"
-                    :class="podium && i < 3 ? ['aura aura-sm', AURA[i], shown.length > 3 ? PODIUM_CELLS[i] : ''] : ''"
+                    :class="podium && i < 3 ? ['aura aura-sm', AURA[i], paged.items.length > 3 ? PODIUM_CELLS[i] : ''] : ''"
                     :style="`--i: ${Math.min(i, 14)};${podium && i < 3 ? ' --aura-radius: 1rem' : ''}`">
-                    <SquadCard :player="p" :rank="i + 1" :sort="sort" :medal="podium && i < 3 ? (i as 0 | 1 | 2) : null" :mine="p.member.playerId === myId" />
+                    <SquadCard :player="p" :rank="paged.offset + i + 1" :sort="sort" :medal="podium && i < 3 ? (i as 0 | 1 | 2) : null" :mine="p.member.playerId === myId" />
                 </li>
             </TransitionGroup>
+
             <div v-else class="text-center py-12 text-base-content/60">
                 <p class="font-bold">No hay nadie con esos filtros</p>
-                <button type="button" class="btn btn-sm btn-ghost mt-2" @click="search = ''; position = null; onlyRegulars = false">Quitar los filtros</button>
+                <button type="button" class="btn btn-sm btn-ghost mt-2" @click="search = ''; positions = []; onlyRegulars = false">Quitar los filtros</button>
             </div>
+
+            <!-- Páginas (el paginador genérico; no pinta nada con una sola) -->
+            <Paginator :items-count="shown.length" :items-per-page="SQUAD_PAGE_SIZE" :current-page="paged.page" label="Páginas de la plantilla" @pagechange="goToPage" />
 
             <!-- Los de pocos partidos, plegados -->
             <details v-if="casuals.length" class="group rounded-2xl bg-base-200/60 ring-1 ring-base-content/5">
@@ -284,11 +334,15 @@ const AURA = ["aura-gold", "aura-silver", "aura-bronze"]
                 <h2 id="squad-filters-title" class="font-black text-lg">Filtros</h2>
                 <div>
                     <p class="text-xs uppercase font-black tracking-widest text-base-content/50 mb-2">Posición</p>
-                    <div role="group" aria-label="Posición" class="flex flex-wrap gap-2">
-                        <button v-for="p in POSITIONS" :key="p.label" type="button" :aria-pressed="position === p.value"
-                            class="btn rounded-full font-bold" :class="position === p.value ? 'btn-primary' : 'btn-ghost bg-base-200'"
-                            @click="position = p.value">{{ p.label }}</button>
+                    <div role="group" aria-label="Posición (puedes marcar varias)" class="flex flex-wrap gap-2">
+                        <button v-for="p in POSITIONS" :key="p.value" type="button" :aria-pressed="positions.includes(p.value)"
+                            class="pos-chip btn rounded-full font-bold gap-1" :class="positions.includes(p.value) ? 'btn-primary' : 'btn-ghost bg-base-200'"
+                            @click="togglePosition(p.value)">
+                            <svg class="pos-check size-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+                            {{ p.label }}
+                        </button>
                     </div>
+                    <p class="text-xs text-base-content/50 mt-1.5">Puedes marcar varias; sin ninguna salen todas.</p>
                 </div>
                 <div>
                     <p class="text-xs uppercase font-black tracking-widest text-base-content/50 mb-2">Partidos</p>
@@ -331,6 +385,20 @@ const AURA = ["aura-gold", "aura-silver", "aura-bronze"]
 .squad-leave-active { display: none; }
 @keyframes squad-in {
     from { opacity: 0; translate: 0 1.25rem; scale: 0.96; }
+}
+
+/* Chips de posición: la marca ✓ solo en las elegidas, entrando con un pequeño salto */
+.pos-chip .pos-check {
+    display: none;
+}
+.pos-chip[aria-pressed="true"] .pos-check {
+    display: block;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .pos-chip[aria-pressed="true"] .pos-check { animation: pos-check-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+}
+@keyframes pos-check-in {
+    from { scale: 0; }
 }
 
 /* Tu jugador: al llegar con la burbuja, un destello del color del club */

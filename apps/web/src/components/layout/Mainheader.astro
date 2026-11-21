@@ -2,38 +2,86 @@
 import { CLUB } from "@/config/club";
 ---
 
-<header class:list={["p-6", CLUB.headerStyle === "base" ? "bg-base-300 dark:bg-base-100 text-base-content" : "bg-primary text-primary-content"]}>
+<header id="main-header" class:list={["p-6", CLUB.headerStyle === "base" ? "bg-base-300 dark:bg-base-100 text-base-content" : "bg-primary text-primary-content"]}>
     <div class="flex flex-col justify-center items-center px-6">
         <img src={CLUB.logo} class="w-1/4 md:w-1/12 escudo" alt={`Escudo de ${CLUB.name}`} />
     </div>
     <p class="text-3xl mt-4 font-bold text-center uppercase">{CLUB.name}</p>
 </header>
 
+<script>
+    /**
+     * El escudo grande "vuela" al disco de la navbar mientras bajas: el script mide de dónde sale y
+     * adónde llega (--fly-x, --fly-y, --fly-scale) y el tramo de scroll en el que lo hace; la animación
+     * va en CSS, ligada al scroll. Al final del tramo se cruza con el escudo pequeño de la navbar.
+     */
+    function measureFlight() {
+        const header = document.getElementById("main-header");
+        const crest = header?.querySelector<HTMLImageElement>(".escudo");
+        const disc = document.querySelector<HTMLElement>("nav.navbar .club-disc");
+        const nav = document.querySelector<HTMLElement>("nav.navbar");
+        if (!header || !crest || !disc || !nav) return;
+
+        // Medidas sin la animación aplicada (si no, se mide el escudo ya desplazado)
+        const prev = crest.style.animation;
+        crest.style.animation = "none";
+        const c = crest.getBoundingClientRect();
+        crest.style.animation = prev;
+        const d = disc.getBoundingClientRect();
+        const n = nav.getBoundingClientRect();
+        if (!c.height) return;
+
+        // Tramo: desde arriba hasta que la cabecera desaparece y la navbar queda pegada arriba
+        const end = header.offsetHeight;
+        // Centro del disco dentro de la nav (no cambia con el scroll) y centro del escudo en la página
+        const discCx = d.left + d.width / 2;
+        const discCyInNav = d.top - n.top + d.height / 2;
+        const crestCx = c.left + c.width / 2;
+        const crestCy = c.top + scrollY + c.height / 2;
+        // Al final del tramo el escudo ha subido `end` px con la página; la nav está en top:0
+        const root = document.documentElement.style;
+        root.setProperty("--fly-x", `${discCx - crestCx}px`);
+        root.setProperty("--fly-y", `${discCyInNav + end - crestCy}px`);
+        // El escudo del disco mide 40px, y con la barra ya compacta (al bajar) el disco va al 90 %
+        root.setProperty("--fly-scale", String((40 * 0.9) / c.height));
+        root.setProperty("--logoheader-anim-end", `${end}px`);
+        root.setProperty("--navbar-anim-start", "0px");
+        root.setProperty("--navbar-anim-end", `${end}px`);
+        root.setProperty("--logo-fade-start", `${end * 0.85}px`);
+    }
+    function initFlight() {
+        if (!document.getElementById("main-header")) return;
+        measureFlight();
+        document.querySelector<HTMLImageElement>("#main-header .escudo")?.addEventListener("load", measureFlight, { once: true });
+    }
+    initFlight();
+    addEventListener("resize", measureFlight, { passive: true });
+    document.addEventListener("astro:page-load", initFlight);
+</script>
+
 <style>
+    /* Valores por defecto (sin JS); el script los sustituye por los medidos */
     :root {
         --logoheader-anim-start: 0px;
         --logoheader-anim-end: 16vh;
     }
 
-    @media only screen and (min-width: 1024px) {
-        .escudo {
-            --logoheader-anim-start: 0px;
-            --logoheader-anim-end: 18vh;
-        }
-    }
-
-    @keyframes hide-escudo {
+    /* Hasta el disco de la navbar (medido por el script); se desvanece solo al final, cuando el escudo
+       pequeño de la navbar aparece justo debajo. Sin medidas, el de siempre: hacia la izquierda */
+    @keyframes fly-escudo {
+        85% { opacity: 1; }
         to {
             opacity: 0;
-            translate: -50vw 200px;
-            scale: 0.5;
+            translate: var(--fly-x, -50vw) var(--fly-y, 200px);
+            scale: var(--fly-scale, 0.5);
         }
     }
 
-    /* El escudo se encoge y se va hacia el logo de la navbar al hacer scroll */
     .escudo {
-        animation: hide-escudo linear both;
+        animation: fly-escudo linear both;
         animation-timeline: scroll(nearest);
         animation-range: var(--logoheader-anim-start) var(--logoheader-anim-end);
+        position: relative;
+        z-index: 60;
     }
 </style>
