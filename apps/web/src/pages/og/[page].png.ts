@@ -8,7 +8,7 @@ import { renderPageOgImage } from "@/lib/ogImage"
 export const OG_PAGES = {
     plantilla: "Plantilla",
     partidos: "Partidos",
-    totw: "Salón de la fama",
+    totw: "TOTW del derbi",
 } as const
 
 export const getStaticPaths = (() =>

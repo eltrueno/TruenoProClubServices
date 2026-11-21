@@ -62,6 +62,14 @@ export const CASEMURO_SOCIALS = [
     { id: "tiktok", label: "TikTok", href: "https://www.tiktok.com/@mr.casemuro" },
 ] as const
 
+/** El repositorio (público) de todo el proyecto, para pedir estrellas y forks (igual que en apps/web/src/config/developer.ts) */
+export const REPO = {
+    url: "https://github.com/eltrueno/TruenoProClubServices",
+    forkUrl: "https://github.com/eltrueno/TruenoProClubServices/fork",
+    /** API pública de GitHub (sin token: 60 peticiones/hora por IP, por eso se cachea en el navegador) */
+    api: "https://api.github.com/repos/eltrueno/TruenoProClubServices",
+} as const
+
 /** Redes del desarrollador (el_trueno) */
 export const DEV_SOCIALS = [
     { id: "github", label: "GitHub", href: "https://github.com/eltrueno" },

@@ -155,10 +155,17 @@ onUnmounted(() => {
         </template>
 
         <template v-else>
+          <!-- Sin sesión: qué ganas con la cuenta, en una línea, y el botón destacado -->
+          <li class="menu-title cursor-default pointer-events-none px-3 pt-1 pb-2 normal-case">
+            <span class="text-sm font-bold text-base-content leading-snug">¿Juegas en {{ CLUB.name }}?</span>
+            <span class="block mt-1 text-xs font-normal text-base-content/70 leading-snug">
+              Con tu cuenta de Twitch ves tus estadísticas, tu progresión y tus logros.
+            </span>
+          </li>
           <li>
-            <a :href="loginHref" @click="closeDropdown" class="btn btn-ghost justify-start gap-3">
+            <a :href="loginHref" @click="closeDropdown" class="btn btn-primary justify-start gap-3">
               <LogIn class="size-5" />
-              Iniciar sesión
+              Iniciar sesión con Twitch
             </a>
           </li>
         </template>

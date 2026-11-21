@@ -1,0 +1,132 @@
+---
+/**
+ * "Próximamente" del TOTW del derbi: el once de la semana contando solo los partidos entre los dos
+ * clubes de la comunidad (City vs United). Mientras llega, la página /totw enseña esto: un once con
+ * los huecos aún por desvelar y unas pistas. Sin datos: solo el anuncio. El TOTW de antes
+ * (TotwContainer) sigue en el código, sin usar.
+ */
+import { CLUB, OTHER_CLUBS } from "@/config/club";
+
+/** El otro club de la comunidad: el rival de los derbis */
+const rivalName = OTHER_CLUBS[0]?.name ?? "el otro club";
+
+// Huecos del once (4-3-3), en % del campo. "home" alterna los colores de los dos clubes: un once mixto
+const SLOTS = [
+	{ x: 50, y: 88, pos: "POR", home: true },
+	{ x: 15, y: 68, pos: "LI", home: false }, { x: 38, y: 72, pos: "DFC", home: true }, { x: 62, y: 72, pos: "DFC", home: false }, { x: 85, y: 68, pos: "LD", home: true },
+	{ x: 28, y: 47, pos: "MC", home: false }, { x: 50, y: 52, pos: "MCD", home: true }, { x: 72, y: 47, pos: "MC", home: false },
+	{ x: 20, y: 22, pos: "EI", home: true }, { x: 50, y: 16, pos: "DC", home: false }, { x: 80, y: 22, pos: "ED", home: true },
+];
+
+const clues = [
+	{ title: "Solo cuentan los derbis", text: `Los partidos de la semana entre ${CLUB.name} y ${rivalName}. Ni liga ni amistosos con otros.`, icon: "M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" },
+	{ title: "Un once mixto", text: "Los mejores de los dos clubes, juntos en el mismo equipo. Aquí no hay camisetas.", icon: "M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" },
+	{ title: "Y alguna sorpresa más", text: "No todo va a ser para los mejores. Hasta aquí podemos leer.", icon: "M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" },
+];
+
+---
+
+<div class="w-full max-w-6xl mx-auto px-4 lg:px-8 py-10 lg:py-14 flex flex-col gap-14 lg:gap-20">
+	<!-- Cabecera -->
+	<header class="text-center reveal-stagger">
+		<span class="inline-flex items-center gap-2 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-black uppercase tracking-[0.25em]">
+			<span class="teaser-dot size-2 rounded-full bg-primary"></span>
+			Próximamente
+		</span>
+		<h1 class="mt-4 text-4xl lg:text-6xl font-black tracking-tighter">TOTW del derbi</h1>
+		<p class="mt-4 text-base lg:text-lg text-base-content/70 max-w-2xl mx-auto leading-relaxed">
+			El once de la semana vuelve con otras reglas: solo cuenta lo que pase en el derbi, <strong class="text-base-content">{CLUB.name}</strong> contra <strong class="text-base-content">{rivalName}</strong>.
+		</p>
+	</header>
+
+	<!-- El once, aún por desvelar -->
+	<section class="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] items-center">
+		<div class="reveal-left">
+			<span class="text-xs uppercase font-black tracking-[0.25em] text-primary">Un adelanto</span>
+			<h2 class="mt-2 text-3xl lg:text-4xl font-black tracking-tighter">Once huecos. Dos escudos.</h2>
+			<ul class="mt-6 flex flex-col gap-5">
+				{clues.map((c) => (
+					<li class="flex gap-4">
+						<span class="size-10 shrink-0 rounded-xl bg-primary/10 text-primary grid place-items-center">
+							<svg class="size-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d={c.icon} /></svg>
+						</span>
+						<span>
+							<span class="block font-black">{c.title}</span>
+							<span class="block text-sm text-base-content/70 leading-relaxed">{c.text}</span>
+						</span>
+					</li>
+				))}
+			</ul>
+		</div>
+
+		<!-- Campo con los huecos del 4-3-3: interrogantes que laten, alternando los colores de los dos clubes -->
+		<div class="reveal-right">
+			<div class="pitch relative mx-auto w-full max-w-md aspect-[3/4] rounded-3xl overflow-hidden" role="img"
+				aria-label="Un campo con los once huecos del TOTW del derbi, aún por desvelar">
+				<svg class="absolute inset-0 size-full text-white/25" viewBox="0 0 300 400" fill="none" stroke="currentColor" stroke-width="2" preserveAspectRatio="none" aria-hidden="true">
+					<rect x="12" y="12" width="276" height="376" rx="6" />
+					<line x1="12" y1="200" x2="288" y2="200" />
+					<circle cx="150" cy="200" r="42" />
+					<rect x="80" y="12" width="140" height="62" />
+					<rect x="80" y="326" width="140" height="62" />
+				</svg>
+				{SLOTS.map((s, i) => (
+					<div class="slot absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1" style={`left:${s.x}%;top:${s.y}%;--d:${i * 0.18}s`}>
+						<span class:list={["slot-shirt size-11 lg:size-12 rounded-full grid place-items-center font-black text-lg ring-2", s.home ? "slot-home" : "slot-away"]}>?</span>
+						<span class="text-[0.6rem] font-black tracking-widest text-white/70">{s.pos}</span>
+					</div>
+				))}
+			</div>
+		</div>
+	</section>
+
+	<!-- Mientras tanto -->
+	<section class="reveal text-center rounded-3xl bg-base-200 border border-base-content/5 p-6 lg:p-10">
+		<h2 class="text-2xl lg:text-3xl font-black tracking-tighter">Mientras tanto, a jugar el derbi</h2>
+		<p class="mt-2 text-base-content/70 max-w-xl mx-auto">Cada partido entre los dos clubes contará. Ve calentando en la plantilla o repasa los últimos resultados.</p>
+		<div class="mt-6 flex flex-wrap justify-center gap-3">
+			<a href="/plantilla" class="btn btn-primary rounded-xl font-bold">Ver plantilla</a>
+			<a href="/partidos" class="btn btn-outline rounded-xl font-bold">Últimos partidos</a>
+		</div>
+	</section>
+</div>
+
+<style>
+	.pitch {
+		background:
+			repeating-linear-gradient(180deg, transparent 0 12.5%, rgb(255 255 255 / 0.04) 12.5% 25%),
+			linear-gradient(160deg, #1d6b3a, #0d2a17);
+		box-shadow: inset 0 0 60px rgb(0 0 0 / 0.45);
+	}
+	.slot-shirt {
+		color: #fff;
+		backdrop-filter: blur(2px);
+	}
+	/* Los dos clubes: el color de este y uno neutro para el otro (en una web solo hay un "primary") */
+	.slot-home {
+		background: color-mix(in oklab, var(--color-primary) 70%, transparent);
+		--tw-ring-color: color-mix(in oklab, var(--color-primary) 40%, white);
+	}
+	.slot-away {
+		background: rgb(255 255 255 / 0.12);
+		--tw-ring-color: rgb(255 255 255 / 0.45);
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		/* Los interrogantes laten uno tras otro, como si estuvieran a punto de desvelarse */
+		.slot-shirt {
+			animation: slot-pulse 3.2s ease-in-out infinite;
+			animation-delay: var(--d);
+		}
+		@keyframes slot-pulse {
+			0%, 100% { scale: 1; box-shadow: 0 0 0 0 rgb(255 255 255 / 0); }
+			50% { scale: 1.08; box-shadow: 0 0 22px 2px color-mix(in oklab, var(--color-primary) 60%, transparent); }
+		}
+		.teaser-dot {
+			animation: teaser-blink 1.6s ease-in-out infinite;
+		}
+		@keyframes teaser-blink {
+			50% { opacity: 0.25; }
+		}
+	}
+</style>
