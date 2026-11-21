@@ -96,6 +96,24 @@ const observeMine = async () => {
 watch([shown, myId], observeMine)
 onBeforeUnmount(() => mineObserver?.disconnect())
 
+// ── Barra pegada: con una medida en el scroll (como la de la ficha de jugador) ──
+const toolbarSentinel = ref<HTMLElement | null>(null)
+const toolbarStuck = ref(false)
+const updateStuck = () => {
+    const el = toolbarSentinel.value
+    const navH = document.querySelector<HTMLElement>("nav.navbar")?.offsetHeight ?? 68
+    toolbarStuck.value = !!el && el.getBoundingClientRect().top < navH + 4
+}
+onMounted(() => {
+    addEventListener("scroll", updateStuck, { passive: true })
+    addEventListener("resize", updateStuck, { passive: true })
+    updateStuck()
+})
+onBeforeUnmount(() => {
+    removeEventListener("scroll", updateStuck)
+    removeEventListener("resize", updateStuck)
+})
+
 /** Lleva a tu carta: si un filtro la esconde, lo quita antes */
 async function goToMine() {
     if (!mineInGrid.value) {
@@ -131,10 +149,19 @@ const AURA = ["aura-gold", "aura-silver", "aura-bronze"]
 </script>
 
 <template>
-    <div class="w-full flex flex-col gap-6">
-        <!-- Barra de filtros (fija al bajar). En móvil: orden, buscador y "Filtros" (el resto en un panel) -->
+    <!-- Todo sobre un bloque con fondo (--squad-bg: el mismo que el de las pestañas de la ficha de jugador) -->
+    <div class="w-full flex flex-col gap-6 rounded-3xl bg-(--squad-bg) px-3 pb-4 lg:px-5 lg:pb-6
+        [--squad-bg:color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-100))]
+        dark:[--squad-bg:color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-300))]">
+        <!-- Marcador justo encima de la barra: cuando pasa bajo el menú, la barra está pegada -->
+        <div ref="toolbarSentinel" aria-hidden="true" class="h-0 -mb-6"></div>
+        <!-- Barra de filtros (fija al bajar). Sin pegar: parte del bloque. Pegada: lámina medio translúcida que se
+             solapa sobre las cartas. En móvil: orden, buscador y "Filtros" (el resto en un panel) -->
         <div role="toolbar" aria-label="Filtrar y ordenar la plantilla"
-            class="sticky top-[4.25rem] z-30 rounded-2xl bg-base-200/85 backdrop-blur-md shadow-md ring-1 ring-base-content/5 p-2.5 flex flex-wrap items-center gap-2">
+            class="sticky top-[4.25rem] z-30 -mx-3 lg:-mx-5 px-3 lg:px-5 py-3 flex flex-wrap items-center gap-2 transition-[border-radius,background-color,box-shadow] duration-300"
+            :class="toolbarStuck
+                ? 'rounded-b-2xl bg-[color-mix(in_oklab,var(--squad-bg)_78%,transparent)] backdrop-blur-md shadow-lg shadow-black/25'
+                : 'rounded-t-3xl bg-(--squad-bg)'">
             <label class="input input-sm rounded-xl flex-1 min-w-40 bg-base-100">
                 <svg class="size-4 opacity-60" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" /></svg>
                 <input v-model="search" type="search" placeholder="Buscar jugador o pro" aria-label="Buscar jugador" />
@@ -142,10 +169,11 @@ const AURA = ["aura-gold", "aura-silver", "aura-bronze"]
 
             <!-- Ordenar: siempre a la vista -->
             <div class="flex items-center gap-1 order-first sm:order-none w-full sm:w-auto">
-                <label class="select select-sm rounded-xl bg-primary text-primary-content border-none font-bold flex-1 sm:flex-none sm:w-56">
-                    <span class="label text-primary-content/80 font-semibold">Ordenar por</span>
-                    <select v-model="sortKey" aria-label="Ordenar por">
-                        <option v-for="o in SQUAD_SORTS" :key="o.key" :value="o.key" class="text-base-content">{{ o.label }}</option>
+                <label class="select select-sm rounded-xl bg-base-100 border-base-content/10 flex-1 sm:flex-none sm:w-60 focus-within:border-primary">
+                    <span class="label text-[0.65rem] uppercase tracking-widest font-black text-base-content/50">Ordenar por</span>
+                    <span class="w-1 h-4 rounded-full bg-primary shrink-0" aria-hidden="true"></span>
+                    <select v-model="sortKey" aria-label="Ordenar por" class="font-black text-primary">
+                        <option v-for="o in SQUAD_SORTS" :key="o.key" :value="o.key" class="text-base-content active:bg-primary! active:text-primary-content! active:shadow-none!">{{ o.label }}</option>
                     </select>
                 </label>
                 <button type="button" class="btn btn-sm btn-square rounded-xl bg-base-100 border-base-content/10"
@@ -163,9 +191,13 @@ const AURA = ["aura-gold", "aura-silver", "aura-bronze"]
                         @click="position = p.value">{{ p.label }}</button>
                 </div>
                 <OptionToggle v-model="scope" :options="MATCH_SCOPE_OPTIONS" size="sm" />
-                <label class="flex items-center gap-2 text-sm font-semibold px-2 cursor-pointer">
-                    <input v-model="onlyRegulars" type="checkbox" class="toggle toggle-sm toggle-primary" />
+                <!-- Tooltip con el criterio (también con el foco del teclado); el lector de pantalla lo lee por aria-describedby -->
+                <label class="tooltip tooltip-bottom flex items-center gap-2 text-sm font-semibold px-2 cursor-pointer"
+                    :data-tip="`Jugadores con ${REGULAR_MIN_GAMES} partidos o más. El resto aparece abajo, en «Han pasado por el club»`">
+                    <input v-model="onlyRegulars" type="checkbox" class="toggle toggle-sm toggle-primary" aria-describedby="regulars-tip" />
                     Solo habituales
+                    <svg class="size-3.5 opacity-50" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" /></svg>
+                    <span id="regulars-tip" class="sr-only">Jugadores con {{ REGULAR_MIN_GAMES }} partidos o más</span>
                 </label>
             </div>
             <button type="button" class="md:hidden btn btn-sm rounded-xl bg-base-100 border-base-content/10 gap-1.5" @click="filtersDialog?.showModal()">
@@ -235,7 +267,10 @@ const AURA = ["aura-gold", "aura-silver", "aura-bronze"]
             class="go-to-me fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-40 flex items-center rounded-full bg-base-200/90 backdrop-blur-md shadow-lg ring-1 ring-base-content/10 p-1 cursor-pointer"
             :data-visible="String(!mineVisible)" :data-dir="mineInGrid && mineAbove ? 'up' : 'down'" @click="goToMine">
             <span class="relative shrink-0">
-                <img :src="playerImage(myMember)" alt="" class="size-10 rounded-full object-cover object-top bg-base-300 ring-2 ring-primary" />
+                <!-- Recortada a la cabeza: la foto es de cuerpo entero, así que se amplía desde arriba -->
+                <span class="go-face block size-10 rounded-full overflow-hidden bg-base-300 ring-2 ring-primary">
+                    <img :src="playerImage(myMember)" alt="" class="size-full object-cover object-top scale-[2.6] origin-[50%_6%]" />
+                </span>
                 <span class="go-arrow absolute -bottom-0.5 -right-0.5 size-4 rounded-full bg-primary text-primary-content grid place-items-center ring-2 ring-base-200">
                     <svg class="size-2.5" fill="none" stroke="currentColor" stroke-width="3.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" /></svg>
                 </span>
@@ -284,7 +319,8 @@ const AURA = ["aura-gold", "aura-silver", "aura-bronze"]
 /* Cartas: entran en cascada (al cargar y al aparecer por un filtro) y se deslizan al reordenar.
    Las que salen desaparecen al momento: en un grid, dejarlas animando descoloca a las demás */
 @media (prefers-reduced-motion: no-preference) {
-    .squad-cell {
+    /* En el hijo, no en la celda: la celda del podio es un .aura y su animación es la que gira el halo */
+    .squad-cell > * {
         animation: squad-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
         animation-delay: calc(var(--i, 0) * 35ms);
     }
@@ -338,7 +374,7 @@ const AURA = ["aura-gold", "aura-silver", "aura-bronze"]
     padding: 0 0.75rem 0 0.6rem;
 }
 @media (prefers-reduced-motion: no-preference) {
-    .go-to-me[data-visible="true"] img { animation: go-ping 1.2s ease-out 0.3s; }
+    .go-to-me[data-visible="true"] .go-face { animation: go-ping 1.2s ease-out 0.3s; }
 }
 @keyframes go-ping {
     0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-primary) 70%, transparent); }

@@ -89,7 +89,14 @@ onBeforeUnmount(() => atropos?.destroy())
                     <!-- Abajo: nombre, posición y datos; casi quieto con Atropos (si no, parece despegarse) -->
                     <span data-atropos-offset="0.5" class="squad-info absolute inset-x-0 bottom-0 z-20 p-3 pt-10 text-white">
                         <span class="flex items-center gap-1.5 min-w-0">
-                            <span v-if="player.positions[0]" class="badge badge-xs badge-primary font-bold shrink-0">{{ SHORT[player.positions[0]] }}</span>
+                            <span v-if="player.positions[0]" class="relative shrink-0 flex">
+                                <span class="badge badge-xs badge-primary font-bold">{{ SHORT[player.positions[0]] }}</span>
+                                <!-- Al pasar el ratón: las demás posiciones que juega, apiladas hacia arriba desde la principal -->
+                                <span v-if="player.positions.length > 1" class="squad-pos absolute bottom-full left-0 mb-1 flex flex-col-reverse items-start gap-1">
+                                    <span v-for="(pos, i) in player.positions.slice(1)" :key="pos" :style="{ '--k': i }"
+                                        class="badge badge-xs font-bold bg-black/55 border-white/30 text-white backdrop-blur-sm">{{ SHORT[pos] }}</span>
+                                </span>
+                            </span>
                             <span class="font-black truncate">{{ player.member.playerName }}</span>
                         </span>
                         <span class="mt-1.5 grid grid-cols-4 gap-1 text-center">
@@ -161,12 +168,20 @@ onBeforeUnmount(() => atropos?.destroy())
 }
 .squad-card:is(:hover, :focus-visible) .squad-info { padding-top: 3.5rem; }
 .squad-card:is(:hover, :focus-visible) .squad-more { grid-template-rows: 1fr; opacity: 1; }
+/* Posiciones secundarias: suben una a una desde la principal */
+.squad-pos > * {
+    opacity: 0;
+    translate: 0 0.75rem;
+    transition: opacity 0.2s, translate 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition-delay: calc(var(--k, 0) * 45ms);
+}
+.squad-card:is(:hover, :focus-visible) .squad-pos > * { opacity: 1; translate: 0 0; }
 /* Sin ratón (móvil) no hay fila extra: en una carta de media pantalla taparía la foto */
 @media (hover: none) {
-    .squad-more { display: none; }
+    .squad-more, .squad-pos { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .squad-info, .squad-more { transition: none; }
+    .squad-info, .squad-more, .squad-pos > * { transition: none; }
 }
 
 /* Atropos: que sus capas no tapen el enlace */

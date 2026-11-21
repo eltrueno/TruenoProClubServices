@@ -53,9 +53,11 @@ describe("filterSquad", () => {
         expect(filterSquad(squad, { search: "alvaro", position: null }).map((p) => p.member.playerId)).toEqual(["1"])
         expect(filterSquad(squad, { search: "pichi", position: null }).map((p) => p.member.playerId)).toEqual(["1"])
     })
-    it("por posición principal (la más jugada)", () => {
-        expect(filterSquad(squad, { search: "", position: "midfielder" })).toEqual([])
+    it("por posición, también las secundarias", () => {
+        // Álvaro: delantero sobre todo, pero también medio
+        expect(filterSquad(squad, { search: "", position: "midfielder" }).map((p) => p.member.playerId)).toEqual(["1"])
         expect(filterSquad(squad, { search: "", position: "forward" }).map((p) => p.member.playerId)).toEqual(["1"])
+        expect(filterSquad(squad, { search: "", position: "goalkeeper" }).map((p) => p.member.playerId)).toEqual(["3"])
     })
 })
 
