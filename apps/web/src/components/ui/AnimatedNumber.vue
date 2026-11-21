@@ -36,7 +36,8 @@ const formatter = computed(() => new Intl.NumberFormat("es-ES", {
     maximumFractionDigits: props.decimals,
     useGrouping: props.grouping
 }))
-const format = (n: number) => formatter.value.format(n)
+// `|| 0`: que un -0 (o un negativo minúsculo redondeado a 0) no salga como "-0"
+const format = (n: number) => formatter.value.format(Number(n.toFixed(props.decimals)) || 0)
 
 // Suave al final pero sin dar casi todo el salto de golpe (out-quad): con out-cubic el número
 // llegaba casi al final en las primeras décimas y la cuenta apenas se apreciaba
@@ -49,7 +50,9 @@ const run = (to: number) => {
     const start = performance.now()
     const origin = from
     const step = (now: number) => {
-        const t = Math.min(1, (now - start) / props.duration)
+        // El tiempo del primer fotograma puede ser algo anterior a `start` (performance.now() se toma
+        // después): sin el max, t salía negativo y la cuenta pasaba por "-0" o "-0,1"
+        const t = Math.min(1, Math.max(0, (now - start) / props.duration))
         displayed.value = origin + (to - origin) * ease(t)
         if (t < 1) frame = requestAnimationFrame(step)
         else from = to

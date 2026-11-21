@@ -10,12 +10,14 @@ import { CLUB, OTHER_CLUBS } from "@/config/club";
 /** El otro club de la comunidad: el rival de los derbis */
 const rivalName = OTHER_CLUBS[0]?.name ?? "el otro club";
 
-// Huecos del once (4-3-3), en % del campo. "home" alterna los colores de los dos clubes: un once mixto
+// Huecos del once: 1 portero, 3 defensas, 5 medios y 2 delanteros (EA solo da esas cuatro posiciones,
+// sin laterales ni extremos), en % del campo. "home" alterna los colores de los dos clubes: un once mixto
 const SLOTS = [
 	{ x: 50, y: 88, pos: "POR", home: true },
-	{ x: 15, y: 68, pos: "LI", home: false }, { x: 38, y: 72, pos: "DFC", home: true }, { x: 62, y: 72, pos: "DFC", home: false }, { x: 85, y: 68, pos: "LD", home: true },
-	{ x: 28, y: 47, pos: "MC", home: false }, { x: 50, y: 52, pos: "MCD", home: true }, { x: 72, y: 47, pos: "MC", home: false },
-	{ x: 20, y: 22, pos: "EI", home: true }, { x: 50, y: 16, pos: "DC", home: false }, { x: 80, y: 22, pos: "ED", home: true },
+	{ x: 24, y: 70, pos: "DEF", home: false }, { x: 50, y: 72, pos: "DEF", home: true }, { x: 76, y: 70, pos: "DEF", home: false },
+	{ x: 12, y: 45, pos: "MED", home: true }, { x: 31, y: 50, pos: "MED", home: false }, { x: 50, y: 53, pos: "MED", home: true },
+	{ x: 69, y: 50, pos: "MED", home: false }, { x: 88, y: 45, pos: "MED", home: true },
+	{ x: 35, y: 20, pos: "DEL", home: false }, { x: 65, y: 20, pos: "DEL", home: true },
 ];
 
 const clues = [
@@ -26,7 +28,9 @@ const clues = [
 
 ---
 
-<div class="w-full max-w-6xl mx-auto px-4 lg:px-8 py-10 lg:py-14 flex flex-col gap-14 lg:gap-20">
+<!-- overflow-x-clip: el campo y las pistas entran de lado (reveal-left/right) y, sin recortar, abrían
+     scroll horizontal. clip y no hidden: hidden haría de esto un contenedor de scroll y pararía view() -->
+<div class="w-full max-w-6xl mx-auto px-4 lg:px-8 py-10 lg:py-14 flex flex-col gap-14 lg:gap-20 overflow-x-clip">
 	<!-- Cabecera -->
 	<header class="text-center reveal-stagger">
 		<span class="inline-flex items-center gap-2 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-black uppercase tracking-[0.25em]">
@@ -59,7 +63,7 @@ const clues = [
 			</ul>
 		</div>
 
-		<!-- Campo con los huecos del 4-3-3: interrogantes que laten, alternando los colores de los dos clubes -->
+		<!-- Campo con los huecos del 1-3-5-2: interrogantes que laten, alternando los colores de los dos clubes -->
 		<div class="reveal-right">
 			<div class="pitch relative mx-auto w-full max-w-md aspect-[3/4] rounded-3xl overflow-hidden" role="img"
 				aria-label="Un campo con los once huecos del TOTW del derbi, aún por desvelar">
