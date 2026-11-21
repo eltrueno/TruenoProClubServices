@@ -126,11 +126,16 @@
             <!-- Al bajar, la barra de pestañas se queda arriba (bajo el menú) con el jugador en pequeño -->
             <div ref="tabSentinel" class="h-px -mb-px" aria-hidden="true"></div>
             <!-- Pegada, con el color del fondo de la página (como el body): parte del fondo, no una tarjeta flotando -->
-            <!-- Fondo: el mismo color que el bloque de las pestañas de debajo (.tab-body, base-200 al 50 % sobre el
-                 fondo de la página: blanco en claro, base-300 en oscuro, #171c21), pero opaco: pegada arriba no se
-                 transparenta lo que pasa por debajo -->
-            <div class="tabs-bar sticky z-40 flex items-center gap-2 p-2 transition-[border-radius] duration-300 bg-[color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-100))] dark:bg-[color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-300))]"
-                :class="tabsStuck ? 'rounded-none' : 'rounded-t-3xl'">
+            <!-- Color (--tabs-bg): el mismo que el bloque de las pestañas de debajo (.tab-body, base-200 al 50 % sobre
+                 el fondo de la página: blanco en claro, base-300 en oscuro, #171c21).
+                 Sin pegar: opaca, una sola pieza con el bloque. Pegada (compacta): ese color medio translúcido con
+                 desenfoque, esquinas de abajo redondeadas y sombra, como una lámina que se solapa sobre el contenido -->
+            <div class="tabs-bar sticky z-40 flex items-center gap-2 p-2 transition-[border-radius,background-color,box-shadow] duration-300
+                    [--tabs-bg:color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-100))]
+                    dark:[--tabs-bg:color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-300))]"
+                :class="tabsStuck
+                    ? 'rounded-b-2xl bg-[color-mix(in_oklab,var(--tabs-bg)_78%,transparent)] backdrop-blur-md shadow-lg shadow-black/25'
+                    : 'rounded-t-3xl bg-(--tabs-bg)'">
                 <!-- Jugador (solo pegada) -->
                 <button v-if="tabsStuck" type="button" @click="scrollToTop"
                     class="hidden sm:flex items-center gap-2 min-w-0 shrink pl-1 pr-2 text-left cursor-pointer rounded-xl hover:bg-base-content/5"
