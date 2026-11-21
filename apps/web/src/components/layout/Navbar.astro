@@ -36,7 +36,7 @@ const isBase = CLUB.headerStyle === "base";
 const navTheme = isBase ? "nav-base bg-base-300 dark:bg-base-100 text-base-content" : "nav-primary bg-primary text-primary-content";
 ---
 
-<nav class:list={["navbar min-w-full sticky top-0 rounded-b-md shadow-md z-50", navTheme]}>
+<nav class:list={["navbar min-w-full sticky top-0 rounded-b-md shadow-md z-50", navTheme]} data-scrolled="false">
     <!-- Escudo sobre disco blanco (se despega de cualquier fondo de nav: rojo, marfil u oscuro) y, en su
          esquina, el del otro club enlazando a su web. La animación del index va en el conjunto -->
     <div class="club-logo shrink-0 relative" class:list={[{ "logo-anim": isindex }]}>
@@ -61,6 +61,9 @@ const navTheme = isBase ? "nav-base bg-base-300 dark:bg-base-100 text-base-conte
     <!-- w-max + nowrap: al ir en absoluto (y en el index centrado con right:50%) solo tendría media pantalla
          de ancho disponible y el último botón saltaba de línea por debajo de la nav -->
     <div id="navbar-links" class="gap-0.5 sm:gap-1 absolute w-max flex flex-nowrap" class:list={[{ "links-anim": isindex }, { "right-(--links-right)": !isindex }]}>
+        <!-- Pastilla de la sección actual: la coloca el script bajo el enlace activo y, con su propio
+             view-transition-name, se desliza de un enlace a otro al cambiar de página -->
+        <span id="nav-pill" aria-hidden="true"></span>
         {links.map((link) => {
             const Icon = link.icon;
             return (
@@ -108,8 +111,37 @@ const navTheme = isBase ? "nav-base bg-base-300 dark:bg-base-100 text-base-conte
             a.classList.toggle("nav-active", a.getAttribute("href") === section);
         });
     }
-    markActive();
-    document.addEventListener("astro:page-load", markActive);
+    // Pastilla bajo el enlace activo (posición y ancho relativos al contenedor de enlaces)
+    function placePill() {
+        const pill = document.getElementById("nav-pill");
+        if (!pill) return;
+        const active = document.querySelector<HTMLElement>("#navbar-links a.nav-active");
+        if (!active || active.offsetWidth === 0) {
+            pill.style.opacity = "0";
+            return;
+        }
+        pill.style.opacity = "1";
+        pill.style.left = `${active.offsetLeft}px`;
+        pill.style.width = `${active.offsetWidth}px`;
+    }
+
+    // Barra compacta al bajar (data-scrolled): solo cambia el aspecto, no el alto (hay barras pegadas debajo)
+    function updateScrolled() {
+        document.querySelector("nav.navbar")?.setAttribute("data-scrolled", String(scrollY > 8));
+    }
+    addEventListener("scroll", updateScrolled, { passive: true });
+
+    function initNav() {
+        markActive();
+        placePill();
+        const links = document.getElementById("navbar-links");
+        if (links) new ResizeObserver(placePill).observe(links);
+        updateScrolled();
+    }
+    initNav();
+    // after-swap y no page-load: la transición captura la página nueva justo tras el cambio, y la
+    // pastilla ya tiene que estar en su sitio para que se vea viajar
+    document.addEventListener("astro:after-swap", initNav);
 </script>
 
 <style>
@@ -137,15 +169,51 @@ const navTheme = isBase ? "nav-base bg-base-300 dark:bg-base-100 text-base-conte
     .btn-ghost:hover {
         --btn-bg: var(--nav-hover);
     }
-    /* Página actual */
+    /* Página actual: el fondo lo pone la pastilla (#nav-pill), el enlace solo cambia de color */
     .btn-ghost.nav-active {
-        --btn-bg: var(--nav-active-bg);
         --btn-fg: var(--nav-active-fg);
         color: var(--nav-active-fg);
     }
+    #navbar-links > a {
+        position: relative;
+        z-index: 1;
+    }
+    #nav-pill {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        border-radius: var(--radius-field);
+        background: var(--nav-active-bg);
+        opacity: 0;
+        pointer-events: none;
+        view-transition-name: nav-pill;
+    }
+    /* El viaje de la pastilla entre páginas: con frenada suave */
+    :global(::view-transition-group(nav-pill)) {
+        animation-duration: 0.45s;
+        animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Barra compacta al bajar: casi opaca (un poco translúcida, con desenfoque), esquinas de abajo
+       redondeadas y sombra más marcada, como una lámina por encima del contenido */
+    .navbar {
+        transition: background-color 0.3s, box-shadow 0.3s, border-radius 0.3s;
+    }
+    .nav-primary { --nav-bg: var(--color-primary); }
+    .nav-base { --nav-bg: var(--color-base-300); }
+    :global([data-theme="dark"]) .nav-base { --nav-bg: var(--color-base-100); }
+    .navbar[data-scrolled="true"] {
+        background-color: color-mix(in oklab, var(--nav-bg) 92%, transparent);
+        backdrop-filter: blur(12px) saturate(1.4);
+        border-radius: 0 0 1rem 1rem;
+        box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.45);
+    }
+    .navbar[data-scrolled="true"] .club-disc { scale: 0.9; }
 
     /* Disco blanco detrás de nuestro escudo: se lee igual sobre el rojo, el marfil o el oscuro */
     .club-disc {
+        position: relative;
+        overflow: hidden;
         display: grid;
         place-items: center;
         width: 3.25rem;
@@ -153,11 +221,35 @@ const navTheme = isBase ? "nav-base bg-base-300 dark:bg-base-100 text-base-conte
         border-radius: 9999px;
         background: #fff;
         box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
-        transition: scale 0.2s ease;
+        transition: scale 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    /* Hover: se inclina un poco en 3D y le cruza un brillo; al pulsar, un pequeño rebote */
+    .club-disc::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(115deg, transparent 35%, rgb(255 255 255 / 0.7) 50%, transparent 65%);
+        translate: -120% 0;
+        pointer-events: none;
     }
     .club-disc:hover,
     .club-disc:focus-visible {
-        scale: 1.05;
+        scale: 1.08;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+        .club-disc:hover,
+        .club-disc:focus-visible {
+            transform: perspective(300px) rotateX(8deg) rotateY(-14deg);
+        }
+        .club-disc:hover::after,
+        .club-disc:focus-visible::after {
+            translate: 120% 0;
+            transition: translate 0.7s ease;
+        }
+        .club-disc:active {
+            scale: 0.9;
+            transition-duration: 0.1s;
+        }
     }
     /* Escudo de un solo color (United): disco del color principal y escudo en blanco */
     .club-disc-mono {
@@ -242,7 +334,8 @@ const navTheme = isBase ? "nav-base bg-base-300 dark:bg-base-100 text-base-conte
     .logo-anim {
         animation: fade-logo linear both;
         animation-timeline: scroll();
-        animation-range: var(--navbar-anim-start) var(--navbar-anim-end);
+        /* Aparece justo cuando le llega el escudo grande de la cabecera (lo mide Mainheader) */
+        animation-range: var(--logo-fade-start, var(--navbar-anim-start)) var(--navbar-anim-end);
     }
 
     .links-anim {

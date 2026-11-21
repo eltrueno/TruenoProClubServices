@@ -28,6 +28,14 @@ const MEDAL_CLASS = ["rank-gold", "rank-silver", "rank-bronze"]
 
 const s = computed(() => props.player.stats)
 const big = computed(() => formatStat(props.sort, props.sort.value(s.value)))
+/** Tamaño del número de detrás según lo largo que sea ("12", "7,4", "73%", "100%"): los largos, más
+ *  pequeños, sobre todo en móvil, donde si no quedaban casi enteros detrás de la cabeza */
+const bigSize = computed(() => {
+    const len = big.value.length
+    if (len <= 2) return "text-[3.75rem] sm:text-[4.5rem]"
+    if (len === 3) return "text-[2.5rem] sm:text-[3.25rem] xl:text-[3.75rem]"
+    return "text-[2rem] sm:text-[2.5rem] xl:text-[3rem]"
+})
 
 // Los cuatro datos de abajo: los de siempre menos el que ya sale en grande
 const bottomStats = computed(() =>
@@ -70,7 +78,7 @@ onBeforeUnmount(() => atropos?.destroy())
                     <!-- El dato del orden, al fondo, con su etiqueta -->
                     <span data-atropos-offset="-4" class="absolute top-1 right-3 z-0 flex flex-col items-end leading-none select-none" aria-hidden="true">
                         <!-- :key → al cambiar el orden, el número y su etiqueta vuelven a entrar -->
-                        <span :key="`n-${sort.key}`" class="big-in text-[3.75rem] sm:text-[4.5rem] font-black tracking-tighter text-white/25 tabular-nums">{{ big }}</span>
+                        <span :key="`n-${sort.key}`" class="big-in font-black tracking-tighter text-white/30 sm:text-white/25 tabular-nums" :class="bigSize">{{ big }}</span>
                         <span :key="`u-${sort.key}`" class="big-in big-in-late -mt-1 text-[0.6rem] sm:text-[0.65rem] uppercase font-black tracking-[0.2em] text-white/45">{{ sort.unit }}</span>
                     </span>
 
@@ -80,7 +88,7 @@ onBeforeUnmount(() => atropos?.destroy())
                         aria-hidden="true">#{{ rank }}</span>
                     <span v-else data-atropos-offset="2" class="absolute top-3 left-3 z-20 text-[0.65rem] uppercase font-black tracking-widest text-white/70" aria-hidden="true">#{{ rank }}</span>
 
-                    <span v-if="mine" data-atropos-offset="3" class="absolute top-2.5 left-1/2 -translate-x-1/2 z-30 badge badge-sm badge-primary font-black tracking-widest shadow-lg">TÚ</span>
+                    <span v-if="mine" data-atropos-offset="3" class="absolute top-2.5 left-1/2 -translate-x-1/2 z-30 badge badge-sm font-black tracking-widest bg-primary/35 border-white/25 text-white backdrop-blur-sm">TÚ</span>
 
                     <img data-atropos-offset="1" :src="playerImage(player.member)" alt="" loading="lazy" decoding="async"
                         :style="`view-transition-name: player-photo-${player.member.playerId}`"
@@ -110,6 +118,11 @@ onBeforeUnmount(() => atropos?.destroy())
                                 <span class="mt-2 pt-2 grid grid-cols-2 gap-1 text-center border-t border-white/15">
                                     <span><span class="block text-sm font-black tabular-nums">{{ perGame(s.goalsPlusAssists) }}</span><span class="block text-[0.6rem] uppercase text-white/60">G+A / p</span></span>
                                     <span><span class="block text-sm font-black tabular-nums">{{ perGame(s.goals) }}</span><span class="block text-[0.6rem] uppercase text-white/60">Goles / p</span></span>
+                                </span>
+                                <!-- Pista: la carta entera es un enlace a la ficha -->
+                                <span class="mt-2 flex items-center justify-center gap-1 text-[0.6rem] uppercase font-bold tracking-widest text-white/55">
+                                    Clic para ver su perfil
+                                    <svg class="size-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-5-5 5 5-5 5" /></svg>
                                 </span>
                             </span>
                         </span>

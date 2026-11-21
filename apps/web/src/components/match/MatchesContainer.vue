@@ -60,7 +60,7 @@
         </header>
         <div class="w-full flex justify-center flex-col lg:flex-row lg:justify-between">
             <Paginator v-if="!hasErrorComputed && !isLoading && finalMatchList.length>0" class="self-center" 
-            :itemsCount="finalMatchList.length" :itemsPerPage="paginatorItemsPerPage" :currentPage="paginatorPage" :maxButtons="5" @pagechange="onPageChange"
+            :itemsCount="finalMatchList.length" :itemsPerPage="paginatorItemsPerPage" :currentPage="paginatorPage" :show-range="false" label="Páginas de partidos" @pagechange="onPageChange"
             />
             <div class="self-center m-1">{{ finalMatchList.length }} resultados</div>
         </div>
