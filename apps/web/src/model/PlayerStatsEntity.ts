@@ -1,5 +1,5 @@
 import type { IPlayerStats } from "@trueno-proclub-services/shared"
-import { Position } from "@/i18n/translations"
+import type { Position } from "../i18n/translations"
 
 export default class PlayerStatsEntity implements IPlayerStats {
     playerId: string;

@@ -1,13 +1,13 @@
 ---
 import Layout from "@layouts/Layout.astro";
-import PlayersContainer from "@components/player/PlayersContainer.vue";
+import SquadContainer from "@components/squad/SquadContainer.vue";
 import { CLUB } from "@/config/club";
 import RosterSummary from "@components/seo/RosterSummary.astro";
 import { buildRoster } from "@/lib/buildData";
 
 // Resumen para quien no ejecuta JS, con los datos del build (ver lib/buildData.ts)
 const roster = await buildRoster();
-// /plantilla?id=<playerId> abre el detalle de ese jugador (se lee en cliente)
+// /plantilla?orden=&dir=&pos=&tipo=&todos= (los lee SquadContainer); ?id=<playerId> lleva al perfil
 ---
 
 <Layout
@@ -18,23 +18,24 @@ const roster = await buildRoster();
 	ogImage="/og/plantilla.png"
 	ogImageAlt={`Plantilla de ${CLUB.name}`}
 >
+	<div class="w-full max-w-[90rem] mx-auto px-4 lg:px-8 py-8 lg:py-12 flex flex-col gap-6">
+		<header class="reveal-stagger">
+			<p class="text-xs uppercase tracking-[0.3em] font-black text-primary">{CLUB.name}</p>
+			<h1 class="text-4xl lg:text-5xl font-black tracking-tighter">Plantilla</h1>
+		</header>
 
-	<header class="container mx-auto mb-10">
-		<h1 class="text-primary font-bold text-3xl text-center mt-8 p-8">
-			LEYENDAS DEL CLUB🌟
-		</h1>
-		<p class="font-bold text-2xl text-center">
-			Esta es nuestra plantilla, no intentes entenderlo, solo disfruta
-		</p>
-	</header>
-	<section>
-		<container id="squad-app" class="flex px-2 py-4 justify-center items-center">
-			<PlayersContainer client:load />
-		</container>
-		<!-- Sin JS: fuera la plantilla de siempre (se quedaría vacía y cargando) y en su lugar el resumen -->
+		<div id="squad-app">
+			<SquadContainer client:only="vue">
+				<!-- Mientras carga el componente: el mismo hueco que las cartas -->
+				<div slot="fallback" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-5 mt-16" aria-busy="true">
+					{Array.from({ length: 10 }, () => <div class="skeleton aspect-[3/4] rounded-2xl"></div>)}
+				</div>
+			</SquadContainer>
+		</div>
+		<!-- Sin JS: fuera la plantilla de siempre (se quedaría cargando) y en su lugar el resumen -->
 		<noscript>
 			<style>#squad-app { display: none; }</style>
-			<div class="px-4 py-4"><RosterSummary roster={roster} /></div>
+			<RosterSummary roster={roster} />
 		</noscript>
-	</section>
+	</div>
 </Layout>
