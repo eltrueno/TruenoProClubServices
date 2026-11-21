@@ -80,14 +80,14 @@ const normalize = (text: string | undefined | null) => (text ?? "").toLowerCase(
 
 export interface SquadFilter {
     search: string
-    /** posición principal (la más jugada); null = todas */
+    /** posición en la que ha jugado (principal o no); null = todas */
     position: PlayerPosition | null
 }
 
 export function filterSquad(squad: SquadPlayer[], { search, position }: SquadFilter): SquadPlayer[] {
     const q = normalize(search.trim())
     return squad.filter((p) =>
-        (!position || p.positions[0] === position) &&
+        (!position || p.positions.includes(position)) &&
         (!q || normalize(p.member.playerName).includes(q) || normalize(p.member.proName).includes(q) ||
             (p.member.nameHistory ?? []).some((n) => normalize(n).includes(q))))
 }
