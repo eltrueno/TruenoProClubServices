@@ -1,37 +1,27 @@
 <template>
-    <div class="flex w-full flex-col items-center justify-center align-middle">
-        <div class="skeleton dark:bg-base-100 w-64 h-10 skeletondark"></div>
-        <div class="skeleton dark:bg-base-100 w-96 h-6 skeletondark mt-3"></div>
-        <div class="flex gap-4 py-4 mt-2">
-            <div class="skeleton dark:bg-base-100 w-56 h-16 skeletondark"></div>
-            <div class="skeleton dark:bg-base-100 w-56 h-16 skeletondark hidden md:block"></div>
-            <div class="skeleton dark:bg-base-100 w-56 h-16 skeletondark hidden md:block"></div>
-        </div>
-        <div class="w-full flex flex-col md:flex-row mt-4 lg:mt-1 gap-4 h-fit">
-            <div class="flex-1 flex align-middle bg-base-200 rounded-lg shadow-md p-4 overflow-hidden">
-                <div class="skeleton dark:bg-base-100 skeletondark hidden md:flex max-w-[30%] xl:max-w-[20%] object-contain" 
-                style="aspect-ratio: 40/97;"></div>
-                <div class="flex flex-col w-full">
-                    <div class="inline-flex gap-2 self-center">
-                        <div class="skeleton dark:bg-base-100 w-96 h-6 skeletondark"></div>
-                    </div>
-                    <div class="self-center skeleton dark:bg-base-100 w-64 h-3 skeletondark mt-2"></div>
-                    <div class="relative overflow-hidden py-1 px-4 w-full bg-base-100 dark:bg-base-300 rounded-lg mt-4 mx-2">
-                        <div class="w-full flex flex-col my-4 text-lg gap-y-3 p-4">
-                            <div class="skeleton dark:bg-base-100 w-full h-4 skeletondark" v-for="n in 9" :key="n"></div>
-                        </div>
-                    </div>
-                </div>
+    <!-- Mientras carga: la misma forma que la página (cabecera con KPIs, pestañas y contenido) -->
+    <div class="w-full" aria-busy="true" aria-label="Cargando el partido">
+        <div class="skeleton h-4 w-56 mb-3"></div>
+        <div class="bg-base-200 rounded-2xl shadow-md px-4 py-6 lg:py-10 flex flex-col gap-6">
+            <div class="flex justify-center"><div class="skeleton h-5 w-64"></div></div>
+            <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-6">
+                <div class="flex justify-end"><div class="skeleton h-8 w-40"></div></div>
+                <div class="flex flex-col items-center gap-2"><div class="skeleton h-6 w-20 rounded-full"></div><div class="skeleton h-16 w-36 sm:w-48"></div></div>
+                <div><div class="skeleton h-8 w-40"></div></div>
             </div>
-            <div class="flex justify-center items-center md:w-auto md:basis-5/12 xl:basis-4/12 md:flex-shrink-0">
-                <div class="skeleton dark:bg-base-100 w-full max-w-md aspect-[3/4] skeletondark"></div>
+            <div class="grid grid-cols-3 gap-2 sm:gap-4">
+                <div v-for="n in 3" :key="n" class="skeleton h-24 lg:h-32 rounded-2xl"></div>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+                <div v-for="n in 4" :key="n" class="skeleton h-14 rounded-2xl"></div>
+            </div>
+        </div>
+        <div class="pt-8 px-1">
+            <div class="skeleton h-20 w-full rounded-t-3xl rounded-b-none"></div>
+            <div class="bg-base-200/50 rounded-b-2xl p-3 flex flex-col gap-4">
+                <div class="skeleton h-40 w-full rounded-2xl"></div>
+                <div class="skeleton h-64 w-full rounded-2xl"></div>
             </div>
         </div>
     </div>
 </template>
-
-<style scoped>
-.skeletondark {
-    background-image: linear-gradient( 105deg, transparent 0%, transparent 35%, rgba(108, 108, 108, 0.2) 50%, transparent 65%, transparent 100% );
-}
-</style>

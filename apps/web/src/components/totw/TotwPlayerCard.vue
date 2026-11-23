@@ -41,7 +41,7 @@
           <!-- MOTM + tarjeta roja -->
           <div class="absolute top-2.5 right-2.5 flex flex-col gap-4 items-end" data-atropos-offset="5">
             <span v-if="player.manOfTheMatch > 0" class="text-xs font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-500/40">
-              ★ {{ player.manOfTheMatch }}
+              <MvpIcon class="size-3 inline -mt-0.5" label="MVP" /> {{ player.manOfTheMatch }}
             </span>
             <div class="indicator" v-if="player.redCards > 0">
               <span class="indicator-item indicator-bottom indicator-center badge badge-neutral badge-xs px-1.5 py-0.5 bg-opacity-50">{{ player.redCards }}</span>
@@ -71,6 +71,7 @@
 </template>
 
 <script setup>
+import MvpIcon from "@/components/ui/MvpIcon.vue"
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import Atropos from 'atropos'
 import 'atropos/css'
