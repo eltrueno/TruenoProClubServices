@@ -167,6 +167,13 @@
   }
 }
 
+/* Animaciones que esperan a verse: dentro de un .anim-gate (lo marca useInView con .in-view al
+   aparecer), las animaciones CSS de los hijos quedan en pausa en su primer fotograma hasta que el
+   bloque entra en pantalla. Sin JS (o con reduced-motion) no hay animaciones que esperar */
+.anim-gate:not(.in-view) * {
+  animation-play-state: paused !important;
+}
+
 /* ── Transiciones reutilizables de Vue ───────────────────────────────────────
    <Transition name="tab-slide" mode="out-in">  → cambio de pestaña
    <TransitionGroup name="list-fade">           → listas que se filtran/reordenan */

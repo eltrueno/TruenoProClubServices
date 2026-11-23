@@ -72,6 +72,8 @@ export const tpcsApi = {
         getMyIdentity: () => api<{ playerId: string | null; member?: IClubMember | null }>("/members/me/identity", { credentials: true }),
         /** Solicitud de vinculación pendiente de la cuenta con sesión (null si no hay) */
         getMyLinkRequest: () => api<ILinkRequest | null>("/members/me/link-request", { credentials: true }),
+        /** Logros de cuenta de la cuenta con sesión (solo se usan sus ids: qué ocultos puede ver) */
+        getMyAchievements: () => api<{ achievements: { achievementId: string }[] }>("/members/me/achievements", { credentials: true }),
         requestLink: (playerId: string) => api<ILinkRequest>("/members/me/link-request", { method: "POST", body: { playerId }, credentials: true }),
         cancelLinkRequest: () => api<{ cancelled: boolean }>("/members/me/link-request", { method: "DELETE", credentials: true }),
     },

@@ -43,8 +43,9 @@ const props = defineProps<{
  */
 const TOP_PERCENT = 5
 const TOP_MIN_PEOPLE = 15
-const legendary = computed(() => props.item.unlocked && props.item.def.rarity === "legendary")
-const topRare = computed(() => props.item.unlocked && !legendary.value && props.item.def.category !== "milestones"
+// Un oculto sin desvelar no da pistas: ni rareza ni halo, aunque esté conseguido
+const legendary = computed(() => props.item.unlocked && !props.item.secret && props.item.def.rarity === "legendary")
+const topRare = computed(() => props.item.unlocked && !props.item.secret && !legendary.value && props.item.def.category !== "milestones"
     && (props.item.def.outOf ?? 0) >= TOP_MIN_PEOPLE && (props.item.def.unlockedPercent ?? 100) < TOP_PERCENT)
 const special = computed(() => legendary.value || topRare.value)
 
@@ -76,14 +77,16 @@ const formatNumber = (n: number) => n.toLocaleString("es-ES")
 </script>
 
 <template>
-    <!-- Borde animado solo en los especiales; el resto, tarjeta normal -->
-    <div class="w-full" :class="legendary ? 'aura aura-gold aura-sm' : topRare ? 'aura aura-sm aura-brand' : ''" :style="special ? '--aura-radius: 0.75rem' : undefined">
-        <div class="w-full h-full" :class="legendary ? 'hover-3d' : ''">
+    <!-- Legendario: hover-3d por fuera, para que se incline la tarjeta entera con su halo (si se
+         inclinaba solo la de dentro, asomaba el fondo del halo por detrás) -->
+    <div class="w-full" :class="legendary ? 'hover-3d' : ''">
+        <!-- Borde animado solo en los especiales; el resto, tarjeta normal -->
+        <div class="w-full h-full" :class="legendary ? 'aura aura-gold aura-sm' : topRare ? 'aura aura-sm aura-brand' : ''" :style="special ? '--aura-radius: 0.75rem' : undefined">
             <!-- Dentro del borde animado, fondo opaco (si no, el brillo se ve a través) -->
             <div
                 class="h-full rounded-xl border p-3 flex gap-3 items-start"
                 :class="[
-                    special ? `text-base-content ${RARITY[item.def.rarity].border} ${RARITY[item.def.rarity].tint}` : item.unlocked ? RARITY[item.def.rarity].card : 'border-base-content/10 bg-base-100/40',
+                    special ? `text-base-content ${RARITY[item.def.rarity].border} ${RARITY[item.def.rarity].tint}` : item.unlocked && !item.secret ? RARITY[item.def.rarity].card : item.unlocked ? 'border-base-content/15 bg-base-100' : 'border-base-content/10 bg-base-100/40',
                     item.secret ? 'border-dashed' : '',
                 ]"
             >
@@ -103,7 +106,7 @@ const formatNumber = (n: number) => n.toLocaleString("es-ES")
                         </div>
                     </div>
                     <div v-else class="size-12 rounded-xl grid place-items-center"
-                        :class="item.unlocked ? RARITY[item.def.rarity].icon : 'bg-base-300 text-base-content/70'">
+                        :class="item.unlocked && !item.secret ? RARITY[item.def.rarity].icon : item.unlocked ? 'bg-base-300 text-base-content' : 'bg-base-300 text-base-content/70'">
                         <svg v-if="item.unlocked" class="size-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="icon.solid"></svg>
                         <svg v-else class="size-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true" v-html="icon.outline"></svg>
                     </div>
@@ -123,29 +126,31 @@ const formatNumber = (n: number) => n.toLocaleString("es-ES")
                         </p>
                         <span v-if="!item.secret" class="text-xs text-base-content/60 tabular-nums whitespace-nowrap">{{ item.def.points }} pts</span>
                     </div>
-                    <p class="text-xs text-base-content/75 mt-0.5">{{ item.secret ? "Se desvela al conseguirlo" : item.def.description }}</p>
+                    <p class="text-xs text-base-content/75 mt-0.5">{{ item.secret ? (item.unlocked ? "Consíguelo tú para ver cuál es" : "Se desvela al conseguirlo") : item.def.description }}</p>
 
                     <p v-if="item.progress && !item.secret" class="text-xs text-base-content/75 tabular-nums mt-1">
                         {{ formatNumber(item.progress.current) }} / {{ formatNumber(item.progress.target) }}<template v-if="item.unlocked"> para el siguiente</template>
                     </p>
 
-                    <p class="text-xs mt-1.5 font-semibold flex flex-wrap items-center gap-x-1.5" :class="item.unlocked ? RARITY[item.def.rarity].text : 'text-base-content/60'">
-                        <span v-if="legendary" aria-hidden="true">★</span>{{ ACHIEVEMENT_RARITY_LABELS[item.def.rarity] }}
+                    <p class="text-xs mt-1.5 font-semibold flex flex-wrap items-center gap-x-1.5" :class="item.unlocked && !item.secret ? RARITY[item.def.rarity].text : 'text-base-content/60'">
+                        <template v-if="!item.secret">
+                            <span v-if="legendary" aria-hidden="true">★</span>{{ ACHIEVEMENT_RARITY_LABELS[item.def.rarity] }}
+                        </template>
                         <span v-if="topRare" class="badge badge-xs border-0 bg-base-content text-base-100 font-bold">Top {{ TOP_PERCENT }} %</span>
                         <template v-if="item.unlocked">
-                            <span>·</span>
+                            <span v-if="!item.secret">·</span>
                             <template v-if="item.reached"><span>último hito: {{ item.reached }}</span><span>·</span></template>
                             <span>{{ formatDate(item.unlockedAt) }}</span>
                         </template>
                     </p>
-                    <p v-if="item.ownership" class="text-xs text-base-content/60 mt-0.5">{{ item.ownership }}</p>
-                    <a v-if="matchHref && item.unlocked" :href="matchHref" class="link link-hover text-xs font-semibold text-base-content/75 hover:text-primary inline-block mt-1.5"
+                    <p v-if="item.ownership && !item.secret" class="text-xs text-base-content/60 mt-0.5">{{ item.ownership }}</p>
+                    <a v-if="matchHref && item.unlocked && !item.secret" :href="matchHref" class="link link-hover text-xs font-semibold text-base-content/75 hover:text-primary inline-block mt-1.5"
                         :aria-label="`Ir al partido en que se consiguió ${item.def.name}`">Ir al partido</a>
                 </div>
             </div>
-            <!-- Zonas de inclinación de hover-3d (8, alrededor de la tarjeta) -->
-            <template v-if="legendary"><div v-for="n in 8" :key="n"></div></template>
         </div>
+        <!-- Zonas de inclinación de hover-3d (8, alrededor de la tarjeta) -->
+        <template v-if="legendary"><div v-for="n in 8" :key="n"></div></template>
     </div>
 </template>
 

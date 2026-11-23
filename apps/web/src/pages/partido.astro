@@ -10,14 +10,13 @@ import { CLUB } from "@/config/club";
 	title={`Detalles del partido · ${CLUB.name}`}
 	isindex={false}
 	description={`Resultado, alineación y estadísticas de un partido de ${CLUB.name} en Clubes Pro de EA SPORTS FC.`}
+	breadcrumb={[{ name: "Partidos", path: "/partidos" }]}
 >
 	<meta slot="metadata" name="robots" content="noindex, nofollow" />
 
-	<section>
-		<container class="flex px-2 py-4 justify-center items-center text-center">
-			<MatchDetail client:only="vue">
-				<MatchDetailSkeleton slot="fallback" />
-			</MatchDetail>
-		</container>
-	</section>
+	<div class="w-full max-w-[90rem] mx-auto px-4 lg:px-8 py-8 lg:py-12">
+		<MatchDetail client:only="vue">
+			<MatchDetailSkeleton slot="fallback" />
+		</MatchDetail>
+	</div>
 </Layout>

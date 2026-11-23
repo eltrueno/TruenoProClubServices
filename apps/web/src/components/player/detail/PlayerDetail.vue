@@ -88,33 +88,32 @@
                     </button>
                 </div>
 
-                <!-- KPIs: los tres principales grandes y el resto en una fila más discreta -->
-                <div class="grid grid-cols-3 gap-2 sm:gap-4 mt-6 lg:mt-10 reveal-stagger">
-                    <div v-for="kpi in mainKpis" :key="kpi.label" class="card dark:bg-base-100 bg-base-300 shadow-sm overflow-hidden">
-                        <div class="card-body p-3 sm:p-4 lg:p-6 items-center text-center gap-0">
-                            <span class="text-base-content/50 uppercase text-[0.65rem] sm:text-xs font-black tracking-widest">{{ kpi.label }}</span>
-                            <AnimatedNumber class="text-2xl sm:text-3xl lg:text-5xl font-black mt-1" :class="kpi.class"
-                                :value="kpi.value" :decimals="kpi.decimals ?? 0" :suffix="kpi.suffix ?? ''" />
-                            <!-- Victorias / empates / derrotas -->
-                            <div v-if="kpi.record" class="flex w-full max-w-36 h-1.5 rounded-full overflow-hidden bg-base-content/10 mt-2" aria-hidden="true">
-                                <div class="bg-success" :style="{ flexGrow: kpi.record.wins }"></div>
-                                <div class="bg-base-content/30" :style="{ flexGrow: kpi.record.ties }"></div>
-                                <div class="bg-error" :style="{ flexGrow: kpi.record.losses }"></div>
-                            </div>
-                            <span v-if="kpi.sub" class="text-[0.65rem] sm:text-xs text-base-content/45 font-medium mt-1 tabular-nums">{{ kpi.sub }}</span>
+                <!-- KPIs: planos, con un icono relleno cada uno (sin tarjeta), como en la ficha de partido:
+                     los tres principales grandes y el resto en una fila más discreta -->
+                <div class="grid grid-cols-3 divide-x divide-base-content/10 mt-6 lg:mt-10 reveal-stagger">
+                    <div v-for="kpi in mainKpis" :key="kpi.label" class="flex flex-col items-center text-center px-2 py-1">
+                        <svg class="size-7 sm:size-9 text-primary mb-1.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="KPI_ICONS[kpi.icon]"></svg>
+                        <AnimatedNumber class="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-none" :class="kpi.class"
+                            :value="kpi.value" :decimals="kpi.decimals ?? 0" :suffix="kpi.suffix ?? ''" />
+                        <span class="mt-1.5 text-base-content/60 uppercase text-[0.65rem] sm:text-xs font-black tracking-widest">{{ kpi.label }}</span>
+                        <!-- Victorias / empates / derrotas -->
+                        <div v-if="kpi.record" class="flex w-full max-w-36 h-1.5 rounded-full overflow-hidden bg-base-content/10 mt-1.5" aria-hidden="true">
+                            <div class="bg-success" :style="{ flexGrow: kpi.record.wins }"></div>
+                            <div class="bg-base-content/30" :style="{ flexGrow: kpi.record.ties }"></div>
+                            <div class="bg-error" :style="{ flexGrow: kpi.record.losses }"></div>
                         </div>
+                        <span v-if="kpi.sub" class="text-[0.65rem] sm:text-xs text-base-content/45 font-medium mt-1 tabular-nums">{{ kpi.sub }}</span>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mt-2 sm:mt-4 reveal-stagger">
-                    <div v-for="kpi in secondaryKpis" :key="kpi.label" class="rounded-2xl dark:bg-base-100/60 bg-base-300/60 px-3 py-2.5 flex items-center justify-between gap-2">
-                        <span class="flex items-center gap-1.5 text-base-content/50 uppercase text-[0.65rem] sm:text-xs font-black tracking-widest min-w-0">
-                            <svg v-if="kpi.icon === 'mvp'" class="size-4 shrink-0 text-warning" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="TROPHY_ICON"></svg>
-                            <span v-else-if="kpi.icon === 'red'" class="w-2.5 h-3.5 shrink-0 rounded-[2px] bg-error" aria-hidden="true"></span>
-                            <span class="truncate">{{ kpi.label }}</span>
-                        </span>
-                        <span class="text-right leading-tight">
-                            <AnimatedNumber class="text-lg sm:text-xl font-black block" :value="kpi.value" />
-                            <span v-if="kpi.sub" class="text-[0.65rem] text-base-content/45 font-medium tabular-nums">{{ kpi.sub }}</span>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-y-4 mt-6 pt-5 border-t border-base-content/10 reveal-stagger">
+                    <div v-for="kpi in secondaryKpis" :key="kpi.label" class="flex items-center gap-2.5 px-2 min-w-0">
+                        <MvpIcon v-if="kpi.icon === 'mvp'" class="size-6" />
+                        <span v-else-if="kpi.icon === 'red'" class="w-4 h-6 shrink-0 rounded-[3px] bg-error mx-1" aria-hidden="true"></span>
+                        <svg v-else class="size-6 shrink-0 text-base-content/45" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="KPI_ICONS[kpi.icon]"></svg>
+                        <span class="min-w-0 leading-tight">
+                            <span class="block text-base-content/50 uppercase text-[0.6rem] sm:text-[0.65rem] font-black tracking-widest">{{ kpi.label }}</span>
+                            <AnimatedNumber class="block text-lg sm:text-xl font-black" :value="kpi.value" />
+                            <span v-if="kpi.sub" class="block text-[0.65rem] text-base-content/45 font-medium tabular-nums">{{ kpi.sub }}</span>
                         </span>
                     </div>
                 </div>
@@ -125,16 +124,15 @@
         <section class="mx-auto px-1 pt-8">
             <!-- Al bajar, la barra de pestañas se queda arriba (bajo el menú) con el jugador en pequeño -->
             <div ref="tabSentinel" class="h-px -mb-px" aria-hidden="true"></div>
-            <!-- Pegada, con el color del fondo de la página (como el body): parte del fondo, no una tarjeta flotando -->
-            <!-- Color (--tabs-bg): el mismo que el bloque de las pestañas de debajo (.tab-body, base-200 al 50 % sobre
-                 el fondo de la página: blanco en claro, base-300 en oscuro, #171c21).
-                 Sin pegar: opaca, una sola pieza con el bloque. Pegada (compacta): ese color medio translúcido con
-                 desenfoque, esquinas de abajo redondeadas y sombra, como una lámina que se solapa sobre el contenido -->
+            <!-- Mismo esquema que la barra de controles de la plantilla: la barra (--tabs-bg) un tono más marcado que
+                 el bloque de debajo (.tab-body, base-200 al 50 % sobre el fondo de la página).
+                 Sin pegar: opaca, la cabecera del bloque. Pegada (compacta): casi opaca (88 %) con desenfoque,
+                 esquinas de abajo redondeadas y sombra, como una lámina que se solapa sobre el contenido -->
             <div class="tabs-bar sticky z-40 flex items-center gap-2 p-2 transition-[border-radius,background-color,box-shadow] duration-300
-                    [--tabs-bg:color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-100))]
-                    dark:[--tabs-bg:color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-300))]"
+                    [--tabs-bg:color-mix(in_oklab,var(--color-base-200)_94%,var(--color-base-content))]
+                    dark:[--tabs-bg:color-mix(in_oklab,var(--color-base-200)_92%,var(--color-base-content))]"
                 :class="tabsStuck
-                    ? 'rounded-b-2xl bg-[color-mix(in_oklab,var(--tabs-bg)_78%,transparent)] backdrop-blur-md shadow-lg shadow-black/25'
+                    ? 'rounded-b-2xl bg-[color-mix(in_oklab,var(--tabs-bg)_88%,transparent)] backdrop-blur-md shadow-lg shadow-black/25'
                     : 'rounded-t-3xl bg-(--tabs-bg)'">
                 <!-- Jugador (solo pegada) -->
                 <button v-if="tabsStuck" type="button" @click="scrollToTop"
@@ -159,7 +157,7 @@
                             tabsStuck ? 'flex-row gap-2 py-2' : 'flex-col gap-1.5 py-4',
                             activeTab === tab.key
                                 ? 'bg-primary text-primary-content shadow-xl z-10 border-primary' + (tabsStuck ? '' : ' scale-[1.02]')
-                                : 'bg-base-200/40 dark:bg-base-100/40 text-base-content/60 shadow-sm border-transparent hover:border-primary/30 hover:bg-base-200/60 dark:hover:bg-base-100/60 hover:-translate-y-0.5'
+                                : 'bg-base-100 text-base-content/70 shadow-sm border-base-content/10 hover:border-primary/40 hover:text-base-content hover:-translate-y-0.5'
                         ]">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform duration-300" :class="activeTab === tab.key ? 'scale-110' : 'group-hover:scale-110 opacity-80'" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="tab.icon" />
@@ -178,7 +176,7 @@
             <!-- Tab Content (rounded bottom only, no gap) -->
             <!-- Alto mínimo de una pantalla: al cambiar de pestaña con la barra pegada, la página no encoge
                  mientras sale la anterior (si no, el navegador recorta el scroll y la barra se despega) -->
-            <div class="tab-body bg-base-200/50 rounded-b-2xl p-2 overflow-x-clip">
+            <div class="tab-body rounded-b-2xl bg-[color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-100))] dark:bg-[color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-300))] p-2 overflow-x-clip">
                 <!-- La pestaña saliente se va a un lado y la entrante llega del otro -->
                 <Transition name="tab-slide" mode="out-in">
                     <PlayerDetailStats
@@ -225,6 +223,8 @@
 </template>
 
 <script setup lang="ts">
+    import MvpIcon from "@/components/ui/MvpIcon.vue"
+    import { KPI_ICONS, type KpiIcon } from "@/lib/kpiIcons"
     import { ref, computed, onBeforeMount, onMounted, onBeforeUnmount, watch, nextTick, type Ref } from "vue";
     import PlayerProfileService from "@/services/PlayerProfileService";
     import { useMatches } from "@/composables/useMatches";
@@ -241,7 +241,7 @@
     import { playerImage as memberImage, onPlayerImageError } from "@/lib/playerImage";
     import { useMembers } from "@/composables/useMembers";
     import { authApi } from "@/lib/api";
-    import { ACHIEVEMENT_CATEGORY_ICONS, type IPublicUser } from "@trueno-proclub-services/shared";
+    import type { IPublicUser } from "@trueno-proclub-services/shared";
 
     // Subcomponents
     import PlayerDetailStats from "./PlayerDetailStats.vue";
@@ -462,7 +462,6 @@
     })
 
     // ── KPIs ──
-    const TROPHY_ICON = ACHIEVEMENT_CATEGORY_ICONS.collection.solid
     const number = (n: number, decimals = 0) => n.toLocaleString("es-ES", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
     const perMatch = (n: number) => {
         const played = activeStats.value.gamesPlayed ?? 0
@@ -479,18 +478,19 @@
         class?: string
         sub?: string
         record?: { wins: number; ties: number; losses: number }
+        icon: KpiIcon
     }
 
     const mainKpis = computed<MainKpi[]>(() => {
         const s = activeStats.value
         const played = s.gamesPlayed ?? 0
         // Sin partidos no hay media ni porcentaje: un guion en vez de un 0
-        if (!played) return [{ label: 'Partidos', value: 0 }, { label: 'Valoración', value: '—' }, { label: 'Victorias', value: '—' }]
+        if (!played) return [{ label: 'Partidos', value: 0, icon: 'games' }, { label: 'Valoración', value: '—', icon: 'rating' }, { label: 'Victorias', value: '—', icon: 'wins' }]
         return [
-            { label: 'Partidos', value: played, sub: `${number(s.minutesPlayed ?? 0)} min` },
-            { label: 'Valoración', value: s.ratingAve ?? 0, decimals: 1, class: ratingClass(s.ratingAve ?? 0), sub: 'media' },
+            { label: 'Partidos', icon: 'games', value: played, sub: `${number(s.minutesPlayed ?? 0)} min` },
+            { label: 'Valoración', icon: 'rating', value: s.ratingAve ?? 0, decimals: 1, class: ratingClass(s.ratingAve ?? 0), sub: 'media' },
             {
-                label: 'Victorias', value: s.winRate ?? 0, suffix: '%',
+                label: 'Victorias', icon: 'wins', value: s.winRate ?? 0, suffix: '%',
                 record: { wins: s.wins ?? 0, ties: s.ties ?? 0, losses: s.losses ?? 0 },
                 sub: `${s.wins ?? 0} V · ${s.ties ?? 0} E · ${s.losses ?? 0} D`,
             },
@@ -500,8 +500,8 @@
     const secondaryKpis = computed(() => {
         const s = activeStats.value
         return [
-            { label: 'Goles', value: s.goals ?? 0, sub: perMatch(s.goals ?? 0) },
-            { label: 'Asistencias', value: s.assists ?? 0, sub: perMatch(s.assists ?? 0) },
+            { label: 'Goles', icon: 'goals', value: s.goals ?? 0, sub: perMatch(s.goals ?? 0) },
+            { label: 'Asistencias', icon: 'assists', value: s.assists ?? 0, sub: perMatch(s.assists ?? 0) },
             { label: 'MVP', value: s.manOfTheMatch ?? 0, icon: 'mvp' },
             { label: 'Rojas', value: s.redCards ?? 0, icon: 'red' },
         ]

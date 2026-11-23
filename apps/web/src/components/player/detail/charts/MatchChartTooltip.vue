@@ -28,7 +28,7 @@
                 <span class="badge badge-xs p-2 badge-outline badge-primary font-bold uppercase rounded-full" style="font-size: 0.65rem">
                     {{ position }}
                 </span>
-                <span v-if="manOfTheMatch" class="text-amber-400 text-xs" title="MVP del partido">★</span>
+                <MvpIcon v-if="manOfTheMatch" class="size-3.5" label="MVP del partido" />
             </div>
 
             <!-- Stat + comparación con media (sin recuadro) -->
@@ -56,6 +56,7 @@
 </template>
 
 <script setup lang="ts">
+import MvpIcon from "@/components/ui/MvpIcon.vue"
 import { computed } from 'vue'
 import ChartTooltip from '@/components/utils/ChartTooltip.vue'
 import { routes } from '@/lib/query'

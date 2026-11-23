@@ -43,7 +43,7 @@
           </div>
           <div v-if="player" class="absolute top-16 right-5 flex flex-col gap-4 items-end pointer-events-auto">
             <span v-if="player.manOfTheMatch > 0" class="text-xs font-bold tracking-wider px-2 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-500/40 backdrop-blur-sm shadow-[0_0_10px_rgba(255,191,0,0.3)]">
-              ★ {{ player.manOfTheMatch }}
+              <MvpIcon class="size-3.5 inline -mt-0.5" label="MVP" /> {{ player.manOfTheMatch }}
             </span>
             <div class="indicator drop-shadow-md" v-if="player.redCards > 0" title="Tarjetas Rojas">
               <span class="indicator-item indicator-bottom indicator-center badge badge-neutral px-1.5 py-0.5 bg-black/60 text-white font-bold text-xs ring-[1px] ring-error/30">{{ player.redCards }}</span>
@@ -134,6 +134,7 @@
 </template>
 
 <script setup lang="ts">
+import MvpIcon from "@/components/ui/MvpIcon.vue"
 import { computed, ref } from 'vue'
 import type { ITOTWPlayer } from '@trueno-proclub-services/shared';
 import { translatePosition } from '@i18n/translations';

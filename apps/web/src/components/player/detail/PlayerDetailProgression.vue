@@ -469,7 +469,7 @@
                                 <td class="font-semibold py-3">
                                     <div class="flex items-center gap-2">
                                         <span v-if="row.manOfTheMatch" class="tooltip tooltip-right cursor-default z-10 relative" data-tip="MVP del partido" @click.stop>
-                                            <span class="text-amber-400 text-sm">★</span>
+                                            <MvpIcon class="size-4" label="MVP del partido" />
                                         </span>
                                         <a :href="routes.match(row.matchId, playerId)" class="after:absolute after:inset-0 after:content-['']">
                                             {{ row.rivalName }}
@@ -515,7 +515,7 @@
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between gap-2 mb-1.5">
                                 <div class="flex items-center gap-1.5 min-w-0">
-                                    <span v-if="row.manOfTheMatch" class="text-amber-400 text-sm shrink-0">★</span>
+                                    <MvpIcon v-if="row.manOfTheMatch" class="size-4" label="MVP del partido" />
                                     <span class="font-bold text-sm truncate">{{ row.rivalName }}</span>
                                 </div>
                                 <span class="text-[10px] text-base-content/40 font-medium tabular-nums shrink-0">{{ row.date }}</span>
@@ -568,6 +568,7 @@
 </template>
 
 <script setup lang="ts">
+    import MvpIcon from "@/components/ui/MvpIcon.vue"
     import { computed, ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
     import { useInView } from '@/composables/useInView';
     import AnimatedNumber from '@/components/ui/AnimatedNumber.vue';

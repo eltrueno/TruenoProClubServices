@@ -5,9 +5,16 @@
             <div class="card-body p-6">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <h2 class="card-title text-xl font-black uppercase border-l-4 border-primary pl-4">Logros</h2>
-                    <div class="join self-start sm:self-auto">
-                        <button class="btn btn-sm join-item" :class="onlyUnlocked ? 'btn-ghost' : 'btn-primary'" @click="onlyUnlocked = false">Todos</button>
-                        <button class="btn btn-sm join-item" :class="onlyUnlocked ? 'btn-primary' : 'btn-ghost'" @click="onlyUnlocked = true">Conseguidos</button>
+                    <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                        <!-- Solo admins: ver también los ocultos que no tienen -->
+                        <label v-if="isAdmin && hasHidden" class="flex items-center gap-2 text-sm font-semibold cursor-pointer">
+                            <input v-model="revealAll" type="checkbox" class="toggle toggle-sm toggle-primary" />
+                            Ver ocultos
+                        </label>
+                        <div class="join">
+                            <button class="btn btn-sm join-item" :class="onlyUnlocked ? 'btn-ghost' : 'btn-primary'" @click="onlyUnlocked = false">Todos</button>
+                            <button class="btn btn-sm join-item" :class="onlyUnlocked ? 'btn-primary' : 'btn-ghost'" @click="onlyUnlocked = true">Conseguidos</button>
+                        </div>
                     </div>
                 </div>
 
@@ -77,7 +84,8 @@
  * tiene cuenta vinculada, los de cuenta (comunes a todos los clubes), por apartados.
  * Los que faltan se enseñan apagados; los hitos que se repiten, con las veces conseguidas.
  */
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
+import { useAuth } from "@/composables/useAuth"
 import {
     ACHIEVEMENT_CATEGORIES, ACHIEVEMENT_CATEGORY_LABELS, ACHIEVEMENT_RARITIES, ACHIEVEMENT_RARITY_LABELS,
     achievementOwnershipLabel,
@@ -136,6 +144,35 @@ onMounted(async () => {
     }
 })
 
+/*
+ * Logros ocultos: solo se desvelan a quien también los tiene. En el perfil de otro, uno oculto
+ * que él tiene y tú no sale como "Logro oculto" (conseguido, pero sin decir cuál). En el tuyo
+ * los ves todos; los admins pueden verlos todos con "Ver ocultos". Es para no destripar: los
+ * datos llegan igual del api.
+ */
+const { isLoggedIn, isAdmin, myMember, loadMyMember } = useAuth()
+const revealAll = ref(false)
+/** Logros (de club y de cuenta) de quien mira; vacío sin sesión */
+const viewerUnlocked = ref<Set<string>>(new Set())
+const isOwnProfile = computed(() => !!myMember.value && myMember.value.playerId === props.profile.member.playerId)
+const viewerCanSee = (id: string) => revealAll.value || isOwnProfile.value || viewerUnlocked.value.has(id)
+
+async function loadViewer() {
+    if (!isLoggedIn.value) { viewerUnlocked.value = new Set(); return }
+    await loadMyMember()
+    const me = myMember.value
+    const [account, club] = await Promise.all([
+        tpcsApi.members.getMyAchievements().catch(() => null),
+        // Si juega en este club, sus logros de club (los de cuenta valen en cualquier club)
+        me && me.playerId !== props.profile.member.playerId ? tpcsApi.members.getProfile(me.playerId).catch(() => null) : null,
+    ])
+    viewerUnlocked.value = new Set([
+        ...(account?.achievements ?? []).map((a) => a.achievementId),
+        ...(club?.achievements ?? []).map((a) => a.achievementId),
+    ])
+}
+watch(isLoggedIn, loadViewer, { immediate: true })
+
 type Unlock = { achievementId: string, reached?: number, unlockedAt: Date | string, matchId?: string, definition?: Definition }
 
 /** Definiciones (las de la lista completa, o las que traen los desbloqueos si no ha cargado) + lo conseguido */
@@ -149,7 +186,8 @@ function buildItems(definitions: IAchievementDefinitionWithStats[], unlocks: Unl
         return {
             id, def,
             unlocked: mine.length > 0,
-            secret: !!def.hidden && mine.length === 0,
+            // Oculto: si no lo tiene, o si lo tiene pero quien mira no (para no destripárselo)
+            secret: !!def.hidden && (mine.length === 0 || !viewerCanSee(id)),
             times: mine.length,
             reached: mine.reduce<number | undefined>((max, u) => (u.reached && u.reached > (max ?? 0) ? u.reached : max), undefined),
             unlockedAt: last?.unlockedAt,
@@ -179,6 +217,7 @@ const groups = computed(() =>
     }).filter((g) => g.visible.length > 0)
 )
 
+const hasHidden = computed(() => [...clubDefinitions.value, ...accountDefinitions.value].some((d) => d.hidden))
 const clubUnlockedCount = computed(() => clubItems.value.filter((i) => i.unlocked).length)
 const clubPoints = computed(() => clubItems.value.reduce((sum, i) => sum + i.def.points * i.times, 0))
 const rarityCount = computed(() => {
