@@ -139,11 +139,11 @@ const highlights = computed(() => {
                 <li v-for="h in highlights" :key="h.label">
                     <component :is="isMember(h.who.p.playerId) ? 'a' : 'div'" :href="isMember(h.who.p.playerId) ? routes.player(h.who.p.playerId) : undefined"
                         class="group h-full flex items-center gap-3 rounded-2xl dark:bg-base-100 bg-base-300 p-3 sm:p-4 shadow-sm transition-shadow"
-                        :class="isMember(h.who.p.playerId) && 'hover:ring-2 hover:ring-primary/40'">
-                        <!-- Cara (recortada a la cabeza), con aro dorado para el MVP -->
-                        <span class="relative shrink-0 size-14 sm:size-16 rounded-full overflow-hidden ring-3"
-                            :class="[h.mvp ? 'ring-warning' : h.who.ours ? 'ring-(--us)' : 'ring-(--them)', h.who.ours ? 'bg-(--us)/20' : 'bg-(--them)/20']">
-                            <img v-if="isMember(h.who.p.playerId)" :src="imageFor(h.who.p.playerId)" alt="" loading="lazy" class="size-full object-cover object-top scale-[2.4] origin-[50%_6%]" @error="onPlayerImageError" />
+                        :class="[isMember(h.who.p.playerId) && 'hover:ring-2 hover:ring-primary/40', h.who.p.playerId === myId && 'ring-2 ring-primary/60']">
+                        <!-- Cara (recortada a la cabeza), con borde dorado para el MVP -->
+                        <span class="relative shrink-0 size-14 sm:size-16 rounded-full overflow-hidden outline-2"
+                            :class="[h.mvp ? 'outline-warning' : h.who.ours ? 'outline-(--us)' : 'outline-(--them)', h.who.ours ? 'bg-(--us)/45' : 'bg-(--them)/45']">
+                            <img v-if="isMember(h.who.p.playerId)" :src="imageFor(h.who.p.playerId)" alt="" loading="lazy" class="size-full object-cover object-top scale-[2] origin-top" @error="onPlayerImageError" />
                             <span v-else class="size-full grid place-items-center font-black text-lg text-(--them)" aria-hidden="true">{{ h.who.p.playerName.slice(0, 2).toUpperCase() }}</span>
                         </span>
                         <span class="flex flex-col min-w-0">
@@ -151,7 +151,7 @@ const highlights = computed(() => {
                                 <MvpIcon v-if="h.mvp" class="size-3.5" />
                                 {{ h.label }}
                             </span>
-                            <span class="font-black truncate group-hover:text-primary transition-colors">{{ h.who.p.playerName }}</span>
+                            <span class="font-black truncate group-hover:text-primary transition-colors">{{ h.who.p.playerName }}<span v-if="h.who.p.playerId === myId" class="badge badge-xs badge-primary font-black tracking-widest ml-1 align-middle">TÚ</span></span>
                             <span class="flex items-baseline gap-1">
                                 <span class="text-2xl font-black tabular-nums leading-none">{{ h.big }}</span>
                                 <span class="text-xs text-base-content/50 font-semibold">{{ h.unit }}</span>

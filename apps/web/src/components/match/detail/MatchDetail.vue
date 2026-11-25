@@ -150,6 +150,7 @@ watch(activeTab, (t) => setQueryParams({ tab: t === "resumen" ? null : t }))
 const tabSentinel = ref<HTMLElement | null>(null)
 const tabsStuck = ref(false)
 let navH = 64
+let fullBarH = 0
 const measureNav = () => {
     navH = document.querySelector<HTMLElement>("nav.navbar")?.offsetHeight ?? 64
     document.documentElement.style.setProperty("--nav-h", `${navH}px`)
@@ -159,8 +160,27 @@ const updateStuck = () => {
     const el = tabSentinel.value
     tabsStuck.value = !!el && el.getBoundingClientRect().top < navH - 0.5
 }
-const onResize = () => { measureNav(); updateStuck() }
+const onResize = () => { measureNav(); updateStuck(); fullBarH = 0 }
 watch(tabSentinel, (el) => { if (el) { measureNav(); updateStuck() } })
+
+// Al pegarse, la barra cambia de alto (pestañas compactas + marcador). Para que el contenido de debajo no
+// pegue un salto, se compensa con margen inferior la diferencia con su alto normal, en cada frame del cambio
+const tabsBar = ref<HTMLElement | null>(null)
+const barComp = ref(0)
+let barRO: ResizeObserver | null = null
+watch(tabsBar, (el) => {
+    barRO?.disconnect()
+    if (!el) return
+    // Alto normal = el mayor visto sin pegar (al despegarse crece poco a poco hasta él)
+    barRO = new ResizeObserver(() => {
+        const h = el.offsetHeight
+        if (!tabsStuck.value) fullBarH = Math.max(fullBarH, h)
+        barComp.value = Math.max(0, fullBarH - h)
+    })
+    barRO.observe(el)
+})
+watch(tabsStuck, () => { const el = tabsBar.value; if (el) barComp.value = Math.max(0, fullBarH - el.offsetHeight) })
+onBeforeUnmount(() => barRO?.disconnect())
 onMounted(() => {
     addEventListener("scroll", updateStuck, { passive: true })
     addEventListener("resize", onResize, { passive: true })
@@ -222,7 +242,8 @@ async function setVoided(voided: boolean | null) {
         <a href="/partidos" class="btn btn-primary rounded-xl">Ver todos los partidos</a>
     </div>
 
-    <div v-else class="w-full pb-2 [--us:var(--color-primary)] [--them:#2f6fd6] dark:[--them:#5b8def]">
+    <div v-else class="w-full pb-2 [--us:var(--color-primary)] [--them:#2f6fd6] dark:[--them:#5b8def]"
+        :class="rivalConfig && 'derby'" :style="rivalConfig ? { '--rival': rivalConfig.colors.primary } : undefined">
         <div class="breadcrumbs text-sm">
             <ul>
                 <li><a href="/">Inicio</a></li>
@@ -312,8 +333,8 @@ async function setVoided(voided: boolean | null) {
                             <span class="text-[0.65rem] sm:text-xs text-base-content/45 font-medium tabular-nums">{{ k.sub }}</span>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-y-4 mt-6 pt-5 border-t border-base-content/10 reveal-stagger">
-                        <div v-for="k in kpis.secondary" :key="k.label" class="kpi flex items-center gap-2.5 px-2 min-w-0">
+                    <div class="flex flex-wrap justify-center gap-x-4 sm:gap-x-12 gap-y-4 mt-6 pt-5 border-t border-base-content/10 reveal-stagger">
+                        <div v-for="k in kpis.secondary" :key="k.label" class="kpi flex items-center gap-2.5 px-2 min-w-0 w-[calc(50%-1rem)] sm:w-auto">
                             <MvpIcon v-if="k.icon === 'mvp'" class="size-6" />
                             <svg v-else class="size-6 shrink-0 text-base-content/45" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="KPI_ICONS[k.icon as KpiIcon]"></svg>
                             <span class="min-w-0 leading-tight">
@@ -340,11 +361,12 @@ async function setVoided(voided: boolean | null) {
         </section>
 
         <!-- ── Pestañas + contenido (como en la ficha de jugador) ── -->
-        <section class="mx-auto px-1 pt-8">
+        <section class="w-full px-1 pt-8">
             <div ref="tabSentinel" class="h-px -mb-px" aria-hidden="true"></div>
-            <div class="tabs-bar sticky z-40 flex flex-col p-2 transition-[border-radius,background-color,box-shadow] duration-300
+            <div ref="tabsBar" class="tabs-bar sticky z-40 flex flex-col p-2 transition-[border-radius,background-color,box-shadow] duration-300
                     [--tabs-bg:color-mix(in_oklab,var(--color-base-200)_94%,var(--color-base-content))]
                     dark:[--tabs-bg:color-mix(in_oklab,var(--color-base-200)_92%,var(--color-base-content))]"
+                :style="{ marginBottom: `${barComp}px` }"
                 :class="tabsStuck
                     ? 'rounded-b-2xl overflow-hidden bg-[color-mix(in_oklab,var(--tabs-bg)_88%,transparent)] backdrop-blur-md shadow-lg shadow-black/25'
                     : 'rounded-t-3xl bg-(--tabs-bg)'">
@@ -391,6 +413,10 @@ async function setVoided(voided: boolean | null) {
 </template>
 
 <style scoped>
+/* Derbi: el rival va con su color, pero acentuado para no confundirse con el nuestro (los dos clubes
+   son rojos): más oscuro en tema claro y más claro en el oscuro */
+.derby { --them: color-mix(in oklab, var(--rival) 62%, black); }
+[data-theme="dark"] .derby { --them: color-mix(in oklab, var(--rival) 60%, white); }
 /* Escudos (solo en el derbi): los dos iguales y redondos */
 .crest {
     display: grid;
@@ -468,8 +494,5 @@ async function setVoided(voided: boolean | null) {
 /* Justo bajo el menú de arriba, que también es sticky (su alto lo pone el script en --nav-h) */
 .tabs-bar {
     top: var(--nav-h, 4rem);
-}
-.tab-body {
-    min-height: calc(100svh - var(--nav-h, 4rem));
 }
 </style>

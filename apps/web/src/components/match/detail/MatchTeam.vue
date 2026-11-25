@@ -63,7 +63,8 @@ const pct = (n: number) => `${Math.round(n * 100)}%`
                 </span>
             </template>
             <ol class="flex flex-col gap-2">
-                <li v-for="(x, i) in ratings" :key="`${x.ours}-${x.p.playerId}`" class="grid grid-cols-[1.5rem_minmax(0,9rem)_minmax(0,1fr)_2.5rem] items-center gap-2 text-sm">
+                <li v-for="(x, i) in ratings" :key="`${x.ours}-${x.p.playerId}`" class="grid grid-cols-[1.5rem_minmax(0,9rem)_minmax(0,1fr)_2.5rem] items-center gap-2 text-sm rounded-lg"
+                    :class="x.p.playerId === myId && 'bg-primary/10 ring-1 ring-primary/40 -mx-1 px-1 py-0.5'">
                     <span class="text-xs text-base-content/40 tabular-nums text-right">{{ i + 1 }}</span>
                     <component :is="isMember(x.p.playerId) ? 'a' : 'span'" :href="isMember(x.p.playerId) ? routes.player(x.p.playerId) : undefined"
                         class="truncate font-bold" :class="[isMember(x.p.playerId) && 'hover:text-primary', !x.ours && 'text-base-content/70']">
@@ -92,7 +93,7 @@ const pct = (n: number) => `${Math.round(n * 100)}%`
                     </p>
                     <ul v-if="m.total" class="flex flex-col gap-2">
                         <li v-for="r in m.rows" :key="r.playerId" class="text-sm">
-                            <span class="flex justify-between gap-2 mb-0.5"><component :is="isMember(r.playerId) ? 'a' : 'span'" :href="isMember(r.playerId) ? routes.player(r.playerId) : undefined" class="truncate font-bold" :class="isMember(r.playerId) && 'hover:text-primary'">{{ r.playerName }}</component><span class="tabular-nums shrink-0"><b>{{ r.value }}</b> <span class="text-base-content/50 text-xs">{{ pct(r.share) }}</span></span></span>
+                            <span class="flex justify-between gap-2 mb-0.5"><component :is="isMember(r.playerId) ? 'a' : 'span'" :href="isMember(r.playerId) ? routes.player(r.playerId) : undefined" class="truncate font-bold" :class="[isMember(r.playerId) && 'hover:text-primary', r.playerId === myId && 'text-primary']">{{ r.playerName }}<span v-if="r.playerId === myId" class="badge badge-xs badge-primary font-black tracking-widest ml-1 align-middle">TÚ</span></component><span class="tabular-nums shrink-0"><b>{{ r.value }}</b> <span class="text-base-content/50 text-xs">{{ pct(r.share) }}</span></span></span>
                             <span class="block h-2 rounded-full bg-base-content/8 overflow-hidden"><span class="block h-full rounded-full bar" :class="side === 'us' ? 'bg-(--us)' : 'bg-(--them)'" :style="{ width: pct(r.share) }"></span></span>
                         </li>
                         <li v-if="m.rest" class="text-sm text-base-content/60">
