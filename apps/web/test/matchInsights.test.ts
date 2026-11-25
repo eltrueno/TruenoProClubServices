@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { headToHead, neighbours, playerForm, playerMoments, shareOf, teamMoments } from "../src/lib/matchInsights"
+import { headToHead, neighbours, playerForm, playerMoments, playerStreaks, shareOf, teamMoments } from "../src/lib/matchInsights"
 
 type P = { playerId: string; playerName: string; played?: boolean; goals?: number; assists?: number; rating?: number; manOfTheMatch?: boolean; shots?: number; passesMade?: number; passesSuccess?: number; tacklesMade?: number; tacklesSuccess?: number; saves?: number }
 const pl = (p: P) => ({ played: true, goals: 0, assists: 0, rating: 7, manOfTheMatch: false, shots: 0, passesMade: 0, passesSuccess: 0, tacklesMade: 0, tacklesSuccess: 0, saves: 0, ...p })
@@ -90,5 +90,24 @@ describe("shareOf", () => {
         const s = shareOf(players, "shots")
         expect(s.total).toBe(4)
         expect(s.rows.map((r) => [r.playerId, r.share])).toEqual([["a", 0.75], ["b", 0.25]])
+    })
+})
+
+describe("playerStreaks", () => {
+    it("cuenta solo los partidos que jugó", () => {
+        const a = { playerId: "a", playerName: "A" }
+        const list = [
+            m(1, 0, [{ ...a, goals: 1, rating: 8.5 }]),
+            m(0, 1, [{ playerId: "b", playerName: "B" }]),
+            m(2, 0, [{ ...a, goals: 2, assists: 1, rating: 8.1, manOfTheMatch: true }]),
+        ]
+        const last = list[2] as { matchId: number }
+        expect(playerStreaks(list, last.matchId, "a").map((x) => x.text)).toEqual([
+            "2 partidos seguidos marcando", "2 partidos seguidos con 8 o más", "2 victorias seguidas con él",
+        ])
+    })
+    it("nada si no jugó este partido", () => {
+        const list = [m(1, 0, [{ playerId: "a", playerName: "A", goals: 1 }]), m(1, 0, [])]
+        expect(playerStreaks(list, (list[1] as { matchId: number }).matchId, "a")).toEqual([])
     })
 })

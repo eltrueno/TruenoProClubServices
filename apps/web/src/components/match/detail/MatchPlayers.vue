@@ -9,7 +9,7 @@ import { computed, nextTick, ref, watch } from "vue"
 import type ClubMatchEntity from "@/model/match/ClubMatchEntity"
 import type MatchPlayerEntity from "@/model/match/MatchPlayerEntity"
 import type AverageStatsEntity from "@/model/AverageStatsEntity"
-import { playerForm } from "@/lib/matchInsights"
+import { playerForm, playerStreaks } from "@/lib/matchInsights"
 import { playerPhrase } from "@/lib/matchPhrases"
 import { translatePosition } from "@/i18n/translations"
 import { useMembers } from "@/composables/useMembers"
@@ -48,12 +48,23 @@ watch(players, (list) => {
 const player = computed(() => players.value.find((p) => p.playerId === selectedId.value) ?? null)
 const ours = computed(() => side.value === "us")
 
-// La frase solo cambia al cambiar de jugador (es al azar)
-const phrase = computed(() => (player.value ? playerPhrase(player.value) : ""))
+// La frase: la más llamativa según sus números y los de su equipo (siempre la misma para ese jugador y partido)
+const phrase = computed(() => {
+    const p = player.value
+    if (!p) return ""
+    const mine = ours.value ? props.match.ourClub : props.match.opponentClub
+    const rival = ours.value ? props.match.opponentClub : props.match.ourClub
+    const r = props.match.result
+    const result = ours.value ? r : r === "win" ? "loose" : r === "loose" ? "win" : r
+    return playerPhrase(p, { teammates: mine.players, result, goalsFor: mine.matchStats.goals, goalsAgainst: rival.matchStats.goals, seed: props.match.matchId })
+})
 
 // ── Forma y medias ──
 const form = computed(() => (ours.value && props.history && player.value ? playerForm(props.history, props.match.matchId, player.value.playerId) : null))
 const ratingDelta = computed(() => (form.value && player.value && form.value.games > 1 ? player.value.rating - form.value.ratingAve : null))
+
+/** Rachas que lleva vivas tras este partido (solo de los nuestros: del rival no hay historial) */
+const streaks = computed(() => (ours.value && props.history && player.value ? playerStreaks(props.history, props.match.matchId, player.value.playerId) : []))
 
 /** Sus últimos partidos (con este), de más antiguo a más reciente */
 const lastGames = computed(() => ((form.value?.last.length ?? 0) > 1 ? form.value!.last : null))
@@ -108,7 +119,74 @@ const rows = computed<Row[]>(() => {
     if (p.position === "goalkeeper") list.push({ label: "Paradas", value: p.saves, ref: pick(self?.saves, pos?.savesPerMatch, teamAvg((x) => x.saves)), decimals: 1 })
     return list
 })
+// ── Sus números del partido (todo lo que da EA de cada jugador) y dónde queda en su equipo ──
+const teamPlayers = computed(() => (side.value === "us" ? props.match.ourClub.players : props.match.opponentClub.players))
+const pctOf = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : null)
+type Tile = { label: string; value: string; sub?: string }
+const numbers = computed<Tile[]>(() => {
+    const p = player.value
+    if (!p) return []
+    const team = teamPlayers.value
+    const tot = (f: (x: MatchPlayerEntity) => number) => team.reduce((s, x) => s + f(x), 0)
+    const share = (v: number, f: (x: MatchPlayerEntity) => number) => { const t = tot(f); return v > 0 && t ? `${Math.round((v / t) * 100)}% del equipo` : undefined }
+    const list: Tile[] = [
+        { label: "Minutos", value: `${Math.round(p.minutesPlayed)}'` },
+        { label: "Goles + asist.", value: String(p.goals + p.assists), sub: share(p.goals + p.assists, (x) => x.goals + x.assists) },
+        { label: "Tiros", value: String(p.shots), sub: p.shots ? `${pctOf(p.goals, p.shots)}% acabaron en gol` : share(p.shots, (x) => x.shots) },
+        { label: "Pases buenos", value: `${p.passesSuccess}/${p.passesMade}`, sub: share(p.passesMade, (x) => x.passesMade) },
+        { label: "Pases fallados", value: String(Math.max(0, p.passesMade - p.passesSuccess)) },
+        { label: "Entradas ganadas", value: `${p.tacklesSuccess}/${p.tacklesMade}`, sub: share(p.tacklesSuccess, (x) => x.tacklesSuccess) },
+    ]
+    const per90 = (n: number) => (p.minutesPlayed > 0 ? fmt((n / p.minutesPlayed) * 90, 1) : "—")
+    list.push({ label: "Pases por 90'", value: per90(p.passesMade), sub: `${per90(p.tacklesMade)} entradas por 90'` })
+    if (p.position === "goalkeeper" || p.saves > 0) {
+        list.push({ label: "Paradas", value: String(p.saves), sub: p.goalsConceded + p.saves ? `${pctOf(p.saves, p.saves + p.goalsConceded)}% de lo que le tiraron` : undefined })
+        list.push({ label: "Goles encajados", value: String(p.goalsConceded), sub: p.cleanSheet ? "Portería a cero" : undefined })
+    } else if (p.position === "defender") {
+        list.push({ label: "Goles encajados", value: String(p.goalsConceded), sub: p.cleanSheet ? "Portería a cero" : undefined })
+    }
+    if (p.redCards) list.push({ label: "Rojas", value: String(p.redCards) })
+    return list
+})
+/** Paradas de portero por tipo (solo las que hizo) */
+const saveTypes = computed(() => {
+    const p = player.value
+    if (!p || !p.saves) return []
+    return [
+        { label: "Estirada", n: p.ballDiveSaves }, { label: "Reflejos", n: p.reflexSaves }, { label: "Despeje", n: p.parrySaves },
+        { label: "Puños", n: p.punchSaves }, { label: "Centros", n: p.crossSaves }, { label: "Bien colocado", n: p.goodDirectionSaves },
+    ].filter((t) => t.n > 0)
+})
+/** Puesto en su equipo en cada cosa (solo donde está entre los 3 primeros y hizo algo) */
+const ranks = computed(() => {
+    const p = player.value
+    if (!p) return []
+    const team = teamPlayers.value
+    const METRICS: { label: string; f: (x: MatchPlayerEntity) => number }[] = [
+        { label: "nota", f: (x) => x.rating }, { label: "goles", f: (x) => x.goals }, { label: "asistencias", f: (x) => x.assists },
+        { label: "tiros", f: (x) => x.shots }, { label: "pases", f: (x) => x.passesMade }, { label: "pases buenos", f: (x) => x.passesSuccess },
+        { label: "entradas ganadas", f: (x) => x.tacklesSuccess }, { label: "paradas", f: (x) => x.saves },
+    ]
+    return METRICS.flatMap((m) => {
+        const v = m.f(p)
+        if (v <= 0) return []
+        const pos = team.filter((x) => m.f(x) > v).length + 1
+        const tied = team.filter((x) => x.playerId !== p.playerId && m.f(x) === v).length > 0
+        return pos <= 3 ? [{ label: m.label, pos, tied }] : []
+    })
+})
+
 const scale = (r: Row) => (r.pct ? 100 : Math.max(r.value, r.ref ?? 0, 1) * 1.25)
+const fmtRow = (r: Row, n: number) => `${fmt(n, r.pct ? 0 : n % 1 ? 1 : 0)}${r.pct ? "%" : ""}`
+/** La referencia, dicha entera para el tooltip */
+const refLong = computed(() => (reference.value === "self" ? "Su media por partido" : reference.value === "position" ? `Media de un ${translatePosition(player.value?.position ?? "midfielder").toLowerCase()}` : "Media del equipo hoy"))
+function diffText(r: Row) {
+    const d = r.value - (r.ref ?? 0)
+    if (Math.abs(d) < 0.05) return "Justo en la media"
+    const abs = r.pct ? `${fmt(Math.abs(d))} puntos` : fmt(Math.abs(d), Math.abs(d) % 1 ? 1 : 0)
+    const rel = !r.pct && r.ref ? ` (un ${Math.round((Math.abs(d) / r.ref) * 100)}% ${d > 0 ? "más" : "menos"})` : ""
+    return `${abs} ${d > 0 ? "por encima" : "por debajo"}${rel}`
+}
 const refLabel = computed(() => REFS.value.find((r) => r.key === reference.value)?.label.toLowerCase() ?? "")
 
 const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" : r >= 7 ? "bg-lime-500 text-black" : r >= 6 ? "bg-warning text-warning-content" : "bg-error text-error-content")
@@ -119,8 +197,8 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
     <MatchCard title="Jugadores" hint="Pulsa un jugador en el campo para ver su partido al detalle.">
         <template #actions>
             <div role="group" aria-label="Equipo" class="join">
-                <button type="button" class="join-item btn btn-sm" :class="side === 'us' && 'btn-primary'" :aria-pressed="side === 'us'" @click="side = 'us'">{{ match.ourClub.name }}</button>
-                <button type="button" class="join-item btn btn-sm" :class="side === 'them' && 'btn-primary'" :aria-pressed="side === 'them'" @click="side = 'them'">Rival</button>
+                <button type="button" class="join-item btn btn-sm" :class="side === 'us' ? 'btn-primary' : 'bg-base-300! dark:bg-base-100! border-base-content/10'" :aria-pressed="side === 'us'" @click="side = 'us'">{{ match.ourClub.name }}</button>
+                <button type="button" class="join-item btn btn-sm" :class="side === 'them' ? 'btn-primary' : 'bg-base-300! dark:bg-base-100! border-base-content/10'" :aria-pressed="side === 'them'" @click="side = 'them'">Rival</button>
             </div>
         </template>
 
@@ -164,7 +242,43 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
                         <li v-if="player.redCards" class="badge badge-sm badge-error font-bold">Roja</li>
                     </ul>
 
-                    <p class="text-sm italic text-base-content/70">{{ phrase }}</p>
+                    <blockquote class="phrase relative rounded-xl bg-base-content/5 pl-9 pr-3 py-2.5 text-sm sm:text-base font-bold italic text-base-content/85">
+                        <span class="absolute left-2.5 -top-1 text-4xl leading-none font-black text-primary/60 not-italic select-none" aria-hidden="true">“</span>
+                        {{ phrase }}
+                    </blockquote>
+
+                    <!-- Rachas vivas -->
+                    <ul v-if="streaks.length" class="flex flex-wrap gap-1.5" aria-label="Rachas">
+                        <li v-for="(st, i) in streaks" :key="st.key" class="streak-chip inline-flex items-center gap-1.5 rounded-full pl-2 pr-3 py-1 text-xs font-bold ring-1" :style="{ '--k': i }"
+                            :class="st.tone === 'good' ? 'bg-success/12 text-success ring-success/25' : 'bg-error/12 text-error ring-error/25'">
+                            <svg class="size-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.963 2.286a.75.75 0 0 0-1.071-.136 9.742 9.742 0 0 0-3.539 6.176 7.547 7.547 0 0 1-1.705-1.715.75.75 0 0 0-1.152-.082A9 9 0 1 0 15.68 4.534a7.46 7.46 0 0 1-2.717-2.248ZM15.75 14.25a3.75 3.75 0 1 1-7.313-1.172c.628.465 1.35.81 2.133 1a5.99 5.99 0 0 1 1.925-3.546 3.75 3.75 0 0 1 3.255 3.718Z" clip-rule="evenodd" /></svg>
+                            {{ st.text }}
+                        </li>
+                    </ul>
+
+                    <!-- Dónde queda en su equipo -->
+                    <ul v-if="ranks.length" class="flex flex-wrap gap-1.5" aria-label="Puesto en su equipo">
+                        <li v-for="r in ranks" :key="r.label" class="rounded-full px-2.5 py-1 text-xs font-bold ring-1"
+                            :class="r.pos === 1 ? 'bg-warning/15 text-warning ring-warning/30' : 'bg-base-content/5 text-base-content/70 ring-base-content/10'">
+                            {{ r.pos === 1 ? (r.tied ? "Empatado en lo más alto" : "El que más") : `${r.pos}º` }} en {{ r.label }}
+                        </li>
+                    </ul>
+
+                    <!-- Sus números -->
+                    <div>
+                        <p class="text-xs uppercase tracking-widest font-black text-base-content/50 mb-2">Sus números</p>
+                        <dl class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
+                            <div v-for="(t, i) in numbers" :key="t.label" class="num-tile rounded-xl bg-base-content/5 px-3 py-2 min-w-0" :style="{ '--k': i }">
+                                <dt class="text-[0.65rem] uppercase tracking-wider font-black text-base-content/50 truncate">{{ t.label }}</dt>
+                                <dd class="text-lg font-black tabular-nums leading-tight">{{ t.value }}</dd>
+                                <dd v-if="t.sub" class="text-[0.7rem] text-base-content/55 leading-tight">{{ t.sub }}</dd>
+                            </div>
+                        </dl>
+                        <p v-if="saveTypes.length" class="mt-2 text-xs text-base-content/60">
+                            <span class="font-bold">Sus paradas:</span>
+                            <span v-for="(t, i) in saveTypes" :key="t.label">{{ i ? " · " : " " }}{{ t.n }} {{ t.label.toLowerCase() }}</span>
+                        </p>
+                    </div>
 
                     <!-- Forma: sus últimas notas, cada una con su color; la de hoy, marcada -->
                     <div v-if="ours">
@@ -195,9 +309,21 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
                             <!-- Móvil: nombre, valor y diferencia arriba y la barra debajo. Desde sm, todo en una fila -->
                             <div v-for="(r, i) in rows" :key="r.label" class="grid grid-cols-[minmax(0,1fr)_auto_3rem] sm:grid-cols-[8rem_minmax(0,1fr)_3rem_3rem] items-center gap-x-2 gap-y-1 text-sm">
                                 <dt class="text-base-content/70 truncate">{{ r.label }}</dt>
-                                <div class="relative h-2.5 sm:h-3 rounded-full bg-base-content/8 col-span-3 row-start-2 sm:col-span-1 sm:row-start-auto">
+                                <!-- Al pasar por encima (o tocar): el valor de hoy, la referencia y la diferencia -->
+                                <div tabindex="0" class="tooltip tooltip-top col-span-3 row-start-2 sm:col-span-1 sm:row-start-auto py-1.5 -my-1.5 cursor-help focus-visible:outline-2 focus-visible:outline-primary rounded-full">
+                                <div class="tooltip-content text-left text-xs leading-snug px-3 py-2">
+                                    <p class="font-black mb-0.5">{{ r.label }}</p>
+                                    <p>Este partido: <b class="tabular-nums">{{ fmtRow(r, r.value) }}</b></p>
+                                    <template v-if="r.ref !== null">
+                                        <p>{{ refLong }}: <b class="tabular-nums">{{ fmtRow(r, r.ref) }}</b></p>
+                                        <p :class="r.value - r.ref >= 0 ? 'text-success' : 'text-error'">{{ diffText(r) }}</p>
+                                    </template>
+                                    <p v-else class="opacity-70">Sin referencia para comparar.</p>
+                                </div>
+                                <div class="relative h-2.5 sm:h-3 rounded-full bg-base-content/8">
                                     <span class="stat-bar absolute inset-y-0 left-0 rounded-full" :class="ours ? 'bg-(--us)' : 'bg-(--them)'" :style="{ width: `${Math.min(100, (r.value / scale(r)) * 100)}%`, '--k': i }"></span>
-                                    <span v-if="r.ref !== null" class="ref-mark absolute -top-1 -bottom-1 w-1 -ml-0.5 rounded-full bg-base-content/80" :style="{ left: `${Math.min(100, (r.ref / scale(r)) * 100)}%` }" :title="`${refLabel}: ${fmt(r.ref, r.pct ? 0 : r.decimals)}${r.pct ? '%' : ''}`"></span>
+                                    <span v-if="r.ref !== null" class="ref-mark absolute -top-1 -bottom-1 w-1 -ml-0.5 rounded-full bg-base-content/80" :style="{ left: `${Math.min(100, (r.ref / scale(r)) * 100)}%` }" ></span>
+                                </div>
                                 </div>
                                 <dd class="text-right font-black tabular-nums">{{ fmt(r.value) }}{{ r.pct ? "%" : "" }}</dd>
                                 <dd class="text-right text-xs tabular-nums font-bold">
@@ -235,6 +361,9 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
     .delta { animation: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
     .form-bar { transform-origin: bottom; animation: grow-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--k, 0) * 60ms); }
     .side-in { animation: side-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    .num-tile { animation: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: calc(var(--k, 0) * 35ms); }
+    .streak-chip { animation: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: calc(var(--k, 0) * 50ms); }
+    .phrase { animation: phrase-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both; }
     .rating-pop { animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -243,5 +372,6 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
 @keyframes grow { from { scale: 0 1; } }
 @keyframes pop { from { opacity: 0; scale: 0.6; } }
 @keyframes side-in { from { opacity: 0; translate: 1.5rem 0; } }
+@keyframes phrase-in { from { opacity: 0; translate: -0.5rem 0; } }
 @keyframes grow-up { from { scale: 1 0; } }
 </style>

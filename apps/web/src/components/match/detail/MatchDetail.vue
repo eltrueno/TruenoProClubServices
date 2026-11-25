@@ -16,6 +16,7 @@ import { translateMatchResult, translateMatchType } from "@/i18n/translations"
 import { getQueryParam, routes, setQueryParams } from "@/lib/query"
 import { ApiError, tpcsApi } from "@/lib/api"
 import { neighbours } from "@/lib/matchInsights"
+import { matchPhrase } from "@/lib/matchPhrases"
 import { CLUB, OTHER_CLUBS } from "@/config/club"
 import AnimatedNumber from "@/components/ui/AnimatedNumber.vue"
 import MvpIcon from "@/components/ui/MvpIcon.vue"
@@ -76,6 +77,7 @@ const fmt = (n: number, d = 0) => (Number.isFinite(n) ? n : 0).toLocaleString("e
 const ICONS = {
     target: "M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z M12 2.25v2.25m0 15v2.25M2.25 12h2.25m15 0h2.25M18.364 5.636l-1.59 1.59M7.227 16.773l-1.591 1.591m0-12.728 1.59 1.59m9.546 9.546 1.591 1.591 M19.5 12a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z",
     ban: "M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636",
+    clock: "M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
     unplug: "M13.181 8.68a4.503 4.503 0 0 1 1.903 6.405m-9.768-2.782L3.56 14.06a4.5 4.5 0 0 0 6.364 6.365l3.129-3.129m5.614-5.615 1.757-1.757a4.5 4.5 0 0 0-6.364-6.365l-4.5 4.5c-.258.26-.479.541-.661.84m1.903 6.405a4.495 4.495 0 0 1-1.242-.88 4.483 4.483 0 0 1-1.062-1.683m6.587 2.345 5.907 5.907m-5.907-5.907L8.898 8.898M2.991 2.99 8.898 8.9",
 }
 
@@ -86,6 +88,20 @@ const NOTE_TONE: Record<Note["tone"], string> = {
     good: "bg-success/10 ring-success/30 text-success",
     bad: "bg-error/10 ring-error/30 text-error",
 }
+/** Hubo prórroga: alguien pasó de ~117 min (el mismo umbral que usa el worker, EXTRA_TIME_SECONDS = 7000 s) */
+/** La frase del partido (lo más llamativo; siempre la misma para cada partido) */
+const phrase = computed(() => {
+    const m = match.value, a = us.value, b = them.value
+    if (!m || !a || !b) return ""
+    return matchPhrase({
+        matchId: m.matchId, result: m.result, goalsFor: a.matchStats.goals, goalsAgainst: b.matchStats.goals,
+        shotsFor: a.matchStats.shots, shotsAgainst: b.matchStats.shots, passesFor: a.matchStats.passesMade, passesAgainst: b.matchStats.passesMade,
+        redsFor: a.matchStats.redCards, redsAgainst: b.matchStats.redCards,
+        penalties: m.winnerByPen ? { for: a.penaltiesScore ?? 0, against: b.penaltiesScore ?? 0 } : null,
+        dnf: !!m.winnerByDnf, extraTime: extraTime.value, voided: !!m.voided, rivalName: b.name, derby: !!rivalConfig.value,
+    })
+})
+const extraTime = computed(() => !!match.value && [...match.value.ourClub.players, ...match.value.opponentClub.players].some((p) => p.minutesPlayed * 60 >= 7000))
 const notes = computed<Note[]>(() => {
     const m = match.value
     if (!m || !us.value || !them.value) return []
@@ -104,6 +120,10 @@ const notes = computed<Note[]>(() => {
             text: tied ? `Empate a ${us.value.matchStats.goals} tras la prórroga; la tanda acabó ${shootout}.` : `La tanda acabó ${shootout}.`,
         })
     }
+    if (extraTime.value && !m.winnerByPen && !m.winnerByDnf) out.push({
+        tone, icon: ICONS.clock, title: "Hubo prórroga",
+        text: m.result === "tie" ? "Se jugaron los 120 minutos y acabó en empate, sin tanda de penaltis." : "Se jugaron los 120 minutos: se decidió en la prórroga, sin llegar a penaltis.",
+    })
     if (m.winnerByDnf) out.push({
         tone, icon: ICONS.unplug, title: m.result === "win" ? "El rival se desconectó" : "Nos desconectamos",
         text: "Cuando alguien abandona, EA da el partido al equipo que se queda (normalmente 3–0), así que el marcador puede no ser el que había en el campo.",
@@ -199,6 +219,9 @@ function selectTab(key: TabKey) {
         scrollTo({ top, behavior: smooth() })
     })
 }
+const tabBody = ref<HTMLElement | null>(null)
+const lockTabBody = () => { if (tabBody.value) tabBody.value.style.minHeight = `${tabBody.value.offsetHeight}px` }
+const unlockTabBody = () => { if (tabBody.value) tabBody.value.style.minHeight = "" }
 const scrollToTop = () => scrollTo({ top: 0, behavior: smooth() })
 
 // ── Admin: marcar / desmarcar como nulo ──
@@ -300,6 +323,11 @@ async function setVoided(voided: boolean | null) {
                             <span class="uppercase text-[0.65rem] font-black tracking-widest text-base-content/60">Penaltis</span>
                             <b class="tabular-nums text-lg leading-none">{{ us.penaltiesScore ?? "?" }}–{{ them.penaltiesScore ?? "?" }}</b>
                         </div>
+                        <!-- Prórroga sin penaltis -->
+                        <div v-else-if="extraTime && !match.winnerByDnf" class="flex items-center gap-1.5 rounded-full bg-base-content/8 pl-2 pr-3 py-1">
+                            <svg class="size-4 text-base-content/60" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" :d="ICONS.clock" /></svg>
+                            <span class="uppercase text-[0.65rem] font-black tracking-widest text-base-content/60">Prórroga</span>
+                        </div>
                     </div>
                     <div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 min-w-0 text-center sm:text-left">
                         <span v-if="rivalConfig" class="crest" :style="{ background: crestBg(rivalConfig) }">
@@ -311,6 +339,11 @@ async function setVoided(voided: boolean | null) {
                 </div>
 
                 <!-- Lo que hace especial al partido (nulo, penaltis, desconexión), explicado -->
+                <!-- La frase del partido -->
+                <p v-if="phrase" class="match-phrase mx-auto max-w-2xl text-center text-base sm:text-xl font-black italic text-base-content/85 text-balance">
+                    <span class="text-primary/70 not-italic" aria-hidden="true">“</span>{{ phrase }}<span class="text-primary/70 not-italic" aria-hidden="true">”</span>
+                </p>
+
                 <ul v-if="notes.length" class="grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(16rem,1fr))] gap-2 sm:gap-3 max-w-4xl w-full mx-auto">
                     <li v-for="n in notes" :key="n.title" class="note flex items-start gap-3 rounded-2xl p-3 sm:p-4 ring-1" :class="NOTE_TONE[n.tone]">
                         <span class="grid place-items-center size-10 shrink-0 rounded-full bg-current/12">
@@ -401,8 +434,10 @@ async function setVoided(voided: boolean | null) {
                 </div>
             </div>
 
-            <div class="tab-body rounded-b-2xl bg-[color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-100))] dark:bg-[color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-300))] p-2 sm:p-3 overflow-x-clip">
-                <Transition name="tab-slide" mode="out-in">
+            <div ref="tabBody" class="tab-body rounded-b-2xl bg-[color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-100))] dark:bg-[color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-300))] p-2 sm:p-3 overflow-x-clip">
+                <!-- El alto se fija mientras una pestaña sale y entra la otra: si no, entre medias el contenedor
+                     se queda vacío, la página encoge y el scroll pega un salto -->
+                <Transition name="tab-slide" mode="out-in" @before-leave="lockTabBody" @after-enter="unlockTabBody" @enter-cancelled="unlockTabBody">
                     <MatchSummary v-if="activeTab === 'resumen'" key="resumen" :match="match" :history="history" :my-id="myId" @see="seePlayer" />
                     <MatchTeam v-else-if="activeTab === 'equipo'" key="equipo" :match="match" :my-id="myId" />
                     <MatchPlayers v-else key="jugadores" :match="match" :history="history" :averages="averages" :initial-player="focusPlayer" :my-id="myId" />
@@ -463,6 +498,7 @@ async function setVoided(voided: boolean | null) {
 }
 @media (prefers-reduced-motion: no-preference) {
     .void-stamp { animation: stamp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both; }
+    .match-phrase { animation: note-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both; }
     .note { animation: note-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
 }
 @keyframes stamp { from { opacity: 0; scale: 1.6; } }
