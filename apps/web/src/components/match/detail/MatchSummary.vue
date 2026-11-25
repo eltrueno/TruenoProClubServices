@@ -59,6 +59,11 @@ const sideStats = (side: ClubMatchEntity["ourClub"]) => {
         reds: s.redCards,
     }
 }
+/** Los porcentajes, también como aciertos/intentos */
+const fractions = (side: ClubMatchEntity["ourClub"]): Record<string, string> => {
+    const s = side.matchStats
+    return { shotAcc: `${s.goals}/${s.shots}`, passAcc: `${s.passesSuccess}/${s.passesMade}`, tackleAcc: `${s.tackleSuccess}/${s.tacklesMade}` }
+}
 const ROWS = [
     { key: "shots", label: "Tiros" },
     { key: "shotAcc", label: "Tiros convertidos", pct: true },
@@ -71,11 +76,12 @@ const ROWS = [
 ] as const
 const comparison = computed(() => {
     const a = sideStats(us.value), b = sideStats(them.value)
+    const fa = fractions(us.value), fb = fractions(them.value)
     return ROWS.map((r) => {
         const x = a[r.key], y = b[r.key]
         // Los porcentajes, sobre 100; el resto, sobre el mayor de los dos
         const max = "pct" in r ? 100 : Math.max(x, y, 1)
-        return { ...r, pct: "pct" in r, us: x, them: y, usW: (x / max) * 100, themW: (y / max) * 100, usBetter: x > y, themBetter: y > x }
+        return { ...r, pct: "pct" in r, us: x, them: y, usFrac: fa[r.key], themFrac: fb[r.key], usW: (x / max) * 100, themW: (y / max) * 100, usBetter: x > y, themBetter: y > x }
     })
 })
 // Posesión aproximada: reparto de pases
@@ -178,13 +184,13 @@ const highlights = computed(() => {
                     </div>
                 </div>
                 <dl class="flex flex-col gap-3">
-                    <div v-for="r in comparison" :key="r.key" class="grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[3.5rem_minmax(0,1fr)_9rem_minmax(0,1fr)_3.5rem] items-center gap-x-2 gap-y-1">
-                        <dd class="text-right tabular-nums" :class="r.usBetter ? 'font-black' : 'text-base-content/60'">{{ fmt(r.us) }}{{ r.pct ? "%" : "" }}</dd>
+                    <div v-for="r in comparison" :key="r.key" class="grid grid-cols-[3.25rem_minmax(0,1fr)_minmax(0,1fr)_3.25rem] sm:grid-cols-[3.75rem_minmax(0,1fr)_9rem_minmax(0,1fr)_3.75rem] items-center gap-x-2 gap-y-1">
+                        <dd class="text-right tabular-nums" :class="r.usBetter ? 'font-black' : 'text-base-content/60'">{{ fmt(r.us) }}{{ r.pct ? "%" : "" }}<span v-if="r.usFrac" class="block text-[0.65rem] font-medium text-base-content/45 leading-none">{{ r.usFrac }}</span></dd>
                         <div class="flex justify-end"><span class="h-3 rounded-l-full bg-(--us) grow-bar origin-right" :class="!r.usBetter && 'opacity-50'" :style="{ width: `${r.usW}%` }"></span></div>
                         <!-- En móvil, la etiqueta encima de las barras (en medio no les dejaba sitio) -->
                         <dt class="col-span-4 sm:col-span-1 order-first sm:order-none text-center text-xs uppercase tracking-wider text-base-content/60 font-bold">{{ r.label }}</dt>
                         <div><span class="block h-3 rounded-r-full bg-(--them) grow-bar origin-left" :class="!r.themBetter && 'opacity-50'" :style="{ width: `${r.themW}%` }"></span></div>
-                        <dd class="tabular-nums" :class="r.themBetter ? 'font-black' : 'text-base-content/60'">{{ fmt(r.them) }}{{ r.pct ? "%" : "" }}</dd>
+                        <dd class="tabular-nums" :class="r.themBetter ? 'font-black' : 'text-base-content/60'">{{ fmt(r.them) }}{{ r.pct ? "%" : "" }}<span v-if="r.themFrac" class="block text-[0.65rem] font-medium text-base-content/45 leading-none">{{ r.themFrac }}</span></dd>
                     </div>
                 </dl>
             </MatchCard>

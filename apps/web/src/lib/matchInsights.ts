@@ -130,6 +130,57 @@ export function playerMoments(matches: Match[], matchId: number): Moment[] {
     return out
 }
 
+// ── Rachas activas (hasta este partido, incluido) ──
+
+export interface Streak {
+    key: string
+    /** partidos seguidos */
+    count: number
+    text: string
+    tone: MomentTone
+}
+
+/** Cuántos seguidos (contando hacia atrás desde el último) cumplen `ok` */
+const runFromEnd = <T>(list: T[], ok: (x: T) => boolean) => {
+    let n = 0
+    for (let k = list.length - 1; k >= 0 && ok(list[k]); k--) n++
+    return n
+}
+
+/**
+ * Rachas de un jugador nuestro vivas tras este partido, contando solo los partidos que jugó:
+ * marcando, asistiendo, participando en gol, con nota de 7+ / 8+, MVP y ganando / sin perder con él.
+ */
+export function playerStreaks(matches: Match[], matchId: number, playerId: string): Streak[] {
+    const list = counted(matches)
+    const i = list.findIndex((m) => m.matchId === matchId)
+    if (i < 0) return []
+    const games = list.slice(0, i + 1).flatMap((m) => {
+        const p = m.ourClub.players.find((x) => x.playerId === playerId)
+        return p?.played ? [{ p, m }] : []
+    })
+    if (!games.length || games[games.length - 1].m.matchId !== matchId) return []
+    const run = (ok: (g: (typeof games)[number]) => boolean) => runFromEnd(games, ok)
+    const goals = run((g) => g.p.goals > 0)
+    const assists = run((g) => g.p.assists > 0)
+    const contrib = run((g) => g.p.goals + g.p.assists > 0)
+    const r8 = run((g) => g.p.rating >= 8)
+    const r7 = run((g) => g.p.rating >= 7)
+    const mvp = run((g) => g.p.manOfTheMatch)
+    const wins = run((g) => g.m.result === "win")
+    const unbeaten = run((g) => g.m.result !== "loose")
+    const out: Streak[] = []
+    if (goals >= 2) out.push({ key: "goals", count: goals, text: `${goals} partidos seguidos marcando`, tone: "good" })
+    if (assists >= 2) out.push({ key: "assists", count: assists, text: `${assists} partidos seguidos asistiendo`, tone: "good" })
+    if (contrib >= 3 && contrib > goals && contrib > assists) out.push({ key: "contrib", count: contrib, text: `${contrib} partidos seguidos con gol o asistencia`, tone: "good" })
+    if (mvp >= 2) out.push({ key: "mvp", count: mvp, text: `${mvp} MVP seguidos`, tone: "good" })
+    if (r8 >= 2) out.push({ key: "r8", count: r8, text: `${r8} partidos seguidos con 8 o más`, tone: "good" })
+    else if (r7 >= 3) out.push({ key: "r7", count: r7, text: `${r7} partidos seguidos con 7 o más`, tone: "good" })
+    if (wins >= 2) out.push({ key: "wins", count: wins, text: `${wins} victorias seguidas con él`, tone: "good" })
+    else if (unbeaten >= 3) out.push({ key: "unbeaten", count: unbeaten, text: `${unbeaten} partidos sin perder con él`, tone: "good" })
+    return out
+}
+
 // ── Cara a cara con el rival ──
 
 export interface HeadToHead {

@@ -80,8 +80,8 @@ const pct = (n: number) => `${Math.round(n * 100)}%`
         <MatchCard title="Quién llevó el peso" hint="Qué parte de los goles, tiros, pases y entradas del equipo hizo cada jugador.">
             <template #actions>
                 <div role="group" aria-label="Equipo" class="join">
-                    <button type="button" class="join-item btn btn-sm" :class="side === 'us' && 'btn-primary'" :aria-pressed="side === 'us'" @click="side = 'us'">{{ match.ourClub.name }}</button>
-                    <button type="button" class="join-item btn btn-sm" :class="side === 'them' && 'btn-primary'" :aria-pressed="side === 'them'" @click="side = 'them'">Rival</button>
+                    <button type="button" class="join-item btn btn-sm" :class="side === 'us' ? 'btn-primary' : 'bg-base-300! dark:bg-base-100! border-base-content/10'" :aria-pressed="side === 'us'" @click="side = 'us'">{{ match.ourClub.name }}</button>
+                    <button type="button" class="join-item btn btn-sm" :class="side === 'them' ? 'btn-primary' : 'bg-base-300! dark:bg-base-100! border-base-content/10'" :aria-pressed="side === 'them'" @click="side = 'them'">Rival</button>
                 </div>
             </template>
             <Transition name="side-swap" mode="out-in">
