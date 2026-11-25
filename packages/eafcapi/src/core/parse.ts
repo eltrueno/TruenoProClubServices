@@ -104,6 +104,8 @@ export interface IPenaltiesInfo {
 	hasPenalties: boolean
 	/** goles de la tanda de cada club (clubs.goals − aggregate.goals) */
 	scores?: Record<string, number>
+	/** marcador real (empate) de cada club, contando los goles en propia que no están en el agregado */
+	realScores?: Record<string, number>
 }
 
 /**
@@ -111,16 +113,27 @@ export interface IPenaltiesInfo {
  * atribuye a ningún jugador, así que `aggregate.goals` se queda con el marcador
  * real. Un gol en propia solo infla un club; una tanda infla los dos. Y una
  * tanda solo puede darse tras prórroga, así que exigimos también eso.
+ *
+ * Pero los goles en propia también inflan `clubs.goals` (solo al club que se beneficia), así que el
+ * sobrante de cada club es tanda + goles en propia a su favor. Para ir a penaltis el partido tuvo que
+ * acabar en empate: los goles en propia mínimos que lo igualan son la diferencia de agregados, a
+ * favor del que va por detrás. Lo que queda es la tanda, que tiene que tener goles en los dos lados
+ * y un ganador; si no sale así, no hubo tanda y el marcador bueno es `clubs.goals`.
  */
 export const detectPenalties = (match: IClubMatches, clubId: string, opponentClubId: string, requireExtraTime = true): IPenaltiesInfo => {
-	const diff = (id: string) => Number(match.clubs[id]?.goals ?? 0) - Number(match.aggregate?.[id]?.goals ?? 0)
-	const ownDiff = diff(clubId)
-	const oppDiff = diff(opponentClubId)
+	const agg = (id: string) => Number(match.aggregate?.[id]?.goals ?? 0)
+	const diff = (id: string) => Number(match.clubs[id]?.goals ?? 0) - agg(id)
+	if (!(diff(clubId) > 0 && diff(opponentClubId) > 0) || (requireExtraTime && !playedExtraTime(match))) return { hasPenalties: false }
 
-	if (ownDiff > 0 && oppDiff > 0 && (!requireExtraTime || playedExtraTime(match))) {
-		return { hasPenalties: true, scores: { [clubId]: ownDiff, [opponentClubId]: oppDiff } }
-	}
-	return { hasPenalties: false }
+	// Goles en propia que igualan el marcador (a favor del que va por detrás en el agregado)
+	const ownGoals = (id: string, other: string) => Math.max(0, agg(other) - agg(id))
+	const pens = (id: string, other: string) => diff(id) - ownGoals(id, other)
+	const ours = pens(clubId, opponentClubId)
+	const theirs = pens(opponentClubId, clubId)
+	if (ours <= 0 || theirs <= 0 || ours === theirs) return { hasPenalties: false }
+
+	const real = Math.max(agg(clubId), agg(opponentClubId))
+	return { hasPenalties: true, scores: { [clubId]: ours, [opponentClubId]: theirs }, realScores: { [clubId]: real, [opponentClubId]: real } }
 }
 
 /**

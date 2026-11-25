@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
- * Jugadores del partido: selector Nosotros / Rival, campo y lista (por nota) y la ficha del elegido:
+ * Jugadores del partido: selector Nosotros / Rival, campo (con goles, asistencias y rojas) y la ficha del elegido:
  * su nota frente a su media, la forma en sus últimos 5 partidos y sus números comparados con su
  * media, con la media de su posición o con el equipo en este partido (barra con una raya de
  * referencia y la diferencia escrita). Del rival no hay historial: solo posición y equipo.
  */
-import { computed, ref, watch } from "vue"
+import { computed, nextTick, ref, watch } from "vue"
 import type ClubMatchEntity from "@/model/match/ClubMatchEntity"
 import type MatchPlayerEntity from "@/model/match/MatchPlayerEntity"
 import type AverageStatsEntity from "@/model/AverageStatsEntity"
@@ -18,6 +18,8 @@ import { routes } from "@/lib/query"
 import MatchPitch from "./MatchPitch.vue"
 import MatchCard from "./MatchCard.vue"
 import MvpIcon from "@/components/ui/MvpIcon.vue"
+import AssistIcon from "@/components/ui/AssistIcon.vue"
+import GoalIcon from "@/components/ui/GoalIcon.vue"
 
 const props = defineProps<{
     match: ClubMatchEntity
@@ -53,14 +55,20 @@ const phrase = computed(() => (player.value ? playerPhrase(player.value) : ""))
 const form = computed(() => (ours.value && props.history && player.value ? playerForm(props.history, props.match.matchId, player.value.playerId) : null))
 const ratingDelta = computed(() => (form.value && player.value && form.value.games > 1 ? player.value.rating - form.value.ratingAve : null))
 
-/** Puntos de la minigráfica de forma (nota de 0 a 10) */
-const spark = computed(() => {
-    const last = form.value?.last ?? []
-    if (last.length < 2) return null
-    const W = 160, H = 44, pad = 6
-    const pts = last.map((g, i) => ({ ...g, x: pad + (i / (last.length - 1)) * (W - pad * 2), y: H - pad - (g.rating / 10) * (H - pad * 2) }))
-    return { W, H, pts, path: pts.map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ") }
-})
+/** Sus últimos partidos (con este), de más antiguo a más reciente */
+const lastGames = computed(() => ((form.value?.last.length ?? 0) > 1 ? form.value!.last : null))
+
+// En móvil la ficha va debajo del campo: al elegir a alguien, se baja hasta ella si no se ve
+function pick(id: string) {
+    selectedId.value = id
+    if (!matchMedia("(max-width: 1023px)").matches) return
+    nextTick(() => setTimeout(() => {
+        const el = document.getElementById("match-player-card")
+        if (!el) return
+        const r = el.getBoundingClientRect()
+        if (r.top > innerHeight * 0.6 || r.bottom < 0) el.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" })
+    }, 150))
+}
 
 // ── Comparación ──
 type Ref = "self" | "position" | "team"
@@ -108,7 +116,7 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
 
 <template>
     <div class="py-2">
-    <MatchCard title="Jugadores" hint="Pulsa un jugador en el campo o en la lista para ver su partido al detalle.">
+    <MatchCard title="Jugadores" hint="Pulsa un jugador en el campo para ver su partido al detalle.">
         <template #actions>
             <div role="group" aria-label="Equipo" class="join">
                 <button type="button" class="join-item btn btn-sm" :class="side === 'us' && 'btn-primary'" :aria-pressed="side === 'us'" @click="side = 'us'">{{ match.ourClub.name }}</button>
@@ -118,58 +126,76 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
 
         <!-- Campo (protagonista) y ficha del elegido -->
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-4 sm:gap-6 items-start">
-            <Transition name="side-swap" mode="out-in">
-                <MatchPitch :key="side" :players="players" :selected="selectedId" :my-id="myId" :rival="!ours" @select="selectedId = $event" class="w-full max-w-xl mx-auto lg:max-w-none" />
-            </Transition>
+            <!-- Sin <Transition> out-in: junto a la de la ficha se quedaba a medias y el campo no volvía.
+                 Al cambiar de equipo, el campo nuevo entra con una animación -->
+            <MatchPitch :key="side" :players="players" :selected="selectedId" :my-id="myId" :rival="!ours" @select="pick" class="side-in w-full max-w-xl mx-auto lg:max-w-none" />
 
             <Transition name="card-swap" mode="out-in">
-                <article v-if="player" :key="`${side}-${player.playerId}`" class="rounded-2xl p-4 sm:p-5 dark:bg-base-100 bg-base-300 shadow-sm flex flex-col gap-5 lg:sticky lg:top-[calc(var(--nav-h,4rem)+5.5rem)]">
-                    <header class="flex gap-4 items-end">
-                        <!-- Foto como en la ficha de jugador -->
-                        <div class="relative shrink-0 w-24 sm:w-28 aspect-8/9 rounded-2xl overflow-hidden dark:bg-base-200 bg-base-100 ring-2" :class="ours ? 'ring-(--us)/60' : 'ring-(--them)/60'">
-                            <img v-if="isMember(player.playerId)" :src="imageFor(player.playerId)" alt="" class="w-full h-full object-contain object-top scale-[1.55] origin-top" @error="onPlayerImageError" />
-                            <span v-else class="size-full grid place-items-center text-3xl font-black text-(--them)" aria-hidden="true">{{ player.playerName.slice(0, 2).toUpperCase() }}</span>
+                <article v-if="player" id="match-player-card" :key="`${side}-${player.playerId}`"
+                    class="scroll-mt-[calc(var(--nav-h,4rem)+6rem)] rounded-2xl p-3 sm:p-5 dark:bg-base-100 bg-base-300 shadow-sm flex flex-col gap-4 sm:gap-5 lg:sticky lg:top-[calc(var(--nav-h,4rem)+5.5rem)]"
+                    :class="player.playerId === myId && 'ring-2 ring-primary/60'">
+                    <!-- Cabecera: cara, nombre y la nota con su color -->
+                    <header class="flex items-center gap-3 sm:gap-4">
+                        <!-- Cara; el MVP y el «TÚ» van encima (como en el campo) para dejar sitio al nombre -->
+                        <span class="relative shrink-0">
+                            <span class="block size-14 sm:size-24 rounded-full overflow-hidden outline-2"
+                                :class="[player.playerId === myId ? 'outline-primary' : ours ? 'outline-(--us)' : 'outline-(--them)', isMember(player.playerId) ? (ours ? 'bg-(--us)/45' : 'bg-(--them)/45') : (ours ? 'bg-(--us)' : 'bg-(--them)')]">
+                                <img v-if="isMember(player.playerId)" :src="imageFor(player.playerId)" alt="" class="size-full object-cover object-top scale-[2] origin-top" @error="onPlayerImageError" />
+                                <span v-else class="size-full grid place-items-center text-xl sm:text-3xl font-black text-white" aria-hidden="true">{{ player.playerName.slice(0, 2).toUpperCase() }}</span>
+                            </span>
+                            <MvpIcon v-if="player.manOfTheMatch" class="absolute -top-1 -right-1.5 size-5 sm:size-6 drop-shadow" label="MVP" />
+                            <span v-if="player.playerId === myId" class="absolute -top-2 -left-2 badge badge-xs badge-primary font-black tracking-widest shadow">TÚ</span>
+                        </span>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[0.6rem] sm:text-xs uppercase tracking-wider sm:tracking-widest font-black text-base-content/50">{{ translatePosition(player.position) }} · {{ Math.round(player.minutesPlayed) }}'</p>
+                            <h3 class="text-base sm:text-2xl font-black leading-tight wrap-anywhere line-clamp-2">{{ player.playerName }}</h3>
+                            <a v-if="isMember(player.playerId)" :href="routes.player(player.playerId)" class="link link-hover text-xs sm:text-sm font-bold text-primary">Ver su perfil →</a>
                         </div>
-                        <div class="flex-1 min-w-0 flex flex-col gap-1">
-                            <p class="text-xs uppercase tracking-widest font-black text-base-content/50">{{ translatePosition(player.position) }} · {{ Math.round(player.minutesPlayed) }} min</p>
-                            <h3 class="text-xl sm:text-2xl font-black leading-tight truncate">{{ player.playerName }}<MvpIcon v-if="player.manOfTheMatch" class="size-5 ml-1.5 -mt-1" label="MVP" /></h3>
-                            <div class="flex items-end gap-3">
-                                <span class="text-4xl sm:text-5xl font-black tabular-nums leading-none">{{ fmt(player.rating, 1) }}</span>
-                                <span v-if="ratingDelta !== null" class="text-sm font-bold pb-1" :class="ratingDelta >= 0 ? 'text-success' : 'text-error'">{{ signed(ratingDelta) }} sobre su media</span>
-                            </div>
-                            <a v-if="isMember(player.playerId)" :href="routes.player(player.playerId)" class="link link-hover text-sm font-bold text-primary w-fit">Ver su perfil →</a>
+                        <div class="shrink-0 flex flex-col items-center gap-1">
+                            <span class="rating-pop rounded-xl px-2 py-1 sm:px-3 sm:py-1.5 text-xl sm:text-4xl font-black tabular-nums leading-none shadow" :class="RATING_TONE(player.rating)">{{ fmt(player.rating, 1) }}</span>
+                            <span v-if="ratingDelta !== null" class="text-[0.6rem] sm:text-xs font-bold tabular-nums whitespace-nowrap" :class="ratingDelta >= 0 ? 'text-success' : 'text-error'" :title="`${signed(ratingDelta)} sobre su media`">{{ signed(ratingDelta) }}</span>
                         </div>
                     </header>
 
+                    <!-- Goles, asistencias… de un vistazo -->
+                    <ul v-if="player.goals || player.assists || player.redCards" class="flex flex-wrap gap-1.5 -mt-1">
+                        <li v-if="player.goals" class="badge badge-sm font-bold"><GoalIcon class="size-3.5" />{{ player.goals }} {{ player.goals === 1 ? "gol" : "goles" }}</li>
+                        <li v-if="player.assists" class="badge badge-sm font-bold"><AssistIcon class="size-3.5" />{{ player.assists }} {{ player.assists === 1 ? "asistencia" : "asistencias" }}</li>
+                        <li v-if="player.redCards" class="badge badge-sm badge-error font-bold">Roja</li>
+                    </ul>
+
                     <p class="text-sm italic text-base-content/70">{{ phrase }}</p>
 
-                    <!-- Forma -->
+                    <!-- Forma: sus últimas notas, cada una con su color; la de hoy, marcada -->
                     <div v-if="ours">
-                        <p class="text-xs uppercase tracking-widest font-black text-base-content/50 mb-1">Sus últimos partidos</p>
-                        <div v-if="!history" class="skeleton h-12 w-48"></div>
-                        <svg v-else-if="spark" :viewBox="`0 0 ${spark.W} ${spark.H}`" class="spark w-48 h-12 overflow-visible" role="img"
-                            :aria-label="`Notas en sus últimos partidos: ${spark.pts.map((p) => fmt(p.rating, 1)).join(', ')}`">
-                            <line :x1="0" :x2="spark.W" :y1="spark.H - 6 - 0.6 * (spark.H - 12)" :y2="spark.H - 6 - 0.6 * (spark.H - 12)" class="stroke-base-content/15" stroke-dasharray="3 3" />
-                            <path :d="spark.path" fill="none" class="spark-line stroke-(--us)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" />
-                            <circle v-for="(p, i) in spark.pts" :key="p.matchId" :cx="p.x" :cy="p.y" :r="p.current ? 5 : 3.5" class="spark-dot" :style="{ '--k': i }"
-                                :class="p.current ? 'fill-(--us) stroke-base-100' : 'fill-base-100 stroke-(--us)'" stroke-width="2" />
-                        </svg>
+                        <p class="text-xs uppercase tracking-widest font-black text-base-content/50 mb-2">Sus últimos partidos</p>
+                        <div v-if="!history" class="skeleton h-14 w-full"></div>
+                        <ol v-else-if="lastGames" class="flex items-end gap-1.5 sm:gap-2 h-28" :aria-label="`Notas en sus últimos partidos: ${lastGames.map((g) => fmt(g.rating, 1)).join(', ')}`">
+                            <li v-for="(g, i) in lastGames" :key="g.matchId" class="flex-1 h-full flex flex-col justify-end items-center gap-1">
+                                <span class="text-[0.7rem] font-black tabular-nums" :class="g.current ? 'text-base-content' : 'text-base-content/60'">{{ fmt(g.rating, 1) }}</span>
+                                <span class="relative w-full flex-1 min-h-0">
+                                    <span class="form-bar absolute inset-x-0 bottom-0 rounded-md" :class="[RATING_TONE(g.rating), !g.current && 'opacity-55']" :style="{ height: `${Math.max(10, ((g.rating - 4) / 6) * 100)}%`, '--k': i }"></span>
+                                </span>
+                                <span class="text-[0.6rem] uppercase font-black tracking-wider" :class="g.current ? 'text-primary' : 'text-transparent'" :aria-hidden="!g.current">Hoy</span>
+                            </li>
+                        </ol>
                         <p v-else class="text-xs text-base-content/50">Su primer partido con el club.</p>
                     </div>
 
                     <!-- Comparación -->
                     <div>
-                        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                             <p class="text-xs uppercase tracking-widest font-black text-base-content/50">Comparado con</p>
-                            <div role="group" aria-label="Comparar con" class="join">
-                                <button v-for="r in REFS" :key="r.key" type="button" class="join-item btn btn-xs" :class="reference === r.key && 'btn-primary'"
+                            <div role="group" aria-label="Comparar con" class="join w-full sm:w-auto">
+                                <button v-for="r in REFS" :key="r.key" type="button" class="join-item btn btn-xs flex-1 sm:flex-none" :class="reference === r.key && 'btn-primary'"
                                     :disabled="r.disabled" :aria-pressed="reference === r.key" @click="reference = r.key">{{ r.label }}</button>
                             </div>
                         </div>
-                        <dl class="flex flex-col gap-2.5">
-                            <div v-for="(r, i) in rows" :key="r.label" class="grid grid-cols-[7rem_minmax(0,1fr)_3rem_3rem] sm:grid-cols-[8rem_minmax(0,1fr)_3rem_3rem] items-center gap-2 text-sm">
+                        <dl class="flex flex-col gap-3 sm:gap-2.5">
+                            <!-- Móvil: nombre, valor y diferencia arriba y la barra debajo. Desde sm, todo en una fila -->
+                            <div v-for="(r, i) in rows" :key="r.label" class="grid grid-cols-[minmax(0,1fr)_auto_3rem] sm:grid-cols-[8rem_minmax(0,1fr)_3rem_3rem] items-center gap-x-2 gap-y-1 text-sm">
                                 <dt class="text-base-content/70 truncate">{{ r.label }}</dt>
-                                <div class="relative h-3 rounded-full bg-base-content/8">
+                                <div class="relative h-2.5 sm:h-3 rounded-full bg-base-content/8 col-span-3 row-start-2 sm:col-span-1 sm:row-start-auto">
                                     <span class="stat-bar absolute inset-y-0 left-0 rounded-full" :class="ours ? 'bg-(--us)' : 'bg-(--them)'" :style="{ width: `${Math.min(100, (r.value / scale(r)) * 100)}%`, '--k': i }"></span>
                                     <span v-if="r.ref !== null" class="ref-mark absolute -top-1 -bottom-1 w-1 -ml-0.5 rounded-full bg-base-content/80" :style="{ left: `${Math.min(100, (r.ref / scale(r)) * 100)}%` }" :title="`${refLabel}: ${fmt(r.ref, r.pct ? 0 : r.decimals)}${r.pct ? '%' : ''}`"></span>
                                 </div>
@@ -186,27 +212,6 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
                 </article>
             </Transition>
         </div>
-
-        <!-- Lista por nota -->
-        <Transition name="side-swap" mode="out-in">
-            <ol :key="side" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-1.5" :aria-label="`Jugadores de ${ours ? match.ourClub.name : match.opponentClub.name}, por nota`">
-                <li v-for="(p, i) in players" :key="p.playerId" class="list-row" :style="{ '--k': i }">
-                    <button type="button" class="w-full grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-2 rounded-xl px-2 py-1.5 text-left transition-colors cursor-pointer"
-                        :class="selectedId === p.playerId ? 'dark:bg-base-100 bg-base-300 ring-2 ring-primary/50' : 'hover:bg-base-content/5'" :aria-pressed="selectedId === p.playerId" @click="selectedId = p.playerId">
-                        <span class="rounded-md text-center text-sm font-black tabular-nums py-0.5" :class="RATING_TONE(p.rating)">{{ fmt(p.rating, 1) }}</span>
-                        <span class="min-w-0"><span class="font-bold truncate block">{{ p.playerName }} <span v-if="p.playerId === myId" class="badge badge-xs badge-primary font-black tracking-widest ml-0.5 align-middle">TÚ</span></span><span class="text-xs text-base-content/50">{{ translatePosition(p.position) }} · {{ Math.round(p.minutesPlayed) }}'</span></span>
-                        <span class="flex items-center gap-1.5 text-xs font-bold text-base-content/70">
-                            <span v-if="p.goals" :title="`${p.goals} goles`" class="inline-flex items-center gap-0.5 tabular-nums">
-                                <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path stroke-linejoin="round" d="m12 7.5 4 2.9-1.5 4.6h-5L8 10.4l4-2.9ZM12 7.5V3m4 7.4 4.3-1.4M14.5 15l2.6 3.7M9.5 15l-2.6 3.7M8 10.4 3.7 9" /></svg>{{ p.goals > 1 ? p.goals : "" }}
-                            </span>
-                            <span v-if="p.assists" :title="`${p.assists} asistencias`" class="tabular-nums">A{{ p.assists }}</span>
-                            <MvpIcon v-if="p.manOfTheMatch" class="size-4" label="MVP" />
-                            <span v-if="p.redCards" class="inline-block w-2.5 h-3.5 rounded-[2px] bg-error" title="Roja"></span>
-                        </span>
-                    </button>
-                </li>
-            </ol>
-        </Transition>
     </MatchCard>
     </div>
 </template>
@@ -228,15 +233,15 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
 @media (prefers-reduced-motion: no-preference) {
     .stat-bar { transform-origin: left; animation: grow 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--k, 0) * 40ms); }
     .delta { animation: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
-    .list-row { animation: row-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--k, 0) * 25ms); }
-    .spark-line { stroke-dasharray: 1; animation: draw 0.8s ease-out both; }
-    .spark-dot { animation: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: calc(0.3s + var(--k, 0) * 80ms); transform-box: fill-box; transform-origin: center; }
+    .form-bar { transform-origin: bottom; animation: grow-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--k, 0) * 60ms); }
+    .side-in { animation: side-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    .rating-pop { animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both; }
 }
 @media (prefers-reduced-motion: reduce) {
     .side-swap-enter-active, .side-swap-leave-active, .card-swap-enter-active, .card-swap-leave-active, .stat-bar, .ref-mark { transition: none; }
 }
 @keyframes grow { from { scale: 0 1; } }
 @keyframes pop { from { opacity: 0; scale: 0.6; } }
-@keyframes row-in { from { opacity: 0; translate: 0 0.4rem; } }
-@keyframes draw { from { stroke-dashoffset: 1; } }
+@keyframes side-in { from { opacity: 0; translate: 1.5rem 0; } }
+@keyframes grow-up { from { scale: 1 0; } }
 </style>

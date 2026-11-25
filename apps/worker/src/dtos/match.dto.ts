@@ -46,8 +46,9 @@ export default class MatchDTO implements IMatch {
         this.winnerByPen = penalties.hasPenalties
 
         const tainted = this.winnerByDnf || this.winnerByPen
-        const ourScore = getClubScore(raw, ourId, tainted)
-        const opponentScore = getClubScore(raw, opponentId, tainted)
+        // Con tanda, el marcador real lo da la detección (incluye goles en propia que no están en el agregado)
+        const ourScore = penalties.hasPenalties && penalties.realScores ? penalties.realScores[ourId] : getClubScore(raw, ourId, tainted)
+        const opponentScore = penalties.hasPenalties && penalties.realScores ? penalties.realScores[opponentId] : getClubScore(raw, opponentId, tainted)
         const ourPens = penalties.hasPenalties ? penalties.scores?.[ourId] ?? 0 : 0
         const opponentPens = penalties.hasPenalties ? penalties.scores?.[opponentId] ?? 0 : 0
 

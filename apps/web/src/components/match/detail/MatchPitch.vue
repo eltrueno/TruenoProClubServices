@@ -10,6 +10,8 @@ import type MatchPlayerEntity from "@/model/match/MatchPlayerEntity"
 import { useMembers } from "@/composables/useMembers"
 import { onPlayerImageError } from "@/lib/playerImage"
 import MvpIcon from "@/components/ui/MvpIcon.vue"
+import AssistIcon from "@/components/ui/AssistIcon.vue"
+import GoalIcon from "@/components/ui/GoalIcon.vue"
 
 const props = defineProps<{ players: MatchPlayerEntity[]; selected: string | null; rival?: boolean; myId?: string | null }>()
 const emit = defineEmits<{ select: [playerId: string] }>()
@@ -46,14 +48,22 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
             :style="{ left: `${x}%`, top: `${y}%`, width: `${w}%`, '--k': i }" :aria-pressed="selected === p.playerId"
             :aria-label="`${p.playerName}: nota ${fmt1(p.rating)}`" @click="emit('select', p.playerId)">
             <span class="face relative">
-                <span class="block size-12 sm:size-16 rounded-full overflow-hidden ring-3 shadow-lg transition-[box-shadow,scale] duration-300"
-                    :class="[rival ? 'ring-(--them)' : 'ring-(--us)', memberFor(p.playerId) ? (rival ? 'bg-(--them)/20' : 'bg-(--us)/20') : (rival ? 'bg-(--them)' : 'bg-(--us)'), selected === p.playerId && 'ring-white']">
-                    <img v-if="memberFor(p.playerId)" :src="imageFor(p.playerId)" alt="" loading="lazy" class="size-full object-cover object-top scale-[2.3] origin-[50%_6%]" @error="onPlayerImageError" />
+                <span class="block size-12 sm:size-16 rounded-full overflow-hidden outline-2 shadow-lg transition-[box-shadow,scale] duration-300"
+                    :class="[p.playerId === myId ? 'outline-primary' : rival ? 'outline-(--them)' : 'outline-(--us)', memberFor(p.playerId) ? (rival ? 'bg-(--them)/45' : 'bg-(--us)/45') : (rival ? 'bg-(--them)' : 'bg-(--us)'), selected === p.playerId && 'outline-white!']">
+                    <img v-if="memberFor(p.playerId)" :src="imageFor(p.playerId)" alt="" loading="lazy" class="size-full object-cover object-top scale-[2] origin-top" @error="onPlayerImageError" />
                     <span v-else class="size-full grid place-items-center font-black text-white text-sm sm:text-base" aria-hidden="true">{{ p.playerName.slice(0, 2).toUpperCase() }}</span>
                 </span>
                 <!-- Nota -->
                 <span class="absolute -bottom-1 -right-2 rounded-md px-1 text-[0.7rem] sm:text-xs font-black tabular-nums shadow" :class="RATING_TONE(p.rating)">{{ fmt1(p.rating) }}</span>
                 <MvpIcon v-if="p.manOfTheMatch" class="absolute -top-1 -right-1.5 size-5 drop-shadow" label="MVP" />
+                <!-- Goles, asistencias y tarjeta roja -->
+                <span v-if="p.goals || p.assists || p.redCards" class="absolute -bottom-1 -left-3 flex items-center gap-1 rounded-md bg-black/70 text-white px-1 py-px text-[0.6rem] sm:text-[0.7rem] font-black tabular-nums shadow">
+                    <span v-if="p.goals" class="inline-flex items-center gap-px" :title="`${p.goals} goles`">
+                        <GoalIcon class="size-3.5" />{{ p.goals > 1 ? p.goals : "" }}
+                    </span>
+                    <span v-if="p.assists" class="inline-flex items-center gap-px" :title="`${p.assists} asistencias`"><AssistIcon class="size-3.5" />{{ p.assists > 1 ? p.assists : "" }}</span>
+                    <span v-if="p.redCards" class="inline-block w-2 h-2.5 rounded-[2px] bg-error" title="Roja"></span>
+                </span>
                 <span v-if="p.playerId === myId" class="absolute -top-2 -left-2 badge badge-xs badge-primary font-black tracking-widest shadow">TÚ</span>
             </span>
             <span class="max-w-full truncate rounded-md px-1.5 py-px text-[0.65rem] sm:text-xs font-bold text-white bg-black/50">{{ p.playerName }}</span>

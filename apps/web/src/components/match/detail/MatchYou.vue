@@ -40,8 +40,8 @@ const signed = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : "±"}${fmt(Math.a
     <section v-if="mine" class="you-card anim-in relative overflow-hidden rounded-2xl p-4 sm:p-5 ring-2 ring-primary/50 shadow-md">
         <div class="relative flex flex-col sm:flex-row sm:items-center gap-4">
             <div class="flex items-center gap-4 min-w-0">
-                <span class="shrink-0 size-16 sm:size-20 rounded-full overflow-hidden ring-3 ring-primary bg-primary/20">
-                    <img :src="imageFor(myId)" alt="" class="size-full object-cover object-top scale-[2.3] origin-[50%_6%]" @error="onPlayerImageError" />
+                <span class="shrink-0 size-16 sm:size-20 rounded-full overflow-hidden outline-2 outline-primary bg-primary/45">
+                    <img :src="imageFor(myId)" alt="" class="size-full object-cover object-top scale-[2] origin-top" @error="onPlayerImageError" />
                 </span>
                 <div class="min-w-0">
                     <p class="text-xs uppercase tracking-[0.25em] font-black text-primary">Tu partido{{ mine.ours ? "" : " (con el rival)" }}</p>
