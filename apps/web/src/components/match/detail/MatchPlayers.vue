@@ -134,7 +134,7 @@ const groups = computed<StatGroup[]>(() => {
     const share = (v: number, f: (x: MatchPlayerEntity) => number) => { const t = tot(f); return v > 0 && t ? `${Math.round((v / t) * 100)}% del equipo` : undefined }
     const per90 = (n: number) => (p.minutesPlayed > 0 ? fmt((n / p.minutesPlayed) * 90, 1) : "—")
     const out: StatGroup[] = [
-        { key: "attack", title: "Ataque", icon: KPI_ICONS.goals, rows: [
+        { key: "attack", title: "Ataque", icon: "goal", rows: [
             { label: "Goles + asistencias", value: String(p.goals + p.assists), sub: share(p.goals + p.assists, (x) => x.goals + x.assists) },
             { label: "Tiros", value: String(p.shots), sub: p.shots ? `${p.goals} gol${p.goals === 1 ? "" : "es"}` : undefined, pct: pctOf(p.goals, p.shots) },
         ] },
@@ -251,9 +251,9 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
                         <li v-if="player.redCards" class="badge badge-sm badge-error font-bold">Roja</li>
                     </ul>
 
-                    <blockquote class="phrase relative rounded-xl bg-base-content/5 pl-9 pr-3 py-2.5 text-sm sm:text-base font-bold italic text-base-content/85">
-                        <span class="absolute left-2.5 -top-1 text-4xl leading-none font-black text-primary/60 not-italic select-none" aria-hidden="true">“</span>
-                        {{ phrase }}<span class="text-primary/60 font-black not-italic" aria-hidden="true">”</span>
+                    <!-- Las dos comillas iguales, en el color del club y a la altura del texto -->
+                    <blockquote class="phrase rounded-xl bg-base-content/5 px-3 py-2.5 text-sm sm:text-base font-bold italic text-base-content/85">
+                        <span class="quote" aria-hidden="true">“</span>{{ phrase }}<span class="quote" aria-hidden="true">”</span>
                     </blockquote>
 
                     <!-- Rachas vivas -->
@@ -279,7 +279,8 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
                             <section v-for="g in groups" :key="g.key" class="min-w-0">
                                 <h4 class="flex items-center gap-1.5 text-[0.7rem] uppercase tracking-widest font-black text-primary mb-1">
-                                    <svg class="size-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="g.icon"></svg>{{ g.title }}
+                                    <GoalIcon v-if="g.icon === 'goal'" class="size-3.5" />
+                                    <svg v-else class="size-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="g.icon"></svg>{{ g.title }}
                                 </h4>
                                 <dl class="divide-y divide-base-content/8">
                                     <div v-for="r in g.rows" :key="r.label" class="py-1.5">
@@ -361,6 +362,15 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
 </template>
 
 <style scoped>
+.quote {
+    font-style: normal;
+    font-weight: 900;
+    font-size: 1.4em;
+    line-height: 0;
+    vertical-align: -0.2em;
+    margin-inline: 0.1em;
+    color: color-mix(in oklab, var(--color-primary) 70%, transparent);
+}
 /* Cambio de equipo: lo de antes se va hacia un lado y lo nuevo llega */
 .side-swap-enter-active, .side-swap-leave-active { transition: opacity 0.25s, translate 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
 .side-swap-enter-from { opacity: 0; translate: 1.5rem 0; }

@@ -110,6 +110,9 @@
                         <!-- Contenido alineado a la izquierda pero centrado en su hueco: así la fila se ve centrada -->
                         <div class="flex items-center gap-2.5 min-w-0">
                             <MvpIcon v-if="kpi.icon === 'mvp'" class="size-6" />
+                            <!-- Gol y asistencia: el balón y la bota de todo el detalle de partido -->
+                            <GoalIcon v-else-if="kpi.icon === 'goals'" class="size-6 shrink-0 text-base-content/45" />
+                            <AssistIcon v-else-if="kpi.icon === 'assists'" class="size-6 shrink-0 text-base-content/45" />
                             <span v-else-if="kpi.icon === 'red'" class="w-4 h-6 shrink-0 rounded-[3px] bg-error mx-1" aria-hidden="true"></span>
                             <svg v-else class="size-6 shrink-0 text-base-content/45" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="KPI_ICONS[kpi.icon]"></svg>
                             <span class="min-w-0 leading-tight">
@@ -227,6 +230,8 @@
 
 <script setup lang="ts">
     import MvpIcon from "@/components/ui/MvpIcon.vue"
+    import GoalIcon from "@/components/ui/GoalIcon.vue"
+    import AssistIcon from "@/components/ui/AssistIcon.vue"
     import { KPI_ICONS, type KpiIcon } from "@/lib/kpiIcons"
     import { ref, computed, onBeforeMount, onMounted, onBeforeUnmount, watch, nextTick, type Ref } from "vue";
     import PlayerProfileService from "@/services/PlayerProfileService";
