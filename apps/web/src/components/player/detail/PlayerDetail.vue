@@ -134,11 +134,13 @@
                  el bloque de debajo (.tab-body, base-200 al 50 % sobre el fondo de la página).
                  Sin pegar: opaca, la cabecera del bloque. Pegada (compacta): casi opaca (88 %) con desenfoque,
                  esquinas de abajo redondeadas y sombra, como una lámina que se solapa sobre el contenido -->
-            <div ref="tabsBar" class="tabs-bar sticky z-40 flex items-center gap-2 p-2 transition-[border-radius,background-color,box-shadow] duration-300
+            <div ref="tabsBar" :style="{ marginBottom: `${tabsComp}px` }" class="tabs-bar sticky z-40 flex items-center gap-2 p-2 transition-[border-radius,background-color,box-shadow] duration-300
                     [--tabs-bg:color-mix(in_oklab,var(--color-base-200)_94%,var(--color-base-content))]
                     dark:[--tabs-bg:color-mix(in_oklab,var(--color-base-200)_92%,var(--color-base-content))]"
                 :class="tabsStuck
-                    ? 'rounded-b-2xl bg-[color-mix(in_oklab,var(--tabs-bg)_88%,transparent)] backdrop-blur-md shadow-lg shadow-black/25'
+                    ? (subBarActive
+                        ? 'rounded-none bg-[color-mix(in_oklab,var(--tabs-bg)_88%,transparent)] backdrop-blur-md'
+                        : 'rounded-b-2xl bg-[color-mix(in_oklab,var(--tabs-bg)_88%,transparent)] backdrop-blur-md shadow-lg shadow-black/25')
                     : 'rounded-t-3xl bg-(--tabs-bg)'">
                 <!-- Jugador (solo pegada) -->
                 <button v-if="tabsStuck" type="button" @click="scrollToTop"
@@ -255,6 +257,8 @@
     import PlayerDetailStats from "./PlayerDetailStats.vue";
     import PlayerDetailProgression from "./PlayerDetailProgression.vue";
     import PlayerDetailCompare from "./PlayerDetailCompare.vue";
+    // Segunda barra pegada debajo (controles de Estadísticas, "vs" del Comparador): la de pestañas se une a ella
+    import { subBarActive } from "@/composables/useStickySubBar";
     import PlayerDetailAchievements from "./PlayerDetailAchievements.vue";
     import PlayerDetailSkeleton from "./PlayerDetailSkeleton.vue";
 
@@ -313,15 +317,25 @@
         const el = tabSentinel.value
         tabsStuck.value = !!el && el.getBoundingClientRect().top < navH - 0.5
     }
-    const onResize = () => { measureNav(); updateStuck() }
+    const onResize = () => { measureNav(); updateStuck(); fullTabsH = 0 }
 
     // Alto de la barra de pestañas (--tabs-h): lo que se pega debajo (los controles de Estadísticas) se acopla a ella
     const tabsBar = ref<HTMLElement | null>(null)
+    const tabsComp = ref(0)
+    let fullTabsH = 0
+    watch(tabsStuck, () => { const el = tabsBar.value; if (el) tabsComp.value = Math.max(0, fullTabsH - el.offsetHeight) })
     let tabsRO: ResizeObserver | null = null
     watch(tabsBar, (el) => {
         tabsRO?.disconnect()
         if (!el) return
-        tabsRO = new ResizeObserver(() => document.documentElement.style.setProperty("--tabs-h", `${el.offsetHeight}px`))
+        tabsRO = new ResizeObserver(() => {
+            const h = el.offsetHeight
+            document.documentElement.style.setProperty("--tabs-h", `${h}px`)
+            // Al pegarse, la barra se compacta: se compensa con margen la diferencia con su alto normal,
+            // en cada frame del cambio, para que el contenido de debajo no pegue un salto
+            if (!tabsStuck.value) fullTabsH = Math.max(fullTabsH, h)
+            tabsComp.value = Math.max(0, fullTabsH - h)
+        })
         tabsRO.observe(el)
     })
     onBeforeUnmount(() => tabsRO?.disconnect())

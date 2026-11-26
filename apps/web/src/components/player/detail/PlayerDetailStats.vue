@@ -2,12 +2,12 @@
     <div class="flex flex-col gap-4 sm:gap-6 py-2 text-left">
         <!-- Controles: periodo y con qué se compara. Al bajar se pegan justo bajo la barra de pestañas y se
              acoplan a ella (mismo fondo, mismo ancho, sin esquinas arriba): parecen su segunda fila -->
-        <div ref="controls" class="stats-controls sm:sticky z-30 flex flex-wrap items-center justify-between gap-3 p-2.5 sm:p-3 transition-[border-radius,margin,box-shadow,background-color] duration-300
+        <div ref="controls" class="stats-controls sm:sticky z-30 -mx-2 -mt-4 border-t border-base-content/10 flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 sm:py-3 transition-[border-radius,box-shadow,background-color] duration-300
                 [--ctl-bg:color-mix(in_oklab,var(--color-base-200)_94%,var(--color-base-content))]
                 dark:[--ctl-bg:color-mix(in_oklab,var(--color-base-200)_92%,var(--color-base-content))]"
             :class="controlsStuck
-                ? 'rounded-b-2xl rounded-t-none -mx-2 bg-[color-mix(in_oklab,var(--ctl-bg)_88%,transparent)] backdrop-blur-md shadow-lg shadow-black/25'
-                : 'rounded-2xl bg-(--ctl-bg) shadow-sm'">
+                ? 'rounded-b-2xl bg-[color-mix(in_oklab,var(--ctl-bg)_88%,transparent)] backdrop-blur-md shadow-lg shadow-black/25'
+                : 'rounded-b-2xl bg-(--ctl-bg)'">
             <div class="flex items-center gap-2 min-w-0">
                 <span class="text-[0.65rem] uppercase tracking-widest font-black text-base-content/60 shrink-0">Periodo</span>
                 <div role="group" aria-label="Periodo" class="join">
@@ -168,6 +168,7 @@ import type ClubMatchEntity from "@/model/match/ClubMatchEntity"
 import type PlayerProfileEntity from "@/model/PlayerProfileEntity"
 import MatchCard from "@/components/match/detail/MatchCard.vue"
 import OptionToggle, { type ToggleOption } from "@/components/ui/OptionToggle.vue"
+import { useStickySubBar } from "@/composables/useStickySubBar"
 import { radarAxisMax, radarNorm, type RadarScale } from "@/lib/radarScale"
 import GoalIcon from "@/components/ui/GoalIcon.vue"
 
@@ -237,6 +238,7 @@ const checkStuck = () => {
     controlsStuck.value = el.getBoundingClientRect().top <= parseFloat(getComputedStyle(el).top) + 1
 }
 onMounted(() => { addEventListener("scroll", checkStuck, { passive: true }); addEventListener("resize", checkStuck, { passive: true }); checkStuck() })
+useStickySubBar(controlsStuck)
 onUnmounted(() => { removeEventListener("scroll", checkStuck); removeEventListener("resize", checkStuck) })
 
 // ── Referencia ──

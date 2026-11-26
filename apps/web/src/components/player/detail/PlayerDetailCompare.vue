@@ -17,7 +17,9 @@
 
         <template v-else-if="other">
             <!-- Al bajar: barra compacta pegada bajo las pestañas con las caras y el tanto a tanto -->
-            <div class="vs-mini sticky z-30 -mx-2 -mb-4 sm:-mb-6 rounded-b-2xl overflow-hidden backdrop-blur-md shadow-lg shadow-black/25
+            <!-- Envoltorio pegado de alto 0: la barra va por encima del contenido, así que aparecer no mueve nada -->
+            <div class="vs-mini-anchor sticky z-30 h-0 -mb-4 sm:-mb-6">
+            <div class="vs-mini absolute inset-x-0 -mx-2 top-0 rounded-b-2xl border-t border-base-content/10 backdrop-blur-md shadow-lg shadow-black/25
                     [--ctl-bg:color-mix(in_oklab,var(--color-base-200)_94%,var(--color-base-content))]
                     dark:[--ctl-bg:color-mix(in_oklab,var(--color-base-200)_92%,var(--color-base-content))]
                     bg-[color-mix(in_oklab,var(--ctl-bg)_88%,transparent)]"
@@ -35,6 +37,7 @@
                         <span class="truncate text-xs sm:text-sm font-black text-(--b)">{{ other.member.playerName }}</span>
                     </span>
                 </div>
+            </div>
             </div>
 
             <!-- Cabecera: los dos frente a frente y el marcador de "ventajas" -->
@@ -254,6 +257,7 @@ import PlayerProfileEntity from "@/model/PlayerProfileEntity"
 import type ClubMatchEntity from "@/model/match/ClubMatchEntity"
 import MatchCard from "@/components/match/detail/MatchCard.vue"
 import OptionToggle, { type ToggleOption } from "@/components/ui/OptionToggle.vue"
+import { useStickySubBar } from "@/composables/useStickySubBar"
 import { radarAxisMax, radarNorm, type RadarScale } from "@/lib/radarScale"
 import PlayerPickerModal, { type PickerItem } from "@/components/ui/PlayerPickerModal.vue"
 import { usePlayerStats } from "@/composables/usePlayerStats"
@@ -312,6 +316,7 @@ const checkMini = () => {
     miniVisible.value = el.getBoundingClientRect().bottom < top
 }
 onMounted(() => { addEventListener("scroll", checkMini, { passive: true }); checkMini() })
+useStickySubBar(miniVisible)
 onUnmounted(() => removeEventListener("scroll", checkMini))
 const toTop = () => head.value?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" })
 
@@ -550,16 +555,17 @@ const RARITY_BADGE: Record<AchievementRarity, string> = {
 </script>
 
 <style scoped>
-/* Barra compacta: pegada justo bajo las pestañas; se despliega (alto y opacidad) al pasar la cabecera */
+/* Barra compacta: pegada justo bajo las pestañas. Sale de debajo de ellas (solo translate y opacidad,
+   sin tocar alturas: nada se mueve) al pasar la cabecera */
+.vs-mini-anchor { top: calc(var(--nav-h, 4rem) + var(--tabs-h, 4.75rem) - 1px); }
 .vs-mini {
-    top: calc(var(--nav-h, 4rem) + var(--tabs-h, 4.75rem) - 1px);
-    max-height: 0;
     opacity: 0;
+    translate: 0 -100%;
     pointer-events: none;
-    transition: max-height 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s;
+    transition: translate 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s;
 }
-.vs-mini[data-show="true"] { max-height: 4rem; opacity: 1; pointer-events: auto; }
-@media (prefers-reduced-motion: reduce) { .vs-mini { transition: none; } }
+.vs-mini[data-show="true"] { opacity: 1; translate: 0 0; pointer-events: auto; }
+@media (prefers-reduced-motion: reduce) { .vs-mini { transition: opacity 0.2s; } }
 .bar { transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
 @media (prefers-reduced-motion: no-preference) {
     .bar { transform-origin: right; animation: grow 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--k, 0) * 35ms); }
