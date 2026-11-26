@@ -3,6 +3,7 @@ import Layout from "../layouts/Layout.astro";
 import AccountPage from "../components/AccountPage.vue";
 ---
 
-<Layout title="Mi cuenta · Casemuro">
+<!-- Ancho, como el panel admin: el pie y la cabecera van a la misma medida -->
+<Layout title="Mi cuenta · Casemuro" wide>
 	<AccountPage client:only="vue" />
 </Layout>
