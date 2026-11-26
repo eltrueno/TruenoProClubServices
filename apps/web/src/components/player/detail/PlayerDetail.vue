@@ -134,7 +134,7 @@
                  el bloque de debajo (.tab-body, base-200 al 50 % sobre el fondo de la página).
                  Sin pegar: opaca, la cabecera del bloque. Pegada (compacta): casi opaca (88 %) con desenfoque,
                  esquinas de abajo redondeadas y sombra, como una lámina que se solapa sobre el contenido -->
-            <div class="tabs-bar sticky z-40 flex items-center gap-2 p-2 transition-[border-radius,background-color,box-shadow] duration-300
+            <div ref="tabsBar" class="tabs-bar sticky z-40 flex items-center gap-2 p-2 transition-[border-radius,background-color,box-shadow] duration-300
                     [--tabs-bg:color-mix(in_oklab,var(--color-base-200)_94%,var(--color-base-content))]
                     dark:[--tabs-bg:color-mix(in_oklab,var(--color-base-200)_92%,var(--color-base-content))]"
                 :class="tabsStuck
@@ -314,6 +314,17 @@
         tabsStuck.value = !!el && el.getBoundingClientRect().top < navH - 0.5
     }
     const onResize = () => { measureNav(); updateStuck() }
+
+    // Alto de la barra de pestañas (--tabs-h): lo que se pega debajo (los controles de Estadísticas) se acopla a ella
+    const tabsBar = ref<HTMLElement | null>(null)
+    let tabsRO: ResizeObserver | null = null
+    watch(tabsBar, (el) => {
+        tabsRO?.disconnect()
+        if (!el) return
+        tabsRO = new ResizeObserver(() => document.documentElement.style.setProperty("--tabs-h", `${el.offsetHeight}px`))
+        tabsRO.observe(el)
+    })
+    onBeforeUnmount(() => tabsRO?.disconnect())
     watch(tabSentinel, (el) => {
         if (!el) return
         measureNav()
