@@ -12,8 +12,10 @@ import GithubRepoButtons from "./ui/GithubRepoButtons.vue";
 interface Props {
 	/** en el login: solo la banda, lo legal (privacidad, aviso legal y licencias) y los créditos */
 	compact?: boolean;
+	/** a la misma medida que la página (las anchas: la cuenta y el panel admin) */
+	wide?: boolean;
 }
-const { compact = false } = Astro.props;
+const { compact = false, wide = false } = Astro.props;
 
 const ICONS = { twitch: TwitchIcon, youtube: YoutubeIcon, x: XIcon, instagram: InstagramIcon, tiktok: TiktokIcon, github: GithubIcon } as const;
 const year = new Date().getFullYear();
@@ -39,7 +41,7 @@ const people = [
 <footer class:list={["bg-base-200", compact ? "mt-8" : "mt-12"]}>
 	<div class="h-1.5 bg-brand"></div>
 
-	<div class:list={["w-full max-w-3xl mx-auto px-4 sm:px-6 pb-6", compact ? "pt-6" : "pt-10"]}>
+	<div class:list={["w-full mx-auto px-4 sm:px-6 pb-6", wide ? "max-w-6xl" : "max-w-3xl", compact ? "pt-6" : "pt-10"]}>
 		{!compact && (
 		<div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr]">
 			<!-- Marca y clubes -->
