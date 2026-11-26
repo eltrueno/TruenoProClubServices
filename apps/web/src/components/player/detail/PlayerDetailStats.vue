@@ -1,579 +1,427 @@
 <template>
-    <div class="flex flex-col gap-8 mt-1">
-        <!-- Radar Card -->
-        <div ref="chartCard" class="reveal card bg-base-200 shadow-md relative">
-            <div class="card-body p-6">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-                    <h2 class="card-title text-xl font-black uppercase border-l-4 border-primary pl-4">Desempeño</h2>
+    <div class="flex flex-col gap-4 sm:gap-6 py-2 text-left">
+        <!-- Controles: periodo y con qué se compara (pegados bajo la barra de pestañas al bajar) -->
+        <div class="stats-controls sm:sticky z-30 flex flex-wrap items-center justify-between gap-3 rounded-2xl p-2.5 sm:p-3 shadow-sm
+                [--ctl-bg:color-mix(in_oklab,var(--color-base-200)_94%,var(--color-base-content))]
+                dark:[--ctl-bg:color-mix(in_oklab,var(--color-base-200)_92%,var(--color-base-content))]
+                bg-[color-mix(in_oklab,var(--ctl-bg)_92%,transparent)] backdrop-blur-md">
+            <div class="flex items-center gap-2 min-w-0">
+                <span class="text-[0.65rem] uppercase tracking-widest font-black text-base-content/60 shrink-0">Periodo</span>
+                <div role="group" aria-label="Periodo" class="join">
+                    <button v-for="p in PERIODS" :key="p.key" type="button" class="join-item btn btn-xs sm:btn-sm"
+                        :class="period === p.key ? 'btn-primary' : 'bg-base-300! dark:bg-base-100! border-base-content/10'"
+                        :aria-pressed="period === p.key" @click="period = p.key">{{ p.label }}</button>
                 </div>
-                
-                <div class="flex flex-col lg:flex-row gap-10 items-center">
-                    <div class="w-full max-w-[600px] mx-auto lg:mx-0 flex-shrink-0 flex flex-col gap-1">
-                        <!-- Custom Legend -->
-                        <div class="flex flex-wrap justify-center gap-x-4">
-                            <!-- Histórico Toggle -->
-                            <button 
-                                @click="toggleDataset(0)"
-                                class="group flex items-center gap-3 px-4 py-2 rounded-xl border-2 transition-all duration-300"
-                                :class="visibleDatasets[0] ? 'border-primary/30 bg-primary/5 shadow-sm hover:border-primary/50' : 'border-base-content/5 bg-base-100 hover:bg-base-200 opacity-60 grayscale'"
-                            >
-                                <div class="relative flex items-center justify-center w-6 h-4">
-                                    <div class="absolute w-full h-[3px] bg-primary rounded-full"></div>
-                                    <div class="absolute w-2.5 h-2.5 rounded-full bg-primary border-[2px] border-white z-10 box-content shadow-sm"></div>
-                                </div>
-                                <span class="text-xs font-black uppercase tracking-wider text-base-content">Histórico</span>
-                                <div class="relative w-4 h-4 ml-1">
-                                    <svg class="absolute inset-0 text-primary transition-opacity duration-300" :class="visibleDatasets[0] ? 'opacity-100' : 'opacity-0'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                    <svg class="absolute inset-0 text-base-content/60 transition-opacity duration-300" :class="!visibleDatasets[0] ? 'opacity-100' : 'opacity-0'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                    </svg>
-                                </div>
-                            </button>
-
-                            <!-- Últimos Toggle -->
-                            <button 
-                                @click="toggleDataset(1)"
-                                class="group flex items-center gap-3 px-4 py-2 rounded-xl border-2 transition-all duration-300"
-                                :class="visibleDatasets[1] ? 'border-primary/30 bg-primary/5 shadow-sm hover:border-primary/50' : 'border-base-content/5 bg-base-100 hover:bg-base-200 opacity-60 grayscale'"
-                            >
-                                <div class="relative flex items-center justify-center w-6 h-4">
-                                    <div class="absolute w-full h-0 border-t-[2.5px] border-dashed border-primary/50"></div>
-                                    <div class="absolute w-2 h-2 rounded-full bg-primary/40 border-[1.5px] border-primary/60 z-10 box-content"></div>
-                                </div>
-                                <span class="text-xs font-black uppercase tracking-wider text-base-content">{{ recentLabelComputed }}</span>
-                                <div class="relative w-4 h-4 ml-1">
-                                    <svg class="absolute inset-0 text-primary transition-opacity duration-300" :class="visibleDatasets[1] ? 'opacity-100' : 'opacity-0'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                    <svg class="absolute inset-0 text-base-content/60 transition-opacity duration-300" :class="!visibleDatasets[1] ? 'opacity-100' : 'opacity-0'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                    </svg>
-                                </div>
-                            </button>
-                        </div>
-                        <div class="aspect-square w-full relative">
-                            <Radar ref="radarChart" :data="radarData" :options="radarOptions" />
-                        </div>
-                    </div>
-                    <div class="w-full flex flex-col gap-4">
-                        <div class="flex justify-center">
-                            <div class="join dark:bg-base-100 bg-base-300 p-1 rounded-2xl w-full sm:w-auto">
-                                <button
-                                    @click="statMode = 'total'"
-                                    class="grow sm:grow-0 btn btn-xs join-item"
-                                    :class="statMode === 'total' ? 'btn-primary' : 'btn-ghost'"
-                                >Histórico</button>
-                                <button
-                                    @click="statMode = 'last5'"
-                                    class="grow sm:grow-0 btn btn-xs join-item"
-                                    :class="statMode === 'last5' ? 'btn-primary' : 'btn-ghost'"
-                                >Últimos 5</button>
-                                <button
-                                    @click="statMode = 'last10'"
-                                    class="grow sm:grow-0 btn btn-xs join-item"
-                                    :class="statMode === 'last10' ? 'btn-primary' : 'btn-ghost'"
-                                >Últimos 10</button>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4 reveal-stagger">
-                            <div 
-                                v-for="(m, index) in radarMetrics" 
-                                :key="m.label" 
-                                @mouseenter="hoveredIdx = index; isHoveringChart = false"
-                                @mouseleave="hoveredIdx = null"
-                                class="dark:bg-base-100 bg-base-300 p-4 rounded-2xl text-center border-2 border-transparent transition-all duration-200 cursor-default"
-                                :class="{ '!border-primary ring-1 ring-primary/20 shadow-lg': hoveredIdx === index }"
-                            >
-                                <p class="text-xs uppercase font-bold mb-1 transition-colors" :class="{ 'text-primary': hoveredIdx === index, 'opacity-50': hoveredIdx !== index }">{{ m.label }}</p>
-                                <AnimatedNumber class="text-2xl font-black transition-colors block" v-bind="radarNumber(m)" />
-                            </div>
-                        </div>
-                    </div>
+            </div>
+            <div class="flex items-center gap-2 min-w-0">
+                <span class="text-[0.65rem] uppercase tracking-widest font-black text-base-content/60 shrink-0">Comparado con</span>
+                <div role="group" aria-label="Comparado con" class="join">
+                    <button v-for="r in refOptions" :key="r.key" type="button" class="join-item btn btn-xs sm:btn-sm"
+                        :class="reference === r.key ? 'btn-primary' : 'bg-base-300! dark:bg-base-100! border-base-content/10'"
+                        :disabled="r.disabled" :aria-pressed="reference === r.key" @click="reference = r.key">{{ r.label }}</button>
                 </div>
             </div>
         </div>
 
-        <!-- Detailed Stats Panels -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 reveal-sides">
-            <div v-for="group in statGroups" :key="group.title" class="group h-full">
-                <div class="card h-full bg-base-200 border border-base-300 shadow-md transition-all duration-300">
-                    <div class="card-body p-6">
-                        <h3 class="flex items-center gap-3 text-lg font-black uppercase tracking-tight mb-6">
-                            <span class="p-2 bg-primary/10 rounded-lg">
-                                <!-- Dynamic Icon Placeholder -->
-                                <svg v-if="group.icon === 'trophy'" class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <svg v-else-if="group.icon === 'sword'" class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                                <svg v-else-if="group.icon === 'move'" class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-                                <svg v-else class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                            </span>
-                            {{ group.title }}
-                        </h3>
-                        <div class="space-y-4 reveal-list">
-                            <div v-for="stat in group.stats" :key="stat.label" class="flex items-center justify-between pb-3 border-b border-base-content/5 last:border-0 group/row">
-                                <span class="text-sm font-medium text-base-content/60">{{ stat.label }}</span>
-                                <AnimatedNumber class="text-lg font-bold" v-bind="statNumber(stat)" />
+        <p v-if="current.gamesPlayed > 0 && current.gamesPlayed < 5" class="text-xs text-warning px-1 -mt-2">
+            Solo {{ current.gamesPlayed }} {{ current.gamesPlayed === 1 ? "partido" : "partidos" }}: con tan pocos, los números bailan mucho.
+        </p>
+
+        <!-- Perfil: radar frente a la referencia, y dónde destaca / flojea -->
+        <MatchCard title="Su perfil" :hint="`${period === 'total' ? 'Todo su historial' : PERIODS.find((p) => p.key === period)?.label} contra ${refLong.toLowerCase()}.`">
+            <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-5 lg:gap-8 items-center">
+                <div>
+                    <div ref="radarCard" class="relative w-full max-w-md mx-auto aspect-square">
+                        <Radar ref="radarChart" :data="radarData" :options="radarOptions" />
+                    </div>
+                    <div class="flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs font-bold text-base-content/70 mt-2">
+                        <span class="flex items-center gap-1.5"><span class="size-3 rounded-sm bg-primary"></span>{{ periodLabel }}</span>
+                        <span v-if="refStats" class="flex items-center gap-1.5"><span class="w-4 border-t-2 border-dashed border-base-content/60"></span>{{ refLong }}</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-4">
+                    <div v-if="!refStats" class="text-sm text-base-content/60">Cargando las medias…</div>
+                    <template v-else>
+                        <div>
+                            <p class="text-[0.7rem] uppercase tracking-widest font-black text-success mb-2">Donde más destaca</p>
+                            <ul v-if="highlights.best.length" class="flex flex-col gap-1.5">
+                                <li v-for="h in highlights.best" :key="h.label" class="highlight flex items-baseline justify-between gap-3 rounded-xl bg-success/10 ring-1 ring-success/25 px-3 py-2">
+                                    <span class="font-bold text-sm">{{ h.label }}</span>
+                                    <span class="text-sm tabular-nums shrink-0"><b>{{ h.value }}</b> <span class="text-success font-bold">{{ h.diff }}</span></span>
+                                </li>
+                            </ul>
+                            <p v-else class="text-sm text-base-content/60">En nada por encima: está en la media o por debajo.</p>
+                        </div>
+                        <div>
+                            <p class="text-[0.7rem] uppercase tracking-widest font-black text-error mb-2">Donde flojea</p>
+                            <ul v-if="highlights.worst.length" class="flex flex-col gap-1.5">
+                                <li v-for="h in highlights.worst" :key="h.label" class="highlight flex items-baseline justify-between gap-3 rounded-xl bg-error/10 ring-1 ring-error/25 px-3 py-2">
+                                    <span class="font-bold text-sm">{{ h.label }}</span>
+                                    <span class="text-sm tabular-nums shrink-0"><b>{{ h.value }}</b> <span class="text-error font-bold">{{ h.diff }}</span></span>
+                                </li>
+                            </ul>
+                            <p v-else class="text-sm text-base-content/60">En nada por debajo. Ahí es nada.</p>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </MatchCard>
+
+        <!-- Sus números, por bloques: total y por partido, barra con la raya de la referencia y la diferencia -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
+            <MatchCard v-for="g in groups" :key="g.key" :title="g.title" :hint="g.hint">
+                <template #actions>
+                    <GoalIcon v-if="g.icon === 'goal'" class="size-6 text-primary" />
+                    <MvpIcon v-else-if="g.icon === 'mvp'" class="size-6" />
+                    <svg v-else class="size-6 text-primary" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="KPI_ICONS[g.icon as KpiIcon]"></svg>
+                </template>
+                <dl class="flex flex-col">
+                    <div v-for="(r, i) in g.rows" :key="r.label" class="py-2.5 border-b border-base-content/8 last:border-0">
+                        <div class="grid grid-cols-[minmax(0,1fr)_auto_3.25rem] items-baseline gap-x-3">
+                            <dt class="text-sm text-base-content/75 truncate">{{ r.label }}</dt>
+                            <dd class="text-base font-black tabular-nums text-right">
+                                {{ r.display }}<span v-if="r.sub" class="ml-1.5 text-xs font-semibold text-base-content/50">{{ r.sub }}</span>
+                            </dd>
+                            <dd class="text-xs font-bold tabular-nums text-right" :class="diffTone(r)">
+                                <span :key="`${reference}-${period}`" class="delta inline-block">{{ r.ref === null ? "" : signed(r) }}</span>
+                            </dd>
+                        </div>
+                        <!-- Barra con la raya de la referencia; al pasar por encima, el detalle -->
+                        <div v-if="r.bar" tabindex="0" class="tooltip tooltip-top w-full block mt-1.5 py-1 -my-1 cursor-help rounded-full focus-visible:outline-2 focus-visible:outline-primary">
+                            <div class="tooltip-content text-left text-xs leading-snug px-3 py-2">
+                                <p class="font-black mb-0.5">{{ r.label }}</p>
+                                <p>{{ periodLabel }}: <b class="tabular-nums">{{ r.display }}</b></p>
+                                <template v-if="r.ref !== null">
+                                    <p>{{ refLong }}: <b class="tabular-nums">{{ fmtValue(r, r.ref) }}</b></p>
+                                    <p :class="diffTone(r)">{{ diffText(r) }}</p>
+                                </template>
+                            </div>
+                            <div class="relative h-1.5 rounded-full bg-base-content/8">
+                                <span class="stat-bar absolute inset-y-0 left-0 rounded-full bg-primary" :style="{ width: `${barPct(r, r.value)}%`, '--k': i }"></span>
+                                <span v-if="r.ref !== null" class="ref-mark absolute -top-1 -bottom-1 w-1 -ml-0.5 rounded-full bg-base-content/80" :style="{ left: `${barPct(r, r.ref)}%` }"></span>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
+                </dl>
+            </MatchCard>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-    import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
-    import { 
-        Chart as ChartJS, 
-        RadialLinearScale, 
-        PointElement, 
-        LineElement, 
-        Filler, 
-        Tooltip, 
-        Legend,
-        RadarController,
-        type ChartOptions
-    } from 'chart.js';
-    import { Radar } from 'vue-chartjs';
-    import { translatePosition, Position } from '@/i18n/translations';
-    import { useInView } from '@/composables/useInView';
-    import AnimatedNumber from '@/components/ui/AnimatedNumber.vue';
-    import { useSiteFontInCharts } from '@/lib/chartFont';
-    import PlayerStatsEntity from '@/model/PlayerStatsEntity';
-    import ClubMatchEntity from '@/model/match/ClubMatchEntity';
-    import type PlayerProfileEntity from '@/model/PlayerProfileEntity';
-    import { CLUB } from '@/config/club';
-    import { hexToRgba } from '@/lib/color';
+/**
+ * Pestaña "Estadísticas" de la ficha del jugador (mismo lenguaje que la ficha de partido):
+ * - Controles: periodo (histórico, últimos 5, últimos 10) y referencia (la media de su posición,
+ *   la del club o su otro periodo: los últimos 5 si se mira el histórico y al revés).
+ * - Su perfil: radar él contra la referencia y dónde más destaca / flojea.
+ * - Sus números por bloques: total y por partido en una fila, con barra, raya de la referencia,
+ *   diferencia (verde = mejor, también en lo que cuanto menos mejor) y tooltip con el detalle.
+ */
+import { computed, onMounted, onUnmounted, ref } from "vue"
+import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, RadarController, type ChartOptions } from "chart.js"
+import { Radar } from "vue-chartjs"
+import { translatePosition, Position } from "@/i18n/translations"
+import { useInView } from "@/composables/useInView"
+import { useSiteFontInCharts } from "@/lib/chartFont"
+import { tpcsApi } from "@/lib/api"
+import { KPI_ICONS, type KpiIcon } from "@/lib/kpiIcons"
+import { CLUB } from "@/config/club"
+import { hexToRgba } from "@/lib/color"
+import PlayerStatsEntity from "@/model/PlayerStatsEntity"
+import AverageStatsEntity from "@/model/AverageStatsEntity"
+import type ClubMatchEntity from "@/model/match/ClubMatchEntity"
+import type PlayerProfileEntity from "@/model/PlayerProfileEntity"
+import MatchCard from "@/components/match/detail/MatchCard.vue"
+import GoalIcon from "@/components/ui/GoalIcon.vue"
+import MvpIcon from "@/components/ui/MvpIcon.vue"
 
-    ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, RadarController);
-    useSiteFontInCharts();
+ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, RadarController)
+useSiteFontInCharts()
 
-    const props = defineProps<{
-        profile: PlayerProfileEntity
-        stats: PlayerStatsEntity,
-        matches: ClubMatchEntity[] | undefined,
-        currentFilter: string,
-        positionFilter: string | null
-    }>()
+const props = defineProps<{
+    profile: PlayerProfileEntity
+    stats: PlayerStatsEntity
+    matches: ClubMatchEntity[] | undefined
+    currentFilter: string
+    positionFilter: string | null
+}>()
 
+// ── Periodo ──
+type Period = "total" | "last5" | "last10"
+const PERIODS: { key: Period; label: string }[] = [
+    { key: "total", label: "Histórico" },
+    { key: "last5", label: "Últimos 5" },
+    { key: "last10", label: "Últimos 10" },
+]
+const period = ref<Period>("total")
 
-    const hoveredIdx = ref<number | null>(null)
-    const isHoveringChart = ref(false)
-    const radarChart = ref<any>(null)
-
-    const isMobile = ref(false)
-    const updateMobile = () => {
-        isMobile.value = window.innerWidth < 640
+/** Sus stats en sus últimos N partidos jugados (con el filtro oficiales / amistosos de la ficha) */
+function aggregate(count: number): PlayerStatsEntity {
+    const id = props.profile.member.playerId
+    const list = (props.matches ?? []).filter((m) => {
+        if (!m.ourClub.players.find((p) => p.playerId === id)?.played) return false
+        const official = m.matchType === "league" || m.matchType === "playoff"
+        return props.currentFilter === "official" ? official : props.currentFilter === "friendly" ? !official : true
+    }).slice(0, count)
+    if (!list.length) return props.stats
+    const a: Record<string, any> = {
+        gamesPlayed: 0, ratingSum: 0, goals: 0, assists: 0, shots: 0, passesMade: 0, passesSuccess: 0, tacklesMade: 0, tacklesSuccess: 0,
+        saves: 0, goalsConceded: 0, cleanSheets: 0, manOfTheMatch: 0, redCards: 0, wins: 0, losses: 0, ties: 0, minutesPlayed: 0,
+        hattricks: 0, pokers: 0, playedPositions: {}, mostPlayedPosition: props.profile.mostPlayedPosition,
     }
-
-    onMounted(() => {
-        updateMobile()
-        window.addEventListener('resize', updateMobile)
-    })
-
-    onUnmounted(() => {
-        window.removeEventListener('resize', updateMobile)
-    })
-
-    const getAggregatedStats = (count: number) => {
-        if (!props.matches || props.matches.length === 0) return props.stats
-        
-        // Filter matches based on the current filter mode
-        const filteredMatches = props.matches.filter(m => {
-            // Los "últimos N" son partidos jugados de verdad: sin los de 0 segundos
-            if (!m.ourClub.players.find(p => p.playerId === props.profile.member.playerId)?.played) return false;
-            if (props.currentFilter === 'all') return true;
-            if (props.currentFilter === 'official') return (m.matchType === 'league' || m.matchType === 'playoff');
-            if (props.currentFilter === 'friendly') return (m.matchType !== 'league' && m.matchType !== 'playoff');
-            return true;
-        });
-
-        if (filteredMatches.length === 0) return props.stats
-        
-        const recentMatches = filteredMatches.slice(0, count)
-        const aggregated: any = {
-            gamesPlayed: 0,
-            ratingSum: 0,
-            goals: 0,
-            assists: 0,
-            shots: 0,
-            passesMade: 0,
-            passesSuccess: 0,
-            tacklesMade: 0,
-            tacklesSuccess: 0,
-            saves: 0,
-            goalsConceded: 0,
-            cleanSheets: 0,
-            manOfTheMatch: 0,
-            redCards: 0,
-            wins: 0,
-            losses: 0,
-            ties: 0,
-            minutesPlayed: 0,
-            playedPositions: {},
-            mostPlayedPosition: props.profile.mostPlayedPosition
-        }
-
-        recentMatches.forEach(match => {
-            const playerInMatch = match.ourClub.players.find(p => p.playerId === props.profile.member.playerId)
-
-            // Solo partidos que realmente jugó (0 segundos no cuenta)
-            if (playerInMatch?.played) {
-                aggregated.gamesPlayed++
-                aggregated.ratingSum += playerInMatch.rating
-                aggregated.goals += playerInMatch.goals
-                aggregated.assists += playerInMatch.assists
-                aggregated.shots += playerInMatch.shots
-                aggregated.passesMade += playerInMatch.passesMade
-                aggregated.passesSuccess += playerInMatch.passesSuccess
-                aggregated.tacklesMade += playerInMatch.tacklesMade
-                aggregated.tacklesSuccess += playerInMatch.tacklesSuccess
-                aggregated.saves += playerInMatch.saves
-                aggregated.goalsConceded += playerInMatch.goalsConceded
-                if (playerInMatch.cleanSheet) aggregated.cleanSheets++
-                if (playerInMatch.manOfTheMatch) aggregated.manOfTheMatch++
-                aggregated.redCards += playerInMatch.redCards
-                aggregated.minutesPlayed += (playerInMatch.minutesPlayed || 0)
-
-                const pos = playerInMatch.position as Position
-                aggregated.playedPositions[pos] = (aggregated.playedPositions[pos] || 0) + 1
-                
-                if (match.result === 'win') aggregated.wins++
-                else if (match.result === 'loose') aggregated.losses++
-                else aggregated.ties++
-            }
-        })
-
-        if (aggregated.gamesPlayed === 0) return props.stats
-
-        let maxCount = -1
-        Object.entries(aggregated.playedPositions).forEach(([pos, count]) => {
-            if ((count as number) > maxCount) {
-                maxCount = count as number
-                aggregated.mostPlayedPosition = pos as Position
-            }
-        })
-
-        return new PlayerStatsEntity(aggregated)
+    for (const m of list) {
+        const p = m.ourClub.players.find((x) => x.playerId === id)!
+        a.gamesPlayed++; a.ratingSum += p.rating; a.goals += p.goals; a.assists += p.assists; a.shots += p.shots
+        a.passesMade += p.passesMade; a.passesSuccess += p.passesSuccess; a.tacklesMade += p.tacklesMade; a.tacklesSuccess += p.tacklesSuccess
+        a.saves += p.saves; a.goalsConceded += p.goalsConceded; a.redCards += p.redCards; a.minutesPlayed += p.minutesPlayed || 0
+        if (p.cleanSheet) a.cleanSheets++
+        if (p.manOfTheMatch) a.manOfTheMatch++
+        if (p.goals >= 4) a.pokers++
+        else if (p.goals === 3) a.hattricks++
+        a.playedPositions[p.position] = (a.playedPositions[p.position] || 0) + 1
+        if (m.result === "win") a.wins++
+        else if (m.result === "loose") a.losses++
+        else a.ties++
     }
+    a.mostPlayedPosition = Object.entries(a.playedPositions as Record<string, number>).sort((x, y) => y[1] - x[1])[0]?.[0] ?? a.mostPlayedPosition
+    return new PlayerStatsEntity(a)
+}
+const last5 = computed(() => aggregate(5))
+const last10 = computed(() => aggregate(10))
+const statsFor = (p: Period) => (p === "last5" ? last5.value : p === "last10" ? last10.value : props.stats)
+const current = computed(() => statsFor(period.value))
+const periodLabel = computed(() => PERIODS.find((p) => p.key === period.value)!.label)
 
-    const last5Stats = computed(() => getAggregatedStats(5))
-    const last10Stats = computed(() => getAggregatedStats(10))
+// ── Referencia ──
+type RefKey = "position" | "club" | "other"
+const reference = ref<RefKey>("position")
+/** Medias por posición (y la `general`, la del club): se piden una vez y se reutilizan */
+let averagesCache: Promise<AverageStatsEntity[]> | null = null
+const averages = ref<AverageStatsEntity[]>([])
+onMounted(() => {
+    averagesCache ??= tpcsApi.averages.getAll().then((l) => l.map((a) => new AverageStatsEntity(a))).catch(() => [])
+    averagesCache.then((l) => { averages.value = l })
+})
+const position = computed(() => (props.positionFilter ?? current.value.mostPlayedPosition ?? props.profile.mostPlayedPosition) as string)
+const isGK = computed(() => position.value === Position.goalkeeper)
+/** "Su otro periodo": con el histórico, sus últimos 5; con un periodo reciente, su histórico */
+const otherPeriod = computed<Period>(() => (period.value === "total" ? "last5" : "total"))
+const refOptions = computed(() => [
+    { key: "position" as const, label: "Su posición", disabled: false },
+    { key: "club" as const, label: "El club", disabled: false },
+    { key: "other" as const, label: otherPeriod.value === "total" ? "Su histórico" : "Sus últimos 5", disabled: false },
+])
+/** Las stats de referencia: medias (por partido y porcentajes) o las suyas de otro periodo */
+const refStats = computed<Record<string, any> | null>(() => {
+    if (reference.value === "other") return statsFor(otherPeriod.value)
+    const key = reference.value === "club" ? "general" : position.value
+    return averages.value.find((a) => a.position === key) ?? null
+})
+const refLong = computed(() =>
+    reference.value === "club" ? "La media del club"
+        : reference.value === "position" ? `La media de un ${translatePosition(position.value).toLowerCase()}`
+            : otherPeriod.value === "total" ? "Su histórico" : "Sus últimos 5")
 
-    type StatMode = 'total' | 'last5' | 'last10'
-    const statMode = ref<StatMode>('total')
-
-    const currentStats = computed(() => {
-        if (statMode.value === 'last5') return last5Stats.value
-        if (statMode.value === 'last10') return last10Stats.value
-        return props.stats
-    })
-
-    /** Props de AnimatedNumber para un número de estadística: valor, decimales y sufijo */
-    type StatNumber = { value: number | string; decimals?: number; suffix?: string }
-
-    const statNumber = (stat: any): StatNumber => {
-        const val = (props.stats as any)[stat.key] ?? 0
-        if (typeof val !== 'number') return { value: val }
-        if (isNaN(val)) return { value: 0 }
-        if (stat.type === 'percent' || stat.fixed) return { value: val, decimals: 1, suffix: '%' }
-        if (stat.type === 'decimal' || !Number.isInteger(val)) return { value: val, decimals: 2 }
-        return { value: val }
-    }
-
-    const radarNumber = (m: any): StatNumber => {
-        const val = (m.raw !== undefined ? m.raw : (currentStats.value as any)[m.key]) ?? 0
-        if (typeof val !== 'number') return { value: val }
-        if (isNaN(val)) return { value: 0 }
-        if (m.key === 'ratingAve') return { value: val, decimals: 1 }
-        if (m.key.toLowerCase().includes('rate') || m.key.toLowerCase().includes('percent')) return { value: val, decimals: 1, suffix: '%' }
-        if (m.key === 'goalsPlusAssistsPerMatch') return { value: val, decimals: 2 }
-        return { value: Math.round(val) }
-    }
-
-    const statGroups = computed(() => [
-        {
-            title: 'Participación',
-            icon: 'trophy',
-            stats: [
-                { label: 'Partidos Jugados', key: 'gamesPlayed', type: 'count' },
-                { label: 'Minutos Jugados', key: 'minutesPlayed', type: 'count' },
-                { label: 'Rating medio', key: 'ratingAve', type: 'decimal' },
-                { label: 'Tarjetas rojas', key: 'redCards', type: 'count' },
-                { label: 'Tarjetas rojas/partido', key: 'redCardsPerMatch', type: 'decimal' },
-                { label: 'Victorias', key: 'wins', type: 'count' },
-                { label: '% Victorias', key: 'winRate', type: 'percent', fixed: true },
-                { label: 'MVPs', key: 'manOfTheMatch', type: 'count' },
-                { label: '% MVPs', key: 'manOfTheMatchPercent', type: 'percent', fixed: true },
-                { label: 'Porterías a 0', key: 'cleanSheets', type: 'count' },
-                { label: '% Porterías a 0', key: 'cleanSheetsPercent', type: 'percent', fixed: true }
-            ]
-        },
-        {
-            title: 'Ataque',
-            icon: 'sword',
-            stats: [
-                { label: 'Goles', key: 'goals', type: 'count' },
-                { label: 'Goles / partido', key: 'goalsPerMatch', type: 'decimal' },
-                { label: 'Asistencias', key: 'assists', type: 'count' },
-                { label: 'Asistencias/partido', key: 'assistsPerMatch', type: 'decimal' },
-                { label: 'Goles+Asistencias', key: 'goalsPlusAssists', type: 'count' },
-                { label: 'G+A por partido', key: 'goalsPlusAssistsPerMatch', type: 'decimal' },
-                { label: '% Éxito Tiro', key: 'shotSuccessRate', type: 'percent', fixed: true },
-                { label: 'Hattricks', key: 'hattricks', type: 'count' },
-                { label: 'Pókers', key: 'pokers', type: 'count' }
-            ]
-        },
-        {
-            title: 'Distribución',
-            icon: 'move',
-            stats: [
-                { label: 'Pases', key: 'passesMade', type: 'count' },
-                { label: 'Pases / partido', key: 'passesMadePerMatch', type: 'decimal' },
-                { label: 'Pases Completados', key: 'passesSuccess', type: 'count' },
-                { label: '% Éxito Pase', key: 'passSuccessRate', type: 'percent', fixed: true }
-            ]
-        },
-        {
-            title: 'Defensa',
-            icon: 'shield',
-            stats: [
-                { label: 'Entradas', key: 'tacklesMade', type: 'count' },
-                { label: 'Entradas con éxito', key: 'tacklesSuccess', type: 'count' },
-                { label: '% Éxito Entrada', key: 'tackleSuccessRate', type: 'percent', fixed: true },
-                { label: 'Goles Concedidos', key: 'goalsConceded', type: 'count' },
-                { label: 'Goles Conc. / partido', key: 'goalsConcededPerMatch', type: 'decimal' },
-                { label: 'Paradas (GK)', key: 'saves', type: 'count' },
-                { label: 'Paradas / partido', key: 'savesPerMatch', type: 'decimal' }
-            ]
-        }
-    ])
-
-
-    const radarMetrics = computed(() => {
-        const s = currentStats.value
-        const isGK = props.profile.mostPlayedPosition === Position.goalkeeper || props.positionFilter === Position.goalkeeper        
-        
-        return [
-            { label: 'Valoración',    key: 'ratingAve',                raw: s.ratingAve,                max: 10,  val: norm(s.ratingAve, 10) },
-            { label: 'G+A/Partido',   key: 'goalsPlusAssistsPerMatch', raw: s.goalsPlusAssistsPerMatch,  max: 1.5, val: norm(s.goalsPlusAssistsPerMatch, 1.5) },
-            { label: '% Pase',        key: 'passSuccessRate',          max: 100,                         val: norm(s.passSuccessRate, 100) },
-            { label: '% Tackles',     key: 'tackleSuccessRate',        max: 100,                         val: norm(s.tackleSuccessRate, 100) },
-            { label: '% Imbatido',    key: 'cleanSheetsPercent',       max: 100,                         val: norm(s.cleanSheetsPercent, 100) },
-            isGK
-                ? { label: '% Paradas', key: 'savesPercent',    max: 100, val: norm(s.savesPercent, 100) }
-                : { label: '% Tiro',    key: 'shotSuccessRate', max: 100, val: norm(s.shotSuccessRate, 100) },
-            { label: '% MVP',         key: 'manOfTheMatchPercent',     max: 100,                         val: norm(s.manOfTheMatchPercent, 30) },
-            { label: '% Victorias',   key: 'winRate',                  max: 100,                         val: norm(s.winRate, 100) }
-        ]
-    })
-
-    function norm(value: number, max: number): number {
-        return Math.max(0, Math.min(100, (value / max) * 100));
-    }
-
-    const lastRecentMode = ref<'last5' | 'last10'>('last5')
-
-    watch(statMode, (newMode) => {
-        if (newMode !== 'total') {
-            lastRecentMode.value = newMode
-        }
-    })
-
-    const visibleDatasets = ref([true, true])
-    
-    const toggleDataset = (index: number) => {
-        const isVisible = !visibleDatasets.value[index]
-        visibleDatasets.value[index] = isVisible
-        
-        const chart = radarChart.value?.chart
-        if (chart) {
-            if (isVisible) {
-                chart.show(index)
-            } else {
-                chart.hide(index)
-            }
-        }
-    }
-
-    const recentLabelComputed = computed(() => {
-        const recentKey = statMode.value === 'total' ? lastRecentMode.value : statMode.value
-        return recentKey === 'last10' ? 'Últimos 10' : 'Últimos 5'
-    })
-
-    const radarData = computed(() => {
-        const historicalPoints = getRadarDataPoints(props.stats)
-        
-        const recentKey = statMode.value === 'total' ? lastRecentMode.value : statMode.value
-        const recentStatsObj = recentKey === 'last10' ? last10Stats.value : last5Stats.value
-        const recentPoints = getRadarDataPoints(recentStatsObj)
-        
-        const colors = {
-            highlight: {
-                bg: hexToRgba(CLUB.colors.primary, 0.45),
-                border: CLUB.colors.primary,
-                point: CLUB.colors.primary
-            },
-            faded: {
-                bg: hexToRgba(CLUB.colors.primary, 0.1),
-                border: hexToRgba(CLUB.colors.primary, 0.5),
-                point: 'transparent'
-            }
-        }
-
-        return {
-            labels: radarMetrics.value.map(m => m.label),
-            datasets: [
-                {
-                    label: 'Histórico',
-                    data: historicalPoints,
-                    fill: true,
-                    backgroundColor: colors.highlight.bg,
-                    borderColor: colors.highlight.border,
-                    borderWidth: 3,
-                    borderDash: [],
-                    pointBackgroundColor: colors.highlight.point,
-                    pointBorderColor: '#fff',
-                    pointRadius: 4,
-                    order: 1
-                },
-                {
-                    label: recentLabelComputed.value,
-                    data: recentPoints,
-                    fill: true,
-                    backgroundColor: colors.faded.bg,
-                    borderColor: colors.faded.border,
-                    borderWidth: 2,
-                    borderDash: [5, 5],
-                    pointBackgroundColor: hexToRgba(CLUB.colors.primary, 0.4),
-                    pointBorderColor: hexToRgba(CLUB.colors.primary, 0.6),
-                    pointRadius: 3,
-                    order: 2
-                }
-            ]
-        }
-    })
-
-const getRadarDataPoints = (s: PlayerStatsEntity): number[] => {
-    const isGK =
-        props.profile.mostPlayedPosition === Position.goalkeeper ||
-        props.positionFilter === Position.goalkeeper
-
-    return [
-        norm(s.ratingAve, 10),
-        norm(s.goalsPlusAssistsPerMatch, 1.5),
-        norm(s.passSuccessRate, 100),
-        norm(s.tackleSuccessRate, 100),
-        norm(s.cleanSheetsPercent, 100),
-        norm(isGK ? s.savesPercent : s.shotSuccessRate, 100),
-        norm(s.manOfTheMatchPercent, 30),
-        norm(s.winRate, 100)
-    ]
+// ── Filas ──
+type Row = {
+    label: string
+    /** el número que se compara (por partido o porcentaje) */
+    value: number
+    ref: number | null
+    display: string
+    sub?: string
+    pct?: boolean
+    decimals?: number
+    /** menos es mejor (goles encajados, rojas) */
+    lowerBetter?: boolean
+    /** barra (no en las filas solo informativas) */
+    bar?: boolean
+    /** tope de la barra (los porcentajes, 100) */
+    max?: number
+    /** no cuenta para "destaca / flojea" (p. ej. rojas: no verlas no es destacar) */
+    noHighlight?: boolean
+}
+const num = (n: number | undefined | null, d = 0) => (Number.isFinite(n ?? NaN) ? (n as number) : 0).toLocaleString("es-ES", { minimumFractionDigits: d, maximumFractionDigits: d })
+const perMatch = (total: number, games: number) => (games ? total / games : 0)
+const refOf = (key: string, perGame?: string): number | null => {
+    const r = refStats.value
+    if (!r) return null
+    const v = r[key]
+    if (Number.isFinite(v)) return v
+    // Las medias no traen todo por partido: se saca del total y los partidos
+    if (perGame && Number.isFinite(r[perGame]) && r.gamesPlayed) return r[perGame] / r.gamesPlayed
+    return null
+}
+const pctRow = (label: string, value: number, refKey: string, sub?: string, lowerBetter = false): Row =>
+    ({ label, value: value || 0, ref: refOf(refKey), display: `${num(value)}%`, sub, pct: true, bar: true, max: 100, lowerBetter })
+const pgRow = (label: string, total: number, games: number, refKey: string, refTotalKey: string, decimals = 2, lowerBetter = false): Row => {
+    const v = perMatch(total, games)
+    return { label, value: v, ref: refOf(refKey, refTotalKey), display: num(v, decimals), sub: `${num(total)} en total`, decimals, bar: true, lowerBetter }
 }
 
-
-    // La gráfica se dibuja animada cuando la tarjeta entra en pantalla, no al montarse fuera de vista
-    const { target: chartCard, inView: chartInView } = useInView()
-
-    const radarOptions = computed<ChartOptions<'radar'>>(() => ({
-        responsive: true,
-        animation: chartInView.value ? { duration: 900, easing: 'easeOutQuart' as const } : { duration: 0 },
-        maintainAspectRatio: false,
-        interaction: {
-            mode: 'nearest' as const,
-            intersect: false,
+type Group = { key: string; title: string; hint: string; icon: string; rows: Row[] }
+const groups = computed<Group[]>(() => {
+    const s = current.value
+    const g = s.gamesPlayed
+    const out: Group[] = [
+        {
+            key: "games", title: "Partidos", hint: "Cuánto juega y cómo le va.", icon: "mvp", rows: [
+                { label: "Jugados", value: g, ref: null, display: num(g), sub: `${num(s.minutesPlayed)} min` },
+                { label: "Nota media", value: s.ratingAve || 0, ref: refOf("ratingAve"), display: num(s.ratingAve, 1), decimals: 1, bar: true, max: 10 },
+                pctRow("% victorias", s.winRate, "winRate", `${s.wins}V · ${s.ties}E · ${s.losses}D`),
+                pctRow("% MVP", s.manOfTheMatchPercent, "manOfTheMatchPercent", `${num(s.manOfTheMatch)} MVP`),
+                { ...pgRow("Rojas por partido", s.redCards, g, "redCardsPerMatch", "redCards", 2, true), noHighlight: true },
+            ],
         },
-        onHover: (_event, activeElements) => {
-            const nextIdx = activeElements.length > 0 ? activeElements[0].index : null;
-            isHoveringChart.value = nextIdx !== null;
-            if (hoveredIdx.value !== nextIdx) {
-                hoveredIdx.value = nextIdx;
-            }
+        {
+            key: "attack", title: "Ataque", hint: "Goles, asistencias y puntería. Por partido; el total, al lado.", icon: "goal", rows: [
+                pgRow("Goles", s.goals, g, "goalsPerMatch", "goals"),
+                pgRow("Asistencias", s.assists, g, "assistsPerMatch", "assists"),
+                pgRow("Goles + asistencias", s.goalsPlusAssists, g, "goalsPlusAssistsPerMatch", "goalsPlusAssists"),
+                pctRow("% tiros que acaban en gol", s.shotSuccessRate, "shotSuccessRate", `${num(s.shots)} tiros`),
+                { label: "Hat-tricks · pókers", value: 0, ref: null, display: `${num(s.hattricks)} · ${num(s.pokers)}` },
+            ],
         },
-        onLeave: () => {
-            isHoveringChart.value = false;
-            hoveredIdx.value = null;
+        {
+            key: "ball", title: "Con el balón", hint: "Cuánto la toca y cuánto la pierde.", icon: "passes", rows: [
+                pgRow("Pases", s.passesMade, g, "passesMadePerMatch", "passesMade", 1),
+                pctRow("% acierto de pase", s.passSuccessRate, "passSuccessRate", `${num(s.passesSuccess)} de ${num(s.passesMade)}`),
+            ],
         },
-        scales: {
-            r: {
-                type: 'radialLinear',
-                angleLines: { display: true, color: 'rgba(166, 173, 187, 0.2)' },
-                grid: { color: 'rgba(166, 173, 187, 0.15)', circular: true },
-                suggestedMin: 0,
-                suggestedMax: 100,
-                ticks: { display: false, stepSize: 20 },
-                pointLabels: {
-                    display: !isMobile.value,
-                    font: { size: 12, weight: 'bold' },
-                    color: '#A6ADBB',
-                    padding: 10
-                }
-            }
+        {
+            key: "def", title: "Defensa", hint: "Entradas y portería a cero mientras está en el campo.", icon: "tackles", rows: [
+                pgRow("Entradas", s.tacklesMade, g, "tacklesMadePerMatch", "tacklesMade", 1),
+                pctRow("% entradas ganadas", s.tackleSuccessRate, "tackleSuccessRate", `${num(s.tacklesSuccess)} de ${num(s.tacklesMade)}`),
+                pctRow("% porterías a cero", s.cleanSheetsPercent, "cleanSheetsPercent", `${num(s.cleanSheets)} partidos`),
+                // Encajados solo cuentan de verdad para defensas y porteros (la media de las demás posiciones se calcula distinto)
+                ...(isGK.value || position.value === Position.defender ? [pgRow("Goles encajados", s.goalsConceded, g, "goalsConcededPerMatch", "goalsConceded", 2, true)] : []),
+            ],
         },
-        plugins: {
-            legend: { 
-                display: false
-            },
-            tooltip: {
-                backgroundColor: '#1D232A',
-                padding: 12,
-                cornerRadius: 8,
-                displayColors: false,
-                callbacks: {
-                    label: (context) => {
-                        const idx = context.dataIndex
-                        const metric = radarMetrics.value[idx]
-                        if (!metric) return ''
-                        
-                        const isHistorical = context.datasetIndex === 0
-                        const s = isHistorical ? props.stats : (statMode.value === 'total' ? (lastRecentMode.value === 'last10' ? last10Stats.value : last5Stats.value) : (statMode.value === 'last10' ? last10Stats.value : last5Stats.value))
-                        
-                        const rawVal = (s as any)[metric.key]
-                        const val = rawVal ?? 0
-                        let displayStr = ''
-                        
-                        if (typeof val === 'number' && isNaN(val)) displayStr = '0'
-                        else if (metric.key === 'ratingAve') displayStr = val.toFixed(1)
-                        else if (metric.key.toLowerCase().includes('rate') || metric.key.toLowerCase().includes('percent')) displayStr = val.toFixed(1) + '%'
-                        else if (metric.key === 'goalsPlusAssistsPerMatch') displayStr = val.toFixed(2)
-                        else displayStr = Number.isInteger(val) ? val.toString() : val.toFixed(0)
-
-                        return `${context.dataset.label}: ${displayStr}`
-                    }
+    ]
+    if (isGK.value || s.saves > 0) {
+        out.push({
+            key: "gk", title: "Portería", hint: "Lo que para de lo que le llega.", icon: "saves", rows: [
+                pgRow("Paradas", s.saves, g, "savesPerMatch", "saves", 1),
+                pctRow("% paradas", s.savesPercent, "savesPercent", `${num(s.saves)} paradas`),
+            ],
+        })
     }
-            }
-        }
-    }))
+    return out
+})
 
-    watch(hoveredIdx, (newIdx) => {
-        // Prevent feedback loop when hovering directly on the chart
-        if (isHoveringChart.value) return
+const better = (r: Row) => (r.ref === null ? 0 : (r.value - r.ref) * (r.lowerBetter ? -1 : 1))
+const diffTone = (r: Row) => (r.ref === null || Math.abs(r.value - r.ref) < 0.005 ? "text-base-content/40" : better(r) > 0 ? "text-success" : "text-error")
+const signed = (r: Row) => {
+    const d = r.value - (r.ref ?? 0)
+    const s = d > 0 ? "+" : d < 0 ? "−" : "±"
+    return `${s}${num(Math.abs(d), r.pct ? 0 : r.decimals ?? 2)}`
+}
+const fmtValue = (r: Row, v: number) => (r.pct ? `${num(v)}%` : num(v, r.decimals ?? 2))
+function diffText(r: Row): string {
+    if (r.ref === null) return ""
+    const d = r.value - r.ref
+    if (Math.abs(d) < 0.005) return "Justo en la media"
+    const abs = r.pct ? `${num(Math.abs(d))} puntos` : num(Math.abs(d), r.decimals ?? 2)
+    const rel = !r.pct && r.ref ? ` (un ${Math.round((Math.abs(d) / r.ref) * 100)}% ${d > 0 ? "más" : "menos"})` : ""
+    return `${abs} ${d > 0 ? "por encima" : "por debajo"}${rel}${r.lowerBetter ? (d > 0 ? ": peor" : ": mejor") : ""}`
+}
+const barPct = (r: Row, v: number) => Math.max(0, Math.min(100, (v / (r.max ?? Math.max(r.value, r.ref ?? 0, 0.01) * 1.25)) * 100))
 
-        const chart = radarChart.value?.chart
-        if (!chart) return
+/** Lo mejor y lo peor frente a la referencia (diferencia relativa; los porcentajes, en puntos sobre 100) */
+const highlights = computed(() => {
+    const rows = groups.value.flatMap((g) => g.rows).filter((r) => r.ref !== null && r.bar && !r.noHighlight)
+    const score = (r: Row) => (r.pct ? (r.value - r.ref!) / 100 * 2.5 : r.ref ? (r.value - r.ref!) / r.ref! : 0) * (r.lowerBetter ? -1 : 1)
+    const sorted = rows.map((r) => ({ r, s: score(r) })).filter((x) => Number.isFinite(x.s))
+    const item = (x: { r: Row }) => ({ label: x.r.label, value: x.r.display, diff: signed(x.r) })
+    return {
+        best: sorted.filter((x) => x.s > 0.08).sort((a, b) => b.s - a.s).slice(0, 3).map(item),
+        worst: sorted.filter((x) => x.s < -0.08).sort((a, b) => a.s - b.s).slice(0, 2).map(item),
+    }
+})
 
-        if (newIdx !== null) {
-            const targetDataset = statMode.value === 'total' ? 0 : 1;
-            chart.setActiveElements([{ datasetIndex: targetDataset, index: newIdx }])
-            chart.tooltip.setActiveElements([{ datasetIndex: targetDataset, index: newIdx }], { x: 0, y: 0 })
-        } else {
-            chart.setActiveElements([])
-            chart.tooltip.setActiveElements([], { x: 0, y: 0 })
-        }
-        chart.update('none')
-    })
+// ── Radar ──
+const norm = (v: number | undefined, max: number) => Math.max(0, Math.min(100, ((Number.isFinite(v) ? v! : 0) / max) * 100))
+const RADAR = computed(() => [
+    { label: "Nota", key: "ratingAve", max: 10 },
+    { label: "G+A/p", key: "goalsPlusAssistsPerMatch", max: 1.5 },
+    { label: "% Pase", key: "passSuccessRate", max: 100 },
+    { label: "% Entrada", key: "tackleSuccessRate", max: 100 },
+    { label: "% Imbatido", key: "cleanSheetsPercent", max: 100 },
+    isGK.value ? { label: "% Paradas", key: "savesPercent", max: 100 } : { label: "% Tiro", key: "shotSuccessRate", max: 100 },
+    { label: "% MVP", key: "manOfTheMatchPercent", max: 30 },
+    { label: "% Victorias", key: "winRate", max: 100 },
+])
+const isMobile = ref(false)
+const updateMobile = () => { isMobile.value = window.innerWidth < 640 }
+onMounted(() => { updateMobile(); addEventListener("resize", updateMobile) })
+onUnmounted(() => removeEventListener("resize", updateMobile))
+
+const radarData = computed(() => {
+    const s = current.value as unknown as Record<string, number>
+    const r = refStats.value
+    return {
+        labels: RADAR.value.map((m) => m.label),
+        datasets: [
+            {
+                label: periodLabel.value, data: RADAR.value.map((m) => norm(s[m.key], m.max)), fill: true,
+                backgroundColor: hexToRgba(CLUB.colors.primary, 0.3), borderColor: CLUB.colors.primary, borderWidth: 2.5,
+                pointBackgroundColor: CLUB.colors.primary, pointBorderColor: "#fff", pointRadius: 3.5, order: 1,
+            },
+            ...(r ? [{
+                label: refLong.value, data: RADAR.value.map((m) => norm(r[m.key], m.max)), fill: false,
+                backgroundColor: "transparent", borderColor: "rgba(200, 205, 215, 0.95)", borderWidth: 2.5, borderDash: [6, 4],
+                pointRadius: 0, pointHoverRadius: 3, order: 2,
+            }] : []),
+        ],
+    }
+})
+const fmtRadar = (key: string, v: number) => (key === "ratingAve" ? num(v, 1) : key === "goalsPlusAssistsPerMatch" ? num(v, 2) : `${num(v)}%`)
+const { target: radarCard, inView: radarInView } = useInView()
+const radarOptions = computed<ChartOptions<"radar">>(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: radarInView.value ? { duration: 700, easing: "easeOutQuart" as const } : { duration: 0 },
+    interaction: { mode: "index" as const, intersect: false },
+    scales: {
+        r: {
+            type: "radialLinear", suggestedMin: 0, suggestedMax: 100,
+            angleLines: { color: "rgba(166, 173, 187, 0.2)" },
+            grid: { color: "rgba(166, 173, 187, 0.15)", circular: true },
+            ticks: { display: false, stepSize: 25 },
+            pointLabels: { display: true, font: { size: isMobile.value ? 10 : 12, weight: "bold" }, color: "#A6ADBB", padding: isMobile.value ? 4 : 8 },
+        },
+    },
+    plugins: {
+        legend: { display: false },
+        tooltip: {
+            backgroundColor: "#1D232A", padding: 10, cornerRadius: 8, displayColors: true,
+            callbacks: {
+                label: (ctx) => {
+                    const m = RADAR.value[ctx.dataIndex]
+                    const src = ctx.datasetIndex === 0 ? (current.value as unknown as Record<string, number>) : refStats.value
+                    return `${ctx.dataset.label}: ${fmtRadar(m.key, src?.[m.key] ?? 0)}`
+                },
+            },
+        },
+    },
+}))
 </script>
 
 <style scoped>
-    .animate-in {
-        animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-    }
-    @keyframes slideUp {
-        from { opacity: 0; transform: translateY(30px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+/* Pegados justo bajo la barra de pestañas de la ficha (que va bajo el menú) */
+.stats-controls { top: calc(var(--nav-h, 4rem) + 4.75rem); }
+.stat-bar { transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+.ref-mark { transition: left 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+@media (prefers-reduced-motion: no-preference) {
+    .stat-bar { transform-origin: left; animation: grow 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--k, 0) * 40ms); }
+    .delta { animation: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    .highlight { animation: rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .stat-bar, .ref-mark { transition: none; }
+}
+@keyframes grow { from { scale: 0 1; } }
+@keyframes pop { from { opacity: 0; scale: 0.6; } }
+@keyframes rise { from { opacity: 0; translate: 0 0.4rem; } }
 </style>
