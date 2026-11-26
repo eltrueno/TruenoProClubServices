@@ -3,9 +3,10 @@ import { NewMatchEvent } from "./newMatchEvent.producer.js";
 import { MilestoneEvent } from "./milestoneEvent.producer.js";
 import { UniqueAchievementEvent } from "./achievementEvent.producer.js";
 import { TOTWEvent } from "./totwEvent.producer.js";
-import { STATS_RECALCULATE_ROUTING_KEY, type IStatsRecalculatePayload } from "@trueno-proclub-services/shared";
+import { STATS_RECALCULATE_ROUTING_KEY, SYNC_NOW_ROUTING_KEY, type IStatsRecalculatePayload, type ISyncNowPayload } from "@trueno-proclub-services/shared";
 import { handleStatsRecalculate } from "../services/voidMatches.service.js";
 import { runExclusive } from "../utils/exclusive.js";
+import { runSync } from "../utils/NewMatchesFinder.js";
 
 let mqManager: RabbitMQManager
 let matchProducer: NewMatchEvent
@@ -31,6 +32,12 @@ export async function setupRabbitmqConsumers(clubId: number) {
     if (!mqManager) throw new Error('RabbitMQ not initialized');
     await mqManager.consume('worker.stats-recalculate', STATS_RECALCULATE_ROUTING_KEY, (content) =>
         runExclusive(() => handleStatsRecalculate(clubId, content as IStatsRecalculatePayload)))
+    // "Sincronizar ahora" desde el panel admin (runSync ya va por la cola de runExclusive)
+    await mqManager.consume('worker.sync-now', SYNC_NOW_ROUTING_KEY, async (content) => {
+        const p = content as ISyncNowPayload
+        console.info(`[Sync] Sincronización pedida desde el panel${p?.requestedBy ? ` por ${p.requestedBy}` : ""}`)
+        await runSync("panel")
+    })
 }
 
 export function getMatchProducer() {

@@ -7,8 +7,10 @@ import { computePlayerStatsAverages } from "./averageStats.service.js"
 
 /**
  * Fetches recent matches from EA and processes any new ones.
+ * Devuelve cuántos partidos nuevos ha metido y, si algo ha fallado, el error (para el panel admin).
  */
-export const syncRecentMatches = async (clubId: number, platform: string) => {
+export const syncRecentMatches = async (clubId: number, platform: string): Promise<{ inserted: number; error?: string }> => {
+    let inserted = 0
     try {
         const types: any[] = ["leagueMatch", "playoffMatch", "friendlyMatch"];
         const matchTypeMap: Record<string, string> = {
@@ -58,6 +60,7 @@ export const syncRecentMatches = async (clubId: number, platform: string) => {
                 }
             }
 
+            inserted = matchesToInsert.length
             if (matchesToInsert.length > 0) {
                 console.info(`[Sync Service] Inserted ${matchesToInsert.length} new matches`);
                 console.info(`[Sync Service] Recalculating player averages...`);
@@ -77,9 +80,12 @@ export const syncRecentMatches = async (clubId: number, platform: string) => {
             for (const match of all) {
                 await insertMatch(match);
             }
+            inserted = all.length
             console.info(`[Sync Service] Initial ingest complete: ${leagueMatches.length + playoffMatches.length + friendlyMatches.length} matches`);
         }
     } catch (error) {
         console.error("[Sync Service] Error during match sync:", error);
+        return { inserted, error: error instanceof Error ? error.message : String(error) }
     }
+    return { inserted }
 };

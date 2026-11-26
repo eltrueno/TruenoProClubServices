@@ -1,4 +1,4 @@
-import type { ApiResponse, IPlayerProfile, IAccountAchievements, IAchievementDefinitionWithStats, IClubMember, IClubMemberAdminPatch, ILinkRequest, IPublicUser, ImageScope, UserRole } from "@trueno-proclub-services/shared"
+import type { ApiResponse, IPlayerProfile, IAccountAchievements, IAchievementDefinitionWithStats, IAdminAuditEntry, IAdminStatus, IClubMember, IClubMemberAdminPatch, ILinkRequest, IMatch, IPublicUser, ImageScope, UserRole } from "@trueno-proclub-services/shared"
 import { AUTH_URL, type ClubLink } from "@/config/site"
 
 /** Error de cualquier llamada: `code` estable (TWITCH_TOKEN_EXPIRED, ALREADY_LINKED…) + `httpStatus` */
@@ -10,7 +10,7 @@ export class ApiError extends Error {
 }
 
 interface RequestOptions {
-    method?: "GET" | "POST" | "PATCH" | "DELETE"
+    method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
     body?: unknown
 }
 
@@ -70,6 +70,12 @@ export const authApi = {
         request<{ status: string; data: IApiToken & { token: string } }>(`${AUTH_URL}/api/admin/tokens`, { method: "POST", body: { name } }).then((r) => r.data),
     revokeApiToken: (id: string) =>
         request<{ status: string }>(`${AUTH_URL}/api/admin/tokens/${encodeURIComponent(id)}`, { method: "DELETE" }),
+    /** Cambia el rol de una cuenta (visitor = quitar el rol puesto a mano). Solo admins */
+    setUserRole: (id: string, role: string) =>
+        request<{ status: string; data: { id: string; role: string } }>(`${AUTH_URL}/api/admin/users/${encodeURIComponent(id)}/role`, { method: "PATCH", body: { role } }).then((r) => r.data),
+    /** Acciones de admin hechas en el auth (roles y tokens) */
+    adminAudit: (limit = 100) =>
+        request<{ status: string; data: IAdminAuditEntry[] }>(`${AUTH_URL}/api/admin/audit?limit=${limit}`).then((r) => r.data),
 }
 
 export interface IDiscordStatus {
@@ -100,6 +106,14 @@ export interface IAdminUser extends IPublicUser {
     role: UserRole | string
     twitchId: string | null
     discordId: string | null
+    discordName?: string | null
+    twitchFollowing?: boolean
+    twitchSub?: boolean
+    twitchSubTier?: string | null
+    twitchSyncedAt?: string | null
+    /** el permiso de Twitch ya no sirve: follow / sub pueden estar desfasados */
+    twitchNeedsReauth?: boolean
+    createdAt?: string | null
 }
 
 /**
@@ -123,6 +137,8 @@ export const clubApi = (club: ClubLink) => {
         /** Logros de cuenta y puntos de la cuenta con sesión. `clubId` es el id (de EA) de ESTE club */
         myAchievements: () => api<IMyAchievements>("/members/me/achievements"),
         accountAchievementDefinitions: () => api<IAchievementDefinitionWithStats[]>("/achievements/account"),
+        /** Últimos partidos del club (también los nulos) */
+        latestMatches: (limit = 100) => api<IMatch[]>(`/matches/ordered?limit=${limit}`),
 
         /** Panel admin (/admin): plantilla, fotos y solicitudes de vinculación de este club */
         admin: {
@@ -153,6 +169,18 @@ export const clubApi = (club: ClubLink) => {
                 api<{ request: ILinkRequest; member: IClubMember }>(`/admin/link-requests/${encodeURIComponent(id)}/approve`, { method: "POST" }),
             rejectLinkRequest: (id: string) =>
                 api<ILinkRequest>(`/admin/link-requests/${encodeURIComponent(id)}/reject`, { method: "POST" }),
+            /** Solicitudes ya resueltas de un jugador: quién la aprobó o rechazó y cuándo */
+            linkRequestHistory: (playerId: string) => api<ILinkRequest[]>(`/admin/link-requests/history?playerId=${encodeURIComponent(playerId)}`),
+            /** Nulo a mano (true / false) o vuelta al automático (null); el worker recalcula */
+            setMatchVoided: (matchId: number, voided: boolean | null) =>
+                api<{ match: IMatch; recalculation: "queued" | "unavailable" }>(`/admin/matches/${matchId}/voided`, { method: "PUT", body: { voided } }),
+            /** Estado del club: worker, partidos, miembros, RabbitMQ */
+            status: () => api<IAdminStatus>("/admin/status"),
+            /** El worker sincroniza ya con EA / recalcula stats. `queued: false` = no ha llegado (sin RabbitMQ) */
+            syncNow: () => api<{ queued: boolean }>("/admin/sync", { method: "POST" }),
+            recalculate: () => api<{ queued: boolean }>("/admin/recalculate", { method: "POST" }),
+            /** Acciones de admin de este club y las globales (vínculos, fotos) */
+            audit: (limit = 100) => api<IAdminAuditEntry[]>(`/admin/audit?limit=${limit}`),
         },
     }
 }

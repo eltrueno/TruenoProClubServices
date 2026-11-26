@@ -1,5 +1,5 @@
 import { connect, type ChannelModel, type ConfirmChannel } from "amqplib"
-import { STATS_RECALCULATE_ROUTING_KEY, type IStatsRecalculatePayload } from "@trueno-proclub-services/shared"
+import { STATS_RECALCULATE_ROUTING_KEY, SYNC_NOW_ROUTING_KEY, type IStatsRecalculatePayload, type ISyncNowPayload } from "@trueno-proclub-services/shared"
 import dotenv from "dotenv"
 dotenv.config()
 
@@ -70,6 +70,13 @@ async function publish(routingKey: string, payload: unknown): Promise<boolean> {
 /** Pide al worker que recalcule stats, logros y medias (p. ej. tras marcar un partido como nulo) */
 export const requestStatsRecalculation = (payload: Omit<IStatsRecalculatePayload, "requestedAt">) =>
     publish(STATS_RECALCULATE_ROUTING_KEY, { ...payload, requestedAt: new Date().toISOString() } satisfies IStatsRecalculatePayload)
+
+/** Pide al worker que sincronice ya con EA (botón del panel admin) */
+export const requestSyncNow = (requestedBy: string | null) =>
+    publish(SYNC_NOW_ROUTING_KEY, { requestedAt: new Date().toISOString(), requestedBy } satisfies ISyncNowPayload)
+
+/** Hay RabbitMQ configurado (sin él, los avisos al worker no salen) */
+export const eventsEnabled = () => !!RABBITMQ_URL
 
 /** Al arrancar el api: abre la conexión y deja dicho en el log si hay RabbitMQ o no */
 export async function initEvents(): Promise<void> {
