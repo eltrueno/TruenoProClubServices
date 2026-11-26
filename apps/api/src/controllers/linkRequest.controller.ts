@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express"
 import * as LinkRequestService from "../services/linkRequest.service.js"
+import { logAdminAction } from "../services/adminAudit.service.js"
 
 const ok = (res: Response, response: unknown) => res.json({ status: { code: 200, message: "Ok" }, response })
 
@@ -54,6 +55,7 @@ async function approveLinkRequest(req: Request, res: Response, next: NextFunctio
     try {
         const result = await LinkRequestService.approve(String(req.params.id), req.user!.id)
         if (!result) return next(new Error("ERROR_NOT_FOUND"))
+        await logAdminAction(req, "linkRequest.approve", { target: result.request.playerId, targetName: result.request.playerName, global: true, details: { userId: result.request.userId, userName: result.request.userName } })
         ok(res, result)
     } catch (err) {
         next(err)
@@ -65,6 +67,7 @@ async function rejectLinkRequest(req: Request, res: Response, next: NextFunction
     try {
         const result = await LinkRequestService.reject(String(req.params.id), req.user!.id)
         if (!result) return next(new Error("ERROR_NOT_FOUND"))
+        await logAdminAction(req, "linkRequest.reject", { target: result.playerId, targetName: result.playerName, global: true, details: { userId: result.userId, userName: result.userName } })
         ok(res, result)
     } catch (err) {
         next(err)

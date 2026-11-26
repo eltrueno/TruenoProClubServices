@@ -3,6 +3,7 @@ import { AchievementProgressModel, AchievementUnlockedModel, MatchModel, PlayerS
 import { processAchievements, recalculateAllTOTWAchievements } from "./achievement.service.js"
 import { advanceProgress, matchMetrics, progressMetrics } from "./achievementMetrics.js"
 import { Model } from "mongoose"
+import { setWorkerStatus } from "./workerStatus.service.js"
 
 /**
  * Returns the right stats model based on match type:
@@ -144,6 +145,7 @@ const recalculateAllPlayerStats = async (clubId: number) => {
 
     await recalculateAllTOTWAchievements()
 
+    await setWorkerStatus({ lastRecalcAt: new Date() })
     console.info("[Stats] Full recalculation done.")
 }
 

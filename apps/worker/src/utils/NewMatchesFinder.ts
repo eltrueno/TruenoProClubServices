@@ -7,6 +7,7 @@ import { computePlayerStatsAverages } from "../services/averageStats.service.js"
 import { migrateVoidMatches } from "../services/voidMatches.service.js";
 import { syncAccountAchievements } from "../services/accountAchievement.service.js";
 import { runExclusive } from "./exclusive.js";
+import { setWorkerStatus } from "../services/workerStatus.service.js";
 import dotenv from "dotenv"
 
 dotenv.config()
@@ -15,8 +16,30 @@ const PLATFORM: string = String(process.env.PLATFORM || 'common-gen5')
 const WORKER_INTERVAL = Number(process.env.WORKER_INTERVAL) || 300;
 const FORCE_RECALCULATE = process.env.FORCE_RECALCULATE === 'true';
 
+/**
+ * Una sincronización con EA (la del intervalo o la que pide un admin desde el panel): partidos,
+ * miembros y logros de cuenta. Deja el resultado en el estado del worker.
+ */
+export async function runSync(trigger: string): Promise<void> {
+    console.log(`[Match Finder Worker] Running sync (${trigger})...`)
+    let result: { inserted: number; error?: string } = { inserted: 0 }
+    try {
+        await runExclusive(async () => {
+            result = await syncRecentMatches(CLUBID, PLATFORM);
+            await syncMembersFromEA(CLUBID, PLATFORM);
+            // También sin partidos nuevos: alguien puede haberse vinculado, conectado Discord o hecho sub
+            await syncAccountAchievements(CLUBID);
+        });
+    } catch (e) {
+        result = { ...result, error: e instanceof Error ? e.message : String(e) }
+        console.error("[Match Finder Worker] Error during sync:", e);
+    }
+    await setWorkerStatus({ lastSyncAt: new Date(), lastSyncOk: !result.error, lastSyncError: result.error ?? null, lastSyncInserted: result.inserted })
+}
+
 function startWorker() {
     console.log("[Match Finder Worker] Started!")
+    setWorkerStatus({ clubId: CLUBID, intervalSec: WORKER_INTERVAL, startedAt: new Date() })
 
     // On startup: seed achievement definitions, enrich members from EA and recalculate stats if needed
     // Todo lo que toca stats va por runExclusive (ver utils/exclusive.ts)
@@ -58,19 +81,7 @@ function startWorker() {
         console.error("[Member Worker] Startup error:", err)
     })
 
-    setInterval(async function () {
-        try {
-            console.log("[Match Finder Worker] Running scheduled sync...");
-            await runExclusive(async () => {
-                await syncRecentMatches(CLUBID, PLATFORM);
-                await syncMembersFromEA(CLUBID, PLATFORM);
-                // También sin partidos nuevos: alguien puede haberse vinculado, conectado Discord o hecho sub
-                await syncAccountAchievements(CLUBID);
-            });
-        } catch (e) {
-            console.error("[Match Finder Worker] Error during scheduled sync:", e);
-        }
-    }, WORKER_INTERVAL * 1000)
+    setInterval(() => { runSync("scheduled") }, WORKER_INTERVAL * 1000)
 }
 
 export { startWorker }

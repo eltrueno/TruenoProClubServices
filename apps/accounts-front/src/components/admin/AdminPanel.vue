@@ -20,6 +20,10 @@ import PlayerImageEditor from "./PlayerImageEditor.vue"
 import AdminSkeleton from "./AdminSkeleton.vue"
 import ClubCrest from "./ClubCrest.vue"
 import ApiTokens from "./ApiTokens.vue"
+import AdminAccounts from "./AdminAccounts.vue"
+import AdminMatches from "./AdminMatches.vue"
+import AdminSystem from "./AdminSystem.vue"
+import AdminPlayerInfo from "./AdminPlayerInfo.vue"
 import Toaster from "../ui/Toaster.vue"
 import PanelTabs, { type PanelTab } from "../ui/PanelTabs.vue"
 import { toast } from "@/lib/toast"
@@ -48,9 +52,11 @@ function selectFilter(f: ClubFilter) {
     history.replaceState(history.state, "", url)
 }
 
-// ---- Pestañas (?tab=solicitudes|jugadores|tokens) ----
-type TabId = "solicitudes" | "jugadores" | "tokens"
-const TAB_IDS: TabId[] = ["solicitudes", "jugadores", "tokens"]
+// ---- Pestañas (?tab=solicitudes|jugadores|cuentas|partidos|sistema|tokens) ----
+type TabId = "solicitudes" | "jugadores" | "cuentas" | "partidos" | "sistema" | "tokens"
+const TAB_IDS: TabId[] = ["solicitudes", "jugadores", "cuentas", "partidos", "sistema", "tokens"]
+/** Pestañas en las que tiene sentido filtrar por club */
+const CLUB_FILTER_TABS: TabId[] = ["solicitudes", "jugadores", "partidos"]
 const initialTab = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null
 /** null hasta saber si hay solicitudes: sin pestaña en la URL, se abre en Solicitudes solo si hay alguna */
 const tab = ref<TabId | null>(TAB_IDS.includes(initialTab as TabId) ? (initialTab as TabId) : null)
@@ -66,6 +72,9 @@ const ICONS = {
     requests: "M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z",
     players: "M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z",
     tokens: "M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z",
+    accounts: "M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z",
+    matches: "M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5",
+    system: "M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z",
 }
 
 // ---- Datos ----
@@ -149,7 +158,7 @@ const accountItems = computed<PickerItem[]>(() => {
         const other = linkedElsewhere(u.id, playerId)
         return {
             id: u.id,
-            name: u.name,
+            name: u.name ?? "Sin nombre",
             subtitle: u.role !== "visitor" ? u.role : undefined,
             image: u.image,
             hint: other ? `Ya vinculada a ${other.playerName}` : undefined
@@ -216,6 +225,9 @@ const filteredMembers = computed(() => {
 const tabs = computed<PanelTab[]>(() => [
     { id: "solicitudes", label: "Solicitudes", icon: ICONS.requests, count: loading.value ? undefined : visibleRequests.value.length || undefined },
     { id: "jugadores", label: "Jugadores", icon: ICONS.players },
+    { id: "cuentas", label: "Cuentas", icon: ICONS.accounts },
+    { id: "partidos", label: "Partidos", icon: ICONS.matches },
+    { id: "sistema", label: "Sistema", icon: ICONS.system },
     { id: "tokens", label: "Tokens de API", icon: ICONS.tokens },
 ])
 
@@ -268,6 +280,22 @@ function linkedElsewhere(userId: string, playerId: string) {
 }
 
 const lastSeen = (m: IClubMember) => m.lastSeenAt ?? 0
+
+// ---- Saltar de un jugador a su cuenta y al revés ----
+const accountsTab = ref<InstanceType<typeof AdminAccounts> | null>(null)
+async function goToAccount(userId: string) {
+    editDialog.value?.close()
+    selectTab("cuentas")
+    await nextTick()
+    accountsTab.value?.openById(userId)
+}
+async function goToPlayer(playerId: string) {
+    const m = members.value.find((x) => x.playerId === playerId)
+    if (!m) return
+    selectTab("jugadores")
+    await nextTick()
+    openEdit(m)
+}
 
 async function load() {
     loading.value = true
@@ -385,7 +413,7 @@ watch(loading, (l) => {
         <header class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
             <div>
                 <h1 class="text-3xl lg:text-4xl font-black tracking-tight">Panel admin</h1>
-                <p class="text-sm text-base-content/75 mt-1">Vinculaciones, fotos y tokens. Lo que cambies se aplica al jugador en todos los clubes.</p>
+                <p class="text-sm text-base-content/75 mt-1">Jugadores, cuentas, partidos y el estado de los clubes. Lo que cambies de un jugador se aplica en todos los clubes.</p>
             </div>
             <button class="btn btn-sm btn-ghost gap-1.5 self-start md:self-auto" :disabled="loading" @click="load">
                 <svg class="size-4" :class="{ 'animate-spin': loading }" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
@@ -402,7 +430,7 @@ watch(loading, (l) => {
         </div>
 
         <!-- Filtro por club (Solicitudes y Jugadores): los datos son los mismos, solo cambia qué se ve -->
-        <div v-if="CLUBS.length > 1 && activeTab !== 'tokens'" class="flex flex-wrap gap-2 mt-4" role="group" aria-label="Filtrar por club">
+        <div v-if="CLUBS.length > 1 && CLUB_FILTER_TABS.includes(activeTab)" class="flex flex-wrap gap-2 mt-4" role="group" aria-label="Filtrar por club">
             <button type="button" :aria-pressed="clubFilter === 'all'"
                 class="btn btn-sm gap-2" :class="clubFilter === 'all' ? 'btn-primary' : 'btn-ghost'" @click="selectFilter('all')">
                 <span class="flex -space-x-1.5">
@@ -417,9 +445,15 @@ watch(loading, (l) => {
             </button>
         </div>
 
-        <!-- ═══ Tokens (no depende de cargar jugadores) ═══ -->
+        <!-- ═══ Tokens, Partidos y Sistema (no dependen de cargar jugadores) ═══ -->
         <section v-if="activeTab === 'tokens'" role="tabpanel" aria-labelledby="tab-tokens" class="mt-6">
             <ApiTokens />
+        </section>
+        <section v-else-if="activeTab === 'partidos'" role="tabpanel" aria-labelledby="tab-partidos" class="mt-6">
+            <AdminMatches :club-filter="clubFilter" />
+        </section>
+        <section v-else-if="activeTab === 'sistema'" role="tabpanel" aria-labelledby="tab-sistema" class="mt-6">
+            <AdminSystem />
         </section>
 
         <AdminSkeleton v-else-if="loading" body-only class="mt-6" />
@@ -466,6 +500,11 @@ watch(loading, (l) => {
                 </li>
             </ul>
             <p v-if="requestError" role="alert" class="text-sm text-error mt-3">No se ha podido resolver la solicitud ({{ requestError }})</p>
+        </section>
+
+        <!-- ═══ Cuentas ═══ -->
+        <section v-else-if="activeTab === 'cuentas'" role="tabpanel" aria-labelledby="tab-cuentas" class="mt-6">
+            <AdminAccounts ref="accountsTab" :users="users" :member-by-user-id="memberByUserId" @open-player="goToPlayer" />
         </section>
 
         <!-- ═══ Jugadores ═══ -->
@@ -516,7 +555,7 @@ watch(loading, (l) => {
 
     <!-- Editar un jugador: foto y cuenta vinculada -->
     <dialog ref="editDialog" class="modal modal-bottom sm:modal-middle" closedby="any" aria-labelledby="edit-title" @close="onEditClosed">
-        <div v-if="editing" class="modal-box text-left">
+        <div v-if="editing" class="modal-box text-left sm:max-w-2xl">
             <h3 id="edit-title" class="sr-only">Editar {{ editing.playerName }}</h3>
             <PlayerCard :member="editing" :image="draftFor(editing).imageUrl || null" size="md" :link="playerUrl(editing.playerId)" show-id>
                 <span v-if="CLUBS.length > 1" class="flex gap-1 mt-1">
@@ -552,6 +591,12 @@ watch(loading, (l) => {
                 <p v-if="draftFor(editing).userId && linkedElsewhere(draftFor(editing).userId, editing.playerId)" class="text-xs text-warning mt-2">
                     Esta cuenta está vinculada a {{ linkedElsewhere(draftFor(editing).userId, editing.playerId)!.playerName }}; al guardar pasará a este jugador.
                 </p>
+            </div>
+
+            <!-- Lo que se sabe de él: su cuenta, cómo se vinculó y sus logros -->
+            <div class="mt-6 pt-6 border-t border-base-content/10">
+                <AdminPlayerInfo :member="editing" :clubs="clubsFor(editing.playerId)" :user="editing.userId ? usersById.get(editing.userId) : undefined"
+                    :users-by-id="usersById" @open-account="goToAccount" />
             </div>
 
             <p v-if="rowMessage[editing.playerId]?.text && !rowMessage[editing.playerId].ok" role="alert" class="text-sm text-error mt-4">

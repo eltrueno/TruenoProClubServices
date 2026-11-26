@@ -4,6 +4,7 @@ import * as ClubMemberService from "../services/clubMember.service.js"
 import * as ImageStorage from "../services/imageStorage.service.js"
 import * as MatchService from "../services/match.service.js"
 import { requestStatsRecalculation } from "../services/events.service.js"
+import { logAdminAction } from "../services/adminAudit.service.js"
 
 /** `imageScope` ausente = global; cualquier otro valor que no sea "club" es un error */
 const parseScope = (value: unknown): ImageScope | null => {
@@ -52,6 +53,10 @@ async function patchMember(req: Request, res: Response, next: NextFunction) {
         const updated = await ClubMemberService.adminPatch(playerId, patch)
         if (!updated) return next(new Error("ERROR_NOT_FOUND"))
 
+        const who = { target: playerId, targetName: updated.playerName }
+        if ("userId" in patch) await logAdminAction(req, patch.userId ? "member.link" : "member.unlink", { ...who, global: true, details: { userId: patch.userId ?? null } })
+        if ("imageUrl" in patch) await logAdminAction(req, "member.photo", { ...who, global: patch.imageScope !== "club", details: { imageUrl: patch.imageUrl ?? null, scope: patch.imageScope } })
+
         res.json({ status: { code: 200, message: "Ok" }, response: updated })
     } catch (err) {
         console.error(err)
@@ -85,6 +90,7 @@ async function uploadMemberImage(req: Request, res: Response, next: NextFunction
         const imageUrl = await ImageStorage.uploadPlayerImage(playerId, png, scope)
         const updated = await ClubMemberService.adminPatch(playerId, { imageUrl, imageScope: scope })
         if (!updated) return next(new Error("ERROR_NOT_FOUND"))
+        await logAdminAction(req, "member.photo.upload", { target: playerId, targetName: updated.playerName, global: scope !== "club", details: { imageUrl, scope } })
         res.json({ status: { code: 200, message: "Ok" }, response: updated })
     } catch (err) {
         if (err instanceof Error && err.message === "IMAGE_STORAGE_NOT_CONFIGURED") {
@@ -142,6 +148,11 @@ async function setMatchVoided(req: Request, res: Response, next: NextFunction) {
             requestedBy: req.user?.id ?? null,
             reason: voided === null ? "match-void-reset" : voided ? "match-voided" : "match-unvoided",
             matchId
+        })
+        const score = (c: { name?: string; matchStats?: { goals?: number } } | undefined) => c?.matchStats?.goals ?? "?"
+        await logAdminAction(req, voided === null ? "match.voidAuto" : voided ? "match.void" : "match.unvoid", {
+            target: String(matchId),
+            targetName: `${match.localClub?.name ?? "?"} ${score(match.localClub)}–${score(match.awayClub)} ${match.awayClub?.name ?? "?"}`,
         })
         if (!queued) console.warn(`[Admin] Partido ${matchId}: nulo guardado, pero no se ha podido avisar al worker (RabbitMQ)`)
 
