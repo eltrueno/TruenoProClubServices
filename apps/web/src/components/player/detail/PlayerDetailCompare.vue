@@ -16,8 +16,29 @@
         </div>
 
         <template v-else-if="other">
+            <!-- Al bajar: barra compacta pegada bajo las pestañas con las caras y el tanto a tanto -->
+            <div class="vs-mini sticky z-30 -mx-2 -mb-4 sm:-mb-6 rounded-b-2xl overflow-hidden backdrop-blur-md shadow-lg shadow-black/25
+                    [--ctl-bg:color-mix(in_oklab,var(--color-base-200)_94%,var(--color-base-content))]
+                    dark:[--ctl-bg:color-mix(in_oklab,var(--color-base-200)_92%,var(--color-base-content))]
+                    bg-[color-mix(in_oklab,var(--ctl-bg)_88%,transparent)]"
+                :data-show="miniVisible" :aria-hidden="!miniVisible">
+                <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-4 px-3 py-2">
+                    <span class="flex items-center gap-2 min-w-0 justify-end">
+                        <span class="truncate text-xs sm:text-sm font-black text-(--a)">{{ profile.member.playerName }}</span>
+                        <span class="size-8 shrink-0 rounded-full overflow-hidden outline-2 outline-(--a) bg-(--a)/45"><img :src="imageFor(profile.member.playerId)" alt="" class="size-full object-cover object-top scale-[2] origin-top" @error="onPlayerImageError" /></span>
+                    </span>
+                    <button type="button" class="text-xl sm:text-2xl font-black tabular-nums leading-none px-2 cursor-pointer" title="Volver arriba" :tabindex="miniVisible ? 0 : -1" @click="toTop">
+                        <span class="text-(--a)">{{ score.a }}</span><span class="text-base-content/30 mx-1">–</span><span class="text-(--b)">{{ score.b }}</span>
+                    </button>
+                    <span class="flex items-center gap-2 min-w-0">
+                        <span class="size-8 shrink-0 rounded-full overflow-hidden outline-2 outline-(--b) bg-(--b)/45"><img :src="imageFor(other.member.playerId)" alt="" class="size-full object-cover object-top scale-[2] origin-top" @error="onPlayerImageError" /></span>
+                        <span class="truncate text-xs sm:text-sm font-black text-(--b)">{{ other.member.playerName }}</span>
+                    </span>
+                </div>
+            </div>
+
             <!-- Cabecera: los dos frente a frente y el marcador de "ventajas" -->
-            <section class="vs-head rounded-2xl bg-base-200 p-4 sm:p-6 shadow-md">
+            <section ref="head" class="vs-head rounded-2xl bg-base-200 p-4 sm:p-6 shadow-md">
                 <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-6">
                     <div v-for="(side, si) in sides" :key="side.key" class="flex flex-col items-center gap-2 text-center min-w-0" :class="si === 1 && 'order-3'">
                         <span class="relative">
@@ -46,13 +67,39 @@
             </section>
 
             <!-- Perfil superpuesto -->
-            <MatchCard title="Perfil" hint="Los dos en las mismas ocho cosas, de 0 al máximo razonable.">
-                <div class="relative w-full max-w-md mx-auto aspect-square">
-                    <Radar :data="radarData" :options="radarOptions" />
-                </div>
-                <div class="flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs font-bold text-base-content/70">
-                    <span class="flex items-center gap-1.5"><span class="size-3 rounded-sm bg-(--a)"></span>{{ profile.member.playerName }}</span>
-                    <span class="flex items-center gap-1.5"><span class="size-3 rounded-sm bg-(--b)"></span>{{ other.member.playerName }}</span>
+            <MatchCard title="Perfil" :hint="scale === 'fit' ? 'Escala ajustada: cada eje llega hasta el mayor de los dos, para ver quién gana en cada cosa.' : 'Los dos en las mismas ocho cosas, de 0 al máximo razonable.'">
+                <template #actions>
+                    <OptionToggle v-model="scale" :options="SCALE_OPTIONS" size="sm" />
+                </template>
+                <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-5 lg:gap-8 items-center">
+                    <div>
+                        <div class="relative w-full max-w-lg mx-auto aspect-square" @mouseleave="hovered = null">
+                            <Radar ref="radarChart" :data="radarData" :options="radarOptions" />
+                        </div>
+                        <div class="flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs font-bold text-base-content/70">
+                            <span class="flex items-center gap-1.5"><span class="size-3 rounded-sm bg-(--a)"></span>{{ profile.member.playerName }}</span>
+                            <span class="flex items-center gap-1.5"><span class="size-3 rounded-sm bg-(--b)"></span>{{ other.member.playerName }}</span>
+                        </div>
+                    </div>
+                    <!-- Los ocho ejes, con quién gana cada uno; al pasar por una fila se marca en el radar, y al revés -->
+                    <table class="w-full text-sm" aria-label="Valores del radar">
+                        <thead>
+                            <tr class="text-[0.65rem] uppercase tracking-wider">
+                                <th class="text-left font-black pb-1.5 text-base-content/50"></th>
+                                <th class="text-right font-black pb-1.5 text-(--a) truncate max-w-24">{{ profile.member.playerName }}</th>
+                                <th class="text-right font-black pb-1.5 text-(--b) truncate max-w-24">{{ other.member.playerName }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(a, i) in radarRows" :key="a.label" class="cursor-default transition-colors"
+                                :class="hovered === i ? 'bg-primary/12' : 'hover:bg-base-content/5'"
+                                @mouseenter="hovered = i" @mouseleave="hovered = null">
+                                <td class="py-1.5 pl-2 rounded-l-lg font-bold" :class="hovered === i && 'text-primary'">{{ a.label }}</td>
+                                <td class="py-1.5 text-right tabular-nums" :class="a.win === 'a' ? 'font-black text-(--a)' : 'text-base-content/60'">{{ a.a }}</td>
+                                <td class="py-1.5 pr-2 rounded-r-lg text-right tabular-nums" :class="a.win === 'b' ? 'font-black text-(--b)' : 'text-base-content/60'">{{ a.b }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </MatchCard>
 
@@ -114,38 +161,72 @@
                         <div v-for="side in onlyOne" :key="side.key">
                             <p class="text-[0.7rem] uppercase tracking-widest font-black mb-1.5" :class="side.key === 'a' ? 'text-(--a)' : 'text-(--b)'">Solo {{ side.name }}</p>
                             <ul v-if="side.list.length" class="flex flex-wrap gap-1">
-                                <li v-for="a in side.list.slice(0, 10)" :key="a.id" class="badge badge-sm font-semibold" :class="RARITY_BADGE[a.rarity]">{{ a.name }}</li>
-                                <li v-if="side.list.length > 10" class="badge badge-sm badge-ghost">+{{ side.list.length - 10 }}</li>
+                                <!-- Al pasar por encima (o con el foco), qué es y cuánto vale -->
+                                <li v-for="a in expanded[side.key] ? side.list : side.list.slice(0, 10)" :key="a.id" class="tooltip tooltip-top">
+                                    <div class="tooltip-content text-left text-xs leading-snug px-3 py-2 max-w-60">
+                                        <p class="font-black">{{ a.name }}</p>
+                                        <p v-if="a.description" class="opacity-85">{{ a.description }}</p>
+                                        <p class="opacity-70 mt-0.5">{{ ACHIEVEMENT_RARITY_LABELS[a.rarity] }} · {{ a.points }} pts</p>
+                                    </div>
+                                    <span tabindex="0" class="badge badge-sm font-semibold cursor-help focus-visible:outline-2 focus-visible:outline-primary" :class="RARITY_BADGE[a.rarity]">{{ a.name }}</span>
+                                </li>
+                                <li v-if="side.list.length > 10">
+                                    <button type="button" class="badge badge-sm badge-ghost cursor-pointer hover:bg-base-content/10" :aria-expanded="!!expanded[side.key]"
+                                        @click="expanded[side.key] = !expanded[side.key]">{{ expanded[side.key] ? "Ver menos" : `+${side.list.length - 10}` }}</button>
+                                </li>
                             </ul>
                             <p v-else class="text-xs text-base-content/60">Nada que no tenga el otro.</p>
                         </div>
                     </div>
                 </MatchCard>
             </div>
+
+            <!-- Partido a partido: cada partido que jugaron juntos, quién tuvo mejor nota y qué hizo cada uno -->
+            <MatchCard v-if="together.list.length" title="Partido a partido" hint="Los partidos que jugaron juntos, del más reciente al más antiguo. En negrita, la mejor nota de los dos.">
+                <template #actions>
+                    <span class="text-xs font-bold text-base-content/70">
+                        Mejor nota: <b class="text-(--a)">{{ together.better.a }}</b> – <b class="text-(--b)">{{ together.better.b }}</b>
+                    </span>
+                </template>
+                <ol class="flex flex-col divide-y divide-base-content/8">
+                    <li v-for="m in together.list.slice(0, shownGames)" :key="m.matchId" class="py-2.5 grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[7rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1">
+                        <a :href="routes.match(m.matchId)" class="min-w-0 sm:col-start-1 col-span-2 sm:col-span-1 flex items-center gap-2 text-xs hover:text-primary">
+                            <span class="size-2 rounded-full shrink-0" :class="m.result === 'win' ? 'bg-success' : m.result === 'loose' ? 'bg-error' : 'bg-base-content/40'" aria-hidden="true"></span>
+                            <span class="font-black tabular-nums">{{ m.score }}</span>
+                            <span class="text-base-content/60 truncate sm:hidden">{{ m.rival }} · {{ m.date }}</span>
+                            <span class="text-base-content/60 hidden sm:inline">{{ m.date }}</span>
+                        </a>
+                        <a :href="routes.match(m.matchId)" class="hidden sm:block text-sm text-base-content/70 truncate hover:text-primary">{{ m.rival }}</a>
+                        <span class="flex items-center gap-3 justify-end col-span-2 sm:col-span-1">
+                            <span class="flex items-center gap-1.5">
+                                <span class="text-[0.65rem] text-base-content/60 tabular-nums">{{ m.a.line }}</span>
+                                <span class="rounded-md px-1.5 py-0.5 text-xs tabular-nums" :class="[RATING_TONE(m.a.rating), m.win === 'a' ? 'font-black ring-2 ring-(--a)' : 'opacity-70']">{{ fmt(m.a.rating, 1) }}</span>
+                            </span>
+                            <span class="text-base-content/30 text-xs">vs</span>
+                            <span class="flex items-center gap-1.5">
+                                <span class="rounded-md px-1.5 py-0.5 text-xs tabular-nums" :class="[RATING_TONE(m.b.rating), m.win === 'b' ? 'font-black ring-2 ring-(--b)' : 'opacity-70']">{{ fmt(m.b.rating, 1) }}</span>
+                                <span class="text-[0.65rem] text-base-content/60 tabular-nums">{{ m.b.line }}</span>
+                            </span>
+                        </span>
+                    </li>
+                </ol>
+                <button v-if="together.list.length > shownGames" type="button" class="btn btn-sm btn-ghost self-center" @click="shownGames += 15">Ver más ({{ together.list.length - shownGames }})</button>
+            </MatchCard>
         </template>
 
-        <!-- Elegir jugador -->
-        <dialog ref="picker" class="modal modal-bottom sm:modal-middle" closedby="any" aria-labelledby="picker-title">
-            <div class="modal-box text-left max-h-[80svh] flex flex-col">
-                <h3 id="picker-title" class="font-black text-lg mb-3">Comparar a {{ profile.member.playerName }} con…</h3>
-                <label class="input input-sm w-full mb-3">
-                    <svg class="size-4 opacity-60" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
-                    <input ref="search" v-model="query" type="search" placeholder="Buscar jugador" aria-label="Buscar jugador" />
-                </label>
-                <ul class="overflow-y-auto -mx-2 flex flex-col">
-                    <li v-for="m in candidates" :key="m.playerId">
-                        <button type="button" class="w-full flex items-center gap-3 px-2 py-2 rounded-xl text-left hover:bg-base-content/5 focus-visible:bg-base-content/5 cursor-pointer" @click="choose(m.playerId)">
-                            <span class="size-9 rounded-full overflow-hidden bg-base-300 shrink-0"><img :src="imageFor(m.playerId)" alt="" loading="lazy" class="size-full object-cover object-top scale-[2] origin-top" @error="onPlayerImageError" /></span>
-                            <span class="font-bold truncate flex-1">{{ m.playerName }}</span>
-                            <span v-if="m.playerId === vsId" class="badge badge-sm badge-primary">Elegido</span>
-                        </button>
-                    </li>
-                    <li v-if="!candidates.length" class="text-sm text-base-content/60 px-2 py-4">Nadie coincide.</li>
-                </ul>
-                <div class="modal-action mt-3"><form method="dialog"><button class="btn btn-ghost btn-sm">Cerrar</button></form></div>
-            </div>
-            <form method="dialog" class="modal-backdrop"><button tabindex="-1">Cerrar</button></form>
-        </dialog>
+        <!-- Elegir jugador: el selector genérico (el del filtro de partidos), abierto desde los botones -->
+        <PlayerPickerModal
+            ref="picker"
+            :trigger="false"
+            :model-value="vsId || null"
+            :items="pickerItems"
+            :clearable="false"
+            zoom="2xl"
+            :fallback-image="PLAYER_PLACEHOLDER"
+            :title="`Comparar a ${profile.member.playerName} con…`"
+            search-placeholder="Buscar jugador…"
+            @update:model-value="(v) => { if (typeof v === 'string' && v) vsId = v }"
+        />
     </div>
 </template>
 
@@ -156,7 +237,7 @@
  * enfrentadas stat a stat (por partido o totales), lo que han jugado juntos y sus logros.
  * Los dos con el mismo filtro de oficiales / amistosos que la ficha.
  */
-import { computed, nextTick, onMounted, ref, watch } from "vue"
+import { computed, onMounted, onUnmounted, ref, watch } from "vue"
 import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, RadarController, type ChartOptions } from "chart.js"
 import { Radar } from "vue-chartjs"
 import { ACHIEVEMENT_RARITIES, ACHIEVEMENT_RARITY_LABELS, type AchievementRarity } from "@trueno-proclub-services/shared"
@@ -172,6 +253,11 @@ import PlayerStatsEntity from "@/model/PlayerStatsEntity"
 import PlayerProfileEntity from "@/model/PlayerProfileEntity"
 import type ClubMatchEntity from "@/model/match/ClubMatchEntity"
 import MatchCard from "@/components/match/detail/MatchCard.vue"
+import OptionToggle, { type ToggleOption } from "@/components/ui/OptionToggle.vue"
+import { radarAxisMax, radarNorm, type RadarScale } from "@/lib/radarScale"
+import PlayerPickerModal, { type PickerItem } from "@/components/ui/PlayerPickerModal.vue"
+import { usePlayerStats } from "@/composables/usePlayerStats"
+import { PLAYER_PLACEHOLDER } from "@/lib/playerImage"
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, RadarController)
 useSiteFontInCharts()
@@ -206,26 +292,28 @@ async function loadOther(id: string) {
 watch(vsId, (id) => { setQueryParams({ vs: id || null }); loadOther(id) }, { immediate: true })
 onMounted(() => loadMembers())
 
-// ── Selector ──
-const picker = ref<HTMLDialogElement | null>(null)
-const search = ref<HTMLInputElement | null>(null)
-const query = ref("")
-async function openPicker() {
-    query.value = ""
-    picker.value?.showModal()
-    await nextTick()
-    search.value?.focus()
+// ── Selector (el genérico; con posiciones para su filtro) ──
+const picker = ref<InstanceType<typeof PlayerPickerModal> | null>(null)
+const openPicker = () => picker.value?.open()
+const { positionsOf, load: loadPositions } = usePlayerStats()
+onMounted(() => loadPositions())
+const pickerItems = computed<PickerItem[]>(() => members.value
+    .filter((m) => m.playerId !== props.profile.member.playerId)
+    .sort((a, b) => (b.lastSeenAt ?? 0) - (a.lastSeenAt ?? 0))
+    .map((m) => ({ id: m.playerId, name: m.playerName, image: m.imageUrl, positions: positionsOf(m.playerId), member: m })))
+
+// ── Barra compacta pegada (aparece cuando la cabecera queda por debajo de las pestañas) ──
+const head = ref<HTMLElement | null>(null)
+const miniVisible = ref(false)
+const checkMini = () => {
+    const el = head.value
+    if (!el) { miniVisible.value = false; return }
+    const top = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nav-h") || "64") + parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--tabs-h") || "76")
+    miniVisible.value = el.getBoundingClientRect().bottom < top
 }
-function choose(id: string) {
-    vsId.value = id
-    picker.value?.close()
-}
-const candidates = computed(() => {
-    const q = query.value.trim().toLowerCase()
-    return members.value
-        .filter((m) => m.playerId !== props.profile.member.playerId && (!q || m.playerName.toLowerCase().includes(q)))
-        .sort((a, b) => (b.lastSeenAt ?? 0) - (a.lastSeenAt ?? 0))
-})
+onMounted(() => { addEventListener("scroll", checkMini, { passive: true }); checkMini() })
+onUnmounted(() => removeEventListener("scroll", checkMini))
+const toTop = () => head.value?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" })
 
 // ── Stats con el filtro de la ficha ──
 function statsOf(p: PlayerProfileEntity): PlayerStatsEntity {
@@ -304,7 +392,16 @@ const rows = computed(() => {
 const score = computed(() => ({ a: rows.value.filter((r) => r.win === "a").length, b: rows.value.filter((r) => r.win === "b").length }))
 
 // ── Radar ──
-const norm = (v: number, max: number) => Math.max(0, Math.min(100, ((Number.isFinite(v) ? v : 0) / max) * 100))
+const scale = ref<RadarScale>("full")
+const SCALE_OPTIONS: ToggleOption<RadarScale>[] = [{ value: "full", label: "Completa" }, { value: "fit", label: "Ajustada" }]
+const hovered = ref<number | null>(null)
+const radarChart = ref<{ chart?: ChartJS } | null>(null)
+watch(hovered, (i) => {
+    const chart = radarChart.value?.chart
+    if (!chart) return
+    chart.setActiveElements(i === null ? [] : chart.data.datasets.map((_, d) => ({ datasetIndex: d, index: i })))
+    chart.update("none")
+})
 const RADAR = computed(() => [
     { label: "Nota", get: val("ratingAve"), max: 10 },
     { label: "G+A/p", get: per("goalsPlusAssists"), max: 1.5 },
@@ -315,12 +412,19 @@ const RADAR = computed(() => [
     { label: "% MVP", get: val("manOfTheMatchPercent"), max: 30 },
     { label: "% Victorias", get: val("winRate"), max: 100 },
 ])
+const axisMax = computed(() => radarAxisMax(sides.value.map((s) => RADAR.value.map((m) => m.get(s.stats))), RADAR.value.map((m) => m.max), scale.value))
+const fmtAxis = (m: { max: number }, v: number) => (m.max === 100 || m.max === 30 ? `${fmt(v)}%` : fmt(v, m.max === 10 ? 1 : 2))
+const radarRows = computed(() => sides.value.length < 2 ? [] : RADAR.value.map((m) => {
+    const a = m.get(sides.value[0].stats), b = m.get(sides.value[1].stats)
+    const close = Math.abs(a - b) < (m.max === 10 ? 0.05 : m.max === 1.5 ? 0.005 : 0.5)
+    return { label: m.label, a: fmtAxis(m, a), b: fmtAxis(m, b), win: close ? null : a > b ? "a" : "b" }
+}))
 const B_COLOR = "#5b8def"
 const radarData = computed(() => ({
     labels: RADAR.value.map((m) => m.label),
     datasets: sides.value.map((s, i) => ({
         label: s.profile.member.playerName,
-        data: RADAR.value.map((m) => norm(m.get(s.stats), m.max)),
+        data: RADAR.value.map((m, k) => radarNorm(m.get(s.stats), axisMax.value[k])),
         fill: true,
         backgroundColor: hexToRgba(i === 0 ? CLUB.colors.primary : B_COLOR, 0.22),
         borderColor: i === 0 ? CLUB.colors.primary : B_COLOR,
@@ -328,6 +432,8 @@ const radarData = computed(() => ({
         pointBackgroundColor: i === 0 ? CLUB.colors.primary : B_COLOR,
         pointBorderColor: "#fff",
         pointRadius: 3,
+        pointHoverRadius: 7,
+        pointHoverBorderWidth: 2,
     })),
 }))
 const radarOptions = computed<ChartOptions<"radar">>(() => ({
@@ -335,18 +441,20 @@ const radarOptions = computed<ChartOptions<"radar">>(() => ({
     maintainAspectRatio: false,
     animation: { duration: 600, easing: "easeOutQuart" as const },
     interaction: { mode: "index" as const, intersect: false },
+    onHover: (_e, els) => { const i = els[0]?.index ?? null; if (hovered.value !== i) hovered.value = i },
     scales: {
         r: {
             type: "radialLinear", suggestedMin: 0, suggestedMax: 100,
             angleLines: { color: "rgba(166, 173, 187, 0.2)" },
             grid: { color: "rgba(166, 173, 187, 0.15)", circular: true },
             ticks: { display: false, stepSize: 25 },
-            pointLabels: { font: { size: 11, weight: "bold" }, color: "#A6ADBB", padding: 6 },
+            pointLabels: { font: { size: 11, weight: "bold" }, color: (ctx) => (ctx.index === hovered.value ? CLUB.colors.primary : "#A6ADBB"), padding: 6 },
         },
     },
     plugins: {
         legend: { display: false },
         tooltip: {
+            enabled: typeof window !== "undefined" && window.innerWidth < 1024,
             backgroundColor: "#1D232A", padding: 10, cornerRadius: 8,
             callbacks: {
                 label: (ctx) => {
@@ -362,7 +470,8 @@ const radarOptions = computed<ChartOptions<"radar">>(() => ({
 // ── Juntos (los partidos de este jugador en los que también jugó el otro, con el filtro) ──
 const together = computed(() => {
     const idA = props.profile.member.playerId, idB = other.value?.member.playerId
-    const t = { games: 0, wins: 0, ties: 0, losses: 0, goalsFor: 0, a: { goals: 0, assists: 0, rating: 0 }, b: { goals: 0, assists: 0, rating: 0 }, last: null as null | { matchId: number; label: string } }
+    type Game = { matchId: number; ts: number; score: string; rival: string; date: string; result: string; win: "a" | "b" | null; a: { rating: number; line: string }; b: { rating: number; line: string } }
+    const t = { games: 0, wins: 0, ties: 0, losses: 0, goalsFor: 0, a: { goals: 0, assists: 0, rating: 0 }, b: { goals: 0, assists: 0, rating: 0 }, last: null as null | { matchId: number; label: string }, list: [] as Game[], better: { a: 0, b: 0 } }
     let lastTs = -1
     if (!idB) return t
     for (const m of props.matches ?? []) {
@@ -378,23 +487,44 @@ const together = computed(() => {
         t.goalsFor += m.ourClub.matchStats.goals
         t.a.goals += pa.goals; t.a.assists += pa.assists; t.a.rating += pa.rating
         t.b.goals += pb.goals; t.b.assists += pb.assists; t.b.rating += pb.rating
+        // Partido a partido: la mejor nota (empate si son iguales) y goles / asistencias de cada uno
+        const line = (p: { goals: number; assists: number }) => [p.goals ? `${p.goals}G` : "", p.assists ? `${p.assists}A` : ""].filter(Boolean).join(" ")
+        const win = Math.abs(pa.rating - pb.rating) < 0.05 ? null : pa.rating > pb.rating ? "a" : "b"
+        if (win) t.better[win]++
+        t.list.push({
+            matchId: m.matchId, ts: m.timestamp, result: m.result, win,
+            score: `${m.ourClub.matchStats.goals}–${m.opponentClub.matchStats.goals}`, rival: m.opponentClub.name,
+            date: new Date(m.timestamp * 1000).toLocaleDateString("es-ES", { day: "numeric", month: "short" }),
+            a: { rating: pa.rating, line: line(pa) }, b: { rating: pb.rating, line: line(pb) },
+        })
         if (m.timestamp > lastTs) {
             lastTs = m.timestamp
             t.last = { matchId: m.matchId, label: `${m.ourClub.matchStats.goals}–${m.opponentClub.matchStats.goals} contra ${m.opponentClub.name}` }
         }
     }
+    t.list.sort((x, y) => y.ts - x.ts)
     return t
 })
+const shownGames = ref(10)
+const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" : r >= 7 ? "bg-lime-500 text-black" : r >= 6 ? "bg-warning text-warning-content" : "bg-error text-error-content")
 
 // ── Logros (de club, en este club) ──
-type Ach = { id: string; name: string; rarity: AchievementRarity; points: number }
+type Ach = { id: string; name: string; description: string; rarity: AchievementRarity; points: number }
+type AchDef = { name: string; description?: string; rarity: AchievementRarity; points: number; hidden?: boolean }
 const achOf = (p: PlayerProfileEntity): Ach[] => {
     const byId = new Map<string, Ach>()
-    for (const a of p.achievements as unknown as { achievementId: string; definition?: { name: string; rarity: AchievementRarity; points: number } }[]) {
-        if (!byId.has(a.achievementId)) byId.set(a.achievementId, { id: a.achievementId, name: a.definition?.name ?? a.achievementId, rarity: a.definition?.rarity ?? "common", points: a.definition?.points ?? 0 })
+    for (const a of p.achievements as unknown as { achievementId: string; definition?: AchDef }[]) {
+        if (byId.has(a.achievementId)) continue
+        const d = a.definition
+        // Los ocultos no se destripan aquí (en la pestaña Logros se desvelan a quien también los tiene)
+        byId.set(a.achievementId, d?.hidden
+            ? { id: a.achievementId, name: "Logro oculto", description: "Uno de los ocultos: se ve en la pestaña Logros si tú también lo tienes.", rarity: d.rarity, points: d.points }
+            : { id: a.achievementId, name: d?.name ?? a.achievementId, description: d?.description ?? "", rarity: d?.rarity ?? "common", points: d?.points ?? 0 })
     }
     return [...byId.values()]
 }
+/** "Solo X": se ven los 10 primeros y "+N" despliega el resto */
+const expanded = ref<Record<string, boolean>>({})
 const achA = computed(() => achOf(props.profile))
 const achB = computed(() => (other.value ? achOf(other.value) : []))
 const rarityRows = computed(() => [...ACHIEVEMENT_RARITIES].reverse().map((r) => ({
@@ -420,6 +550,16 @@ const RARITY_BADGE: Record<AchievementRarity, string> = {
 </script>
 
 <style scoped>
+/* Barra compacta: pegada justo bajo las pestañas; se despliega (alto y opacidad) al pasar la cabecera */
+.vs-mini {
+    top: calc(var(--nav-h, 4rem) + var(--tabs-h, 4.75rem) - 1px);
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: max-height 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s;
+}
+.vs-mini[data-show="true"] { max-height: 4rem; opacity: 1; pointer-events: auto; }
+@media (prefers-reduced-motion: reduce) { .vs-mini { transition: none; } }
 .bar { transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
 @media (prefers-reduced-motion: no-preference) {
     .bar { transform-origin: right; animation: grow 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--k, 0) * 35ms); }

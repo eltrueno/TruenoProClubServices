@@ -1,10 +1,13 @@
 <template>
     <div class="flex flex-col gap-4 sm:gap-6 py-2 text-left">
-        <!-- Controles: periodo y con qué se compara (pegados bajo la barra de pestañas al bajar) -->
-        <div class="stats-controls sm:sticky z-30 flex flex-wrap items-center justify-between gap-3 rounded-2xl p-2.5 sm:p-3 shadow-sm
+        <!-- Controles: periodo y con qué se compara. Al bajar se pegan justo bajo la barra de pestañas y se
+             acoplan a ella (mismo fondo, mismo ancho, sin esquinas arriba): parecen su segunda fila -->
+        <div ref="controls" class="stats-controls sm:sticky z-30 flex flex-wrap items-center justify-between gap-3 p-2.5 sm:p-3 transition-[border-radius,margin,box-shadow,background-color] duration-300
                 [--ctl-bg:color-mix(in_oklab,var(--color-base-200)_94%,var(--color-base-content))]
-                dark:[--ctl-bg:color-mix(in_oklab,var(--color-base-200)_92%,var(--color-base-content))]
-                bg-[color-mix(in_oklab,var(--ctl-bg)_92%,transparent)] backdrop-blur-md">
+                dark:[--ctl-bg:color-mix(in_oklab,var(--color-base-200)_92%,var(--color-base-content))]"
+            :class="controlsStuck
+                ? 'rounded-b-2xl rounded-t-none -mx-2 bg-[color-mix(in_oklab,var(--ctl-bg)_88%,transparent)] backdrop-blur-md shadow-lg shadow-black/25'
+                : 'rounded-2xl bg-(--ctl-bg) shadow-sm'">
             <div class="flex items-center gap-2 min-w-0">
                 <span class="text-[0.65rem] uppercase tracking-widest font-black text-base-content/60 shrink-0">Periodo</span>
                 <div role="group" aria-label="Periodo" class="join">
@@ -28,10 +31,13 @@
         </p>
 
         <!-- Perfil: radar frente a la referencia, y dónde destaca / flojea -->
-        <MatchCard title="Su perfil" :hint="`${period === 'total' ? 'Todo su historial' : PERIODS.find((p) => p.key === period)?.label} contra ${refLong.toLowerCase()}.`">
-            <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-5 lg:gap-8 items-center">
+        <MatchCard title="Su perfil" :hint="`${period === 'total' ? 'Todo su historial' : PERIODS.find((p) => p.key === period)?.label} contra ${refLong.toLowerCase()}.${scale === 'fit' ? ' Escala ajustada: cada eje llega hasta el mayor de los dos.' : ''}`">
+            <template #actions>
+                <OptionToggle v-model="scale" :options="SCALE_OPTIONS" size="sm" />
+            </template>
+            <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-5 lg:gap-8 items-center">
                 <div>
-                    <div ref="radarCard" class="relative w-full max-w-md mx-auto aspect-square">
+                    <div ref="radarCard" class="relative w-full max-w-lg mx-auto aspect-square" @mouseleave="hovered = null">
                         <Radar ref="radarChart" :data="radarData" :options="radarOptions" />
                     </div>
                     <div class="flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs font-bold text-base-content/70 mt-2">
@@ -40,9 +46,31 @@
                     </div>
                 </div>
 
-                <div class="flex flex-col gap-4">
+                <div class="flex flex-col gap-5">
+                    <!-- Los ocho ejes: al pasar por una fila se marca en el radar, y al revés -->
+                    <table class="w-full text-sm" aria-label="Valores del radar">
+                        <thead>
+                            <tr class="text-[0.65rem] uppercase tracking-wider text-base-content/50">
+                                <th class="text-left font-black pb-1.5"></th>
+                                <th class="text-right font-black pb-1.5">{{ periodLabel }}</th>
+                                <th class="text-right font-black pb-1.5 truncate max-w-28">{{ refShort }}</th>
+                                <th class="w-14"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(a, i) in radarRows" :key="a.label" class="axis-row cursor-default transition-colors"
+                                :class="hovered === i ? 'bg-primary/12' : 'hover:bg-base-content/5'"
+                                @mouseenter="hovered = i" @mouseleave="hovered = null">
+                                <td class="py-1.5 pl-2 rounded-l-lg font-bold" :class="hovered === i && 'text-primary'">{{ a.label }}</td>
+                                <td class="py-1.5 text-right font-black tabular-nums">{{ a.mine }}</td>
+                                <td class="py-1.5 text-right tabular-nums text-base-content/60">{{ a.ref }}</td>
+                                <td class="py-1.5 pr-2 rounded-r-lg text-right text-xs font-bold tabular-nums" :class="a.tone">{{ a.diff }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
                     <div v-if="!refStats" class="text-sm text-base-content/60">Cargando las medias…</div>
-                    <template v-else>
+                    <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <p class="text-[0.7rem] uppercase tracking-widest font-black text-success mb-2">Donde más destaca</p>
                             <ul v-if="highlights.best.length" class="flex flex-col gap-1.5">
@@ -63,7 +91,7 @@
                             </ul>
                             <p v-else class="text-sm text-base-content/60">En nada por debajo. Ahí es nada.</p>
                         </div>
-                    </template>
+                    </div>
                 </div>
             </div>
         </MatchCard>
@@ -73,7 +101,6 @@
             <MatchCard v-for="g in groups" :key="g.key" :title="g.title" :hint="g.hint">
                 <template #actions>
                     <GoalIcon v-if="g.icon === 'goal'" class="size-6 text-primary" />
-                    <MvpIcon v-else-if="g.icon === 'mvp'" class="size-6" />
                     <svg v-else class="size-6 text-primary" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="KPI_ICONS[g.icon as KpiIcon]"></svg>
                 </template>
                 <dl class="flex flex-col">
@@ -86,6 +113,13 @@
                             <dd class="text-xs font-bold tabular-nums text-right" :class="diffTone(r)">
                                 <span :key="`${reference}-${period}`" class="delta inline-block">{{ r.ref === null ? "" : signed(r) }}</span>
                             </dd>
+                        </div>
+                        <!-- Jugados: reparto de victorias, empates y derrotas -->
+                        <div v-if="r.record && r.value" class="flex h-1.5 mt-1.5 rounded-full overflow-hidden bg-base-content/8"
+                            :title="`${r.record.w} victorias · ${r.record.t} empates · ${r.record.l} derrotas`">
+                            <span class="stat-bar bg-success" :style="{ width: `${(r.record.w / r.value) * 100}%` }"></span>
+                            <span class="stat-bar bg-base-content/35" :style="{ width: `${(r.record.t / r.value) * 100}%` }"></span>
+                            <span class="stat-bar bg-error" :style="{ width: `${(r.record.l / r.value) * 100}%` }"></span>
                         </div>
                         <!-- Barra con la raya de la referencia; al pasar por encima, el detalle -->
                         <div v-if="r.bar" tabindex="0" class="tooltip tooltip-top w-full block mt-1.5 py-1 -my-1 cursor-help rounded-full focus-visible:outline-2 focus-visible:outline-primary">
@@ -118,7 +152,7 @@
  * - Sus números por bloques: total y por partido en una fila, con barra, raya de la referencia,
  *   diferencia (verde = mejor, también en lo que cuanto menos mejor) y tooltip con el detalle.
  */
-import { computed, onMounted, onUnmounted, ref } from "vue"
+import { computed, onMounted, onUnmounted, ref, watch } from "vue"
 import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, RadarController, type ChartOptions } from "chart.js"
 import { Radar } from "vue-chartjs"
 import { translatePosition, Position } from "@/i18n/translations"
@@ -133,8 +167,9 @@ import AverageStatsEntity from "@/model/AverageStatsEntity"
 import type ClubMatchEntity from "@/model/match/ClubMatchEntity"
 import type PlayerProfileEntity from "@/model/PlayerProfileEntity"
 import MatchCard from "@/components/match/detail/MatchCard.vue"
+import OptionToggle, { type ToggleOption } from "@/components/ui/OptionToggle.vue"
+import { radarAxisMax, radarNorm, type RadarScale } from "@/lib/radarScale"
 import GoalIcon from "@/components/ui/GoalIcon.vue"
-import MvpIcon from "@/components/ui/MvpIcon.vue"
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, RadarController)
 useSiteFontInCharts()
@@ -193,6 +228,17 @@ const statsFor = (p: Period) => (p === "last5" ? last5.value : p === "last10" ? 
 const current = computed(() => statsFor(period.value))
 const periodLabel = computed(() => PERIODS.find((p) => p.key === period.value)!.label)
 
+// ── Controles pegados bajo la barra de pestañas ──
+const controls = ref<HTMLElement | null>(null)
+const controlsStuck = ref(false)
+const checkStuck = () => {
+    const el = controls.value
+    if (!el || getComputedStyle(el).position !== "sticky") { controlsStuck.value = false; return }
+    controlsStuck.value = el.getBoundingClientRect().top <= parseFloat(getComputedStyle(el).top) + 1
+}
+onMounted(() => { addEventListener("scroll", checkStuck, { passive: true }); addEventListener("resize", checkStuck, { passive: true }); checkStuck() })
+onUnmounted(() => { removeEventListener("scroll", checkStuck); removeEventListener("resize", checkStuck) })
+
 // ── Referencia ──
 type RefKey = "position" | "club" | "other"
 const reference = ref<RefKey>("position")
@@ -218,6 +264,8 @@ const refStats = computed<Record<string, any> | null>(() => {
     const key = reference.value === "club" ? "general" : position.value
     return averages.value.find((a) => a.position === key) ?? null
 })
+/** Corto, para la cabecera de la tabla del radar */
+const refShort = computed(() => (reference.value === "club" ? "Club" : reference.value === "position" ? translatePosition(position.value) : otherPeriod.value === "total" ? "Histórico" : "Últ. 5"))
 const refLong = computed(() =>
     reference.value === "club" ? "La media del club"
         : reference.value === "position" ? `La media de un ${translatePosition(position.value).toLowerCase()}`
@@ -241,6 +289,8 @@ type Row = {
     max?: number
     /** no cuenta para "destaca / flojea" (p. ej. rojas: no verlas no es destacar) */
     noHighlight?: boolean
+    /** barra de victorias / empates / derrotas (en "Jugados") */
+    record?: { w: number; t: number; l: number }
 }
 const num = (n: number | undefined | null, d = 0) => (Number.isFinite(n ?? NaN) ? (n as number) : 0).toLocaleString("es-ES", { minimumFractionDigits: d, maximumFractionDigits: d })
 const perMatch = (total: number, games: number) => (games ? total / games : 0)
@@ -266,8 +316,9 @@ const groups = computed<Group[]>(() => {
     const g = s.gamesPlayed
     const out: Group[] = [
         {
-            key: "games", title: "Partidos", hint: "Cuánto juega y cómo le va.", icon: "mvp", rows: [
-                { label: "Jugados", value: g, ref: null, display: num(g), sub: `${num(s.minutesPlayed)} min` },
+            key: "games", title: "Partidos", hint: "Cuánto juega y cómo le va.", icon: "games", rows: [
+                // Sin media con la que comparar: la barra es el reparto de victorias, empates y derrotas
+                { label: "Jugados", value: g, ref: null, display: num(g), sub: `${num(s.minutesPlayed)} min`, record: { w: s.wins, t: s.ties, l: s.losses } },
                 { label: "Nota media", value: s.ratingAve || 0, ref: refOf("ratingAve"), display: num(s.ratingAve, 1), decimals: 1, bar: true, max: 10 },
                 pctRow("% victorias", s.winRate, "winRate", `${s.wins}V · ${s.ties}E · ${s.losses}D`),
                 pctRow("% MVP", s.manOfTheMatchPercent, "manOfTheMatchPercent", `${num(s.manOfTheMatch)} MVP`),
@@ -302,8 +353,9 @@ const groups = computed<Group[]>(() => {
     if (isGK.value || s.saves > 0) {
         out.push({
             key: "gk", title: "Portería", hint: "Lo que para de lo que le llega.", icon: "saves", rows: [
-                pgRow("Paradas", s.saves, g, "savesPerMatch", "saves", 1),
-                pctRow("% paradas", s.savesPercent, "savesPercent", `${num(s.saves)} paradas`),
+                // Si no es portero, sus paradas sueltas no cuentan para "destaca / flojea" (la media de su posición es ~0)
+                { ...pgRow("Paradas", s.saves, g, "savesPerMatch", "saves", 1), noHighlight: !isGK.value },
+                { ...pctRow("% paradas", s.savesPercent, "savesPercent", `${num(s.saves)} paradas`), noHighlight: !isGK.value },
             ],
         })
     }
@@ -341,7 +393,15 @@ const highlights = computed(() => {
 })
 
 // ── Radar ──
-const norm = (v: number | undefined, max: number) => Math.max(0, Math.min(100, ((Number.isFinite(v) ? v! : 0) / max) * 100))
+/** Escala del radar: completa (0 al máximo razonable) o ajustada (hasta el mayor de los dos en cada eje) */
+const scale = ref<RadarScale>("full")
+const SCALE_OPTIONS: ToggleOption<RadarScale>[] = [{ value: "full", label: "Completa" }, { value: "fit", label: "Ajustada" }]
+const axisMax = computed(() => {
+    const s = current.value as unknown as Record<string, number>
+    const r = refStats.value
+    const series = [RADAR.value.map((m) => s[m.key]), ...(r ? [RADAR.value.map((m) => r[m.key])] : [])]
+    return radarAxisMax(series, RADAR.value.map((m) => m.max), scale.value)
+})
 const RADAR = computed(() => [
     { label: "Nota", key: "ratingAve", max: 10 },
     { label: "G+A/p", key: "goalsPlusAssistsPerMatch", max: 1.5 },
@@ -352,6 +412,36 @@ const RADAR = computed(() => [
     { label: "% MVP", key: "manOfTheMatchPercent", max: 30 },
     { label: "% Victorias", key: "winRate", max: 100 },
 ])
+/** Eje marcado: por el radar o por su fila de la tabla */
+const hovered = ref<number | null>(null)
+const radarChart = ref<{ chart?: ChartJS } | null>(null)
+const fmtAxis = (key: string, v: number) => (key === "ratingAve" ? num(v, 1) : key === "goalsPlusAssistsPerMatch" ? num(v, 2) : `${num(v)}%`)
+const radarRows = computed(() => {
+    const s = current.value as unknown as Record<string, number>
+    const r = refStats.value
+    return RADAR.value.map((m) => {
+        const mine = Number.isFinite(s[m.key]) ? s[m.key] : 0
+        const ref = r && Number.isFinite(r[m.key]) ? r[m.key] : null
+        const d = ref === null ? null : mine - ref
+        const pctish = m.key !== "ratingAve" && m.key !== "goalsPlusAssistsPerMatch"
+        const close = d === null || Math.abs(d) < (pctish ? 0.5 : 0.005)
+        return {
+            label: m.label,
+            mine: fmtAxis(m.key, mine),
+            ref: ref === null ? "—" : fmtAxis(m.key, ref),
+            diff: d === null ? "" : `${d > 0 ? "+" : d < 0 ? "−" : "±"}${pctish ? num(Math.abs(d)) : num(Math.abs(d), m.key === "ratingAve" ? 1 : 2)}`,
+            tone: close ? "text-base-content/40" : d! > 0 ? "text-success" : "text-error",
+        }
+    })
+})
+// Fila de la tabla → punto del radar (los dos conjuntos) agrandado
+watch(hovered, (i) => {
+    const chart = radarChart.value?.chart
+    if (!chart) return
+    chart.setActiveElements(i === null ? [] : chart.data.datasets.map((_, d) => ({ datasetIndex: d, index: i })))
+    chart.update("none")
+})
+
 const isMobile = ref(false)
 const updateMobile = () => { isMobile.value = window.innerWidth < 640 }
 onMounted(() => { updateMobile(); addEventListener("resize", updateMobile) })
@@ -364,14 +454,14 @@ const radarData = computed(() => {
         labels: RADAR.value.map((m) => m.label),
         datasets: [
             {
-                label: periodLabel.value, data: RADAR.value.map((m) => norm(s[m.key], m.max)), fill: true,
+                label: periodLabel.value, data: RADAR.value.map((m, k) => radarNorm(s[m.key], axisMax.value[k])), fill: true,
                 backgroundColor: hexToRgba(CLUB.colors.primary, 0.3), borderColor: CLUB.colors.primary, borderWidth: 2.5,
-                pointBackgroundColor: CLUB.colors.primary, pointBorderColor: "#fff", pointRadius: 3.5, order: 1,
+                pointBackgroundColor: CLUB.colors.primary, pointBorderColor: "#fff", pointRadius: 3.5, pointHoverRadius: 7, pointHoverBorderWidth: 2, order: 1,
             },
             ...(r ? [{
-                label: refLong.value, data: RADAR.value.map((m) => norm(r[m.key], m.max)), fill: false,
+                label: refLong.value, data: RADAR.value.map((m, k) => radarNorm(r[m.key], axisMax.value[k])), fill: false,
                 backgroundColor: "transparent", borderColor: "rgba(200, 205, 215, 0.95)", borderWidth: 2.5, borderDash: [6, 4],
-                pointRadius: 0, pointHoverRadius: 3, order: 2,
+                pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: "rgba(200, 205, 215, 0.95)", order: 2,
             }] : []),
         ],
     }
@@ -382,19 +472,28 @@ const radarOptions = computed<ChartOptions<"radar">>(() => ({
     responsive: true,
     maintainAspectRatio: false,
     animation: radarInView.value ? { duration: 700, easing: "easeOutQuart" as const } : { duration: 0 },
+    // Basta con acercarse a un eje (no hace falta acertar en el punto); la tabla de al lado dice los valores
     interaction: { mode: "index" as const, intersect: false },
+    onHover: (_e, els) => { const i = els[0]?.index ?? null; if (hovered.value !== i) hovered.value = i },
     scales: {
         r: {
             type: "radialLinear", suggestedMin: 0, suggestedMax: 100,
             angleLines: { color: "rgba(166, 173, 187, 0.2)" },
             grid: { color: "rgba(166, 173, 187, 0.15)", circular: true },
             ticks: { display: false, stepSize: 25 },
-            pointLabels: { display: true, font: { size: isMobile.value ? 10 : 12, weight: "bold" }, color: "#A6ADBB", padding: isMobile.value ? 4 : 8 },
+            pointLabels: {
+                display: true,
+                font: { size: isMobile.value ? 10 : 12, weight: "bold" },
+                // El eje marcado, en el color del club
+                color: (ctx) => (ctx.index === hovered.value ? CLUB.colors.primary : "#A6ADBB"),
+                padding: isMobile.value ? 4 : 8,
+            },
         },
     },
     plugins: {
         legend: { display: false },
         tooltip: {
+            enabled: isMobile.value,
             backgroundColor: "#1D232A", padding: 10, cornerRadius: 8, displayColors: true,
             callbacks: {
                 label: (ctx) => {
@@ -410,7 +509,8 @@ const radarOptions = computed<ChartOptions<"radar">>(() => ({
 
 <style scoped>
 /* Pegados justo bajo la barra de pestañas de la ficha (que va bajo el menú) */
-.stats-controls { top: calc(var(--nav-h, 4rem) + 4.75rem); }
+/* Justo bajo la barra de pestañas de la ficha (--tabs-h lo mide PlayerDetail); 1px de solape para que no haya rendija */
+.stats-controls { top: calc(var(--nav-h, 4rem) + var(--tabs-h, 4.75rem) - 1px); }
 .stat-bar { transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
 .ref-mark { transition: left 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
 @media (prefers-reduced-motion: no-preference) {
