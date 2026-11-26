@@ -204,7 +204,7 @@
                         :positionFilter="posFilter"
                     />
                     <PlayerDetailAchievements v-else-if="activeTab === 'achievements'" key="achievements" :profile="playerProfile" />
-                    <PlayerDetailWIP v-else key="compare" title="Comparador" icon="⚔️" />
+                    <PlayerDetailCompare v-else key="compare" :profile="playerProfile" :matches="playerMatches" :current-filter="filterMode" />
                 </Transition>
             </div>
         </section>
@@ -254,7 +254,7 @@
     // Subcomponents
     import PlayerDetailStats from "./PlayerDetailStats.vue";
     import PlayerDetailProgression from "./PlayerDetailProgression.vue";
-    import PlayerDetailWIP from "./PlayerDetailWIP.vue";
+    import PlayerDetailCompare from "./PlayerDetailCompare.vue";
     import PlayerDetailAchievements from "./PlayerDetailAchievements.vue";
     import PlayerDetailSkeleton from "./PlayerDetailSkeleton.vue";
 
