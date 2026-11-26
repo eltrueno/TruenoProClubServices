@@ -16,6 +16,7 @@ import { useMembers } from "@/composables/useMembers"
 import { onPlayerImageError } from "@/lib/playerImage"
 import { routes } from "@/lib/query"
 import MatchPitch from "./MatchPitch.vue"
+import { KPI_ICONS } from "@/lib/kpiIcons"
 import MatchCard from "./MatchCard.vue"
 import MvpIcon from "@/components/ui/MvpIcon.vue"
 import AssistIcon from "@/components/ui/AssistIcon.vue"
@@ -122,31 +123,39 @@ const rows = computed<Row[]>(() => {
 // ── Sus números del partido (todo lo que da EA de cada jugador) y dónde queda en su equipo ──
 const teamPlayers = computed(() => (side.value === "us" ? props.match.ourClub.players : props.match.opponentClub.players))
 const pctOf = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : null)
-type Tile = { label: string; value: string; sub?: string }
-const numbers = computed<Tile[]>(() => {
+type StatRow = { label: string; value: string; sub?: string; /** 0-100: barra de acierto */ pct?: number | null }
+type StatGroup = { key: string; title: string; icon: string; rows: StatRow[] }
+/** Sus números por bloques (ataque, balón, defensa, portería), como una hoja de stats */
+const groups = computed<StatGroup[]>(() => {
     const p = player.value
     if (!p) return []
     const team = teamPlayers.value
     const tot = (f: (x: MatchPlayerEntity) => number) => team.reduce((s, x) => s + f(x), 0)
     const share = (v: number, f: (x: MatchPlayerEntity) => number) => { const t = tot(f); return v > 0 && t ? `${Math.round((v / t) * 100)}% del equipo` : undefined }
-    const list: Tile[] = [
-        { label: "Minutos", value: `${Math.round(p.minutesPlayed)}'` },
-        { label: "Goles + asist.", value: String(p.goals + p.assists), sub: share(p.goals + p.assists, (x) => x.goals + x.assists) },
-        { label: "Tiros", value: String(p.shots), sub: p.shots ? `${pctOf(p.goals, p.shots)}% acabaron en gol` : share(p.shots, (x) => x.shots) },
-        { label: "Pases buenos", value: `${p.passesSuccess}/${p.passesMade}`, sub: share(p.passesMade, (x) => x.passesMade) },
-        { label: "Pases fallados", value: String(Math.max(0, p.passesMade - p.passesSuccess)) },
-        { label: "Entradas ganadas", value: `${p.tacklesSuccess}/${p.tacklesMade}`, sub: share(p.tacklesSuccess, (x) => x.tacklesSuccess) },
-    ]
     const per90 = (n: number) => (p.minutesPlayed > 0 ? fmt((n / p.minutesPlayed) * 90, 1) : "—")
-    list.push({ label: "Pases por 90'", value: per90(p.passesMade), sub: `${per90(p.tacklesMade)} entradas por 90'` })
+    const out: StatGroup[] = [
+        { key: "attack", title: "Ataque", icon: KPI_ICONS.goals, rows: [
+            { label: "Goles + asistencias", value: String(p.goals + p.assists), sub: share(p.goals + p.assists, (x) => x.goals + x.assists) },
+            { label: "Tiros", value: String(p.shots), sub: p.shots ? `${p.goals} gol${p.goals === 1 ? "" : "es"}` : undefined, pct: pctOf(p.goals, p.shots) },
+        ] },
+        { key: "ball", title: "Con el balón", icon: KPI_ICONS.passes, rows: [
+            { label: "Pases buenos", value: `${p.passesSuccess}/${p.passesMade}`, sub: share(p.passesMade, (x) => x.passesMade), pct: pctOf(p.passesSuccess, p.passesMade) },
+            { label: "Pases por 90'", value: per90(p.passesMade), sub: `${Math.round(p.minutesPlayed)} minutos jugados` },
+        ] },
+        { key: "def", title: "Defensa", icon: KPI_ICONS.tackles, rows: [
+            { label: "Entradas ganadas", value: `${p.tacklesSuccess}/${p.tacklesMade}`, sub: share(p.tacklesSuccess, (x) => x.tacklesSuccess), pct: pctOf(p.tacklesSuccess, p.tacklesMade) },
+            ...(p.position === "defender" ? [{ label: "Goles encajados", value: String(p.goalsConceded), sub: p.cleanSheet ? "Portería a cero" : undefined }] : []),
+            ...(p.redCards ? [{ label: "Rojas", value: String(p.redCards) }] : []),
+        ] },
+    ]
     if (p.position === "goalkeeper" || p.saves > 0) {
-        list.push({ label: "Paradas", value: String(p.saves), sub: p.goalsConceded + p.saves ? `${pctOf(p.saves, p.saves + p.goalsConceded)}% de lo que le tiraron` : undefined })
-        list.push({ label: "Goles encajados", value: String(p.goalsConceded), sub: p.cleanSheet ? "Portería a cero" : undefined })
-    } else if (p.position === "defender") {
-        list.push({ label: "Goles encajados", value: String(p.goalsConceded), sub: p.cleanSheet ? "Portería a cero" : undefined })
+        const faced = p.saves + p.goalsConceded
+        out.push({ key: "gk", title: "Portería", icon: KPI_ICONS.saves, rows: [
+            { label: "Paradas", value: String(p.saves), sub: faced ? `de ${faced} que le llegaron` : undefined, pct: pctOf(p.saves, faced) },
+            { label: "Goles encajados", value: String(p.goalsConceded), sub: p.cleanSheet ? "Portería a cero" : undefined },
+        ] })
     }
-    if (p.redCards) list.push({ label: "Rojas", value: String(p.redCards) })
-    return list
+    return out
 })
 /** Paradas de portero por tipo (solo las que hizo) */
 const saveTypes = computed(() => {
@@ -206,11 +215,11 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-4 sm:gap-6 items-start">
             <!-- Sin <Transition> out-in: junto a la de la ficha se quedaba a medias y el campo no volvía.
                  Al cambiar de equipo, el campo nuevo entra con una animación -->
-            <MatchPitch :key="side" :players="players" :selected="selectedId" :my-id="myId" :rival="!ours" @select="pick" class="side-in w-full max-w-xl mx-auto lg:max-w-none" />
+            <MatchPitch :key="side" :players="players" :selected="selectedId" :my-id="myId" :rival="!ours" @select="pick" class="side-in w-full max-w-xl mx-auto lg:max-w-[calc((100svh-var(--nav-h,4rem)-7.5rem)*68/80)] lg:sticky lg:top-[calc(var(--nav-h,4rem)+5.5rem)]" />
 
             <Transition name="card-swap" mode="out-in">
                 <article v-if="player" id="match-player-card" :key="`${side}-${player.playerId}`"
-                    class="scroll-mt-[calc(var(--nav-h,4rem)+6rem)] rounded-2xl p-3 sm:p-5 dark:bg-base-100 bg-base-300 shadow-sm flex flex-col gap-4 sm:gap-5 lg:sticky lg:top-[calc(var(--nav-h,4rem)+5.5rem)]"
+                    class="scroll-mt-[calc(var(--nav-h,4rem)+6rem)] rounded-2xl p-3 sm:p-5 dark:bg-base-100 bg-base-300 shadow-sm flex flex-col gap-4 sm:gap-5"
                     :class="player.playerId === myId && 'ring-2 ring-primary/60'">
                     <!-- Cabecera: cara, nombre y la nota con su color -->
                     <header class="flex items-center gap-3 sm:gap-4">
@@ -244,7 +253,7 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
 
                     <blockquote class="phrase relative rounded-xl bg-base-content/5 pl-9 pr-3 py-2.5 text-sm sm:text-base font-bold italic text-base-content/85">
                         <span class="absolute left-2.5 -top-1 text-4xl leading-none font-black text-primary/60 not-italic select-none" aria-hidden="true">“</span>
-                        {{ phrase }}
+                        {{ phrase }}<span class="text-primary/60 font-black not-italic" aria-hidden="true">”</span>
                     </blockquote>
 
                     <!-- Rachas vivas -->
@@ -264,20 +273,29 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
                         </li>
                     </ul>
 
-                    <!-- Sus números -->
-                    <div>
+                    <!-- Sus números, por bloques -->
+                    <div class="numbers">
                         <p class="text-xs uppercase tracking-widest font-black text-base-content/50 mb-2">Sus números</p>
-                        <dl class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
-                            <div v-for="(t, i) in numbers" :key="t.label" class="num-tile rounded-xl bg-base-content/5 px-3 py-2 min-w-0" :style="{ '--k': i }">
-                                <dt class="text-[0.65rem] uppercase tracking-wider font-black text-base-content/50 truncate">{{ t.label }}</dt>
-                                <dd class="text-lg font-black tabular-nums leading-tight">{{ t.value }}</dd>
-                                <dd v-if="t.sub" class="text-[0.7rem] text-base-content/55 leading-tight">{{ t.sub }}</dd>
-                            </div>
-                        </dl>
-                        <p v-if="saveTypes.length" class="mt-2 text-xs text-base-content/60">
-                            <span class="font-bold">Sus paradas:</span>
-                            <span v-for="(t, i) in saveTypes" :key="t.label">{{ i ? " · " : " " }}{{ t.n }} {{ t.label.toLowerCase() }}</span>
-                        </p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
+                            <section v-for="g in groups" :key="g.key" class="min-w-0">
+                                <h4 class="flex items-center gap-1.5 text-[0.7rem] uppercase tracking-widest font-black text-primary mb-1">
+                                    <svg class="size-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="g.icon"></svg>{{ g.title }}
+                                </h4>
+                                <dl class="divide-y divide-base-content/8">
+                                    <div v-for="r in g.rows" :key="r.label" class="py-1.5">
+                                        <div class="flex items-baseline justify-between gap-3">
+                                            <dt class="text-sm text-base-content/70 truncate">{{ r.label }}</dt>
+                                            <dd class="text-base font-black tabular-nums shrink-0">{{ r.value }}<span v-if="r.pct != null" class="ml-1.5 text-xs font-bold text-base-content/50">{{ r.pct }}%</span></dd>
+                                        </div>
+                                        <div v-if="r.pct != null" class="h-1 mt-1 rounded-full bg-base-content/8 overflow-hidden"><div class="h-full rounded-full" :class="ours ? 'bg-(--us)' : 'bg-(--them)'" :style="{ width: `${r.pct}%` }"></div></div>
+                                        <dd v-if="r.sub" class="text-[0.7rem] text-base-content/50 mt-0.5">{{ r.sub }}</dd>
+                                    </div>
+                                </dl>
+                                <p v-if="g.key === 'gk' && saveTypes.length" class="mt-1 text-[0.7rem] text-base-content/55">
+                                    <span v-for="(t, i) in saveTypes" :key="t.label">{{ i ? " · " : "" }}{{ t.n }} {{ t.label.toLowerCase() }}</span>
+                                </p>
+                            </section>
+                        </div>
                     </div>
 
                     <!-- Forma: sus últimas notas, cada una con su color; la de hoy, marcada -->
@@ -361,7 +379,7 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
     .delta { animation: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
     .form-bar { transform-origin: bottom; animation: grow-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--k, 0) * 60ms); }
     .side-in { animation: side-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
-    .num-tile { animation: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: calc(var(--k, 0) * 35ms); }
+    .numbers { animation: fade-in 0.4s ease-out both; }
     .streak-chip { animation: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: calc(var(--k, 0) * 50ms); }
     .phrase { animation: phrase-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both; }
     .rating-pop { animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both; }
@@ -373,5 +391,6 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
 @keyframes pop { from { opacity: 0; scale: 0.6; } }
 @keyframes side-in { from { opacity: 0; translate: 1.5rem 0; } }
 @keyframes phrase-in { from { opacity: 0; translate: -0.5rem 0; } }
+@keyframes fade-in { from { opacity: 0; } }
 @keyframes grow-up { from { scale: 1 0; } }
 </style>

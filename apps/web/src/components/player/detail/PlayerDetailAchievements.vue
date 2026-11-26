@@ -52,7 +52,8 @@
         </div>
 
         <!-- ═══ APARTADOS ═══ -->
-        <div v-for="group in groups" :key="group.key" class="card bg-base-200 shadow-md">
+        <!-- content-visibility: los apartados fuera de pantalla no se pintan (ni se animan sus halos) hasta acercarse -->
+        <div v-for="group in groups" :key="group.key" class="achievement-group card bg-base-200 shadow-md">
             <div class="card-body p-6">
                 <div class="flex items-baseline justify-between gap-3 mb-3">
                     <h3 class="text-lg font-black uppercase border-l-4 pl-3" :class="'border-primary'">
@@ -179,9 +180,16 @@ type Unlock = { achievementId: string, reached?: number, unlockedAt: Date | stri
 function buildItems(definitions: IAchievementDefinitionWithStats[], unlocks: Unlock[], progress: Record<string, IAchievementProgressValue>, noun: { one: string, many: string }): Item[] {
     const defs = new Map<string, Definition>(definitions.map(({ _id, ...def }) => [_id, def]))
     for (const u of unlocks) if (!defs.has(u.achievementId) && u.definition) defs.set(u.achievementId, u.definition)
+    // Desbloqueos agrupados por logro de una pasada (antes se filtraba la lista entera por cada logro)
+    const byId = new Map<string, Unlock[]>()
+    for (const u of unlocks) {
+        const list = byId.get(u.achievementId)
+        if (list) list.push(u)
+        else byId.set(u.achievementId, [u])
+    }
 
     return [...defs.entries()].map(([id, def]) => {
-        const mine = unlocks.filter((u) => u.achievementId === id)
+        const mine = byId.get(id) ?? []
         const last = mine.reduce<Unlock | undefined>((best, u) => (!best || new Date(u.unlockedAt) >= new Date(best.unlockedAt) ? u : best), undefined)
         return {
             id, def,
@@ -231,3 +239,10 @@ const rarityCount = computed(() => {
 const dateFormat = new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short", year: "numeric" })
 const formatDate = (value?: Date | string) => (value ? dateFormat.format(new Date(value)) : "")
 </script>
+
+<style scoped>
+.achievement-group {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 40rem;
+}
+</style>

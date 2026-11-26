@@ -5,7 +5,8 @@
  * - El estado se ve en el icono: a color con una marca de "hecho" si se tiene; en gris y con un
  *   anillo de progreso si no; candado si es oculto y no se tiene.
  * - Los especiales lucen más, con efectos de daisyUI: legendario conseguido = borde dorado que
- *   gira (`aura-gold`) y tarjeta que se inclina con el ratón (`hover-3d`); muy raro (lo tiene
+ *   gira (`aura-gold`) y, al pasar el ratón, se amplía un poco con un brillo dorado y un reflejo
+ *   que la cruza (sin inclinación 3D: con muchas tarjetas iba a tirones); muy raro (lo tiene
  *   menos del 5 % y lo tienes; no en los hitos que se repiten) = halo con el degradado de la
  *   marca (`aura` de daisyUI con los colores de la marca: `aura-brand`, abajo). Si el sistema pide menos
  *   movimiento, daisyUI ya ralentiza el borde.
@@ -77,9 +78,8 @@ const formatNumber = (n: number) => n.toLocaleString("es-ES")
 </script>
 
 <template>
-    <!-- Legendario: hover-3d por fuera, para que se incline la tarjeta entera con su halo (si se
-         inclinaba solo la de dentro, asomaba el fondo del halo por detrás) -->
-    <div class="w-full" :class="legendary ? 'hover-3d' : ''">
+    <!-- Legendario: al pasar el ratón se amplía con brillo dorado y un reflejo (ver .legend, abajo) -->
+    <div class="w-full" :class="legendary ? 'legend' : ''">
         <!-- Borde animado solo en los especiales; el resto, tarjeta normal -->
         <div class="w-full h-full" :class="legendary ? 'aura aura-gold aura-sm' : topRare ? 'aura aura-sm aura-brand' : ''" :style="special ? '--aura-radius: 0.75rem' : undefined">
             <!-- Dentro del borde animado, fondo opaco (si no, el brillo se ve a través) -->
@@ -149,8 +149,6 @@ const formatNumber = (n: number) => n.toLocaleString("es-ES")
                 </div>
             </div>
         </div>
-        <!-- Zonas de inclinación de hover-3d (8, alrededor de la tarjeta) -->
-        <template v-if="legendary"><div v-for="n in 8" :key="n"></div></template>
     </div>
 </template>
 
@@ -168,6 +166,47 @@ const formatNumber = (n: number) => n.toLocaleString("es-ES")
 /* Halo de daisyUI (`aura`) con los dos colores de la marca en vez de uno solo */
 .aura-brand {
     background-image: conic-gradient(from var(--aura-angle), transparent 200deg, var(--brand-a) 290deg, var(--brand-b));
+}
+
+/*
+ * Legendario al pasar el ratón (o con el foco dentro): un poco más grande, brillo dorado alrededor y
+ * un reflejo que la cruza una vez, como el de los esqueletos de carga. Solo transform, opacity y
+ * sombra: nada que obligue a recolocar la página.
+ */
+.legend {
+    position: relative;
+    border-radius: 0.75rem;
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s;
+}
+.legend::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(110deg, transparent 35%, rgb(255 236 179 / 0.35) 50%, transparent 65%) no-repeat;
+    background-size: 250% 100%;
+    background-position: 120% 0;
+    opacity: 0;
+}
+.legend:hover,
+.legend:focus-within {
+    z-index: 1;
+    transform: scale(1.03);
+    box-shadow: 0 0 0 1px rgb(245 158 11 / 0.35), 0 8px 30px -6px rgb(245 158 11 / 0.55);
+}
+.legend:hover::after,
+.legend:focus-within::after {
+    animation: legend-shine 0.9s ease-out;
+}
+@keyframes legend-shine {
+    from { opacity: 1; background-position: 120% 0; }
+    to { opacity: 1; background-position: -20% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .legend { transition: box-shadow 0.25s; }
+    .legend:hover, .legend:focus-within { transform: none; }
+    .legend:hover::after, .legend:focus-within::after { animation: none; }
 }
 
 /* Anillo de progreso de daisyUI (`radial-progress`) en degradado */

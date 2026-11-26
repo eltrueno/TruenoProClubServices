@@ -8,7 +8,8 @@
 import { useInView } from "@/composables/useInView"
 
 defineProps<{ title: string; hint?: string }>()
-const { target, inView } = useInView({ threshold: 0.15 })
+// Umbral 0: en móvil hay tarjetas de 2.000+ px y un 15% eran 300 px; las animaciones se quedaban congeladas a medias
+const { target, inView } = useInView({ threshold: 0 })
 </script>
 
 <template>

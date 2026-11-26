@@ -17,12 +17,19 @@ const props = defineProps<{ players: MatchPlayerEntity[]; selected: string | nul
 const emit = defineEmits<{ select: [playerId: string] }>()
 const { imageFor, memberFor } = useMembers()
 
-const ROW_Y: Record<string, number> = { forward: 15, midfielder: 40, defender: 64, goalkeeper: 86 }
+const ROW_Y: Record<string, number> = { forward: 13, midfielder: 37, defender: 66, goalkeeper: 88 }
 const placed = computed(() => {
     const rows: Record<string, MatchPlayerEntity[]> = {}
     for (const p of props.players) (rows[p.position] ??= []).push(p)
     return Object.entries(rows).flatMap(([pos, list]) =>
-        list.map((p, i) => ({ p, x: ((i + 1) / (list.length + 1)) * 100, y: ROW_Y[pos] ?? 50, w: Math.min(24, 94 / (list.length + 0.5)) })))
+        list.map((p, i) => {
+            // Con 5 o más en una línea (p. ej. el medio campo), en zigzag: uno arriba y otro abajo, para que
+            // los de al lado no se pisen y cada uno tenga el doble de ancho para su nombre
+            const zigzag = list.length >= 5
+            const y = (ROW_Y[pos] ?? 50) + (zigzag ? (i % 2 ? 6 : -6) : 0)
+            const w = zigzag ? Math.min(30, 188 / (list.length + 1)) : Math.min(24, 94 / (list.length + 0.5))
+            return { p, x: ((i + 1) / (list.length + 1)) * 100, y, w, small: zigzag }
+        }))
 })
 const fmt1 = (n: number) => n.toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" : r >= 7 ? "bg-lime-500 text-black" : r >= 6 ? "bg-warning text-warning-content" : "bg-error text-error-content")
@@ -42,14 +49,14 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
         <span class="line absolute left-1/2 -translate-x-1/2 top-3 sm:top-4 w-[44%] h-[13%] border-2 border-t-0" aria-hidden="true"></span>
         <span class="line absolute left-1/2 -translate-x-1/2 top-3 sm:top-4 w-[20%] h-[5%] border-2 border-t-0" aria-hidden="true"></span>
 
-        <button v-for="({ p, x, y, w }, i) in placed" :key="p.playerId" type="button"
+        <button v-for="({ p, x, y, w, small }, i) in placed" :key="p.playerId" type="button"
             class="token absolute -translate-1/2 flex flex-col items-center gap-1 cursor-pointer focus-visible:outline-none"
             :class="selected === p.playerId && 'is-selected'"
             :style="{ left: `${x}%`, top: `${y}%`, width: `${w}%`, '--k': i }" :aria-pressed="selected === p.playerId"
             :aria-label="`${p.playerName}: nota ${fmt1(p.rating)}`" @click="emit('select', p.playerId)">
             <span class="face relative">
-                <span class="block size-12 sm:size-16 rounded-full overflow-hidden outline-2 shadow-lg transition-[box-shadow,scale] duration-300"
-                    :class="[p.playerId === myId ? 'outline-primary' : rival ? 'outline-(--them)' : 'outline-(--us)', memberFor(p.playerId) ? (rival ? 'bg-(--them)/45' : 'bg-(--us)/45') : (rival ? 'bg-(--them)' : 'bg-(--us)'), selected === p.playerId && 'outline-white!']">
+                <span class="block sm:size-16 rounded-full overflow-hidden outline-2 shadow-lg transition-[box-shadow,scale] duration-300"
+                    :class="[small ? 'size-10' : 'size-12', p.playerId === myId ? 'outline-primary' : rival ? 'outline-(--them)' : 'outline-(--us)', memberFor(p.playerId) ? (rival ? 'bg-(--them)/45' : 'bg-(--us)/45') : (rival ? 'bg-(--them)' : 'bg-(--us)'), selected === p.playerId && 'outline-white!']">
                     <img v-if="memberFor(p.playerId)" :src="imageFor(p.playerId)" alt="" loading="lazy" class="size-full object-cover object-top scale-[2] origin-top" @error="onPlayerImageError" />
                     <span v-else class="size-full grid place-items-center font-black text-white text-sm sm:text-base" aria-hidden="true">{{ p.playerName.slice(0, 2).toUpperCase() }}</span>
                 </span>

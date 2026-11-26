@@ -366,16 +366,19 @@ async function setVoided(voided: boolean | null) {
                             <span class="text-[0.65rem] sm:text-xs text-base-content/45 font-medium tabular-nums">{{ k.sub }}</span>
                         </div>
                     </div>
-                    <div class="flex flex-wrap justify-center gap-x-4 sm:gap-x-12 gap-y-4 mt-6 pt-5 border-t border-base-content/10 reveal-stagger">
-                        <div v-for="k in kpis.secondary" :key="k.label" class="kpi flex items-center gap-2.5 px-2 min-w-0 w-[calc(50%-1rem)] sm:w-auto">
-                            <MvpIcon v-if="k.icon === 'mvp'" class="size-6" />
-                            <svg v-else class="size-6 shrink-0 text-base-content/45" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="KPI_ICONS[k.icon as KpiIcon]"></svg>
-                            <span class="min-w-0 leading-tight">
-                                <span class="block text-base-content/50 uppercase text-[0.6rem] sm:text-[0.65rem] font-black tracking-widest">{{ k.label }}</span>
-                                <span v-if="k.text !== undefined" class="block text-sm sm:text-base font-black truncate">{{ k.text }}</span>
-                                <AnimatedNumber v-else class="block text-lg sm:text-xl font-black" :value="k.value ?? 0" />
-                                <span v-if="k.sub" class="block text-[0.65rem] text-base-content/45 font-medium tabular-nums truncate">{{ k.sub }}</span>
-                            </span>
+                    <div class="grid grid-cols-2 sm:flex sm:justify-evenly [&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1 gap-y-4 mt-6 pt-5 border-t border-base-content/10 reveal-stagger">
+                        <div v-for="k in kpis.secondary" :key="k.label" class="kpi flex justify-center px-2 min-w-0">
+                            <!-- Contenido alineado a la izquierda pero centrado en su hueco: así la fila se ve centrada -->
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <MvpIcon v-if="k.icon === 'mvp'" class="size-6" />
+                                <svg v-else class="size-6 shrink-0 text-base-content/45" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="KPI_ICONS[k.icon as KpiIcon]"></svg>
+                                <span class="min-w-0 leading-tight">
+                                    <span class="block text-base-content/50 uppercase text-[0.6rem] sm:text-[0.65rem] font-black tracking-widest">{{ k.label }}</span>
+                                    <span v-if="k.text !== undefined" class="block text-sm sm:text-base font-black truncate">{{ k.text }}</span>
+                                    <AnimatedNumber v-else class="block text-lg sm:text-xl font-black" :value="k.value ?? 0" />
+                                    <span v-if="k.sub" class="block text-[0.65rem] text-base-content/45 font-medium tabular-nums truncate">{{ k.sub }}</span>
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -105,16 +105,19 @@
                         <span v-if="kpi.sub" class="text-[0.65rem] sm:text-xs text-base-content/45 font-medium mt-1 tabular-nums">{{ kpi.sub }}</span>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-y-4 mt-6 pt-5 border-t border-base-content/10 reveal-stagger">
-                    <div v-for="kpi in secondaryKpis" :key="kpi.label" class="flex items-center gap-2.5 px-2 min-w-0">
-                        <MvpIcon v-if="kpi.icon === 'mvp'" class="size-6" />
-                        <span v-else-if="kpi.icon === 'red'" class="w-4 h-6 shrink-0 rounded-[3px] bg-error mx-1" aria-hidden="true"></span>
-                        <svg v-else class="size-6 shrink-0 text-base-content/45" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="KPI_ICONS[kpi.icon]"></svg>
-                        <span class="min-w-0 leading-tight">
-                            <span class="block text-base-content/50 uppercase text-[0.6rem] sm:text-[0.65rem] font-black tracking-widest">{{ kpi.label }}</span>
-                            <AnimatedNumber class="block text-lg sm:text-xl font-black" :value="kpi.value" />
-                            <span v-if="kpi.sub" class="block text-[0.65rem] text-base-content/45 font-medium tabular-nums">{{ kpi.sub }}</span>
-                        </span>
+                <div class="grid grid-cols-2 sm:flex sm:justify-evenly [&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1 gap-y-4 mt-6 pt-5 border-t border-base-content/10 reveal-stagger">
+                    <div v-for="kpi in secondaryKpis" :key="kpi.label" class="flex justify-center px-2 min-w-0">
+                        <!-- Contenido alineado a la izquierda pero centrado en su hueco: así la fila se ve centrada -->
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <MvpIcon v-if="kpi.icon === 'mvp'" class="size-6" />
+                            <span v-else-if="kpi.icon === 'red'" class="w-4 h-6 shrink-0 rounded-[3px] bg-error mx-1" aria-hidden="true"></span>
+                            <svg v-else class="size-6 shrink-0 text-base-content/45" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="KPI_ICONS[kpi.icon]"></svg>
+                            <span class="min-w-0 leading-tight">
+                                <span class="block text-base-content/50 uppercase text-[0.6rem] sm:text-[0.65rem] font-black tracking-widest">{{ kpi.label }}</span>
+                                <AnimatedNumber class="block text-lg sm:text-xl font-black" :value="kpi.value" />
+                                <span v-if="kpi.sub" class="block text-[0.65rem] text-base-content/45 font-medium tabular-nums">{{ kpi.sub }}</span>
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
