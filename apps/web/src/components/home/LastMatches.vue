@@ -8,6 +8,7 @@ import { routes } from "@/lib/query"
 import { translateMatchType } from "@/i18n/translations"
 import PlayerCard from "@/components/ui/PlayerCard.vue"
 import AnimatedNumber from "@/components/ui/AnimatedNumber.vue"
+import EmptyState from "@/components/ui/EmptyState.vue"
 
 const { latest, loading, hasError, load } = useMatches()
 const { members, load: loadMembers, memberFor } = useMembers()
@@ -69,7 +70,7 @@ const playerOfTheMoment = computed(() => {
                 <div class="skeleton h-16 w-full rounded-xl"></div>
                 <div class="skeleton h-8 w-40"></div>
             </div>
-            <p v-else-if="hasError || !lastMatch" class="text-sm text-base-content/50 py-6 text-center">Todavía no hay partidos.</p>
+            <EmptyState v-else-if="hasError || !lastMatch" compact icon="ball" title="Todavía no hay partidos" text="El último saldrá aquí en cuanto se juegue." />
 
             <template v-else>
                 <a :href="routes.match(lastMatch.matchId)" class="group flex items-center gap-3 rounded-xl bg-base-100 p-4 hover:bg-base-300/40 transition-colors">
@@ -110,7 +111,7 @@ const playerOfTheMoment = computed(() => {
                 <div class="skeleton w-12 h-14 rounded-lg shrink-0"></div>
                 <div class="flex-1 space-y-2"><div class="skeleton h-4 w-28"></div><div class="skeleton h-3 w-36"></div></div>
             </div>
-            <p v-else-if="!playerOfTheMoment" class="text-sm text-base-content/50 py-6">Aún no hay partidos suficientes.</p>
+            <EmptyState v-else-if="!playerOfTheMoment" compact icon="trophy" title="Aún no hay partidos suficientes" text="Con unos cuantos más saldrá el jugador del momento." />
             <template v-else>
                 <PlayerCard
                     :member="playerOfTheMoment.member ?? { playerId: playerOfTheMoment.playerId, playerName: playerOfTheMoment.playerName }"

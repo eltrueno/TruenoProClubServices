@@ -66,11 +66,7 @@
                 <img src="/illustrations/bugfixingsvg.svg" class="w-full max-w-xs md:max-w-sm select-none pointer-events-none" alt="Image representing error">
             </div>
         </div>
-        <div v-else-if="!selectedTotw" role="container" class="flex flex-col items-center gap-4 py-12 text-center">
-            <h3 class="text-2xl font-bold">Todavía no hay equipo de la semana</h3>
-            <p class="text-base-content/60">El primero se calcula automáticamente cuando haya partidos suficientes. ¡Vuelve pronto!</p>
-            <img src="/illustrations/podium.svg" class="w-full max-w-xs md:max-w-sm select-none pointer-events-none" alt="Podio vacío">
-        </div>
+        <EmptyState v-else-if="!selectedTotw" illustration="/illustrations/podium.svg" title="Todavía no hay equipo de la semana" text="El primero se calcula automáticamente cuando haya partidos suficientes. ¡Vuelve pronto!" />
         <div v-else role="container" class="w-full p-4">
             <TotwItem :totw="selectedTotw" v-model:isBest="isBestValue" />
         </div>
@@ -85,6 +81,7 @@
     import TotwTitle from './TotwTitle.vue';
     import TotwItem from './TotwItem.vue';
     import { getQueryParam } from "@/lib/query";
+    import EmptyState from "@/components/ui/EmptyState.vue"
 
     // /totw?semana=<iso|número>&tipo=best|worst
     const props = {

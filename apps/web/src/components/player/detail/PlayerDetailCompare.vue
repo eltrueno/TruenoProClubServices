@@ -1,14 +1,12 @@
 <template>
-    <div class="flex flex-col gap-4 sm:gap-6 py-2 text-left [--a:var(--color-primary)] [--b:#2f6fd6] dark:[--b:#5b8def]">
+    <div class="flex flex-col gap-4 sm:gap-6 py-2 text-left [--a:var(--color-primary)] [--b:#2563eb] dark:[--b:#5b8def]">
         <!-- Sin rival elegido: a elegirlo -->
-        <MatchCard v-if="!other && !loadingOther" title="Comparador" hint="Elige a otro jugador del club para verlos cara a cara.">
-            <div class="flex flex-col items-center gap-4 py-6 text-center">
-                <svg class="size-12 text-base-content/30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0-4-4m4 4-4 4m0 6H4m0 0 4 4m-4-4 4-4" /></svg>
-                <p class="text-sm text-base-content/70 max-w-sm">Goles, pases, notas, lo que han jugado juntos y quién tiene más logros. Se puede compartir el enlace.</p>
+        <SectionCard v-if="!other && !loadingOther" title="Comparador" hint="Elige a otro jugador del club para verlos cara a cara.">
+            <EmptyState icon="compare" title="¿Con quién lo comparamos?" text="Goles, pases, notas, lo que han jugado juntos y quién tiene más logros. Se puede compartir el enlace.">
                 <button type="button" class="btn btn-primary" @click="openPicker">Elegir jugador</button>
-                <p v-if="loadError" class="text-sm text-error">No se ha podido cargar ese jugador.</p>
-            </div>
-        </MatchCard>
+                <p v-if="loadError" class="text-sm text-error mt-3">No se ha podido cargar ese jugador.</p>
+            </EmptyState>
+        </SectionCard>
 
         <div v-else-if="loadingOther" class="flex flex-col gap-4" aria-busy="true">
             <div class="skeleton h-40 w-full rounded-2xl"></div>
@@ -70,7 +68,7 @@
             </section>
 
             <!-- Perfil superpuesto -->
-            <MatchCard title="Perfil" :hint="scale === 'fit' ? 'Escala ajustada: cada eje llega hasta el mayor de los dos, para ver quién gana en cada cosa.' : 'Los dos en las mismas ocho cosas, de 0 al máximo razonable.'">
+            <SectionCard title="Perfil" :hint="scale === 'fit' ? 'Escala ajustada: cada eje llega hasta el mayor de los dos, para ver quién gana en cada cosa.' : 'Los dos en las mismas ocho cosas, de 0 al máximo razonable.'">
                 <template #actions>
                     <OptionToggle v-model="scale" :options="SCALE_OPTIONS" size="sm" />
                 </template>
@@ -104,16 +102,12 @@
                         </tbody>
                     </table>
                 </div>
-            </MatchCard>
+            </SectionCard>
 
             <!-- Stat a stat, barras enfrentadas -->
-            <MatchCard title="Stat a stat" hint="En negrita, quien gana cada fila. En rojas, gana quien tiene menos.">
+            <SectionCard title="Stat a stat" hint="En negrita, quien gana cada fila. En rojas, gana quien tiene menos.">
                 <template #actions>
-                    <div role="group" aria-label="Modo" class="join">
-                        <button v-for="m in MODES" :key="m.key" type="button" class="join-item btn btn-sm"
-                            :class="mode === m.key ? 'btn-primary' : 'bg-base-300! dark:bg-base-100! border-base-content/10'"
-                            :aria-pressed="mode === m.key" @click="mode = m.key">{{ m.label }}</button>
-                    </div>
+                    <OptionToggle v-model="mode" :options="MODES.map((m) => ({ value: m.key, label: m.label }))" size="sm" label="Modo" />
                 </template>
                 <div class="flex flex-col gap-3">
                     <div v-for="(r, i) in rows" :key="`${mode}-${r.label}`" class="grid grid-cols-[3.25rem_minmax(0,1fr)_minmax(0,1fr)_3.25rem] sm:grid-cols-[4rem_minmax(0,1fr)_10rem_minmax(0,1fr)_4rem] items-center gap-x-2 gap-y-1">
@@ -125,12 +119,12 @@
                         <span class="sm:hidden col-span-4 -order-1 text-center text-[0.65rem] font-black uppercase tracking-wider text-base-content/60">{{ r.label }}</span>
                     </div>
                 </div>
-            </MatchCard>
+            </SectionCard>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
                 <!-- Juntos -->
-                <MatchCard title="Juntos" hint="Partidos en los que jugaron los dos en el club (con el filtro de arriba).">
-                    <p v-if="!together.games" class="text-sm text-base-content/60">Todavía no han coincidido en un partido.</p>
+                <SectionCard title="Juntos" hint="Partidos en los que jugaron los dos en el club (con el filtro de arriba).">
+                    <EmptyState v-if="!together.games" compact icon="ball" title="Todavía no han coincidido" text="Cuando jueguen juntos un partido, aquí saldrá cómo les va." />
                     <template v-else>
                         <div class="grid grid-cols-3 gap-2 text-center">
                             <div class="rounded-xl bg-success/12 py-3"><p class="text-2xl font-black text-success tabular-nums">{{ together.wins }}</p><p class="text-xs font-bold text-success">Victorias</p></div>
@@ -146,10 +140,10 @@
                         </dl>
                         <a v-if="together.last" :href="routes.match(together.last.matchId)" class="link link-hover text-xs font-bold text-primary mt-2 inline-block">Último juntos: {{ together.last.label }} →</a>
                     </template>
-                </MatchCard>
+                </SectionCard>
 
                 <!-- Logros -->
-                <MatchCard title="Logros" hint="Los de este club, por rareza, y lo que tiene uno y el otro no.">
+                <SectionCard title="Logros" hint="Los de este club, por rareza, y lo que tiene uno y el otro no.">
                     <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 items-center text-sm">
                         <template v-for="r in rarityRows" :key="r.rarity">
                             <span class="text-right tabular-nums" :class="r.a > r.b ? 'font-black text-(--a)' : 'text-base-content/60'">{{ r.a }}</span>
@@ -181,11 +175,11 @@
                             <p v-else class="text-xs text-base-content/60">Nada que no tenga el otro.</p>
                         </div>
                     </div>
-                </MatchCard>
+                </SectionCard>
             </div>
 
             <!-- Partido a partido: cada partido que jugaron juntos, quién tuvo mejor nota y qué hizo cada uno -->
-            <MatchCard v-if="together.list.length" title="Partido a partido" hint="Los partidos que jugaron juntos, del más reciente al más antiguo. En negrita, la mejor nota de los dos.">
+            <SectionCard v-if="together.list.length" title="Partido a partido" hint="Los partidos que jugaron juntos, del más reciente al más antiguo. En negrita, la mejor nota de los dos.">
                 <template #actions>
                     <span class="text-xs font-bold text-base-content/70">
                         Mejor nota: <b class="text-(--a)">{{ together.better.a }}</b> – <b class="text-(--b)">{{ together.better.b }}</b>
@@ -203,18 +197,18 @@
                         <span class="flex items-center gap-3 justify-end col-span-2 sm:col-span-1">
                             <span class="flex items-center gap-1.5">
                                 <span class="text-[0.65rem] text-base-content/60 tabular-nums">{{ m.a.line }}</span>
-                                <span class="rounded-md px-1.5 py-0.5 text-xs tabular-nums" :class="[RATING_TONE(m.a.rating), m.win === 'a' ? 'font-black ring-2 ring-(--a)' : 'opacity-70']">{{ fmt(m.a.rating, 1) }}</span>
+                                <span class="rounded-md px-1.5 py-0.5 text-xs tabular-nums" :class="[RATING_TONE(m.a.rating), m.win === 'a' ? 'font-black ring-2 ring-(--a)' : '']">{{ fmt(m.a.rating, 1) }}</span>
                             </span>
-                            <span class="text-base-content/30 text-xs">vs</span>
+                            <span class="text-base-content/50 text-xs">vs</span>
                             <span class="flex items-center gap-1.5">
-                                <span class="rounded-md px-1.5 py-0.5 text-xs tabular-nums" :class="[RATING_TONE(m.b.rating), m.win === 'b' ? 'font-black ring-2 ring-(--b)' : 'opacity-70']">{{ fmt(m.b.rating, 1) }}</span>
+                                <span class="rounded-md px-1.5 py-0.5 text-xs tabular-nums" :class="[RATING_TONE(m.b.rating), m.win === 'b' ? 'font-black ring-2 ring-(--b)' : '']">{{ fmt(m.b.rating, 1) }}</span>
                                 <span class="text-[0.65rem] text-base-content/60 tabular-nums">{{ m.b.line }}</span>
                             </span>
                         </span>
                     </li>
                 </ol>
                 <button v-if="together.list.length > shownGames" type="button" class="btn btn-sm btn-ghost self-center" @click="shownGames += 15">Ver más ({{ together.list.length - shownGames }})</button>
-            </MatchCard>
+            </SectionCard>
         </template>
 
         <!-- Elegir jugador: el selector genérico (el del filtro de partidos), abierto desde los botones -->
@@ -255,13 +249,15 @@ import { hexToRgba } from "@/lib/color"
 import PlayerStatsEntity from "@/model/PlayerStatsEntity"
 import PlayerProfileEntity from "@/model/PlayerProfileEntity"
 import type ClubMatchEntity from "@/model/match/ClubMatchEntity"
-import MatchCard from "@/components/match/detail/MatchCard.vue"
+import SectionCard from "@/components/ui/SectionCard.vue"
 import OptionToggle, { type ToggleOption } from "@/components/ui/OptionToggle.vue"
 import { useStickySubBar } from "@/composables/useStickySubBar"
 import { radarAxisMax, radarNorm, type RadarScale } from "@/lib/radarScale"
 import PlayerPickerModal, { type PickerItem } from "@/components/ui/PlayerPickerModal.vue"
 import { usePlayerStats } from "@/composables/usePlayerStats"
 import { PLAYER_PLACEHOLDER } from "@/lib/playerImage"
+import EmptyState from "@/components/ui/EmptyState.vue"
+import { navTop } from "@/lib/navOffset"
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, RadarController)
 useSiteFontInCharts()
@@ -312,7 +308,7 @@ const miniVisible = ref(false)
 const checkMini = () => {
     const el = head.value
     if (!el) { miniVisible.value = false; return }
-    const top = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nav-h") || "64") + parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--tabs-h") || "76")
+    const top = navTop() + parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--tabs-h") || "76")
     miniVisible.value = el.getBoundingClientRect().bottom < top
 }
 onMounted(() => { addEventListener("scroll", checkMini, { passive: true }); checkMini() })
@@ -397,7 +393,8 @@ const rows = computed(() => {
 const score = computed(() => ({ a: rows.value.filter((r) => r.win === "a").length, b: rows.value.filter((r) => r.win === "b").length }))
 
 // ── Radar ──
-const scale = ref<RadarScale>("full")
+// Ajustada por defecto: aquí lo que importa es ver quién gana en cada eje
+const scale = ref<RadarScale>("fit")
 const SCALE_OPTIONS: ToggleOption<RadarScale>[] = [{ value: "full", label: "Completa" }, { value: "fit", label: "Ajustada" }]
 const hovered = ref<number | null>(null)
 const radarChart = ref<{ chart?: ChartJS } | null>(null)
@@ -547,17 +544,17 @@ const onlyOne = computed(() => {
     ]
 })
 const RARITY_TONE: Record<AchievementRarity, string> = {
-    common: "text-base-content/70", rare: "text-sky-600 dark:text-sky-300", epic: "text-violet-600 dark:text-violet-300", legendary: "text-amber-600 dark:text-amber-300",
+    common: "text-base-content/70", rare: "text-sky-700 dark:text-sky-300", epic: "text-violet-700 dark:text-violet-300", legendary: "text-amber-800 dark:text-amber-300",
 }
 const RARITY_BADGE: Record<AchievementRarity, string> = {
-    common: "badge-ghost", rare: "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30", epic: "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30", legendary: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
+    common: "badge-ghost", rare: "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30", epic: "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30", legendary: "bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30",
 }
 </script>
 
 <style scoped>
 /* Barra compacta: pegada justo bajo las pestañas. Sale de debajo de ellas (solo translate y opacidad,
    sin tocar alturas: nada se mueve) al pasar la cabecera */
-.vs-mini-anchor { top: calc(var(--nav-h, 4rem) + var(--tabs-h, 4.75rem) - 1px); }
+.vs-mini-anchor { top: calc(var(--nav-top, 4rem) + var(--tabs-h, 4.75rem) - 1px); transition: top 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
 .vs-mini {
     opacity: 0;
     translate: 0 -100%;

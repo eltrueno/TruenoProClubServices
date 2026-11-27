@@ -102,10 +102,7 @@
         </div>
     </div>
 
-    <div v-else class="w-full text-center py-8 text-base-content/60">
-        <p class="font-bold">Los datos del club no están disponibles ahora mismo</p>
-        <p class="text-xs">EA no responde y aún no hay datos en caché. Vuelve a intentarlo en unos minutos.</p>
-    </div>
+    <EmptyState v-else icon="error" tone="error" title="Los datos del club no están disponibles ahora mismo" text="EA no responde y aún no hay datos en caché. Vuelve a intentarlo en unos minutos." />
     </div>
 </template>
 
@@ -114,6 +111,7 @@ import { computed, onBeforeMount } from "vue"
 import { useClub } from "@/composables/useClub"
 import { useInView } from "@/composables/useInView"
 import AnimatedNumber from "@/components/ui/AnimatedNumber.vue"
+import EmptyState from "@/components/ui/EmptyState.vue"
 
 const { club, loading, load } = useClub()
 onBeforeMount(load)

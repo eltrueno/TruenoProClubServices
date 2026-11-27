@@ -1,5 +1,6 @@
 ---
 import Layout from "@layouts/Layout.astro";
+import PageHeader from "@components/layout/PageHeader.astro";
 import SquadContainer from "@components/squad/SquadContainer.vue";
 import { CLUB } from "@/config/club";
 import RosterSummary from "@components/seo/RosterSummary.astro";
@@ -8,21 +9,19 @@ import { buildRoster } from "@/lib/buildData";
 // Resumen para quien no ejecuta JS, con los datos del build (ver lib/buildData.ts)
 const roster = await buildRoster();
 // /plantilla?orden=&dir=&pos=&tipo=&todos=&pagina= (los lee SquadContainer); ?id=<playerId> lleva al perfil
+const crumbs = [{ name: "Plantilla", path: "/plantilla" }];
 ---
 
 <Layout
 	title={`Plantilla de ${CLUB.name} · Jugadores y estadísticas`}
 	isindex={false}
 	description={`Todos los jugadores de ${CLUB.name} en Clubes Pro de EA SPORTS FC: posiciones, partidos, goles, asistencias y valoraciones, actualizados tras cada partido.`}
-	breadcrumb={[{ name: "Plantilla", path: "/plantilla" }]}
+	breadcrumb={crumbs}
 	ogImage="/og/plantilla.png"
 	ogImageAlt={`Plantilla de ${CLUB.name}`}
 >
 	<div class="w-full max-w-[90rem] mx-auto px-4 lg:px-8 py-8 lg:py-12 flex flex-col gap-6">
-		<header class="reveal-stagger">
-			<p class="text-xs uppercase tracking-[0.3em] font-black text-primary">{CLUB.name}</p>
-			<h1 class="text-4xl lg:text-5xl font-black tracking-tighter">Plantilla</h1>
-		</header>
+		<PageHeader title="Plantilla" crumbs={crumbs} />
 
 		<div id="squad-app">
 			<SquadContainer client:only="vue">

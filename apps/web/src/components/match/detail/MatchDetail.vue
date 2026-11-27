@@ -25,6 +25,8 @@ import MatchSummary from "./MatchSummary.vue"
 import MatchTeam from "./MatchTeam.vue"
 import MatchPlayers from "./MatchPlayers.vue"
 import MatchDetailSkeleton from "./MatchDetailSkeleton.vue"
+import { navTop, navTopFor } from "@/lib/navOffset"
+import EmptyState from "@/components/ui/EmptyState.vue"
 
 const matchId = Number(getQueryParam("id"))
 const initialPlayer = getQueryParam("player")
@@ -178,7 +180,7 @@ const measureNav = () => {
 const smooth = (): ScrollBehavior => (matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth")
 const updateStuck = () => {
     const el = tabSentinel.value
-    tabsStuck.value = !!el && el.getBoundingClientRect().top < navH - 0.5
+    tabsStuck.value = !!el && el.getBoundingClientRect().top < navTop() - 0.5
 }
 const onResize = () => { measureNav(); updateStuck(); fullBarH = 0 }
 watch(tabSentinel, (el) => { if (el) { measureNav(); updateStuck() } })
@@ -215,7 +217,8 @@ function selectTab(key: TabKey) {
     if (!wasStuck || !tabSentinel.value) return
     nextTick(() => {
         // 1px más abajo: sigue pegada (compacta) y no da el salto a la grande
-        const top = tabSentinel.value!.getBoundingClientRect().top + scrollY - navH + 1
+        const y = tabSentinel.value!.getBoundingClientRect().top + scrollY
+        const top = y - navTopFor(y - navH) + 1
         scrollTo({ top, behavior: smooth() })
     })
 }
@@ -259,21 +262,27 @@ async function setVoided(voided: boolean | null) {
 <template>
     <MatchDetailSkeleton v-if="loading" />
 
-    <div v-else-if="hasError || !match || !us || !them" class="flex flex-col items-center text-center gap-4 py-12">
-        <p class="text-2xl font-black">No se ha podido cargar el partido</p>
-        <img src="/illustrations/bugfixingsvg.svg" class="w-full max-w-md select-none pointer-events-none" alt="" />
-        <a href="/partidos" class="btn btn-primary rounded-xl">Ver todos los partidos</a>
+    <div v-else-if="hasError || !match || !us || !them">
+        <nav class="breadcrumbs text-sm text-base-content/60" aria-label="Migas de pan">
+            <ul>
+                <li><a href="/" class="hover:text-primary">Inicio</a></li>
+                <li><a href="/partidos" class="hover:text-primary">Partidos</a></li>
+            </ul>
+        </nav>
+        <EmptyState illustration="/illustrations/bugfixingsvg.svg" title="No se ha podido cargar el partido" text="Puede que el enlace no sea de este club o que EA no responda ahora mismo.">
+            <a href="/partidos" class="btn btn-primary rounded-xl">Ver todos los partidos</a>
+        </EmptyState>
     </div>
 
     <div v-else class="w-full pb-2 [--us:var(--color-primary)] [--them:#2f6fd6] dark:[--them:#5b8def]"
         :class="rivalConfig && 'derby'" :style="rivalConfig ? { '--rival': rivalConfig.colors.primary } : undefined">
-        <div class="breadcrumbs text-sm">
+        <nav class="breadcrumbs text-sm text-base-content/60" aria-label="Migas de pan">
             <ul>
-                <li><a href="/">Inicio</a></li>
-                <li><a href="/partidos">Partidos</a></li>
-                <li>{{ us.name }} – {{ them.name }} · {{ shortDate }}</li>
+                <li><a href="/" class="hover:text-primary">Inicio</a></li>
+                <li><a href="/partidos" class="hover:text-primary">Partidos</a></li>
+                <li><span aria-current="page" class="text-base-content font-semibold">{{ us.name }} – {{ them.name }} · {{ shortDate }}</span></li>
             </ul>
-        </div>
+        </nav>
 
         <!-- ── Cabecera: marcador y KPIs ── -->
         <section class="relative bg-base-200 rounded-2xl shadow-md">
@@ -532,6 +541,8 @@ async function setVoided(voided: boolean | null) {
 }
 /* Justo bajo el menú de arriba, que también es sticky (su alto lo pone el script en --nav-h) */
 .tabs-bar {
-    top: var(--nav-h, 4rem);
+    top: var(--nav-top, 4rem);
+    /* El menú se esconde al bajar en móvil (--nav-top pasa a 0): la barra sube con él */
+    transition: top 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 </style>

@@ -90,6 +90,7 @@ const navTheme = isBase ? "nav-base bg-base-300 dark:bg-base-100 text-base-conte
 </nav>
 
 <script>
+    import { NAV_HIDE_MQ } from "../../lib/navOffset";
     // Los enlaces van en absoluto (para la animación del index), así que la distancia a la derecha
     // se calcula con el ancho real del botón de cuenta para que nunca se solapen
     function placeLinks() {
@@ -131,12 +132,57 @@ const navTheme = isBase ? "nav-base bg-base-300 dark:bg-base-100 text-base-conte
     }
     addEventListener("scroll", updateScrolled, { passive: true });
 
+    // Alto del menú en --nav-h, para las barras que van pegadas debajo (--nav-top en global.css)
+    let navObserver: ResizeObserver | null = null;
+    function measureNav() {
+        const nav = document.querySelector<HTMLElement>("nav.navbar");
+        if (!nav) return;
+        const apply = () => document.documentElement.style.setProperty("--nav-h", `${nav.offsetHeight}px`);
+        apply();
+        navObserver?.disconnect();
+        navObserver = new ResizeObserver(apply);
+        navObserver.observe(nav);
+    }
+
+    // En móvil y tablet el menú se esconde al bajar y vuelve al subir: deja la pantalla para el
+    // contenido. Con un margen (6px) para que un temblor del dedo no lo haga aparecer y desaparecer, y
+    // nunca arriba del todo ni mientras se usa algo de dentro (el menú de la cuenta abierto, el foco)
+    const hideMq = matchMedia(NAV_HIDE_MQ);
+    let lastY = scrollY;
+    function setNavHidden(hidden: boolean) {
+        const root = document.documentElement;
+        if (root.hasAttribute("data-nav-hidden") !== hidden) root.toggleAttribute("data-nav-hidden", hidden);
+    }
+    function updateHidden() {
+        const y = scrollY;
+        const d = y - lastY;
+        const nav = document.querySelector<HTMLElement>("nav.navbar");
+        if (!hideMq.matches || !nav || y < nav.offsetHeight * 2) {
+            setNavHidden(false);
+            lastY = y;
+            return;
+        }
+        if (Math.abs(d) < 6) return;
+        if (d > 0 && !nav.matches(":focus-within")) setNavHidden(true);
+        else if (d < 0) setNavHidden(false);
+        lastY = y;
+    }
+    addEventListener("scroll", updateHidden, { passive: true });
+    hideMq.addEventListener("change", updateHidden);
+    // Al entrar en el menú con el teclado, que se vea
+    document.addEventListener("focusin", (e) => {
+        if ((e.target as Element | null)?.closest?.("nav.navbar")) setNavHidden(false);
+    });
+
     function initNav() {
         markActive();
         placePill();
         const links = document.getElementById("navbar-links");
         if (links) new ResizeObserver(placePill).observe(links);
         updateScrolled();
+        measureNav();
+        lastY = scrollY;
+        setNavHidden(false);
     }
     initNav();
     // after-swap y no page-load: la transición captura la página nueva justo tras el cambio, y la
@@ -197,7 +243,16 @@ const navTheme = isBase ? "nav-base bg-base-300 dark:bg-base-100 text-base-conte
     /* Barra compacta al bajar: casi opaca (un poco translúcida, con desenfoque), esquinas de abajo
        redondeadas y sombra más marcada, como una lámina por encima del contenido */
     .navbar {
-        transition: background-color 0.3s, box-shadow 0.3s, border-radius 0.3s;
+        transition: background-color 0.3s, box-shadow 0.3s, border-radius 0.3s, translate 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    /* Escondido al bajar (móvil y tablet; ver updateHidden): sube entero, sombra incluida */
+    @media (max-width: 1023.98px) {
+        :global([data-nav-hidden]) .navbar {
+            translate: 0 calc(-100% - 2.5rem);
+        }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .navbar { transition: background-color 0.3s, box-shadow 0.3s, border-radius 0.3s; }
     }
     .nav-primary { --nav-bg: var(--color-primary); }
     .nav-base { --nav-bg: var(--color-base-300); }

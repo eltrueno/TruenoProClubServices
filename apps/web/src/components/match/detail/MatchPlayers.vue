@@ -17,10 +17,12 @@ import { onPlayerImageError } from "@/lib/playerImage"
 import { routes } from "@/lib/query"
 import MatchPitch from "./MatchPitch.vue"
 import { KPI_ICONS } from "@/lib/kpiIcons"
-import MatchCard from "./MatchCard.vue"
+import SectionCard from "@/components/ui/SectionCard.vue"
 import MvpIcon from "@/components/ui/MvpIcon.vue"
 import AssistIcon from "@/components/ui/AssistIcon.vue"
 import GoalIcon from "@/components/ui/GoalIcon.vue"
+import OptionToggle, { type ToggleOption } from "@/components/ui/OptionToggle.vue"
+import InfoDot from "@/components/ui/InfoDot.vue"
 
 const props = defineProps<{
     match: ClubMatchEntity
@@ -37,6 +39,8 @@ const fmt = (n: number, d = 0) => (Number.isFinite(n) ? n : 0).toLocaleString("e
 const signed = (n: number, d = 1) => `${n > 0 ? "+" : n < 0 ? "−" : "±"}${fmt(Math.abs(n), d)}`
 
 // ── Equipo y jugador elegidos ──
+/** Nuestro club o el rival (el selector común de la web) */
+const sideOptions = computed<ToggleOption<"us" | "them">[]>(() => [{ value: "us", label: props.match.ourClub.name }, { value: "them", label: "Rival" }])
 const side = ref<"us" | "them">(props.match.opponentClub.players.some((p) => p.playerId === props.initialPlayer) ? "them" : "us")
 const players = computed(() => (side.value === "us" ? props.match.ourClub.players : props.match.opponentClub.players)
     .slice().sort((a, b) => b.rating - a.rating))
@@ -203,12 +207,9 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
 
 <template>
     <div class="py-2">
-    <MatchCard title="Jugadores" hint="Pulsa un jugador en el campo para ver su partido al detalle.">
+    <SectionCard title="Jugadores" hint="Pulsa un jugador en el campo para ver su partido al detalle.">
         <template #actions>
-            <div role="group" aria-label="Equipo" class="join">
-                <button type="button" class="join-item btn btn-sm" :class="side === 'us' ? 'btn-primary' : 'bg-base-300! dark:bg-base-100! border-base-content/10'" :aria-pressed="side === 'us'" @click="side = 'us'">{{ match.ourClub.name }}</button>
-                <button type="button" class="join-item btn btn-sm" :class="side === 'them' ? 'btn-primary' : 'bg-base-300! dark:bg-base-100! border-base-content/10'" :aria-pressed="side === 'them'" @click="side = 'them'">Rival</button>
-            </div>
+            <OptionToggle v-model="side" :options="sideOptions" tone="primary" size="sm" label="Equipo" />
         </template>
 
         <!-- Campo (protagonista) y ficha del elegido -->
@@ -319,15 +320,12 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
                     <div>
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                             <p class="text-xs uppercase tracking-widest font-black text-base-content/50">Comparado con</p>
-                            <div role="group" aria-label="Comparar con" class="join w-full sm:w-auto">
-                                <button v-for="r in REFS" :key="r.key" type="button" class="join-item btn btn-xs flex-1 sm:flex-none" :class="reference === r.key && 'btn-primary'"
-                                    :disabled="r.disabled" :aria-pressed="reference === r.key" @click="reference = r.key">{{ r.label }}</button>
-                            </div>
+                            <OptionToggle v-model="reference" :options="REFS.map((r) => ({ value: r.key, label: r.label, disabled: r.disabled }))" size="xs" label="Comparar con" />
                         </div>
                         <dl class="flex flex-col gap-3 sm:gap-2.5">
                             <!-- Móvil: nombre, valor y diferencia arriba y la barra debajo. Desde sm, todo en una fila -->
                             <div v-for="(r, i) in rows" :key="r.label" class="grid grid-cols-[minmax(0,1fr)_auto_3rem] sm:grid-cols-[8rem_minmax(0,1fr)_3rem_3rem] items-center gap-x-2 gap-y-1 text-sm">
-                                <dt class="text-base-content/70 truncate">{{ r.label }}</dt>
+                                <dt class="text-base-content/70 truncate">{{ r.label }}<InfoDot /></dt>
                                 <!-- Al pasar por encima (o tocar): el valor de hoy, la referencia y la diferencia -->
                                 <div tabindex="0" class="tooltip tooltip-top col-span-3 row-start-2 sm:col-span-1 sm:row-start-auto py-1.5 -my-1.5 cursor-help focus-visible:outline-2 focus-visible:outline-primary rounded-full">
                                 <div class="tooltip-content text-left text-xs leading-snug px-3 py-2">
@@ -357,7 +355,7 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
                 </article>
             </Transition>
         </div>
-    </MatchCard>
+    </SectionCard>
     </div>
 </template>
 

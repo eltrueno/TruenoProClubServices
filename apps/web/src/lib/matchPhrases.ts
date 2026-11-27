@@ -24,6 +24,12 @@ export interface PhraseContext {
 
 interface Candidate { text: string; score: number }
 
+/**
+ * Las frases rojiblancas pesan un poco menos que las normales del mismo nivel: así salen cuando
+ * encajan de verdad, pero no tapan siempre al resto cuando hay varias igual de llamativas
+ */
+const ATLETI = 0.85
+
 /** Hash pequeño y estable de un texto (FNV-1a) */
 const hash = (s: string) => {
     let h = 2166136261
@@ -132,15 +138,15 @@ export function playerPhrase(p: MatchPlayerEntity, ctx?: PhraseContext): string 
 
     // ── Cholismo (rojiblanco de corazón) ──
     // Ganar 1-0 o por la mínima sin encajar: autobús aparcado
-    if (won && goalsAgainst === 0 && goalsFor === 1 && (gk || p.position === "defender")) add(86, "Aparcó el autobús y se llevó los tres puntos", "1-0 y a casa. El Cholo estaría orgulloso", "Cholismo puro: defender, sufrir y ganar")
-    else if (won && goalsAgainst === 0 && (gk || p.position === "defender")) add(60, "Partido a partido... y a cero", "Bloque bajo, cero goles y a celebrar")
-    if (!gk && p.tacklesSuccess >= 6 && tackleAcc !== null && tackleAcc >= 60) add(64, "Corrió como si jugara en el Metropolitano", "Intensidad de Cholo en la banda", "Cholismo en vena: a por cada balón")
-    if (won && goalsFor - goalsAgainst === 1 && p.rating >= 7.5) add(50, "Partido a partido. Hoy tocaba sufrir y ganar")
-    if (lost && goalsFor > 0 && goalsAgainst - goalsFor === 1 && p.rating >= 7) add(45, "Nunca dejes de creer... aunque hoy no llegara")
-    if (p.goals >= 1 && won && goalsFor - goalsAgainst === 1 && p.position === "forward") add(68, "Gol a lo Niño Torres: el que vale partidos")
-    if (gk && p.saves >= 6 && goalsAgainst <= 1) add(78, "Hoy era Oblak bajo palos", "Paradas a lo Oblak: con cara de no pasa nada")
-    if (!gk && p.passesMade >= 35 && passAcc !== null && passAcc >= 85) add(58, "Manejó el partido como Koke en sus mejores tardes")
-    if (p.goals >= 1 && p.assists >= 1 && p.position !== "defender") add(76, "Partido de Griezmann: marca, asiste y lo hace todo")
+    if (won && goalsAgainst === 0 && goalsFor === 1 && (gk || p.position === "defender")) add(86 * ATLETI, "Aparcó el autobús y se llevó los tres puntos", "1-0 y a casa. El Cholo estaría orgulloso", "Cholismo puro: defender, sufrir y ganar")
+    else if (won && goalsAgainst === 0 && (gk || p.position === "defender")) add(60 * ATLETI, "Partido a partido... y a cero", "Bloque bajo, cero goles y a celebrar")
+    if (!gk && p.tacklesSuccess >= 6 && tackleAcc !== null && tackleAcc >= 60) add(64 * ATLETI, "Corrió como si jugara en el Metropolitano", "Intensidad de Cholo en la banda", "Cholismo en vena: a por cada balón")
+    if (won && goalsFor - goalsAgainst === 1 && p.rating >= 7.5) add(50 * ATLETI, "Partido a partido. Hoy tocaba sufrir y ganar")
+    if (lost && goalsFor > 0 && goalsAgainst - goalsFor === 1 && p.rating >= 7) add(45 * ATLETI, "Nunca dejes de creer... aunque hoy no llegara")
+    if (p.goals >= 1 && won && goalsFor - goalsAgainst === 1 && p.position === "forward") add(68 * ATLETI, "Gol a lo Niño Torres: el que vale partidos")
+    if (gk && p.saves >= 6 && goalsAgainst <= 1) add(78 * ATLETI, "Hoy era Oblak bajo palos", "Paradas a lo Oblak: con cara de no pasa nada")
+    if (!gk && p.passesMade >= 35 && passAcc !== null && passAcc >= 85) add(58 * ATLETI, "Manejó el partido como Koke en sus mejores tardes")
+    if (p.goals >= 1 && p.assists >= 1 && p.position !== "defender") add(76 * ATLETI, "Partido de Griezmann: marca, asiste y lo hace todo")
 
     // ── Minutos ──
     if (mins < 20) add(45, "Cameo rápido pero intenso", "Entró, vio y se fue")
@@ -226,15 +232,15 @@ export function matchPhrase(m: MatchPhraseInput): string {
     if (m.redsAgainst >= 1 && won) add(38, "El rival se quedó con menos y lo aprovechamos")
 
     // ── Cholismo (rojiblanco de corazón) ──
-    if (won && diff === 1 && ga >= 1) add(64, "Partido a partido. Se sufrió, se ganó", "Sufrir es nuestra forma de ganar", "Si se cree y se trabaja, se puede")
-    if (won && ga === 0 && possession <= 45) add(82, "Menos balón, cero goles encajados, tres puntos. Manual del Cholo", "Bloque bajo, contra y a casa. Simeone aprueba")
-    if (won && m.shotsAgainst >= m.shotsFor && ga <= 1) add(58, "Defender como el Atleti: con los dientes apretados")
-    if (lost && diff === -1 && gf >= 1) add(52, "Nunca dejes de creer: la próxima cae")
-    if (tied && gf === 0 && m.shotsAgainst >= 8) add(70, "Un 0-0 de los que gustan en el Calderón")
-    if (won && diff >= 4) add(70, "Goleada en modo Metropolitano en noche de Champions")
-    if (lost && diff <= -3) add(50, "Coraje y corazón... hoy faltó lo otro")
-    if (m.penalties && won) add(93, "Penaltis y victoria: sangre fría rojiblanca", "Desde los once metros, corazón y cabeza")
-    if (m.penalties && lost) add(93, "Penaltis... ese trauma rojiblanco que nunca se va", "Se cayó en los penaltis. A levantarse, como siempre")
+    if (won && diff === 1 && ga >= 1) add(64 * ATLETI, "Partido a partido. Se sufrió, se ganó", "Sufrir es nuestra forma de ganar", "Si se cree y se trabaja, se puede")
+    if (won && ga === 0 && possession <= 45) add(82 * ATLETI, "Menos balón, cero goles encajados, tres puntos. Manual del Cholo", "Bloque bajo, contra y a casa. Simeone aprueba")
+    if (won && m.shotsAgainst >= m.shotsFor && ga <= 1) add(58 * ATLETI, "Defender como el Atleti: con los dientes apretados")
+    if (lost && diff === -1 && gf >= 1) add(52 * ATLETI, "Nunca dejes de creer: la próxima cae")
+    if (tied && gf === 0 && m.shotsAgainst >= 8) add(70 * ATLETI, "Un 0-0 de los que gustan en el Calderón")
+    if (won && diff >= 4) add(70 * ATLETI, "Goleada en modo Metropolitano en noche de Champions")
+    if (lost && diff <= -3) add(50 * ATLETI, "Coraje y corazón... hoy faltó lo otro")
+    if (m.penalties && won) add(93 * ATLETI, "Penaltis y victoria: sangre fría rojiblanca", "Desde los once metros, corazón y cabeza")
+    if (m.penalties && lost) add(93 * ATLETI, "Penaltis... ese trauma rojiblanco que nunca se va", "Se cayó en los penaltis. A levantarse, como siempre")
 
     if (m.derby) add(won ? 90 : lost ? 88 : 75, won ? "El derbi es nuestro" : lost ? "El derbi se fue al otro lado" : "Derbi igualado: nadie presume esta semana",
         won ? "Esta semana se presume en el grupo" : lost ? "Toca aguantar las bromas toda la semana" : "Tablas en el derbi")

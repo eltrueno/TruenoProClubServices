@@ -1,6 +1,7 @@
 ---
 import MatchesContainer from "@/components/match/MatchesContainer.vue";
 import Layout from "@layouts/Layout.astro";
+import PageHeader from "@components/layout/PageHeader.astro";
 import { CLUB } from "@/config/club";
 import MatchesSummary from "@components/seo/MatchesSummary.astro";
 import { buildLatestMatches } from "@/lib/buildData";
@@ -10,22 +11,20 @@ const latestMatches = await buildLatestMatches(20);
 
 // /partidos?q=&tipo=liga,playoff,amistoso&jugadores=&desde=&hasta=&min=&pagina= (los lee MatchesContainer en cliente;
 // también los de antes: ?id, ?liga, ?playoff, ?amistoso, ?player)
+const crumbs = [{ name: "Partidos", path: "/partidos" }];
 ---
 
 <Layout
 	title={`Partidos de ${CLUB.name} · Resultados y estadísticas`}
 	isindex={false}
 	description={`Resultados e historial de partidos de ${CLUB.name} en Clubes Pro de EA SPORTS FC: liga, playoffs y amistosos, con las estadísticas de cada jugador.`}
-	breadcrumb={[{ name: "Partidos", path: "/partidos" }]}
+	breadcrumb={crumbs}
 	ogImage="/og/partidos.png"
 	ogImageAlt={`Partidos de ${CLUB.name}`}
 >
 
 	<div class="w-full max-w-[90rem] mx-auto px-4 lg:px-8 py-8 lg:py-12 flex flex-col gap-6">
-		<header class="reveal-stagger">
-			<p class="text-xs uppercase tracking-[0.3em] font-black text-primary">{CLUB.name}</p>
-			<h1 class="text-4xl lg:text-5xl font-black tracking-tighter">Partidos</h1>
-		</header>
+		<PageHeader title="Partidos" crumbs={crumbs} />
 
 		<div id="matches-app">
 			<MatchesContainer client:only="vue">

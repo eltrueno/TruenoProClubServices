@@ -1,13 +1,13 @@
 <template>
     <div class="w-full min-h-screen pb-2 rounded-xl" v-if="!isloading && !hasError && playerProfile">
         <!-- Breadcrumbs -->
-        <div class="breadcrumbs text-sm ">
+        <nav class="breadcrumbs text-sm text-base-content/60" aria-label="Migas de pan">
             <ul>
-                <li><a href="/" class="">Inicio</a></li>
-                <li><a href="/plantilla" class="">Plantilla</a></li>
-                <li>{{ playerProfile.member.playerName }}</li>
+                <li><a href="/" class="hover:text-primary">Inicio</a></li>
+                <li><a href="/plantilla" class="hover:text-primary">Plantilla</a></li>
+                <li><span aria-current="page" class="text-base-content font-semibold">{{ playerProfile.member.playerName }}</span></li>
             </ul>
-        </div>
+        </nav>
         <!-- Hero Section -->
         <section class="relative bg-base-200 rounded-2xl shadow-md">
             <!-- Jugador sin cuenta vinculada: invitación discreta a vincularla, solo a quien aún no tiene
@@ -55,7 +55,7 @@
                                 :title="posFilter === Position[pos.name] ? 'Quitar el filtro' : `Ver solo sus partidos de ${translatePosition(pos.name).toLowerCase()}`"
                                 @click="handlePosFilter(Position[pos.name])">
                                 {{ translatePosition(pos.name) }}
-                                <span class="ml-1.5 font-semibold italic text-[0.95em] opacity-80">{{ pos.percentage }}%</span>
+                                <span class="ml-1.5 font-semibold italic text-[0.95em] opacity-90">{{ pos.percentage }}%</span>
                             </button>
                             <span v-if="posFilter === null && topPositions.length > 1" class="hidden sm:inline-flex items-center gap-1 text-xs text-base-content/40">
                                 <svg class="size-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
@@ -105,20 +105,24 @@
                         <span v-if="kpi.sub" class="text-[0.65rem] sm:text-xs text-base-content/45 font-medium mt-1 tabular-nums">{{ kpi.sub }}</span>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 sm:flex sm:justify-evenly [&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1 gap-y-4 mt-6 pt-5 border-t border-base-content/10 reveal-stagger">
-                    <div v-for="kpi in secondaryKpis" :key="kpi.label" class="flex justify-center px-2 min-w-0">
+                <!-- En el móvil, los cuatro en una sola fila compacta (icono, número y nombre corto, sin el
+                     "por partido", que está en Estadísticas); desde sm, en fila con todo el detalle -->
+                <div class="grid grid-cols-4 sm:flex sm:justify-evenly mt-5 pt-4 sm:mt-6 sm:pt-5 border-t border-base-content/10 reveal-stagger">
+                    <div v-for="kpi in secondaryKpis" :key="kpi.label" class="flex justify-center px-1 sm:px-2 min-w-0">
                         <!-- Contenido alineado a la izquierda pero centrado en su hueco: así la fila se ve centrada -->
-                        <div class="flex items-center gap-2.5 min-w-0">
-                            <MvpIcon v-if="kpi.icon === 'mvp'" class="size-6" />
+                        <div class="flex flex-col sm:flex-row items-center gap-1 sm:gap-2.5 min-w-0 text-center sm:text-left">
+                            <MvpIcon v-if="kpi.icon === 'mvp'" class="size-5 sm:size-6" />
                             <!-- Gol y asistencia: el balón y la bota de todo el detalle de partido -->
-                            <GoalIcon v-else-if="kpi.icon === 'goals'" class="size-6 shrink-0 text-base-content/45" />
-                            <AssistIcon v-else-if="kpi.icon === 'assists'" class="size-6 shrink-0 text-base-content/45" />
-                            <span v-else-if="kpi.icon === 'red'" class="w-4 h-6 shrink-0 rounded-[3px] bg-error mx-1" aria-hidden="true"></span>
-                            <svg v-else class="size-6 shrink-0 text-base-content/45" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="KPI_ICONS[kpi.icon]"></svg>
-                            <span class="min-w-0 leading-tight">
-                                <span class="block text-base-content/50 uppercase text-[0.6rem] sm:text-[0.65rem] font-black tracking-widest">{{ kpi.label }}</span>
+                            <GoalIcon v-else-if="kpi.icon === 'goals'" class="size-5 sm:size-6 shrink-0 text-base-content/45" />
+                            <AssistIcon v-else-if="kpi.icon === 'assists'" class="size-5 sm:size-6 shrink-0 text-base-content/45" />
+                            <span v-else-if="kpi.icon === 'red'" class="w-3.5 h-5 sm:w-4 sm:h-6 shrink-0 rounded-[3px] bg-error mx-1" aria-hidden="true"></span>
+                            <svg v-else class="size-5 sm:size-6 shrink-0 text-base-content/45" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="KPI_ICONS[kpi.icon]"></svg>
+                            <span class="min-w-0 leading-tight flex flex-col-reverse sm:flex-col">
+                                <span class="block text-base-content/50 uppercase text-[0.6rem] sm:text-[0.65rem] font-black tracking-wider sm:tracking-widest truncate">
+                                    <span class="sm:hidden" :aria-label="kpi.label">{{ kpi.short ?? kpi.label }}</span><span class="hidden sm:inline">{{ kpi.label }}</span>
+                                </span>
                                 <AnimatedNumber class="block text-lg sm:text-xl font-black" :value="kpi.value" />
-                                <span v-if="kpi.sub" class="block text-[0.65rem] text-base-content/45 font-medium tabular-nums">{{ kpi.sub }}</span>
+                                <span v-if="kpi.sub" class="hidden sm:block text-[0.65rem] text-base-content/45 font-medium tabular-nums">{{ kpi.sub }}</span>
                             </span>
                         </div>
                     </div>
@@ -217,16 +221,15 @@
 
     <!-- Error State -->
     <div class="flex flex-col h-full overflow-hidden" v-else>
-        <div class="breadcrumbs text-sm">
+        <nav class="breadcrumbs text-sm text-base-content/60" aria-label="Migas de pan">
             <ul>
-                <li><a href="/" class="">Inicio</a></li>
-                <li><a href="/plantilla" class="">Jugadores</a></li>
+                <li><a href="/" class="hover:text-primary">Inicio</a></li>
+                <li><a href="/plantilla" class="hover:text-primary">Plantilla</a></li>
             </ul>
-        </div>
-        <h3 class="text-center text-2xl p-3">No se ha podido encontrar al jugador</h3>
-        <div class="flex place-content-center p-6">
-            <img src="/illustrations/bugfixingsvg.svg" class="lg:w-2/3 w-full select-none pointer-events-none" alt="Image representing error">
-        </div>
+        </nav>
+        <EmptyState illustration="/illustrations/bugfixingsvg.svg" title="No se ha podido encontrar al jugador" text="Puede que no haya jugado nunca con el club o que el enlace esté mal.">
+            <a href="/plantilla" class="btn btn-primary rounded-xl">Ver la plantilla</a>
+        </EmptyState>
     </div>
 </template>
 
@@ -261,6 +264,8 @@
     import { subBarActive } from "@/composables/useStickySubBar";
     import PlayerDetailAchievements from "./PlayerDetailAchievements.vue";
     import PlayerDetailSkeleton from "./PlayerDetailSkeleton.vue";
+    import { navTop, navTopFor } from '@/lib/navOffset'
+    import EmptyState from "@/components/ui/EmptyState.vue"
 
     // /jugador?id=<playerId>&tab=stats|form|achievements|compare
     const playerId = getQueryParam("id")
@@ -315,7 +320,7 @@
     // bien con saltos de scroll grandes ni con la página en segundo plano
     const updateStuck = () => {
         const el = tabSentinel.value
-        tabsStuck.value = !!el && el.getBoundingClientRect().top < navH - 0.5
+        tabsStuck.value = !!el && el.getBoundingClientRect().top < navTop() - 0.5
     }
     const onResize = () => { measureNav(); updateStuck(); fullTabsH = 0 }
 
@@ -360,7 +365,8 @@
         if (!wasStuck || !tabSentinel.value) return
         nextTick(() => {
             // 1px más abajo: así sigue pegada (compacta) y no da el salto a la grande al llegar
-            const top = tabSentinel.value!.getBoundingClientRect().top + window.scrollY - navH + 1
+            const y = tabSentinel.value!.getBoundingClientRect().top + window.scrollY
+            const top = y - navTopFor(y - navH) + 1
             window.scrollTo({ top, behavior: smooth() })
         })
     }
@@ -530,11 +536,11 @@
         ]
     })
 
-    const secondaryKpis = computed(() => {
+    const secondaryKpis = computed<{ label: string; short?: string; icon: string; value: number; sub?: string }[]>(() => {
         const s = activeStats.value
         return [
             { label: 'Goles', icon: 'goals', value: s.goals ?? 0, sub: perMatch(s.goals ?? 0) },
-            { label: 'Asistencias', icon: 'assists', value: s.assists ?? 0, sub: perMatch(s.assists ?? 0) },
+            { label: 'Asistencias', short: 'Asist.', icon: 'assists', value: s.assists ?? 0, sub: perMatch(s.assists ?? 0) },
             { label: 'MVP', value: s.manOfTheMatch ?? 0, icon: 'mvp' },
             { label: 'Rojas', value: s.redCards ?? 0, icon: 'red' },
         ]
@@ -554,7 +560,9 @@
     }
     /* Justo bajo el menú de arriba, que también es sticky (su alto lo pone el script en --nav-h) */
     .tabs-bar {
-        top: var(--nav-h, 4rem);
+        top: var(--nav-top, 4rem);
+        /* El menú se esconde al bajar en móvil (--nav-top pasa a 0): la barra sube con él */
+        transition: top 0.3s cubic-bezier(0.22, 1, 0.36, 1);
     }
     .tab-body {
         min-height: calc(100svh - var(--nav-h, 4rem));

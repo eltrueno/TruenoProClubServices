@@ -20,6 +20,8 @@ import { MATCH_SCOPE_OPTIONS, type MatchScope } from "@/lib/matchScope"
 import { getQueryParam, routes, setQueryParams } from "@/lib/query"
 import { playerImage } from "@/lib/playerImage"
 import { paginate } from "@/lib/pagination"
+import EmptyState from "@/components/ui/EmptyState.vue"
+import { navTop } from "@/lib/navOffset"
 import {
     DEFAULT_SORT, REGULAR_MIN_GAMES, SQUAD_PAGE_SIZE, SQUAD_SORTS, buildSquad, filterSquad, isRegular, sortByKey, sortSquad,
     type SquadSortKey,
@@ -134,7 +136,7 @@ const toolbarSentinel = ref<HTMLElement | null>(null)
 const toolbarStuck = ref(false)
 const updateStuck = () => {
     const el = toolbarSentinel.value
-    const navH = document.querySelector<HTMLElement>("nav.navbar")?.offsetHeight ?? 68
+    const navH = navTop()
     toolbarStuck.value = !!el && el.getBoundingClientRect().top < navH + 4
 }
 onMounted(() => {
@@ -196,7 +198,7 @@ const AURA = ["aura-gold", "aura-silver", "aura-bronze"]
         <!-- Barra de filtros (fija al bajar). Sin pegar: parte del bloque. Pegada: lámina medio translúcida que se
              solapa sobre las cartas. En móvil: orden, buscador y "Filtros" (el resto en un panel) -->
         <div role="toolbar" aria-label="Filtrar y ordenar la plantilla"
-            class="sticky top-[4.25rem] z-30 -mx-3 lg:-mx-5 px-3 lg:px-5 py-3 flex flex-wrap items-center gap-2 transition-[border-radius,background-color,box-shadow] duration-300"
+            class="sticky top-[calc(var(--nav-top,4rem)+0.25rem)] z-30 -mx-3 lg:-mx-5 px-3 lg:px-5 py-3 flex flex-wrap items-center gap-2 transition-[top,border-radius,background-color,box-shadow] duration-300"
             :class="toolbarStuck
                 ? 'rounded-b-2xl bg-[color-mix(in_oklab,var(--toolbar-bg)_88%,transparent)] backdrop-blur-md shadow-lg shadow-black/25'
                 : 'rounded-t-3xl bg-(--toolbar-bg)'">
@@ -260,10 +262,7 @@ const AURA = ["aura-gold", "aura-silver", "aura-bronze"]
             <li v-for="n in 10" :key="n" class="skeleton aspect-[3/4] rounded-2xl"></li>
         </ul>
 
-        <div v-else-if="hasError" class="text-center py-12 text-base-content/60">
-            <p class="font-bold">La plantilla no está disponible ahora mismo</p>
-            <p class="text-sm">Vuelve a intentarlo en unos minutos.</p>
-        </div>
+        <EmptyState v-else-if="hasError" icon="error" tone="error" title="La plantilla no está disponible ahora mismo" text="Vuelve a intentarlo en unos minutos." />
 
         <template v-else>
             <!-- TransitionGroup: al reordenar o filtrar, las cartas se deslizan a su nuevo sitio -->
@@ -284,10 +283,9 @@ const AURA = ["aura-gold", "aura-silver", "aura-bronze"]
                 </li>
             </TransitionGroup>
 
-            <div v-else class="text-center py-12 text-base-content/60">
-                <p class="font-bold">No hay nadie con esos filtros</p>
-                <button type="button" class="btn btn-sm btn-ghost mt-2" @click="search = ''; positions = []; onlyRegulars = false">Quitar los filtros</button>
-            </div>
+            <EmptyState v-else icon="search" title="No hay nadie con esos filtros" text="Revisa el nombre o quita alguna posición.">
+                <button type="button" class="btn btn-sm btn-primary" @click="search = ''; positions = []; onlyRegulars = false">Quitar los filtros</button>
+            </EmptyState>
 
             <!-- Páginas (el paginador genérico; no pinta nada con una sola) -->
             <Paginator :items-count="shown.length" :items-per-page="SQUAD_PAGE_SIZE" :current-page="paged.page" label="Páginas de la plantilla" @pagechange="goToPage" />

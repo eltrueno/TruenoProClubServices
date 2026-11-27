@@ -138,18 +138,11 @@
                     </div>
 
                     <!-- Atajos (se empieza por los últimos 20) -->
-                    <div ref="presetBar" class="join dark:bg-base-100 bg-base-300 p-1 rounded-2xl w-full md:w-auto">
-                        <button
-                            v-for="preset in EVOLUTION_PRESETS"
-                            :key="preset.key"
-                            type="button"
-                            @click="setPreset(preset.key)"
-                            class="btn btn-xs join-item border-none flex-1 md:flex-none px-1.5 sm:px-3 lg:px-5"
-                            :class="activePreset === preset.key ? 'btn-primary shadow-sm' : 'btn-ghost'"
-                            :aria-pressed="activePreset === preset.key"
-                        >
-                            {{ preset.label }}
-                        </button>
+                    <!-- El selector común de la web; con un rango a mano (zoom, fechas) no queda ninguno marcado -->
+                    <div ref="presetBar" class="w-full md:w-auto overflow-x-auto">
+                        <OptionToggle :model-value="activePreset == null ? '' : String(activePreset)" :options="EVOLUTION_PRESETS.map((p) => ({ value: String(p.key), label: p.label }))"
+                            size="xs" tone="primary" label="Periodo de la gráfica"
+                            @update:model-value="(v) => setPreset(EVOLUTION_PRESETS.find((p) => String(p.key) === v)!.key)" />
                     </div>
                 </div>
 
@@ -163,9 +156,10 @@
                         :update-mode="chartUpdateMode"
                         @click="handleMainChartClick"
                     />
-                    <div v-else-if="evolutionMatches.length" class="h-full grid place-content-center justify-items-center gap-3 text-center">
-                        <p class="text-sm font-medium text-base-content/75">No hay partidos suyos entre esas fechas con estos filtros.</p>
-                        <button type="button" class="btn btn-sm btn-ghost" @click="showWholeChartAndFocus">Ver todas las fechas</button>
+                    <div v-else-if="evolutionMatches.length" class="h-full grid place-content-center">
+                        <EmptyState compact icon="calendar" title="Ningún partido suyo en esas fechas" text="Con estos filtros no jugó nada en ese rango.">
+                            <button type="button" class="btn btn-sm btn-primary" @click="showWholeChartAndFocus">Ver todas las fechas</button>
+                        </EmptyState>
                     </div>
 
                     <MatchChartTooltip
@@ -357,22 +351,9 @@
                         </div>
                     </div>
 
-                    <div class="join dark:bg-base-100 bg-base-300 p-1 rounded-2xl w-full md:w-auto justify-around md:justify-start">
-                        <button
-                            v-for="preset in [
-                                { val: 'all', label: 'Todo' },
-                                { val: 5, label: 'Últ. 5' },
-                                { val: 10, label: 'Últ. 10' },
-                                { val: 20, label: 'Últ. 20' }
-                            ]"
-                            :key="preset.val"
-                            @click="setTableQuickRange(preset.val as any)"
-                            class="btn btn-xs join-item capitalize border-none px-4 lg:px-6"
-                            :class="tableActiveQuickRange === preset.val ? 'btn-primary shadow-sm' : 'btn-ghost'"
-                        >
-                            {{ preset.label }}
-                        </button>
-                    </div>
+                    <OptionToggle :model-value="String(tableActiveQuickRange)" :options="TABLE_RANGES.map((r) => ({ value: String(r.val), label: r.label }))"
+                        size="xs" tone="primary" label="Partidos de la tabla"
+                        @update:model-value="(v) => setTableQuickRange(TABLE_RANGES.find((r) => String(r.val) === v)!.val)" />
                 </div>
                 
 
@@ -605,6 +586,8 @@
     import { fullRange, lastRange } from '@/lib/chartRange'
     import { useChartWindow, type ChartWindowPreset } from '@/composables/useChartWindow'
     import { useChartZoomPan } from '@/composables/useChartZoomPan'
+    import OptionToggle from "@/components/ui/OptionToggle.vue";
+    import EmptyState from "@/components/ui/EmptyState.vue"
     const mainChartContainer = ref<HTMLElement | null>(null)
     const { tooltip, externalTooltipHandler, setHoveringTooltip, pinTooltip, closeTooltip } = useChartExternalTooltip()
 
@@ -834,7 +817,7 @@
     const showWholeChartAndFocus = async () => {
         showWholeChart()
         await nextTick()
-        presetBar.value?.querySelector<HTMLElement>('[aria-pressed="true"]')?.focus()
+        presetBar.value?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus()
     }
 
     // Rueda y arrastre sobre la propia gráfica
@@ -1355,6 +1338,9 @@
     })
 
     const tableActiveQuickRange = ref<'all' | 5 | 10 | 20>('all')
+    const TABLE_RANGES: { val: 'all' | 5 | 10 | 20; label: string }[] = [
+        { val: 'all', label: 'Todo' }, { val: 5, label: 'Últ. 5' }, { val: 10, label: 'Últ. 10' }, { val: 20, label: 'Últ. 20' },
+    ]
 
     const setTableQuickRange = (range: 'all' | 5 | 10 | 20) => {
         tableActiveQuickRange.value = range

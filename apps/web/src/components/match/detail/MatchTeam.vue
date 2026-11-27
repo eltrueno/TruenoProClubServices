@@ -8,9 +8,10 @@ import { computed, ref } from "vue"
 import type ClubMatchEntity from "@/model/match/ClubMatchEntity"
 import { shareOf, type ShareMetric } from "@/lib/matchInsights"
 import { routes } from "@/lib/query"
-import MatchCard from "./MatchCard.vue"
+import SectionCard from "@/components/ui/SectionCard.vue"
 import { useMembers } from "@/composables/useMembers"
 import MvpIcon from "@/components/ui/MvpIcon.vue"
+import OptionToggle, { type ToggleOption } from "@/components/ui/OptionToggle.vue"
 
 const props = defineProps<{ match: ClubMatchEntity; myId?: string | null }>()
 const { memberFor } = useMembers()
@@ -28,6 +29,8 @@ const ratings = computed(() =>
         .sort((a, b) => b.p.rating - a.p.rating || Number(b.ours) - Number(a.ours)))
 
 // ── Reparto ──
+/** Nuestro club o el rival (el selector común de la web) */
+const sideOptions = computed<ToggleOption<"us" | "them">[]>(() => [{ value: "us", label: props.match.ourClub.name }, { value: "them", label: "Rival" }])
 const side = ref<"us" | "them">("us")
 const METRICS: { key: ShareMetric; label: string }[] = [
     { key: "goals", label: "Goles" },
@@ -55,7 +58,7 @@ const pct = (n: number) => `${Math.round(n * 100)}%`
 <template>
     <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-4 sm:gap-6 py-2">
         <!-- Notas -->
-        <MatchCard title="Notas" hint="Todos los jugadores de los dos equipos, de mejor a peor nota.">
+        <SectionCard title="Notas" hint="Todos los jugadores de los dos equipos, de mejor a peor nota.">
             <template #actions>
                 <span class="flex items-center gap-3 text-xs font-bold">
                     <span class="flex items-center gap-1.5"><span class="size-3 rounded-sm bg-(--us)"></span>{{ match.ourClub.name }}</span>
@@ -74,15 +77,12 @@ const pct = (n: number) => `${Math.round(n * 100)}%`
                     <b class="tabular-nums text-right">{{ fmt1(x.p.rating) }}</b>
                 </li>
             </ol>
-        </MatchCard>
+        </SectionCard>
 
         <!-- Quién llevó el peso -->
-        <MatchCard title="Quién llevó el peso" hint="Qué parte de los goles, tiros, pases y entradas del equipo hizo cada jugador.">
+        <SectionCard title="Quién llevó el peso" hint="Qué parte de los goles, tiros, pases y entradas del equipo hizo cada jugador.">
             <template #actions>
-                <div role="group" aria-label="Equipo" class="join">
-                    <button type="button" class="join-item btn btn-sm" :class="side === 'us' ? 'btn-primary' : 'bg-base-300! dark:bg-base-100! border-base-content/10'" :aria-pressed="side === 'us'" @click="side = 'us'">{{ match.ourClub.name }}</button>
-                    <button type="button" class="join-item btn btn-sm" :class="side === 'them' ? 'btn-primary' : 'bg-base-300! dark:bg-base-100! border-base-content/10'" :aria-pressed="side === 'them'" @click="side = 'them'">Rival</button>
-                </div>
+                <OptionToggle v-model="side" :options="sideOptions" tone="primary" size="sm" label="Equipo" />
             </template>
             <Transition name="side-swap" mode="out-in">
             <div :key="side" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -105,7 +105,7 @@ const pct = (n: number) => `${Math.round(n * 100)}%`
                 </div>
             </div>
             </Transition>
-        </MatchCard>
+        </SectionCard>
     </div>
 </template>
 

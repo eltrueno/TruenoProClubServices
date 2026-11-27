@@ -31,8 +31,14 @@ const clues = [
 <!-- overflow-x-clip: el campo y las pistas entran de lado (reveal-left/right) y, sin recortar, abrían
      scroll horizontal. clip y no hidden: hidden haría de esto un contenedor de scroll y pararía view() -->
 <div class="w-full max-w-6xl mx-auto px-4 lg:px-8 py-10 lg:py-14 flex flex-col gap-14 lg:gap-20 overflow-x-clip">
-	<!-- Cabecera -->
+	<!-- Cabecera, con las migas como en el resto de páginas interiores (alineadas a la izquierda) -->
 	<header class="text-center reveal-stagger">
+		<nav class="breadcrumbs text-sm py-0 mb-8 text-base-content/60 text-left" aria-label="Migas de pan">
+			<ul>
+				<li><a href="/" class="hover:text-primary">Inicio</a></li>
+				<li><span aria-current="page" class="text-base-content font-semibold">TOTW</span></li>
+			</ul>
+		</nav>
 		<span class="inline-flex items-center gap-2 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-black uppercase tracking-[0.25em]">
 			<span class="teaser-dot size-2 rounded-full bg-primary"></span>
 			Próximamente

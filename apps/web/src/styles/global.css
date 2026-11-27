@@ -17,8 +17,15 @@
   --color-primary-content: #ffffff;
   --color-secondary: #0037ff;
   --color-secondary-content: #ffffff;
-  /* Error: un rojo coral, ni el rosa apagado de DaisyUI ni el rojo del club */
-  --color-error: #ef4444;
+  /* Estados más oscuros que los de DaisyUI: sobre blanco, el verde, el ámbar y el rojo de serie no
+     llegan al contraste de texto (4,5:1; el verde se quedaba en 2:1). Siguen sirviendo de relleno */
+  --color-success: #15803d;
+  --color-success-content: #ffffff;
+  --color-warning: #d97706;
+  --color-warning-content: #1c1917;
+  /* Error: rojo coral, ni el rosa apagado de DaisyUI ni el rojo del club (un punto más oscuro que en
+     el oscuro, para el contraste sobre blanco) */
+  --color-error: #dc2626;
   --color-error-content: #ffffff;
   /* Redondeos, tamaños y bordes como en Tourney; sin el relieve 3D ni el ruido de DaisyUI 5 */
   --radius-selector: 0.5rem;
@@ -234,3 +241,43 @@
   --text-16xl: 20rem;
 
 }
+
+/*
+ * Tema claro: los textos secundarios con el color del texto muy rebajado (/40, /45, /50, /55) se ven
+ * bien sobre fondo oscuro, pero sobre blanco no llegan al contraste mínimo (4,5:1; se quedaban en
+ * 2,5–3,4). En claro suben a ~64 %, lo justo para pasarlo, sin tocar cada componente. Los /30 y /25
+ * quedan como están: se usan para separadores y rayas, no para texto que haya que leer.
+ */
+[data-theme="light"] :is(.text-base-content\/40, .text-base-content\/45, .text-base-content\/50, .text-base-content\/55) {
+  color: color-mix(in oklab, var(--color-base-content) 64%, transparent);
+}
+/* /60 se queda justo en el límite (4,49:1): un pelín más */
+[data-theme="light"] .text-base-content\/60 {
+  color: color-mix(in oklab, var(--color-base-content) 67%, transparent);
+}
+/*
+ * Tema claro: el texto en verde / ámbar / rojo, un tono más oscuro que su relleno. Así también se
+ * lee sobre su propio fondo tintado (chips "bg-success/12 text-success", diferencias +0,8 / −0,1…),
+ * donde el color de relleno se quedaba en 3,3–3,8:1. Los rellenos (botones, barras, notas) no cambian.
+ */
+[data-theme="light"] .text-success { color: #166534; }
+[data-theme="light"] .text-warning { color: #854d0e; }
+[data-theme="light"] .text-error { color: #b91c1c; }
+
+/*
+ * Foco visible con teclado en toda la web: un anillo del color del club en cualquier enlace, botón,
+ * campo o elemento con tabindex que no traiga el suyo. Con :where() pesa 0, así que los focos propios
+ * de cada componente (outline-primary, ring-…, el blanco de las fichas del campo) siguen mandando.
+ * Solo con :focus-visible: al hacer clic con el ratón no sale.
+ */
+:where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"]), [role="button"], [role="radio"], [role="tab"]):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/*
+ * Lo que tapa el menú de arriba: su alto (--nav-h, lo mide Navbar.astro) o 0 cuando en móvil se
+ * esconde al bajar (data-nav-hidden en <html>). Las barras pegadas bajo el menú usan --nav-top.
+ */
+:root { --nav-top: var(--nav-h, 4rem); }
+:root[data-nav-hidden] { --nav-top: 0px; }

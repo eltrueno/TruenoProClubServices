@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Tarjeta de un bloque de la ficha de partido, con el mismo estilo que las de la ficha de jugador
+ * Tarjeta de un bloque (ficha de partido, estadísticas y comparador de la ficha de jugador…), con el estilo de la ficha de jugador
  * (título en mayúsculas con la raya del club a la izquierda) y una línea que explica qué se ve.
  * Sus animaciones (barras que crecen, fichas que entran…) esperan a que la tarjeta se vea en
  * pantalla: si arrancaran al montar, las de abajo acabarían sin que nadie las viera (.anim-gate).
