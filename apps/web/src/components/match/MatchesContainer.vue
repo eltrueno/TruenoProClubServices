@@ -1,327 +1,290 @@
+<script setup lang="ts">
+/**
+ * Página de partidos (/partidos), con el mismo lenguaje que la plantilla:
+ * - Barra de filtros pegada al bajar: buscador (rival o id), tipo (liga, playoff, amistoso), jugadores
+ *   (que estuvieran todos), fechas y, en "Más", el mínimo de jugadores nuestros. Todo en la URL.
+ * - Resumen de lo filtrado: balance, goles, % de victorias y racha con la que acaba.
+ * - Partidos agrupados por mes (cada mes con su balance), en filas que llevan al detalle del partido.
+ * La lógica, en lib/matchList.ts (test/matchList.test.ts).
+ */
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
+import type { MatchType } from "@trueno-proclub-services/shared"
+import { useMatches } from "@/composables/useMatches"
+import { useMembers } from "@/composables/useMembers"
+import { usePlayerStats } from "@/composables/usePlayerStats"
+import { useAuth } from "@/composables/useAuth"
+import { currentStreak, filterMatches, groupByMonth, recordOf } from "@/lib/matchList"
+import { paginate } from "@/lib/pagination"
+import { getQueryParam, hasQueryParam, setQueryParams } from "@/lib/query"
+import { PLAYER_PLACEHOLDER } from "@/lib/playerImage"
+import Paginator from "@/components/Paginator.vue"
+import DateRangePicker from "@/components/ui/DateRangePicker.vue"
+import PlayerPickerModal, { type PickerItem } from "@/components/ui/PlayerPickerModal.vue"
+import MatchRow from "./MatchRow.vue"
+
+const { matches, loading, status, load: loadMatches } = useMatches()
+const { members, load: loadMembers } = useMembers()
+const { positionsOf, load: loadPositions } = usePlayerStats()
+const { myPlayerId, isLoggedIn, loadMyMember } = useAuth()
+watch(isLoggedIn, (l) => { if (l) loadMyMember() }, { immediate: true })
+
+// ── Filtros (de la URL; también los de antes: ?id, ?liga, ?playoff, ?amistoso, ?player) ──
+const TYPES: { value: MatchType; label: string; legacy: string }[] = [
+    { value: "league", label: "Liga", legacy: "liga" },
+    { value: "playoff", label: "Playoff", legacy: "playoff" },
+    { value: "friendly", label: "Amistoso", legacy: "amistoso" },
+]
+const fromQuery = (): MatchType[] => {
+    const tipo = getQueryParam("tipo")
+    if (tipo) return TYPES.filter((t) => tipo.split(",").includes(t.legacy)).map((t) => t.value)
+    const legacy = TYPES.filter((t) => hasQueryParam(t.legacy) || (t.value === "friendly" && hasQueryParam("draft")))
+    return legacy.length ? legacy.map((t) => t.value) : []
+}
+const query = ref(getQueryParam("q") || getQueryParam("id"))
+/** vacío = todos los tipos */
+const types = ref<MatchType[]>(fromQuery())
+const players = ref<string[]>((getQueryParam("jugadores") || getQueryParam("player")).split(",").filter(Boolean))
+const dates = ref({ startDate: getQueryParam("desde"), endDate: getQueryParam("hasta") })
+const minPlayers = ref(Number(getQueryParam("min")) || 0)
+const page = ref(Number(getQueryParam("pagina")) || 1)
+
+const toggleType = (t: MatchType) => { types.value = types.value.includes(t) ? types.value.filter((x) => x !== t) : [...types.value, t] }
+const activeFilters = computed(() => (query.value ? 1 : 0) + (types.value.length ? 1 : 0) + (players.value.length ? 1 : 0) + (dates.value.startDate ? 1 : 0) + (minPlayers.value ? 1 : 0))
+function clearFilters() {
+    query.value = ""; types.value = []; players.value = []; dates.value = { startDate: "", endDate: "" }; minPlayers.value = 0
+}
+
+watch([query, types, players, dates, minPlayers], () => { page.value = 1 })
+watch([query, types, players, dates, minPlayers, page], () => setQueryParams({
+    q: query.value.trim() || null, id: null,
+    tipo: types.value.length ? TYPES.filter((t) => types.value.includes(t.value)).map((t) => t.legacy).join(",") : null,
+    liga: null, playoff: null, amistoso: null, draft: null,
+    jugadores: players.value.length ? players.value.join(",") : null, player: null,
+    desde: dates.value.startDate || null, hasta: dates.value.endDate || null,
+    min: minPlayers.value ? String(minPlayers.value) : null,
+    pagina: page.value > 1 ? String(page.value) : null,
+}), { deep: true })
+
+// ── Lista ──
+const filtered = computed(() => filterMatches(matches.value, {
+    query: query.value,
+    types: types.value.length ? types.value : TYPES.map((t) => t.value),
+    players: players.value,
+    from: dates.value.startDate && dates.value.endDate ? dates.value.startDate : "",
+    to: dates.value.startDate && dates.value.endDate ? dates.value.endDate : "",
+    minPlayers: minPlayers.value,
+}))
+const PAGE_SIZE = 20
+const paged = computed(() => paginate(filtered.value, page.value, PAGE_SIZE))
+const groups = computed(() => groupByMonth(paged.value.items, filtered.value))
+const listTop = ref<HTMLElement | null>(null)
+function goToPage(p: number) {
+    page.value = p
+    listTop.value?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" })
+}
+
+// ── Resumen de lo filtrado ──
+const record = computed(() => recordOf(filtered.value))
+const streak = computed(() => currentStreak(filtered.value))
+const winPct = computed(() => (record.value.games ? Math.round((record.value.wins / record.value.games) * 100) : 0))
+const STREAK_WORD = { win: ["victoria", "victorias"], tie: ["empate", "empates"], loose: ["derrota", "derrotas"] } as const
+const playerNames = computed(() => players.value.map((id) => members.value.find((m) => m.playerId === id)?.playerName ?? "?"))
+const withPlayers = computed(() => {
+    const n = playerNames.value
+    return n.length === 0 ? "" : n.length === 1 ? `con ${n[0]}` : `con ${n.slice(0, -1).join(", ")} y ${n[n.length - 1]} juntos`
+})
+
+// ── Selector de jugadores (el genérico) ──
+const pickerItems = computed<PickerItem[]>(() => members.value.map((m) => ({ id: m.playerId, name: m.playerName, image: m.imageUrl, positions: positionsOf(m.playerId), member: m })))
+
+// ── Barra pegada (como la de la plantilla) ──
+const sentinel = ref<HTMLElement | null>(null)
+const stuck = ref(false)
+const updateStuck = () => {
+    const navH = document.querySelector<HTMLElement>("nav.navbar")?.offsetHeight ?? 68
+    stuck.value = !!sentinel.value && sentinel.value.getBoundingClientRect().top < navH + 4
+}
+onMounted(() => {
+    addEventListener("scroll", updateStuck, { passive: true })
+    addEventListener("resize", updateStuck, { passive: true })
+    updateStuck()
+    loadPositions()
+    loadMembers()
+    loadMatches()
+})
+onBeforeUnmount(() => {
+    removeEventListener("scroll", updateStuck)
+    removeEventListener("resize", updateStuck)
+})
+const filtersDialog = ref<HTMLDialogElement | null>(null)
+const hasError = computed(() => !loading.value && status.value !== 200)
+</script>
+
 <template>
-    <div role="container" class="w-full overflow-hidden">
-        <div class="breadcrumbs text-sm ">
-            <ul>
-                <li><a href="/" class="">Inicio</a></li>
-                <li><a href="/partidos" class="">Partidos</a></li>
-            </ul>
-        </div>
-        <header role="container" class="w-full py-4 px-6 h-full rounded-lg shadow-xl dark:shadow bg-base-200">
-            <div class="p-4 grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-10 justify-around items-center h-full">
-                <div class="flex flex-col h-full justify-between gap-1">
-                    <div class="form-control flex flex-col h-full justify-between">
-                        <span class="text-center font-semibold">Filtrar por ID</span>
-                        <input type="number" placeholder="ID Partido" class="input input-bordered w-full" v-model="IDFilter"/>
+    <!-- Todo sobre un bloque con fondo, la barra de filtros un tono más marcado (como la plantilla) -->
+    <div class="w-full flex flex-col gap-5 rounded-3xl bg-(--list-bg) px-3 pb-4 lg:px-5 lg:pb-6
+        [--list-bg:color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-100))]
+        dark:[--list-bg:color-mix(in_oklab,var(--color-base-200)_50%,var(--color-base-300))]
+        [--toolbar-bg:color-mix(in_oklab,var(--color-base-200)_94%,var(--color-base-content))] dark:[--toolbar-bg:color-mix(in_oklab,var(--color-base-200)_92%,var(--color-base-content))]">
+        <div ref="sentinel" aria-hidden="true" class="h-0 -mb-5"></div>
+        <!-- Barra de filtros (pegada al bajar). En móvil: buscador y "Filtros" (el resto en un panel) -->
+        <div role="toolbar" aria-label="Filtrar partidos"
+            class="sticky top-[4.25rem] z-30 -mx-3 lg:-mx-5 px-3 lg:px-5 py-3 flex flex-wrap items-center gap-2 transition-[border-radius,background-color,box-shadow] duration-300"
+            :class="stuck ? 'rounded-b-2xl bg-[color-mix(in_oklab,var(--toolbar-bg)_88%,transparent)] backdrop-blur-md shadow-lg shadow-black/25' : 'rounded-t-3xl bg-(--toolbar-bg)'">
+            <label class="input input-sm rounded-xl flex-1 min-w-40 bg-base-100">
+                <svg class="size-4 opacity-60" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" /></svg>
+                <input v-model="query" type="search" placeholder="Buscar rival o id del partido" aria-label="Buscar rival o id del partido" />
+            </label>
+
+            <div class="hidden md:flex flex-wrap items-center gap-2">
+                <!-- Tipo: chips, varias a la vez; sin ninguna, todos -->
+                <div role="group" aria-label="Tipo de partido (puedes marcar varios)" class="flex items-center gap-1">
+                    <button v-for="t in TYPES" :key="t.value" type="button" :aria-pressed="types.includes(t.value)"
+                        class="btn btn-sm rounded-full font-bold" :class="types.includes(t.value) ? 'btn-primary' : 'btn-ghost bg-base-100/60'"
+                        @click="toggleType(t.value)">{{ t.label }}</button>
+                </div>
+                <div class="w-48">
+                    <PlayerPickerModal v-model="players" :items="pickerItems" multiple zoom="2xl" :fallback-image="PLAYER_PLACEHOLDER"
+                        title="Partidos en los que estuvieron…" placeholder="Jugadores" search-placeholder="Buscar jugador…" size="sm" />
+                </div>
+                <div class="w-56"><DateRangePicker v-model="dates" size="sm" placeholder="Fechas" /></div>
+                <!-- Lo que menos se usa, en un desplegable -->
+                <details class="dropdown dropdown-end">
+                    <summary class="btn btn-sm rounded-xl bg-base-100 border-base-content/10">Más<span v-if="minPlayers" class="badge badge-xs badge-primary">1</span></summary>
+                    <div class="dropdown-content z-40 mt-2 w-64 rounded-2xl bg-base-100 p-4 shadow-xl ring-1 ring-base-content/10">
+                        <label class="flex items-center justify-between text-sm font-bold mb-2" for="min-players">Mínimo de jugadores nuestros <span class="tabular-nums text-primary">{{ minPlayers || "—" }}</span></label>
+                        <input id="min-players" v-model.number="minPlayers" type="range" min="0" max="11" class="range range-xs range-primary" />
                     </div>
-                    <div class="form-control flex flex-col h-full justify-between">
-                        <div class="w-full flex flex-row p-2 font-semibold">
-                            <span class="self-start w-full">Jugadores mínimos</span>
-                            <span class="self-end text-end">{{ minPlayersFilter }}</span>
+                </details>
+            </div>
+            <button v-if="activeFilters" type="button" class="hidden md:inline-flex btn btn-sm btn-ghost rounded-xl text-base-content/60" @click="clearFilters">Quitar filtros</button>
+            <button type="button" class="md:hidden btn btn-sm rounded-xl bg-base-100 border-base-content/10 gap-1.5" @click="filtersDialog?.showModal()">
+                <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" d="M3 6h18M6 12h12M10 18h4" /></svg>
+                Filtros <span v-if="activeFilters" class="badge badge-xs badge-primary">{{ activeFilters }}</span>
+            </button>
+        </div>
+
+        <!-- Cargando -->
+        <div v-if="loading" class="flex flex-col gap-3" aria-busy="true">
+            <div class="skeleton h-24 w-full rounded-2xl"></div>
+            <div v-for="n in 6" :key="n" class="skeleton h-20 w-full rounded-2xl"></div>
+        </div>
+
+        <div v-else-if="hasError" class="text-center py-12 text-base-content/60">
+            <p class="font-bold">Los partidos no están disponibles ahora mismo</p>
+            <p class="text-sm">Vuelve a intentarlo en unos minutos.</p>
+        </div>
+
+        <div v-else-if="!matches.length" class="flex flex-col items-center gap-2 py-10 text-center">
+            <p class="text-2xl font-black">Todavía no hay partidos</p>
+            <p class="text-base-content/60">Se añaden solos en cuanto el club juega. ¡Vuelve pronto!</p>
+            <img src="/illustrations/soccer1.svg" class="w-full max-w-xs mt-4 select-none pointer-events-none" alt="" />
+        </div>
+
+        <template v-else>
+            <!-- Resumen de lo que se está viendo -->
+            <section class="summary rounded-2xl bg-base-100 dark:bg-base-200 ring-1 ring-base-content/5 p-4 sm:p-5" aria-label="Resumen de los partidos filtrados">
+                <p class="text-xs text-base-content/60 mb-3">
+                    <b class="text-base-content">{{ filtered.length }}</b> {{ filtered.length === 1 ? "partido" : "partidos" }}<template v-if="withPlayers"> {{ withPlayers }}</template><template v-if="filtered.length !== record.games"> · {{ filtered.length - record.games }} nulos, que no cuentan</template>
+                </p>
+                <div v-if="record.games" class="grid grid-cols-2 sm:grid-cols-4 gap-4 items-end">
+                    <div class="col-span-2">
+                        <p class="flex items-baseline gap-3 font-black tabular-nums">
+                            <span class="text-3xl text-success">{{ record.wins }}<span class="text-xs ml-0.5">V</span></span>
+                            <span class="text-3xl">{{ record.ties }}<span class="text-xs ml-0.5 text-base-content/60">E</span></span>
+                            <span class="text-3xl text-error">{{ record.losses }}<span class="text-xs ml-0.5">D</span></span>
+                        </p>
+                        <div class="flex h-2 mt-2 rounded-full overflow-hidden bg-base-content/8" aria-hidden="true">
+                            <span class="bar bg-success" :style="{ width: `${(record.wins / record.games) * 100}%` }"></span>
+                            <span class="bar bg-base-content/35" :style="{ width: `${(record.ties / record.games) * 100}%` }"></span>
+                            <span class="bar bg-error" :style="{ width: `${(record.losses / record.games) * 100}%` }"></span>
                         </div>
-                        <input v-model="minPlayersFilter" type="range" min="2" max="11"  class="range range-sm" v-if="memberStatus==200 && !isMembersLoading" />
+                    </div>
+                    <div>
+                        <p class="text-[0.65rem] uppercase tracking-widest font-black text-base-content/50">Goles</p>
+                        <p class="text-xl font-black tabular-nums">{{ record.goalsFor }}<span class="text-base-content/30 mx-1">–</span>{{ record.goalsAgainst }}</p>
+                        <p class="text-xs text-base-content/60 tabular-nums">{{ (record.goalsFor / record.games).toLocaleString("es-ES", { maximumFractionDigits: 1 }) }} por partido</p>
+                    </div>
+                    <div>
+                        <p class="text-[0.65rem] uppercase tracking-widest font-black text-base-content/50">Victorias</p>
+                        <p class="text-xl font-black tabular-nums">{{ winPct }}%</p>
+                        <p v-if="streak && streak.count > 1" class="text-xs font-bold" :class="streak.result === 'win' ? 'text-success' : streak.result === 'loose' ? 'text-error' : 'text-base-content/60'">
+                            Racha: {{ streak.count }} {{ STREAK_WORD[streak.result][1] }}
+                        </p>
+                        <p v-else-if="streak" class="text-xs text-base-content/60">Último: {{ STREAK_WORD[streak.result][0] }}</p>
                     </div>
                 </div>
-                <div class="flex flex-col h-full justify-start gap-1">
-                    <span class="text-center font-semibold">Filtrar por fechas</span>
-                    <DateRangePicker v-model="dateFilter" size="md" />
-                    <div class="form-control flex flex-col h-full justify-between">
-                        <span class="text-center font-semibold">Filtrar por jugadores</span>
-                        <PlayerPickerModal
-                            v-if="memberStatus==200 && !isMembersLoading"
-                            v-model="selectedPlayerIds"
-                            :items="memberItems"
-                            zoom="2xl"
-                            multiple
-                            title="Filtrar por jugadores"
-                            placeholder="Todos los jugadores"
-                            search-placeholder="Buscar jugador…"
-                            :fallback-image="PLAYER_PLACEHOLDER"
-                            size="md"
-                            class="mt-1"
-                        />
+            </section>
+
+            <div ref="listTop" class="scroll-mt-36 -mb-2" aria-hidden="true"></div>
+
+            <!-- Por meses -->
+            <div v-if="groups.length" class="flex flex-col gap-5">
+                <section v-for="g in groups" :key="g.key" :aria-label="g.label">
+                    <header class="month-head sticky z-20 flex items-baseline justify-between gap-3 py-2 mb-2 bg-(--list-bg)/95 backdrop-blur-sm">
+                        <h2 class="font-black text-lg">{{ g.label }}</h2>
+                        <p v-if="g.record.games" class="text-xs font-bold tabular-nums text-base-content/70">
+                            <span class="text-success">{{ g.record.wins }}V</span> · {{ g.record.ties }}E · <span class="text-error">{{ g.record.losses }}D</span>
+                            <span class="hidden sm:inline text-base-content/50"> · {{ g.record.goalsFor }}–{{ g.record.goalsAgainst }}</span>
+                        </p>
+                    </header>
+                    <ul class="flex flex-col gap-2">
+                        <li v-for="(m, i) in g.items" :key="m.matchId" class="row-in" :style="{ '--k': Math.min(i, 10) }">
+                            <MatchRow :match="m" :my-id="myPlayerId" />
+                        </li>
+                    </ul>
+                </section>
+            </div>
+            <div v-else class="text-center py-12 text-base-content/60">
+                <p class="font-bold">Ningún partido con esos filtros</p>
+                <button type="button" class="btn btn-sm btn-ghost mt-2" @click="clearFilters">Quitar los filtros</button>
+            </div>
+
+            <Paginator :items-count="filtered.length" :items-per-page="PAGE_SIZE" :current-page="paged.page" label="Páginas de partidos" @pagechange="goToPage" />
+        </template>
+
+        <!-- Filtros en móvil -->
+        <dialog ref="filtersDialog" class="modal modal-bottom" aria-labelledby="match-filters-title">
+            <div class="modal-box flex flex-col gap-5">
+                <h3 id="match-filters-title" class="font-black text-lg">Filtros</h3>
+                <div>
+                    <p class="text-xs uppercase tracking-widest font-black text-base-content/60 mb-2">Tipo</p>
+                    <div class="flex flex-wrap gap-1">
+                        <button v-for="t in TYPES" :key="t.value" type="button" :aria-pressed="types.includes(t.value)"
+                            class="btn btn-sm rounded-full font-bold" :class="types.includes(t.value) ? 'btn-primary' : 'btn-ghost bg-base-200'"
+                            @click="toggleType(t.value)">{{ t.label }}</button>
                     </div>
                 </div>
-                <div class="form-control flex flex-col h-full justify-between ">
-                        <span class="text-center font-semibold">Filtrar por tipo de partido</span>
-                        <label class="label cursor-pointer h-full">
-                            <span class="label-text p-2">Partidos de liga</span> 
-                            <input type="checkbox" class="checkbox checkbox-sm checkbox-primary" v-model="leagueFilter" />  
-                        </label>
-                        <label class="label cursor-pointer h-full">
-                            <span class="label-text p-2">Partidos de playoff</span> 
-                            <input type="checkbox" class="checkbox checkbox-sm checkbox-primary pb-0" v-model="playoffFilter" />
-                        </label>
-                        <label class="label cursor-pointer h-full pb-0">
-                            <span class="label-text p-2 pb-0">Partidos amistosos</span> 
-                            <input type="checkbox" class="checkbox checkbox-sm checkbox-primary pb-0" v-model="friendlyFilter" />
-                        </label>
+                <div>
+                    <p class="text-xs uppercase tracking-widest font-black text-base-content/60 mb-2">Jugadores</p>
+                    <PlayerPickerModal v-model="players" :items="pickerItems" multiple zoom="2xl" :fallback-image="PLAYER_PLACEHOLDER"
+                        title="Partidos en los que estuvieron…" placeholder="Todos" search-placeholder="Buscar jugador…" size="md" />
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-widest font-black text-base-content/60 mb-2">Fechas</p>
+                    <DateRangePicker v-model="dates" size="md" placeholder="Cualquier fecha" />
+                </div>
+                <div>
+                    <label class="flex items-center justify-between text-xs uppercase tracking-widest font-black text-base-content/60 mb-2" for="min-players-m">Mínimo de jugadores nuestros <span class="tabular-nums text-primary">{{ minPlayers || "—" }}</span></label>
+                    <input id="min-players-m" v-model.number="minPlayers" type="range" min="0" max="11" class="range range-xs range-primary" />
+                </div>
+                <div class="modal-action">
+                    <button v-if="activeFilters" type="button" class="btn btn-ghost" @click="clearFilters">Quitar filtros</button>
+                    <form method="dialog"><button class="btn btn-primary">Ver {{ filtered.length }} partidos</button></form>
                 </div>
             </div>
-        </header>
-        <div class="w-full flex justify-center flex-col lg:flex-row lg:justify-between">
-            <Paginator v-if="!hasErrorComputed && !isLoading && finalMatchList.length>0" class="self-center" 
-            :itemsCount="finalMatchList.length" :itemsPerPage="paginatorItemsPerPage" :currentPage="paginatorPage" :show-range="false" label="Páginas de partidos" @pagechange="onPageChange"
-            />
-            <div class="self-center m-1">{{ finalMatchList.length }} resultados</div>
-        </div>
-        <div v-if="!hasErrorComputed" role="contentinfo" class="mt-3 w-full p-3 lg:p-4 flex rounded-lg shadow-lg dark:shadow bg-base-200">
-            <svg v-if="isLoading" class="footballloader text-primary" viewBox="0 0 866 866" xmlns="http://www.w3.org/2000/svg">
-                    <svg class="footballloader" id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 164.83 151.5">
-                        <path class="path-0 footballloader" d="M117.24,69.24A8,8,0,0,0,115.67,67c-4.88-4-9.8-7.89-14.86-11.62A4.93,4.93,0,0,0,96.93,55c-5.76,1.89-11.4,4.17-17.18,6a4.36,4.36,0,0,0-3.42,4.12c-1,6.89-2.1,13.76-3,20.66a4,4,0,0,0,1,3.07c5.12,4.36,10.39,8.61,15.68,12.76a3.62,3.62,0,0,0,2.92.75c6.29-2.66,12.52-5.47,18.71-8.36a3.49,3.49,0,0,0,1.68-2.19c1.34-7.25,2.54-14.55,3.9-22.58Z"
-                            fill="currentColor" />
-                        <path class="path-1 footballloader" d="M97.55,38.68A43.76,43.76,0,0,1,98,33.44c.41-2.36-.5-3.57-2.57-4.64C91.1,26.59,87,24,82.66,21.82a6.18,6.18,0,0,0-4-.71C73.45,22.55,68.32,24.25,63.22,26c-3.63,1.21-6.08,3.35-5.76,7.69a26.67,26.67,0,0,1-.6,4.92c-1.08,8.06-1.08,8.08,5.86,11.92,3.95,2.19,7.82,5.75,11.94,6.08s8.76-2.41,13.12-3.93c9.33-3.29,9.33-3.3,9.78-14Z"
-                            fill="currentColor" />
-                        <path class="path-2 footballloader" d="M66.11,126.56c5.91-.91,11.37-1.7,16.81-2.71a3.3,3.3,0,0,0,1.87-2.17c1-4.06,1.73-8.19,2.84-12.24.54-2-.11-3-1.55-4.15-5-4-9.9-8.12-15-12a6.19,6.19,0,0,0-4.15-1.1c-5.35.66-10.7,1.54-16,2.54A4,4,0,0,0,48.34,97a109.13,109.13,0,0,0-3,12.19,4.47,4.47,0,0,0,1.34,3.6c5.54,4.36,11.23,8.53,16.91,12.69a10.84,10.84,0,0,0,2.57,1.11Z"
-                            fill="currentColor" />
-                        <path class="path-3 footballloader" d="M127.42,104.12c4.1-2.1,8-3.93,11.72-6a6,6,0,0,0,2.27-3,58.22,58.22,0,0,0,3.18-29.92c-.26-1.7-8-7.28-9.71-6.85A5,5,0,0,0,133,59.65c-2.81,2.49-5.71,4.88-8.33,7.56a9.46,9.46,0,0,0-2.47,4.4c-1.29,6.49-2.38,13-3.35,19.55a5.73,5.73,0,0,0,.83,3.91c2.31,3.08,5,5.88,7.7,9Z"
-                            fill="currentColor" />
-                        <path class="path-4 footballloader" d="M52.58,29.89c-2.15-.36-3.78-.54-5.39-.9-2.83-.64-4.92.1-7,2.32A64.1,64.1,0,0,0,26.09,54.64c-2.64,7.92-2.62,7.84,5.15,10.87,1.76.69,2.73.45,3.93-1C39.79,59,44.54,53.65,49.22,48.2a4.2,4.2,0,0,0,1.13-2c.8-5.32,1.49-10.68,2.24-16.34Z"
-                            fill="currentColor" />
-                        <path class="path-5 footballloader" fill="currentColor" d="M23,68.13c0,2.51,0,4.7,0,6.87a60.49,60.49,0,0,0,9.75,32.15c1.37,2.13,6.4,3,7,1.2,1.55-5,2.68-10.2,3.82-15.34.13-.58-.58-1.38-.94-2.06-2.51-4.77-5.47-9.38-7.45-14.37C32.94,71,28.22,69.84,23,68.13Z" />
-                        <path class="path-6 footballloader" fill="currentColor" d="M83.91,12.86c-.32.36-.66.71-1,1.07.9,1.13,1.57,2.62,2.73,3.33,4.71,2.84,9.56,5.48,14.39,8.1a9.29,9.29,0,0,0,3.13.83c5.45.69,10.89,1.38,16.35,1.94a10.41,10.41,0,0,0,3.07-.71c-11.48-9.9-24.26-14.61-38.71-14.56Z"
-                        />
-                        <path class="path-7 footballloader" fill="currentColor" d="M66.28,132.51c13.36,3.78,25.62,3.5,38-.9C91.68,129.59,79.36,128,66.28,132.51Z" />
-                        <path class="path-8 footballloader" fill="currentColor" d="M127.2,30.66l-1.27.37a18.58,18.58,0,0,0,1,3.08c3,5.52,6.21,10.89,8.89,16.54,1.34,2.83,3.41,3.82,6.49,4.9a60.38,60.38,0,0,0-15.12-24.9Z" />
-                        <path class="bb-9" fill="currentColor" d="M117.35,125c5.58-2.32,16.9-13.84,18.1-19.2-2.41,1.46-5.18,2.36-6.78,4.23-4.21,5-7.89,10.37-11.32,15Z" />
-                    </svg>
-            </svg>
-            <div v-else-if="pagedMatchList.length>0" class="px-1 lg:px-4 w-full">
-                <TransitionGroup name="matchlist">
-                    <MatchField v-for="(match, index) in pagedMatchList" :key="match.matchId" :match="match" :index="index"/>
-                </TransitionGroup>
-            </div>
-            <div v-else-if="matches.length === 0" class="w-full flex flex-col items-center gap-2 py-8 text-center">
-                    <h3 class="text-2xl font-bold">Todavía no hay partidos</h3>
-                    <p class="text-base-content/60">Se añaden automáticamente en cuanto el club juega. ¡Vuelve pronto!</p>
-                    <img src="/illustrations/soccer1.svg" class="w-full max-w-xs md:max-w-sm mt-4 select-none pointer-events-none" alt="Balón de fútbol">
-            </div>
-            <div v-else class="w-full">
-                    <h3 class="text-center text-lg p-3">No existe ningún resultado con los filtros aplicados</h3>
-                    <div class="flex place-content-center p-6">
-                        <img src="/illustrations/noresults.svg" class="w-full max-w-xs md:max-w-sm select-none pointer-events-none" alt="image representing no results with applied filters">
-                    </div>
-            </div>
-        </div>
-        <div v-else class="w-full">
-            <h3 class="text-center text-lg p-3">Ha ocurrido un error. Prueba de nuevo más tarde</h3>
-            <h3 class="text-center text-lg px-3 "><i>Más información: <a href="https://status.caracantosmeaos.club/">https://status.caracantosmeaos.club/</a></i></h3>
-            <div class="flex place-content-center p-6">
-                <img src="/illustrations/bugfixingsvg.svg" class="w-full max-w-xs md:max-w-sm select-none pointer-events-none" alt="Image representing error">
-            </div>
-        </div>
+            <form method="dialog" class="modal-backdrop"><button tabindex="-1">Cerrar</button></form>
+        </dialog>
     </div>
 </template>
 
-<script lang="ts" setup>
-    import { onBeforeMount, type Ref, ref, computed, watch, type ComputedRef } from 'vue';
-    import { useMatches } from '@/composables/useMatches';
-    import ClubMatchEntity from '@models/match/ClubMatchEntity'
-    import MatchField from './MatchField.vue';
-    import ClubMembersService from '@services/ClubMembersService';
-    import ClubMember from '@/model/ClubMemberEntity'
-    import Paginator from '@components/Paginator.vue';
-    import DateRangePicker from "@/components/ui/DateRangePicker.vue";
-    import PlayerPickerModal, { type PickerItem } from "@/components/ui/PlayerPickerModal.vue";
-    import { PLAYER_PLACEHOLDER } from "@/lib/playerImage";
-    import { usePlayerStats } from "@/composables/usePlayerStats";
-    import type MatchPlayerEntity from '@/model/match/MatchPlayerEntity';
-    import { getQueryParam, hasQueryParam } from "@/lib/query";
-
-    const { matches, loading: isLoading, status, load: loadMatches } = useMatches()
-
-    const memberService = new ClubMembersService()
-    const members:Ref<ClubMember[]> = memberService.getData()
-    const isMembersLoading = memberService.isloading
-    const memberStatus = memberService.getStatus()
-
-
-    const paginatorPage = ref(1)
-    const paginatorItemsPerPage = 5
-
-    onBeforeMount(async ()=>{
-        loadPositions()
-        await Promise.all([memberService.fetch(), loadMatches()])
-        // ?player=<id> preselecciona ese jugador en el filtro
-        const preselected = getQueryParam("player")
-        if (preselected && members.value.some(m => m.playerId === preselected)) selectedPlayerIds.value = [preselected]
-    })
-
-    // Filtros iniciales por query: ?id, ?desde, ?hasta, ?liga, ?playoff, ?amistoso, ?player (si no se indica ningún tipo, todos)
-    const anyTypeInQuery = hasQueryParam("liga") || hasQueryParam("playoff") || hasQueryParam("amistoso") || hasQueryParam("draft")
-    const props = {
-        matchId: getQueryParam("id"),
-        matchTypeLeague: !anyTypeInQuery || hasQueryParam("liga"),
-        matchTypePlayoff: !anyTypeInQuery || hasQueryParam("playoff"),
-        matchTypeFriendly: !anyTypeInQuery || hasQueryParam("amistoso") || hasQueryParam("draft"),
-        dateFrom: getQueryParam("desde"),
-        dateTo: getQueryParam("hasta")
-    }
-
-    
-    function onPageChange(pagenum:number){
-        paginatorPage.value = pagenum
-    }
-
-    const IDFilter = ref(props.matchId)
-    const leagueFilter = ref(props.matchTypeLeague);
-    const playoffFilter = ref(props.matchTypePlayoff);
-    const friendlyFilter = ref(props.matchTypeFriendly);
-    const matchTypeFilter = computed(() => {
-        var filter = []
-        if(leagueFilter.value) filter.push("league")
-        if(playoffFilter.value) filter.push("playoff")
-        if(friendlyFilter.value) filter.push("friendly")
-        return filter
-    })
-    const dateFilter = ref({
-        startDate: props.dateFrom,
-        endDate: props.dateTo,
-    });
-
-    const minPlayersFilter = ref(2)
-
-    /** ids de jugador marcados en el filtro (PlayerPickerModal múltiple) */
-    const selectedPlayerIds = ref<string[]>([])
-    const { positionsOf, load: loadPositions } = usePlayerStats()
-    const memberItems = computed<PickerItem[]>(() => members.value.map(m => ({
-        id: m.playerId,
-        name: m.playerName,
-        image: m.imageUrl,
-        positions: positionsOf(m.playerId),
-        member: m
-    })))
-
-
-    const filteredPlayerIds = selectedPlayerIds
-    const playerIds = (players: MatchPlayerEntity[]) => players.map(p => p.playerId)
-    
-    //watch for filter changes and reset pagination
-    watch(
-        [IDFilter,dateFilter,matchTypeFilter,minPlayersFilter,selectedPlayerIds],
-        () =>{
-            paginatorPage.value = 1
-        }
-    )
-
-
-    function handleFilters(list: ClubMatchEntity[]){
-        try{
-            var filteredList = list.filter((el) => IDFilter.value.toString().includes(el.matchId.toString()) || el.matchId.toString().startsWith(IDFilter.value) || el.matchId===Number(IDFilter.value) );
-            filteredList = filteredList.filter( (el) => matchTypeFilter.value.includes(el.matchType))
-            filteredList = filteredList.filter(el => filteredPlayerIds.value.every(fp => playerIds(el.ourClub.players).includes(fp)))
-            filteredList = filteredList.filter(el => el.ourClub.players.length >= minPlayersFilter.value)
-            filteredList = dateFilter.value.startDate!=="" && dateFilter.value.endDate!=="" 
-            ? filteredList.filter( (el) => (new Date(el.timestamp*1000).getTime() >= toDate(dateFilter.value.startDate).getTime() && new Date(el.timestamp*1000).getTime()<=toDate(dateFilter.value.endDate, true).getTime()) ) : filteredList
-            return filteredList
-        }catch(e){
-            return []
-        }
-
-    }
-
-    function firstChar(str: string){
-        return str.charAt(0)
-    }
-
-    function toDate(isodate: string, end?: boolean){
-        var splitted = isodate.split("/")
-        var utcd = splitted[2]+"-"+splitted[1]+"-"+splitted[0]
-        var d = new Date(utcd)
-        d.setHours(end ? 23 : 0)
-        d.setMinutes(end ? 59 : 0)
-
-        return new Date(d)
-    }
-
-    function handleOrder(list: ClubMatchEntity[]){
-        return list.sort((a:ClubMatchEntity,b:ClubMatchEntity) => (a.timestamp < b.timestamp) ? 1 : ((b.timestamp < a.timestamp) ? -1 : 0))
-    }
-
-    const finalMatchList = computed(() => {
-        return handleOrder(handleFilters(matches.value))
-    })
-
-    const pagedMatchList = computed(() => {
-        const startIndex = (paginatorPage.value - 1) * paginatorItemsPerPage;
-        const endIndex = startIndex + paginatorItemsPerPage;
-
-        return finalMatchList.value.slice(startIndex, endIndex);
-    });
-
-    const hasErrorComputed = computed(()=>{
-        return (status.value!=200 && !isLoading.value)
-    })
-</script>
-
-<style>
-svg.footballloader {
-      height: 200px;
-      display: block;
-      margin: 0 auto;
-    
+<style scoped>
+/* La cabecera de cada mes se pega justo bajo la barra de filtros */
+.month-head { top: calc(4.25rem + 3.75rem); }
+.bar { transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+@media (prefers-reduced-motion: no-preference) {
+    .summary { animation: rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    .row-in { animation: rise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--k, 0) * 30ms); }
 }
-
-path.footballloader {
-        animation-duration: 1s;
-        animation-name: pulse;
-        animation-iteration-count: infinite;
-        color: var(--color-primary);
-
-}
-
-.footballloader.path-7 {
-          animation-delay: -1s
-        }
-        .footballloader.path-6 {
-          animation-delay: -.875s
-        }
-        .footballloader.path-5 {
-          animation-delay: -.75s
-        }
-        .footballloader.path-4 {
-          animation-delay: -.625s
-        }
-        .footballloader.path-3 {
-          animation-delay: -.5s
-        }
-        .footballloader.path-2 {
-          animation-delay: -.375s
-        }
-        .footballloader.path-1 {
-          animation-delay: -.25s
-        }
-        .footballloader.path-0 {
-          animation-delay: -.125s
-        }
-
-
-@keyframes pulse {
-  0%     { opacity: .1; }
-  30%    { opacity: .8; }
-  100%   { opacity: .1; }
-}
-
-.matchlist-move, 
-.matchlist-enter-active,
-.matchlist-leave-active {
-  transition: all 0.5s ease;
-}
-
-.matchlist-enter-from,
-.matchlist-leave-to {
-  opacity: 0;
-  scale: 0;
-}
-
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* Firefox */
-input[type=number] {
-  -moz-appearance: textfield;
-}
-
+@keyframes rise { from { opacity: 0; translate: 0 0.5rem; } }
 </style>

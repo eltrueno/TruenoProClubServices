@@ -8,7 +8,8 @@ import { buildLatestMatches } from "@/lib/buildData";
 // Resumen para quien no ejecuta JS, con los datos del build (ver lib/buildData.ts)
 const latestMatches = await buildLatestMatches(20);
 
-// Filtros por query (?id, ?desde, ?hasta, ?liga, ?playoff, ?amistoso): los lee MatchesContainer en cliente
+// /partidos?q=&tipo=liga,playoff,amistoso&jugadores=&desde=&hasta=&min=&pagina= (los lee MatchesContainer en cliente;
+// también los de antes: ?id, ?liga, ?playoff, ?amistoso, ?player)
 ---
 
 <Layout
@@ -20,18 +21,26 @@ const latestMatches = await buildLatestMatches(20);
 	ogImageAlt={`Partidos de ${CLUB.name}`}
 >
 
-	<header class="container mx-auto mb-10">
-		<h1 class="text-primary font-bold text-3xl text-center mt-8 p-8">
-			Partidos
-		</h1>
-		<p class="font-bold text-2xl text-center">
-			Aquí se muestra el historial de nuestros últimos partidos
-		</p>
-	</header>
-	<section>
-		<container class="flex px-2 py-4 justify-center items-center">
-			<MatchesContainer client:only="vue" />
-			<noscript><MatchesSummary matches={latestMatches} /></noscript>
-		</container>
-	</section>
+	<div class="w-full max-w-[90rem] mx-auto px-4 lg:px-8 py-8 lg:py-12 flex flex-col gap-6">
+		<header class="reveal-stagger">
+			<p class="text-xs uppercase tracking-[0.3em] font-black text-primary">{CLUB.name}</p>
+			<h1 class="text-4xl lg:text-5xl font-black tracking-tighter">Partidos</h1>
+		</header>
+
+		<div id="matches-app">
+			<MatchesContainer client:only="vue">
+				<!-- Mientras carga el componente: el mismo hueco que la lista -->
+				<div slot="fallback" class="flex flex-col gap-3" aria-busy="true">
+					<div class="skeleton h-14 w-full rounded-2xl"></div>
+					<div class="skeleton h-24 w-full rounded-2xl"></div>
+					{Array.from({ length: 6 }, () => <div class="skeleton h-20 w-full rounded-2xl"></div>)}
+				</div>
+			</MatchesContainer>
+		</div>
+		<!-- Sin JS: fuera la lista (se quedaría cargando) y en su lugar el resumen -->
+		<noscript>
+			<style>#matches-app { display: none; }</style>
+			<MatchesSummary matches={latestMatches} />
+		</noscript>
+	</div>
 </Layout>
