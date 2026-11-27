@@ -6,7 +6,7 @@ import type ClubMatchEntity from "../model/match/ClubMatchEntity"
  * (test/matchList.test.ts).
  */
 
-type Match = Pick<ClubMatchEntity, "matchId" | "matchType" | "timestamp" | "result" | "ourClub" | "opponentClub" | "counts">
+type Match = Pick<ClubMatchEntity, "matchId" | "matchType" | "timestamp" | "result" | "ourClub" | "opponentClub" | "counts"> & { winnerByPen?: boolean }
 
 export interface MatchFilters {
     /** texto: nombre del rival o id del partido */
@@ -19,7 +19,18 @@ export interface MatchFilters {
     to: string
     /** mínimo de jugadores nuestros en el partido */
     minPlayers: number
+    /** solo los derbis: rival con uno de estos nombres (los otros clubes de la comunidad) */
+    derbyRivals?: string[]
+    /** resultados (vacío = todos). Un nulo no tiene resultado que valga: con este filtro no sale */
+    results?: MatchResult[]
+    /** solo los que fueron a prórroga / a penaltis */
+    extraTime?: boolean
+    penalties?: boolean
 }
+
+/** Alguien pasó de ~117 min: hubo prórroga (el mismo umbral que el worker, EXTRA_TIME_SECONDS = 7000 s) */
+export const hasExtraTime = (m: Pick<Match, "ourClub" | "opponentClub">) =>
+    [...(m.ourClub.players ?? []), ...(m.opponentClub.players ?? [])].some((p) => (p.minutesPlayed ?? 0) * 60 >= 7000)
 
 /** dd/mm/aaaa → fecha (al principio del día, o al final con `end`) */
 export function parseDay(value: string, end = false): Date | null {
@@ -34,12 +45,17 @@ const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCa
 
 export function filterMatches<T extends Match>(list: T[], f: MatchFilters): T[] {
     const q = norm(f.query.trim())
+    const derby = f.derbyRivals?.length ? new Set(f.derbyRivals.map((n) => norm(n.trim()))) : null
     const from = f.from ? parseDay(f.from) : null
     const to = f.to ? parseDay(f.to, true) : null
     return list
         .filter((m) => {
             if (q && !norm(m.opponentClub.name).includes(q) && !String(m.matchId).includes(q)) return false
             if (!f.types.includes(m.matchType)) return false
+            if (derby && !derby.has(norm(m.opponentClub.name.trim()))) return false
+            if (f.results?.length && (!m.counts || !f.results.includes(m.result))) return false
+            if (f.penalties && !m.winnerByPen) return false
+            if (f.extraTime && !hasExtraTime(m)) return false
             if (m.ourClub.players.length < f.minPlayers) return false
             if (f.players.length) {
                 // Que salgan en el partido (en los nulos nadie "juega" a efectos de stats, pero estuvieron)
@@ -52,6 +68,26 @@ export function filterMatches<T extends Match>(list: T[], f: MatchFilters): T[] 
             return true
         })
         .sort((a, b) => b.timestamp - a.timestamp || b.matchId - a.matchId)
+}
+
+/** Orden de la lista: por fecha (agrupada por meses) o por marcador (sin agrupar) */
+export type MatchSort = "recent" | "oldest" | "goals" | "biggestWin" | "worstLoss"
+export const MATCH_SORTS: { key: MatchSort; label: string }[] = [
+    { key: "recent", label: "Más recientes" },
+    { key: "oldest", label: "Más antiguos" },
+    { key: "goals", label: "Más goles" },
+    { key: "biggestWin", label: "Mayores goleadas" },
+    { key: "worstLoss", label: "Peores derrotas" },
+]
+export function sortMatches<T extends Match>(list: T[], key: MatchSort): T[] {
+    const diff = (m: Match) => m.ourClub.matchStats.goals - m.opponentClub.matchStats.goals
+    const byDate = (a: T, b: T) => b.timestamp - a.timestamp
+    const sorted = [...list]
+    if (key === "oldest") return sorted.sort((a, b) => -byDate(a, b))
+    if (key === "goals") return sorted.sort((a, b) => b.ourClub.matchStats.goals - a.ourClub.matchStats.goals || byDate(a, b))
+    if (key === "biggestWin") return sorted.sort((a, b) => diff(b) - diff(a) || b.ourClub.matchStats.goals - a.ourClub.matchStats.goals || byDate(a, b))
+    if (key === "worstLoss") return sorted.sort((a, b) => diff(a) - diff(b) || b.opponentClub.matchStats.goals - a.opponentClub.matchStats.goals || byDate(a, b))
+    return sorted.sort(byDate)
 }
 
 export interface Record3 { games: number; wins: number; ties: number; losses: number; goalsFor: number; goalsAgainst: number }
