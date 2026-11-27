@@ -1,0 +1,36 @@
+---
+/**
+ * Cabecera común de las páginas interiores: las migas (Inicio › … › la página), el nombre del club
+ * pequeño encima y el título. Las migas son las mismas que van en el JSON-LD (prop `breadcrumb` del
+ * Layout), así lo que se ve y lo que lee Google no se separan. El último tramo es la página actual
+ * (sin enlace, con aria-current). El slot por defecto va debajo del título (una frase, botones…).
+ */
+import { CLUB } from "@/config/club";
+
+interface Crumb { name: string; path: string }
+interface Props {
+	title: string;
+	crumbs: Crumb[];
+	/** Encima del título; por defecto, el nombre del club */
+	eyebrow?: string;
+	/** Centrado (páginas tipo anuncio, como el TOTW) */
+	center?: boolean;
+}
+const { title, crumbs, eyebrow = CLUB.name, center = false } = Astro.props;
+---
+
+<header class:list={["flex flex-col gap-3", center && "items-center text-center"]}>
+	<nav class="breadcrumbs text-sm py-0 text-base-content/60" aria-label="Migas de pan">
+		<ul>
+			<li><a href="/" class="hover:text-primary">Inicio</a></li>
+			{crumbs.map((c, i) => i === crumbs.length - 1
+				? <li><span aria-current="page" class="text-base-content font-semibold">{c.name}</span></li>
+				: <li><a href={c.path} class="hover:text-primary">{c.name}</a></li>)}
+		</ul>
+	</nav>
+	<div class="reveal-stagger">
+		<p class="text-xs uppercase tracking-[0.3em] font-black text-primary">{eyebrow}</p>
+		<h1 class="text-4xl lg:text-5xl font-black tracking-tighter">{title}</h1>
+	</div>
+	<slot />
+</header>

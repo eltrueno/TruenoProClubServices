@@ -11,10 +11,8 @@
                             <input v-model="revealAll" type="checkbox" class="toggle toggle-sm toggle-primary" />
                             Ver ocultos
                         </label>
-                        <div class="join">
-                            <button class="btn btn-sm join-item" :class="onlyUnlocked ? 'btn-ghost' : 'btn-primary'" @click="onlyUnlocked = false">Todos</button>
-                            <button class="btn btn-sm join-item" :class="onlyUnlocked ? 'btn-primary' : 'btn-ghost'" @click="onlyUnlocked = true">Conseguidos</button>
-                        </div>
+                        <OptionToggle :model-value="onlyUnlocked ? 'unlocked' : 'all'" :options="SHOW_OPTIONS" size="sm" label="Qué logros enseñar"
+                            @update:model-value="(v) => (onlyUnlocked = v === 'unlocked')" />
                     </div>
                 </div>
 
@@ -68,7 +66,7 @@
                         <AchievementTile class="w-full" :item="item" :match-href="item.matchId ? matchUrl(item.matchId) : undefined" />
                     </li>
                 </ul>
-                <p v-if="group.visible.length === 0" class="text-sm text-base-content/50">Todavía ninguno en este apartado.</p>
+                <EmptyState v-if="group.visible.length === 0" compact icon="trophy" title="Todavía ninguno en este apartado" text="Cuando caiga el primero, aparecerá aquí." />
             </div>
         </div>
 
@@ -96,6 +94,9 @@ import type PlayerProfileEntity from "@/model/PlayerProfileEntity"
 import { tpcsApi } from "@/lib/api"
 import { accountsUrl } from "@/lib/accounts"
 import AchievementTile from "@/components/achievements/AchievementTile.vue"
+import OptionToggle, { type ToggleOption } from "@/components/ui/OptionToggle.vue"
+import { KPI_ICONS } from "@/lib/kpiIcons"
+import EmptyState from "@/components/ui/EmptyState.vue"
 
 const props = defineProps<{ profile: PlayerProfileEntity }>()
 
@@ -120,14 +121,19 @@ interface Item {
 
 const RARITY_STYLE: Record<AchievementRarity, { card: string, icon: string, text: string, badge: string }> = {
     common: { card: "border-base-content/15 bg-base-100", icon: "bg-base-300 text-base-content", text: "text-base-content/60", badge: "badge-ghost border-base-content/20" },
-    rare: { card: "border-sky-500/40 bg-sky-500/5", icon: "bg-sky-500/20 text-sky-600 dark:text-sky-300", text: "text-sky-600 dark:text-sky-300", badge: "bg-sky-500/15 text-sky-600 dark:text-sky-300 border-sky-500/30" },
-    epic: { card: "border-violet-500/40 bg-violet-500/5", icon: "bg-violet-500/20 text-violet-600 dark:text-violet-300", text: "text-violet-600 dark:text-violet-300", badge: "bg-violet-500/15 text-violet-600 dark:text-violet-300 border-violet-500/30" },
-    legendary: { card: "border-amber-500/50 bg-amber-500/10", icon: "bg-amber-500/25 text-amber-600 dark:text-amber-300", text: "text-amber-600 dark:text-amber-300", badge: "bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-500/30" },
+    rare: { card: "border-sky-500/40 bg-sky-500/5", icon: "bg-sky-500/20 text-sky-700 dark:text-sky-300", text: "text-sky-700 dark:text-sky-300", badge: "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30" },
+    epic: { card: "border-violet-500/40 bg-violet-500/5", icon: "bg-violet-500/20 text-violet-700 dark:text-violet-300", text: "text-violet-700 dark:text-violet-300", badge: "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30" },
+    legendary: { card: "border-amber-500/50 bg-amber-500/10", icon: "bg-amber-500/25 text-amber-800 dark:text-amber-300", text: "text-amber-800 dark:text-amber-300", badge: "bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30" },
 }
 
 /** Orden dentro de cada apartado: conseguidos primero y, dentro, los más especiales */
 const RARITY_RANK: Record<string, number> = { legendary: 3, epic: 2, rare: 1, common: 0 }
 const onlyUnlocked = ref(false)
+/** Todos / solo los conseguidos (con el icono de la insignia con check) */
+const SHOW_OPTIONS: ToggleOption<"all" | "unlocked">[] = [
+    { value: "all", label: "Todos" },
+    { value: "unlocked", label: "Conseguidos", svg: KPI_ICONS.games },
+]
 const rarityFilter = ref<AchievementRarity | null>(null)
 const matchUrl = (matchId: string) => `/partido?id=${encodeURIComponent(matchId)}&player=${encodeURIComponent(props.profile.member.playerId)}`
 const clubDefinitions = ref<IAchievementDefinitionWithStats[]>([])

@@ -24,6 +24,8 @@ import MatchRow from "./MatchRow.vue"
 import GoalIcon from "@/components/ui/GoalIcon.vue"
 import { KPI_ICONS } from "@/lib/kpiIcons"
 import { OTHER_CLUBS } from "@/config/club"
+import EmptyState from "@/components/ui/EmptyState.vue"
+import { navTop } from "@/lib/navOffset"
 
 const { matches, loading, status, load: loadMatches } = useMatches()
 const { members, load: loadMembers } = useMembers()
@@ -136,7 +138,7 @@ const stuck = ref(false)
 const currentKey = ref<string | null>(null)
 const currentMonth = computed(() => groups.value.find((g) => g.key === currentKey.value) ?? null)
 const updateStuck = () => {
-    const navH = document.querySelector<HTMLElement>("nav.navbar")?.offsetHeight ?? 68
+    const navH = navTop()
     stuck.value = !!sentinel.value && sentinel.value.getBoundingClientRect().top < navH + 4
     const limit = navH + 90
     let key: string | null = null
@@ -171,7 +173,7 @@ const hasError = computed(() => !loading.value && status.value !== 200)
         <div ref="sentinel" aria-hidden="true" class="h-0 -mb-5"></div>
         <!-- Barra de filtros (pegada al bajar). En móvil: buscador y "Filtros" (el resto en un panel) -->
         <div role="toolbar" aria-label="Filtrar partidos"
-            class="sticky top-[4.25rem] z-30 -mx-3 lg:-mx-5 px-3 lg:px-5 py-3 flex flex-wrap items-center gap-2 transition-[border-radius,background-color,box-shadow] duration-300"
+            class="sticky top-[calc(var(--nav-top,4rem)+0.25rem)] z-30 -mx-3 lg:-mx-5 px-3 lg:px-5 py-3 flex flex-wrap items-center gap-2 transition-[top,border-radius,background-color,box-shadow] duration-300"
             :class="stuck
                 ? (currentMonth ? 'rounded-none' : 'rounded-b-2xl shadow-lg shadow-black/25') + ' bg-[color-mix(in_oklab,var(--toolbar-bg)_95%,transparent)] backdrop-blur-md'
                 : 'rounded-t-3xl bg-(--toolbar-bg)'">
@@ -252,20 +254,13 @@ const hasError = computed(() => !loading.value && status.value !== 200)
             <div v-for="n in 6" :key="n" class="skeleton h-20 w-full rounded-2xl"></div>
         </div>
 
-        <div v-else-if="hasError" class="text-center py-12 text-base-content/60">
-            <p class="font-bold">Los partidos no están disponibles ahora mismo</p>
-            <p class="text-sm">Vuelve a intentarlo en unos minutos.</p>
-        </div>
+        <EmptyState v-else-if="hasError" icon="error" tone="error" title="Los partidos no están disponibles ahora mismo" text="Vuelve a intentarlo en unos minutos." />
 
-        <div v-else-if="!matches.length" class="flex flex-col items-center gap-2 py-10 text-center">
-            <p class="text-2xl font-black">Todavía no hay partidos</p>
-            <p class="text-base-content/60">Se añaden solos en cuanto el club juega. ¡Vuelve pronto!</p>
-            <img src="/illustrations/soccer1.svg" class="w-full max-w-xs mt-4 select-none pointer-events-none" alt="" />
-        </div>
+        <EmptyState v-else-if="!matches.length" illustration="/illustrations/soccer1.svg" title="Todavía no hay partidos" text="Se añaden solos en cuanto el club juega. ¡Vuelve pronto!" />
 
         <template v-else>
             <!-- Resumen de lo que se está viendo -->
-            <section class="summary rounded-2xl bg-base-100 dark:bg-base-200 ring-1 ring-base-content/5 p-4 sm:p-5" aria-label="Resumen de los partidos filtrados">
+            <section class="summary rounded-2xl bg-base-100 dark:bg-base-200 ring-1 ring-base-content/10 dark:ring-base-content/5 shadow-sm dark:shadow-none p-4 sm:p-5" aria-label="Resumen de los partidos filtrados">
                 <p class="text-xs text-base-content/60 mb-3">
                     <b class="text-base-content">{{ filtered.length }}</b> {{ filtered.length === 1 ? "partido" : "partidos" }}<template v-if="withPlayers"> {{ withPlayers }}</template><template v-if="filtered.length !== record.games"> · {{ filtered.length - record.games }} nulos, que no cuentan</template>
                 </p>
@@ -330,10 +325,9 @@ const hasError = computed(() => !loading.value && status.value !== 200)
                     <MatchRow :match="m" :my-id="myPlayerId" />
                 </li>
             </ul>
-            <div v-else class="text-center py-12 text-base-content/60">
-                <p class="font-bold">Ningún partido con esos filtros</p>
-                <button type="button" class="btn btn-sm btn-ghost mt-2" @click="clearFilters">Quitar los filtros</button>
-            </div>
+            <EmptyState v-else icon="search" title="Ningún partido con esos filtros" text="Prueba con otras fechas, otro rival o menos filtros a la vez.">
+                <button type="button" class="btn btn-sm btn-primary" @click="clearFilters">Quitar los filtros</button>
+            </EmptyState>
 
             <Paginator :items-count="filtered.length" :items-per-page="PAGE_SIZE" :current-page="paged.page" label="Páginas de partidos" @pagechange="goToPage" />
         </template>

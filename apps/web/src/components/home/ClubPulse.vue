@@ -13,6 +13,7 @@ import { routes } from "@/lib/query"
 import { translatePosition } from "@/i18n/translations"
 import AnimatedNumber from "@/components/ui/AnimatedNumber.vue"
 import PlayerCard from "@/components/ui/PlayerCard.vue"
+import EmptyState from "@/components/ui/EmptyState.vue"
 
 const { matches: allMatches, loading, load: loadMatches } = useMatches()
 // Los partidos nulos se ven en la lista, pero no cuentan para rachas ni récords
@@ -160,7 +161,7 @@ const STREAK_CLASS: Record<string, string> = { win: "text-success", loose: "text
             <!-- Quién marca los goles -->
             <div ref="goalsCard" class="rounded-2xl bg-base-200 p-5">
                 <h3 class="text-[11px] uppercase tracking-widest font-black text-base-content/50 mb-4">¿Quién marca los goles?</h3>
-                <p v-if="goalsByPosition.length === 0" class="text-sm text-base-content/50 py-4">Todavía no hay goles registrados.</p>
+                <EmptyState v-if="goalsByPosition.length === 0" compact icon="ball" title="Todavía no hay goles registrados" />
                 <div v-else class="flex flex-col gap-3">
                     <div v-for="(row, i) in goalsByPosition" :key="row.position">
                         <div class="flex justify-between text-sm mb-1">

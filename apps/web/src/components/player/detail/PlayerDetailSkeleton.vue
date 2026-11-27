@@ -1,13 +1,13 @@
 <template>
     <div class="w-full min-h-screen bg-base-200/50 pb-2 rounded-xl animate-in">
         <!-- Migas de pan: mismo alto que en la ficha, para que la foto quede en el mismo sitio -->
-        <div class="breadcrumbs text-sm">
+        <nav class="breadcrumbs text-sm text-base-content/60" aria-label="Migas de pan">
             <ul>
-                <li><a href="/">Inicio</a></li>
-                <li><a href="/plantilla">Plantilla</a></li>
-                <li><span class="skeleton dark:bg-base-100 skeletondark inline-block w-20 h-3"></span></li>
+                <li><a href="/" class="hover:text-primary">Inicio</a></li>
+                <li><a href="/plantilla" class="hover:text-primary">Plantilla</a></li>
+                <li><span aria-current="page" class="text-base-content font-semibold"><span class="skeleton dark:bg-base-100 skeletondark inline-block w-20 h-3"></span></span></li>
             </ul>
-        </div>
+        </nav>
         <!-- Hero Section Skeleton: mismas medidas que la cabecera de la ficha (PlayerDetail.vue) -->
         <section class="bg-base-200 rounded-2xl shadow-md">
             <div class="mx-auto px-4 py-6 lg:py-10">

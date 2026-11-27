@@ -11,7 +11,7 @@ import { headToHead, playerMoments, teamMoments, type Moment } from "@/lib/match
 import { useMembers } from "@/composables/useMembers"
 import { onPlayerImageError } from "@/lib/playerImage"
 import { routes } from "@/lib/query"
-import MatchCard from "./MatchCard.vue"
+import SectionCard from "@/components/ui/SectionCard.vue"
 import MatchYou from "./MatchYou.vue"
 import MvpIcon from "@/components/ui/MvpIcon.vue"
 
@@ -125,7 +125,7 @@ const highlights = computed(() => {
         <MatchYou v-if="myId" :match="match" :history="history" :my-id="myId" @see="emit('see', $event)" />
 
         <!-- Momentos -->
-        <MatchCard title="Momentos del partido" hint="Rachas, récords e hitos de los jugadores que se dieron en este partido, mirando todo el historial del club.">
+        <SectionCard title="Momentos del partido" hint="Rachas, récords e hitos de los jugadores que se dieron en este partido, mirando todo el historial del club.">
             <div v-if="moments === null" class="flex flex-wrap gap-2" aria-busy="true">
                 <span v-for="n in 3" :key="n" class="skeleton h-9 w-48 rounded-full"></span>
             </div>
@@ -137,10 +137,10 @@ const highlights = computed(() => {
                 </li>
             </ul>
             <p v-else class="text-sm text-base-content/60">{{ match.voided ? "Partido nulo: no cuenta para rachas ni récords." : "Un partido más: sin rachas ni hitos que destacar." }}</p>
-        </MatchCard>
+        </SectionCard>
 
         <!-- Destacados -->
-        <MatchCard v-if="highlights.length" title="Destacados" hint="Los nombres propios del partido.">
+        <SectionCard v-if="highlights.length" title="Destacados" hint="Los nombres propios del partido.">
             <ul class="grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(14rem,1fr))] gap-2 sm:gap-4">
                 <li v-for="h in highlights" :key="h.label">
                     <component :is="isMember(h.who.p.playerId) ? 'a' : 'div'" :href="isMember(h.who.p.playerId) ? routes.player(h.who.p.playerId) : undefined"
@@ -166,11 +166,11 @@ const highlights = computed(() => {
                     </component>
                 </li>
             </ul>
-        </MatchCard>
+        </SectionCard>
 
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] gap-4 sm:gap-6">
             <!-- Cara a cara -->
-            <MatchCard title="Cara a cara" hint="Los números de los dos equipos. En negrita, quién gana cada dato.">
+            <SectionCard title="Cara a cara" hint="Los números de los dos equipos. En negrita, quién gana cada dato.">
                 <div class="flex items-center justify-between gap-2 text-sm font-black">
                     <span class="flex items-center gap-2 min-w-0"><span class="size-3 rounded-sm bg-(--us) shrink-0"></span><span class="truncate">{{ us.name }}</span></span>
                     <span class="flex items-center gap-2 min-w-0"><span class="truncate">{{ them.name }}</span><span class="size-3 rounded-sm bg-(--them) shrink-0"></span></span>
@@ -193,10 +193,10 @@ const highlights = computed(() => {
                         <dd class="tabular-nums" :class="r.themBetter ? 'font-black' : 'text-base-content/60'">{{ fmt(r.them) }}{{ r.pct ? "%" : "" }}<span v-if="r.themFrac" class="block text-[0.65rem] font-medium text-base-content/45 leading-none">{{ r.themFrac }}</span></dd>
                     </div>
                 </dl>
-            </MatchCard>
+            </SectionCard>
 
             <!-- Historial con el rival -->
-            <MatchCard :title="`Contra ${them.name}`" hint="Todos los partidos contra este rival, este incluido.">
+            <SectionCard :title="`Contra ${them.name}`" hint="Todos los partidos contra este rival, este incluido.">
                 <div v-if="!h2h" class="flex flex-col gap-3" aria-busy="true">
                     <span class="skeleton h-16 w-full rounded-xl"></span><span class="skeleton h-4 w-2/3"></span><span class="skeleton h-4 w-1/2"></span>
                 </div>
@@ -223,7 +223,7 @@ const highlights = computed(() => {
                     </ul>
                 </template>
                 <p v-else class="text-sm text-base-content/60">Es el primer partido contra este rival.</p>
-            </MatchCard>
+            </SectionCard>
         </div>
     </div>
 </template>

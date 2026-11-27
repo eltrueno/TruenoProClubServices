@@ -52,7 +52,7 @@ const extraTime = computed(() => hasExtraTime(m.value))
 </script>
 
 <template>
-    <a :href="routes.match(m.matchId)" class="match-row group flex items-center gap-3 sm:gap-4 rounded-2xl bg-base-100 dark:bg-base-200 ring-1 ring-base-content/5 px-3 sm:px-4 py-3
+    <a :href="routes.match(m.matchId)" class="match-row group flex items-center gap-3 sm:gap-4 rounded-2xl bg-base-100 dark:bg-base-200 ring-1 ring-base-content/10 dark:ring-base-content/5 shadow-sm dark:shadow-none px-3 sm:px-4 py-3
         transition-[translate,box-shadow,background-color] duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:ring-base-content/15 focus-visible:outline-2 focus-visible:outline-primary">
         <!-- Resultado -->
         <span class="size-11 sm:size-12 shrink-0 rounded-xl ring-1 grid place-items-center text-lg sm:text-xl font-black" :class="RESULT.tile" :title="RESULT.text" aria-hidden="true">{{ RESULT.letter }}</span>
@@ -104,7 +104,7 @@ const extraTime = computed(() => hasExtraTime(m.value))
                     Jugaste
                 </span>
                 <span v-if="m.voided" class="badge badge-xs badge-ghost" title="No cuenta para stats, rachas ni logros">Nulo</span>
-                <span v-if="m.winnerByDnf" class="badge badge-xs badge-warning badge-soft" title="Alguien se desconectó">Desconexión</span>
+                <span v-if="m.winnerByDnf" class="badge badge-xs badge-warning" title="Alguien se desconectó">Desconexión</span>
                 <span v-else-if="extraTime && !m.winnerByPen" class="badge badge-xs badge-ghost">Prórroga</span>
             </span>
             <span v-if="mvp" class="flex items-center gap-1.5" :title="`MVP: ${mvp.playerName}${mvpOurs ? '' : ' (rival)'}`">

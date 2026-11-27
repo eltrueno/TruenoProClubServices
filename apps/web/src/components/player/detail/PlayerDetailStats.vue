@@ -8,21 +8,13 @@
             :class="controlsStuck
                 ? 'rounded-b-2xl bg-[color-mix(in_oklab,var(--ctl-bg)_88%,transparent)] backdrop-blur-md shadow-lg shadow-black/25'
                 : 'rounded-b-2xl bg-(--ctl-bg)'">
-            <div class="flex items-center gap-2 min-w-0">
+            <div class="flex flex-wrap items-center gap-x-2 gap-y-1.5 min-w-0">
                 <span class="text-[0.65rem] uppercase tracking-widest font-black text-base-content/60 shrink-0">Periodo</span>
-                <div role="group" aria-label="Periodo" class="join">
-                    <button v-for="p in PERIODS" :key="p.key" type="button" class="join-item btn btn-xs sm:btn-sm"
-                        :class="period === p.key ? 'btn-primary' : 'bg-base-300! dark:bg-base-100! border-base-content/10'"
-                        :aria-pressed="period === p.key" @click="period = p.key">{{ p.label }}</button>
-                </div>
+                <OptionToggle v-model="period" :options="PERIODS.map((p) => ({ value: p.key, label: p.label }))" tone="primary" size="xs" label="Periodo" />
             </div>
-            <div class="flex items-center gap-2 min-w-0">
+            <div class="flex flex-wrap items-center gap-x-2 gap-y-1.5 min-w-0">
                 <span class="text-[0.65rem] uppercase tracking-widest font-black text-base-content/60 shrink-0">Comparado con</span>
-                <div role="group" aria-label="Comparado con" class="join">
-                    <button v-for="r in refOptions" :key="r.key" type="button" class="join-item btn btn-xs sm:btn-sm"
-                        :class="reference === r.key ? 'btn-primary' : 'bg-base-300! dark:bg-base-100! border-base-content/10'"
-                        :disabled="r.disabled" :aria-pressed="reference === r.key" @click="reference = r.key">{{ r.label }}</button>
-                </div>
+                <OptionToggle v-model="reference" :options="refOptions.map((r) => ({ value: r.key, label: r.label, disabled: r.disabled }))" size="xs" label="Comparado con" />
             </div>
         </div>
 
@@ -31,7 +23,7 @@
         </p>
 
         <!-- Perfil: radar frente a la referencia, y dónde destaca / flojea -->
-        <MatchCard title="Su perfil" :hint="`${period === 'total' ? 'Todo su historial' : PERIODS.find((p) => p.key === period)?.label} contra ${refLong.toLowerCase()}.${scale === 'fit' ? ' Escala ajustada: cada eje llega hasta el mayor de los dos.' : ''}`">
+        <SectionCard title="Su perfil" :hint="`${period === 'total' ? 'Todo su historial' : PERIODS.find((p) => p.key === period)?.label} contra ${refLong.toLowerCase()}.${scale === 'fit' ? ' Escala ajustada: cada eje llega hasta el mayor de los dos.' : ''}`">
             <template #actions>
                 <OptionToggle v-model="scale" :options="SCALE_OPTIONS" size="sm" />
             </template>
@@ -72,7 +64,7 @@
                     <div v-if="!refStats" class="text-sm text-base-content/60">Cargando las medias…</div>
                     <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <p class="text-[0.7rem] uppercase tracking-widest font-black text-success mb-2">Donde más destaca</p>
+                            <p class="text-[0.7rem] uppercase tracking-widest font-black text-success mb-2">Donde más destaca <span class="normal-case tracking-normal font-semibold text-base-content/60">· en {{ current.gamesPlayed }} {{ current.gamesPlayed === 1 ? "partido" : "partidos" }}</span></p>
                             <ul v-if="highlights.best.length" class="flex flex-col gap-1.5">
                                 <li v-for="h in highlights.best" :key="h.label" class="highlight flex items-baseline justify-between gap-3 rounded-xl bg-success/10 ring-1 ring-success/25 px-3 py-2">
                                     <span class="font-bold text-sm">{{ h.label }}</span>
@@ -82,7 +74,7 @@
                             <p v-else class="text-sm text-base-content/60">En nada por encima: está en la media o por debajo.</p>
                         </div>
                         <div>
-                            <p class="text-[0.7rem] uppercase tracking-widest font-black text-error mb-2">Donde flojea</p>
+                            <p class="text-[0.7rem] uppercase tracking-widest font-black text-error mb-2">Donde flojea <span class="normal-case tracking-normal font-semibold text-base-content/60">· en {{ current.gamesPlayed }} {{ current.gamesPlayed === 1 ? "partido" : "partidos" }}</span></p>
                             <ul v-if="highlights.worst.length" class="flex flex-col gap-1.5">
                                 <li v-for="h in highlights.worst" :key="h.label" class="highlight flex items-baseline justify-between gap-3 rounded-xl bg-error/10 ring-1 ring-error/25 px-3 py-2">
                                     <span class="font-bold text-sm">{{ h.label }}</span>
@@ -94,11 +86,11 @@
                     </div>
                 </div>
             </div>
-        </MatchCard>
+        </SectionCard>
 
         <!-- Sus números, por bloques: total y por partido, barra con la raya de la referencia y la diferencia -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
-            <MatchCard v-for="g in groups" :key="g.key" :title="g.title" :hint="g.hint">
+            <SectionCard v-for="g in groups" :key="g.key" :title="g.title" :hint="g.hint">
                 <template #actions>
                     <GoalIcon v-if="g.icon === 'goal'" class="size-6 text-primary" />
                     <svg v-else class="size-6 text-primary" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="KPI_ICONS[g.icon as KpiIcon]"></svg>
@@ -106,7 +98,7 @@
                 <dl class="flex flex-col">
                     <div v-for="(r, i) in g.rows" :key="r.label" class="py-2.5 border-b border-base-content/8 last:border-0">
                         <div class="grid grid-cols-[minmax(0,1fr)_auto_3.25rem] items-baseline gap-x-3">
-                            <dt class="text-sm text-base-content/75 truncate">{{ r.label }}</dt>
+                            <dt class="text-sm text-base-content/75 truncate">{{ r.label }}<InfoDot v-if="r.bar" /></dt>
                             <dd class="text-base font-black tabular-nums text-right">
                                 {{ r.display }}<span v-if="r.sub" class="ml-1.5 text-xs font-semibold text-base-content/50">{{ r.sub }}</span>
                             </dd>
@@ -138,7 +130,7 @@
                         </div>
                     </div>
                 </dl>
-            </MatchCard>
+            </SectionCard>
         </div>
     </div>
 </template>
@@ -166,11 +158,12 @@ import PlayerStatsEntity from "@/model/PlayerStatsEntity"
 import AverageStatsEntity from "@/model/AverageStatsEntity"
 import type ClubMatchEntity from "@/model/match/ClubMatchEntity"
 import type PlayerProfileEntity from "@/model/PlayerProfileEntity"
-import MatchCard from "@/components/match/detail/MatchCard.vue"
+import SectionCard from "@/components/ui/SectionCard.vue"
 import OptionToggle, { type ToggleOption } from "@/components/ui/OptionToggle.vue"
 import { useStickySubBar } from "@/composables/useStickySubBar"
 import { radarAxisMax, radarNorm, type RadarScale } from "@/lib/radarScale"
 import GoalIcon from "@/components/ui/GoalIcon.vue"
+import InfoDot from "@/components/ui/InfoDot.vue"
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, RadarController)
 useSiteFontInCharts()
@@ -512,7 +505,7 @@ const radarOptions = computed<ChartOptions<"radar">>(() => ({
 <style scoped>
 /* Pegados justo bajo la barra de pestañas de la ficha (que va bajo el menú) */
 /* Justo bajo la barra de pestañas de la ficha (--tabs-h lo mide PlayerDetail); 1px de solape para que no haya rendija */
-.stats-controls { top: calc(var(--nav-h, 4rem) + var(--tabs-h, 4.75rem) - 1px); }
+.stats-controls { top: calc(var(--nav-top, 4rem) + var(--tabs-h, 4.75rem) - 1px); transition: top 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
 .stat-bar { transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
 .ref-mark { transition: left 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
 @media (prefers-reduced-motion: no-preference) {

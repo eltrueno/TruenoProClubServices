@@ -73,7 +73,7 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
                 </span>
                 <span v-if="p.playerId === myId" class="absolute -top-2 -left-2 badge badge-xs badge-primary font-black tracking-widest shadow">TÚ</span>
             </span>
-            <span class="max-w-full truncate rounded-md px-1.5 py-px text-[0.65rem] sm:text-xs font-bold text-white bg-black/50">{{ p.playerName }}</span>
+            <span class="max-w-full truncate rounded-md px-1.5 py-px text-[0.65rem] sm:text-xs font-bold text-white bg-black/70" :title="p.playerName">{{ p.playerName }}</span>
         </button>
     </div>
 </template>
