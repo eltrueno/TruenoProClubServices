@@ -2,7 +2,7 @@ import { Router, json } from "express"
 import { requireAdmin, requireAuth } from "../middleware/requireAdmin.js"
 import { patchMember, uploadMemberImage, imageProxy, setMatchVoided } from "../controllers/admin.controller.js"
 import { getPendingLinkRequests, approveLinkRequest, rejectLinkRequest } from "../controllers/linkRequest.controller.js"
-import { getStatus, getWorkerHealth, syncNow, recalculate, getAudit, getLinkRequestHistory } from "../controllers/adminSystem.controller.js"
+import { getStatus, getWorkerHealth, syncNow, recalculate, getJob, listMaintenance, previewMaintenance, applyMaintenance, getAudit, getLinkRequestHistory } from "../controllers/adminSystem.controller.js"
 
 const router = Router()
 
@@ -31,6 +31,12 @@ router.get("/status", getStatus)
 router.get("/worker", getWorkerHealth)
 router.post("/sync", syncNow)
 router.post("/recalculate", recalculate)
+// Trabajos largos (sincronizar, recalcular, mantenimientos): cómo van
+router.get("/jobs/:id", getJob)
+// Mantenimientos: arreglos de partidos guardados, con vista previa antes de aplicar
+router.get("/maintenance", listMaintenance)
+router.post("/maintenance/:name/preview", previewMaintenance)
+router.post("/maintenance/:name/apply", applyMaintenance)
 router.get("/audit", getAudit)
 
 export default router

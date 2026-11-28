@@ -1,14 +1,15 @@
 import { MqConnection, RpcClient } from "@trueno-proclub-services/mq"
-import { STATS_RECALCULATE_ROUTING_KEY, SYNC_NOW_ROUTING_KEY, type IStatsRecalculatePayload, type ISyncNowPayload, type WorkerRpc } from "@trueno-proclub-services/shared"
+import { STATS_RECALCULATE_ROUTING_KEY, type IStatsRecalculatePayload, type WorkerRpc } from "@trueno-proclub-services/shared"
 import dotenv from "dotenv"
 dotenv.config()
 
 /**
  * El api y el worker del club por RabbitMQ (conexión común de packages/mq, mismo vhost que el
  * worker):
- * - avisos (exchange `events`, colas durables): recalcular stats, sincronizar ya. Si el worker
+ * - avisos (exchange `events`, colas durables): recalcular stats tras marcar un nulo. Si el worker
  *   está parado, esperan a que vuelva;
- * - RPC (`rpc.call(...)`): preguntas con respuesta y tiempo máximo, como el ping del panel admin.
+ * - RPC (`rpc.call(...)`): preguntas con respuesta y tiempo máximo (lo del panel admin: ping,
+ *   sincronizar, recalcular, mantenimientos).
  * Sin `RABBITMQ_URL` no se publica nada (quien llame lo sabe por el `false`) y el RPC dice que no
  * está disponible.
  */
@@ -20,10 +21,6 @@ export const rpc = new RpcClient<WorkerRpc>(mq)
 /** Pide al worker que recalcule stats, logros y medias (p. ej. tras marcar un partido como nulo) */
 export const requestStatsRecalculation = (payload: Omit<IStatsRecalculatePayload, "requestedAt">) =>
     mq.publish(STATS_RECALCULATE_ROUTING_KEY, { ...payload, requestedAt: new Date().toISOString() } satisfies IStatsRecalculatePayload)
-
-/** Pide al worker que sincronice ya con EA (botón del panel admin) */
-export const requestSyncNow = (requestedBy: string | null) =>
-    mq.publish(SYNC_NOW_ROUTING_KEY, { requestedAt: new Date().toISOString(), requestedBy } satisfies ISyncNowPayload)
 
 /** Hay RabbitMQ configurado (sin él, los avisos al worker no salen) */
 export const eventsEnabled = () => mq.enabled

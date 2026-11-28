@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express"
 import type { IAdminStatus, IAdminWorkerHealth, IWorkerStatus } from "@trueno-proclub-services/shared"
 import { RpcError } from "@trueno-proclub-services/mq"
 import { ClubMemberModel, LinkRequestModel, MatchModel, WorkerStatusModel, WORKER_STATUS_ID } from "@trueno-proclub-services/shared/models"
-import { eventsEnabled, requestStatsRecalculation, requestSyncNow, rpc } from "../services/events.service.js"
+import { eventsEnabled, rpc } from "../services/events.service.js"
 import { listAdminActions, logAdminAction } from "../services/adminAudit.service.js"
 
 const ok = (res: Response, response: unknown) => res.json({ status: { code: 200, message: "Ok" }, response })
@@ -55,25 +55,90 @@ async function getWorkerHealth(_req: Request, res: Response, next: NextFunction)
     }
 }
 
-/** POST /admin/sync: el worker sincroniza ya con EA. `queued: false` = RabbitMQ no está */
+/**
+ * Error del RPC con el worker → respuesta HTTP: 503 si no está o no contesta, 409 si la petición ya
+ * no vale (p. ej. la vista previa de un mantenimiento ha cambiado), 500 si su handler ha fallado.
+ * Va con `message` legible para el panel.
+ */
+function sendRpcError(res: Response, err: unknown): boolean {
+    if (!(err instanceof RpcError)) return false
+    const [http, code] = err.code === "unavailable" ? [503, "WORKER_UNAVAILABLE"]
+        : err.code === "timeout" ? [503, "WORKER_TIMEOUT"]
+            : err.code === "bad_request" ? [409, "WORKER_CONFLICT"]
+                : err.code === "unknown_method" ? [501, "WORKER_OUTDATED"]
+                    : [500, "WORKER_ERROR"]
+    res.status(http).json({ status: { code: http, message: code }, message: err.message })
+    return true
+}
+
+/** POST /admin/sync: el worker sincroniza ya con EA. Devuelve el trabajo (`IWorkerJob`), que se sigue con /admin/jobs/:id */
 async function syncNow(req: Request, res: Response, next: NextFunction) {
     try {
-        const queued = await requestSyncNow(req.user?.id ?? null)
-        if (queued) await logAdminAction(req, "worker.sync")
-        ok(res, { queued })
+        const job = await rpc.call("worker.sync", { requestedBy: req.user?.id ?? null })
+        await logAdminAction(req, "worker.sync")
+        ok(res, job)
     } catch (err) {
-        next(err)
+        if (!sendRpcError(res, err)) next(err)
     }
 }
 
-/** POST /admin/recalculate: el worker rehace stats, logros y medias */
+/** POST /admin/recalculate: el worker rehace stats, logros y medias. Devuelve el trabajo */
 async function recalculate(req: Request, res: Response, next: NextFunction) {
     try {
-        const queued = await requestStatsRecalculation({ requestedBy: req.user?.id ?? null, reason: "admin-panel" })
-        if (queued) await logAdminAction(req, "worker.recalculate")
-        ok(res, { queued })
+        const job = await rpc.call("worker.recalculate", { requestedBy: req.user?.id ?? null })
+        await logAdminAction(req, "worker.recalculate")
+        ok(res, job)
     } catch (err) {
-        next(err)
+        if (!sendRpcError(res, err)) next(err)
+    }
+}
+
+/** GET /admin/jobs/:id: cómo va un trabajo. 404 si el worker no lo conoce (p. ej. se ha reiniciado) */
+async function getJob(req: Request, res: Response, next: NextFunction) {
+    try {
+        const job = await rpc.call("worker.job", { id: String(req.params.id) }, { timeoutMs: 5000 })
+        if (!job) {
+            res.status(404).json({ status: { code: 404, message: "JOB_NOT_FOUND" }, message: "El worker no conoce ese trabajo (puede que se haya reiniciado)" })
+            return
+        }
+        ok(res, job)
+    } catch (err) {
+        if (!sendRpcError(res, err)) next(err)
+    }
+}
+
+/** GET /admin/maintenance: los mantenimientos que se pueden lanzar */
+async function listMaintenance(_req: Request, res: Response, next: NextFunction) {
+    try {
+        ok(res, await rpc.call("maintenance.list", undefined, { timeoutMs: 5000 }))
+    } catch (err) {
+        if (!sendRpcError(res, err)) next(err)
+    }
+}
+
+/** POST /admin/maintenance/:name/preview: cuántos y qué partidos cambiaría (no toca nada) */
+async function previewMaintenance(req: Request, res: Response, next: NextFunction) {
+    try {
+        ok(res, await rpc.call("maintenance.preview", { name: String(req.params.name) }, { timeoutMs: 30_000 }))
+    } catch (err) {
+        if (!sendRpcError(res, err)) next(err)
+    }
+}
+
+/**
+ * POST /admin/maintenance/:name/apply `{ expected }`: lo aplica si siguen siendo `expected` partidos
+ * (los de la vista previa; si no, 409). Devuelve el trabajo.
+ */
+async function applyMaintenance(req: Request, res: Response, next: NextFunction) {
+    try {
+        const name = String(req.params.name)
+        const expected = Number(req.body?.expected)
+        if (!Number.isInteger(expected) || expected < 0) return next(new Error("ERROR_BAD_REQUEST"))
+        const job = await rpc.call("maintenance.apply", { name, expected, requestedBy: req.user?.id ?? null }, { timeoutMs: 30_000 })
+        await logAdminAction(req, "worker.maintenance", { target: name, targetName: job.label, details: { expected } })
+        ok(res, job)
+    } catch (err) {
+        if (!sendRpcError(res, err)) next(err)
     }
 }
 
@@ -100,4 +165,4 @@ async function getLinkRequestHistory(req: Request, res: Response, next: NextFunc
     }
 }
 
-export { getStatus, getWorkerHealth, syncNow, recalculate, getAudit, getLinkRequestHistory }
+export { getStatus, getWorkerHealth, syncNow, recalculate, getJob, listMaintenance, previewMaintenance, applyMaintenance, getAudit, getLinkRequestHistory }
