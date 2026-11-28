@@ -91,14 +91,15 @@
         <!-- Sus números, por bloques: total y por partido, barra con la raya de la referencia y la diferencia -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
             <SectionCard v-for="g in groups" :key="g.key" :title="g.title" :hint="g.hint">
-                <template #actions>
+                <template #icon>
                     <GoalIcon v-if="g.icon === 'goal'" class="size-6 text-primary" />
                     <svg v-else class="size-6 text-primary" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="KPI_ICONS[g.icon as KpiIcon]"></svg>
                 </template>
                 <dl class="flex flex-col">
                     <div v-for="(r, i) in g.rows" :key="r.label" class="py-2.5 border-b border-base-content/8 last:border-0">
                         <div class="grid grid-cols-[minmax(0,1fr)_auto_3.25rem] items-baseline gap-x-3">
-                            <dt class="text-sm text-base-content/75 truncate">{{ r.label }}<InfoDot v-if="r.bar" /></dt>
+                            <dt v-if="r.bar" class="text-sm text-base-content/75 truncate cursor-help select-none" v-bind="tipLabel(`${g.key}-${r.label}`)">{{ r.label }}<InfoDot /></dt>
+                            <dt v-else class="text-sm text-base-content/75 truncate">{{ r.label }}</dt>
                             <dd class="text-base font-black tabular-nums text-right">
                                 {{ r.display }}<span v-if="r.sub" class="ml-1.5 text-xs font-semibold text-base-content/50">{{ r.sub }}</span>
                             </dd>
@@ -114,7 +115,7 @@
                             <span class="stat-bar bg-error" :style="{ width: `${(r.record.l / r.value) * 100}%` }"></span>
                         </div>
                         <!-- Barra con la raya de la referencia; al pasar por encima, el detalle -->
-                        <div v-if="r.bar" tabindex="0" class="tooltip tooltip-top w-full block mt-1.5 py-1 -my-1 cursor-help rounded-full focus-visible:outline-2 focus-visible:outline-primary">
+                        <div v-if="r.bar" tabindex="0" :class="openTip === `${g.key}-${r.label}` && 'tooltip-open'" class="tooltip tooltip-top w-full block mt-1.5 py-1 -my-1 cursor-help rounded-full focus-visible:outline-2 focus-visible:outline-primary">
                             <div class="tooltip-content text-left text-xs leading-snug px-3 py-2">
                                 <p class="font-black mb-0.5">{{ r.label }}</p>
                                 <p>{{ periodLabel }}: <b class="tabular-nums">{{ r.display }}</b></p>
@@ -161,9 +162,11 @@ import type PlayerProfileEntity from "@/model/PlayerProfileEntity"
 import SectionCard from "@/components/ui/SectionCard.vue"
 import OptionToggle, { type ToggleOption } from "@/components/ui/OptionToggle.vue"
 import { useStickySubBar } from "@/composables/useStickySubBar"
+import { useLinkedTooltip } from "@/composables/useLinkedTooltip"
 import { radarAxisMax, radarNorm, type RadarScale } from "@/lib/radarScale"
 import GoalIcon from "@/components/ui/GoalIcon.vue"
 import InfoDot from "@/components/ui/InfoDot.vue"
+import { shownDiff, signedText, smartDecimals } from "@/lib/statCompare"
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, RadarController)
 useSiteFontInCharts()
@@ -224,6 +227,8 @@ const periodLabel = computed(() => PERIODS.find((p) => p.key === period.value)!.
 
 // ── Controles pegados bajo la barra de pestañas ──
 const controls = ref<HTMLElement | null>(null)
+/** El nombre de cada fila con barra también abre su tooltip */
+const { openKey: openTip, label: tipLabel } = useLinkedTooltip()
 const controlsStuck = ref(false)
 const checkStuck = () => {
     const el = controls.value
@@ -298,11 +303,17 @@ const refOf = (key: string, perGame?: string): number | null => {
     if (perGame && Number.isFinite(r[perGame]) && r.gamesPlayed) return r[perGame] / r.gamesPlayed
     return null
 }
-const pctRow = (label: string, value: number, refKey: string, sub?: string, lowerBetter = false): Row =>
-    ({ label, value: value || 0, ref: refOf(refKey), display: `${num(value)}%`, sub, pct: true, bar: true, max: 100, lowerBetter })
+// Decimales según el tamaño (ver lib/statCompare): un 3 % frente a un 2,6 % no se escribe "3 %" y "3 %"
+const pctRow = (label: string, value: number, refKey: string, sub?: string, lowerBetter = false): Row => {
+    const ref = refOf(refKey)
+    const decimals = smartDecimals([value || 0, ref ?? 0], 0, true)
+    return { label, value: value || 0, ref, display: `${num(value, decimals)}%`, sub, pct: true, decimals, bar: true, max: 100, lowerBetter }
+}
 const pgRow = (label: string, total: number, games: number, refKey: string, refTotalKey: string, decimals = 2, lowerBetter = false): Row => {
     const v = perMatch(total, games)
-    return { label, value: v, ref: refOf(refKey, refTotalKey), display: num(v, decimals), sub: `${num(total)} en total`, decimals, bar: true, lowerBetter }
+    const ref = refOf(refKey, refTotalKey)
+    const d = smartDecimals([v, ref ?? 0], decimals)
+    return { label, value: v, ref, display: num(v, d), sub: `${num(total)} en total`, decimals: d, bar: true, lowerBetter }
 }
 
 type Group = { key: string; title: string; hint: string; icon: string; rows: Row[] }
@@ -357,19 +368,20 @@ const groups = computed<Group[]>(() => {
     return out
 })
 
-const better = (r: Row) => (r.ref === null ? 0 : (r.value - r.ref) * (r.lowerBetter ? -1 : 1))
-const diffTone = (r: Row) => (r.ref === null || Math.abs(r.value - r.ref) < 0.005 ? "text-base-content/40" : better(r) > 0 ? "text-success" : "text-error")
-const signed = (r: Row) => {
-    const d = r.value - (r.ref ?? 0)
-    const s = d > 0 ? "+" : d < 0 ? "−" : "±"
-    return `${s}${num(Math.abs(d), r.pct ? 0 : r.decimals ?? 2)}`
+/** Decimales con los que se escribe la fila; la diferencia y el color salen de los valores ya redondeados */
+const dec = (r: Row) => r.decimals ?? (r.pct ? 0 : 2)
+const shown = (r: Row) => (r.ref === null ? 0 : shownDiff(r.value, r.ref, dec(r)))
+const diffTone = (r: Row) => {
+    const d = shown(r)
+    return r.ref === null || d === 0 ? "text-base-content/40" : (d > 0) !== !!r.lowerBetter ? "text-success" : "text-error"
 }
-const fmtValue = (r: Row, v: number) => (r.pct ? `${num(v)}%` : num(v, r.decimals ?? 2))
+const signed = (r: Row) => signedText(shown(r), dec(r))
+const fmtValue = (r: Row, v: number) => (r.pct ? `${num(v, dec(r))}%` : num(v, dec(r)))
 function diffText(r: Row): string {
     if (r.ref === null) return ""
-    const d = r.value - r.ref
-    if (Math.abs(d) < 0.005) return "Justo en la media"
-    const abs = r.pct ? `${num(Math.abs(d))} puntos` : num(Math.abs(d), r.decimals ?? 2)
+    const d = shown(r)
+    if (d === 0) return "Justo en la media"
+    const abs = r.pct ? `${num(Math.abs(d), dec(r))} puntos` : num(Math.abs(d), dec(r))
     const rel = !r.pct && r.ref ? ` (un ${Math.round((Math.abs(d) / r.ref) * 100)}% ${d > 0 ? "más" : "menos"})` : ""
     return `${abs} ${d > 0 ? "por encima" : "por debajo"}${rel}${r.lowerBetter ? (d > 0 ? ": peor" : ": mejor") : ""}`
 }
@@ -389,7 +401,7 @@ const highlights = computed(() => {
 
 // ── Radar ──
 /** Escala del radar: completa (0 al máximo razonable) o ajustada (hasta el mayor de los dos en cada eje) */
-const scale = ref<RadarScale>("full")
+const scale = ref<RadarScale>("fit")
 const SCALE_OPTIONS: ToggleOption<RadarScale>[] = [{ value: "full", label: "Completa" }, { value: "fit", label: "Ajustada" }]
 const axisMax = computed(() => {
     const s = current.value as unknown as Record<string, number>
@@ -417,14 +429,16 @@ const radarRows = computed(() => {
     return RADAR.value.map((m) => {
         const mine = Number.isFinite(s[m.key]) ? s[m.key] : 0
         const ref = r && Number.isFinite(r[m.key]) ? r[m.key] : null
-        const d = ref === null ? null : mine - ref
         const pctish = m.key !== "ratingAve" && m.key !== "goalsPlusAssistsPerMatch"
-        const close = d === null || Math.abs(d) < (pctish ? 0.5 : 0.005)
+        const dp = m.key === "ratingAve" ? 1 : pctish ? 0 : 2
+        // La diferencia, de lo que se ve (redondeado): si los dos se escriben igual, ±0 y sin color
+        const d = ref === null ? null : shownDiff(mine, ref, dp)
+        const close = d === null || d === 0
         return {
             label: m.label,
             mine: fmtAxis(m.key, mine),
             ref: ref === null ? "—" : fmtAxis(m.key, ref),
-            diff: d === null ? "" : `${d > 0 ? "+" : d < 0 ? "−" : "±"}${pctish ? num(Math.abs(d)) : num(Math.abs(d), m.key === "ratingAve" ? 1 : 2)}`,
+            diff: d === null ? "" : signedText(d, dp),
             tone: close ? "text-base-content/40" : d! > 0 ? "text-success" : "text-error",
         }
     })

@@ -58,7 +58,7 @@
                         <span class="text-3xl sm:text-5xl font-black tabular-nums leading-none">
                             <span class="text-(--a)">{{ score.a }}</span><span class="text-base-content/30 mx-1">–</span><span class="text-(--b)">{{ score.b }}</span>
                         </span>
-                        <span class="text-[0.65rem] text-base-content/50">en {{ rows.length }} stats</span>
+                        <span class="text-[0.65rem] text-base-content/50">en {{ rows.length }} stats<template v-if="score.ties"> · {{ score.ties }} {{ score.ties === 1 ? "empate" : "empates" }}</template></span>
                         <button type="button" class="btn btn-xs btn-ghost mt-1" @click="openPicker">Cambiar</button>
                     </div>
                 </div>
@@ -96,8 +96,8 @@
                                 :class="hovered === i ? 'bg-primary/12' : 'hover:bg-base-content/5'"
                                 @mouseenter="hovered = i" @mouseleave="hovered = null">
                                 <td class="py-1.5 pl-2 rounded-l-lg font-bold" :class="hovered === i && 'text-primary'">{{ a.label }}</td>
-                                <td class="py-1.5 text-right tabular-nums" :class="a.win === 'a' ? 'font-black text-(--a)' : 'text-base-content/60'">{{ a.a }}</td>
-                                <td class="py-1.5 pr-2 rounded-r-lg text-right tabular-nums" :class="a.win === 'b' ? 'font-black text-(--b)' : 'text-base-content/60'">{{ a.b }}</td>
+                                <td class="py-1.5 text-right tabular-nums" :class="a.win === 'a' ? 'font-black text-(--a)' : a.win === null ? 'font-bold text-base-content/80' : 'text-base-content/60'">{{ a.a }}</td>
+                                <td class="py-1.5 pr-2 rounded-r-lg text-right tabular-nums" :class="a.win === 'b' ? 'font-black text-(--b)' : a.win === null ? 'font-bold text-base-content/80' : 'text-base-content/60'">{{ a.b }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -105,18 +105,18 @@
             </SectionCard>
 
             <!-- Stat a stat, barras enfrentadas -->
-            <SectionCard title="Stat a stat" hint="En negrita, quien gana cada fila. En rojas, gana quien tiene menos.">
+            <SectionCard title="Stat a stat" hint="En negrita, quien gana cada fila (con los números tal y como se ven: si se ven iguales, es empate). En rojas, gana quien tiene menos.">
                 <template #actions>
                     <OptionToggle v-model="mode" :options="MODES.map((m) => ({ value: m.key, label: m.label }))" size="sm" label="Modo" />
                 </template>
                 <div class="flex flex-col gap-3">
                     <div v-for="(r, i) in rows" :key="`${mode}-${r.label}`" class="grid grid-cols-[3.25rem_minmax(0,1fr)_minmax(0,1fr)_3.25rem] sm:grid-cols-[4rem_minmax(0,1fr)_10rem_minmax(0,1fr)_4rem] items-center gap-x-2 gap-y-1">
-                        <span class="text-right tabular-nums" :class="r.win === 'a' ? 'font-black text-(--a)' : 'text-base-content/60'">{{ r.aText }}</span>
-                        <span class="h-2.5 rounded-full bg-base-content/8 overflow-hidden flex justify-end"><span class="bar h-full rounded-full bg-(--a)" :class="r.win !== 'a' && 'opacity-45'" :style="{ width: `${r.aPct}%`, '--k': i }"></span></span>
-                        <span class="hidden sm:block text-center text-xs font-black uppercase tracking-wider text-base-content/60 truncate">{{ r.label }}</span>
-                        <span class="h-2.5 rounded-full bg-base-content/8 overflow-hidden"><span class="bar bar-b block h-full rounded-full bg-(--b)" :class="r.win !== 'b' && 'opacity-45'" :style="{ width: `${r.bPct}%`, '--k': i }"></span></span>
-                        <span class="tabular-nums" :class="r.win === 'b' ? 'font-black text-(--b)' : 'text-base-content/60'">{{ r.bText }}</span>
-                        <span class="sm:hidden col-span-4 -order-1 text-center text-[0.65rem] font-black uppercase tracking-wider text-base-content/60">{{ r.label }}</span>
+                        <span class="text-right tabular-nums" :class="r.win === 'a' ? 'font-black text-(--a)' : r.win === null ? 'font-bold text-base-content/80' : 'text-base-content/60'">{{ r.aText }}</span>
+                        <span class="h-2.5 rounded-full bg-base-content/8 overflow-hidden flex justify-end"><span class="bar h-full rounded-full bg-(--a)" :class="r.win === 'b' && 'opacity-45'" :style="{ width: `${r.aPct}%`, '--k': i }"></span></span>
+                        <span class="hidden sm:block text-center text-xs font-black uppercase tracking-wider text-base-content/60 truncate">{{ r.label }}<span v-if="r.win === null" class="ml-1 text-base-content/40" title="Empate">=</span></span>
+                        <span class="h-2.5 rounded-full bg-base-content/8 overflow-hidden"><span class="bar bar-b block h-full rounded-full bg-(--b)" :class="r.win === 'a' && 'opacity-45'" :style="{ width: `${r.bPct}%`, '--k': i }"></span></span>
+                        <span class="tabular-nums" :class="r.win === 'b' ? 'font-black text-(--b)' : r.win === null ? 'font-bold text-base-content/80' : 'text-base-content/60'">{{ r.bText }}</span>
+                        <span class="sm:hidden col-span-4 -order-1 text-center text-[0.65rem] font-black uppercase tracking-wider text-base-content/60">{{ r.label }}<span v-if="r.win === null" class="ml-1 text-base-content/40" title="Empate">=</span></span>
                     </div>
                 </div>
             </SectionCard>
@@ -159,7 +159,7 @@
                             <p class="text-[0.7rem] uppercase tracking-widest font-black mb-1.5" :class="side.key === 'a' ? 'text-(--a)' : 'text-(--b)'">Solo {{ side.name }}</p>
                             <ul v-if="side.list.length" class="flex flex-wrap gap-1">
                                 <!-- Al pasar por encima (o con el foco), qué es y cuánto vale -->
-                                <li v-for="a in expanded[side.key] ? side.list : side.list.slice(0, 10)" :key="a.id" class="tooltip tooltip-top">
+                                <li v-for="a in expanded[side.key] ? side.list : side.list.slice(0, 10)" :key="a.id" class="tooltip tooltip-top" @pointerenter="placeTooltip" @focusin="placeTooltip">
                                     <div class="tooltip-content text-left text-xs leading-snug px-3 py-2 max-w-60">
                                         <p class="font-black">{{ a.name }}</p>
                                         <p v-if="a.description" class="opacity-85">{{ a.description }}</p>
@@ -258,6 +258,8 @@ import { usePlayerStats } from "@/composables/usePlayerStats"
 import { PLAYER_PLACEHOLDER } from "@/lib/playerImage"
 import EmptyState from "@/components/ui/EmptyState.vue"
 import { navTop } from "@/lib/navOffset"
+import { placeTooltip } from "@/lib/tooltipPlacement"
+import { shownWinner, smartDecimals } from "@/lib/statCompare"
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, RadarController)
 useSiteFontInCharts()
@@ -384,13 +386,15 @@ const rows = computed(() => {
     return METRICS.value.map((m) => {
         const a = m.get(A), b = m.get(B)
         const max = m.pct ? 100 : Math.max(a, b, 0.0001)
-        const close = Math.abs(a - b) < (m.d ? 10 ** -m.d / 2 : 0.5)
-        const win: "a" | "b" | null = close ? null : (a > b) !== !!m.lowerBetter ? "a" : "b"
-        const text = (v: number) => (m.pct ? `${fmt(v)}%` : fmt(v, m.d ?? 0))
+        // Decimales según el tamaño (0,04 rojas por partido no se escribe "0,0") y quién gana, de lo
+        // que se ve: si los dos se escriben igual, es empate (ver lib/statCompare)
+        const d = m.pct ? smartDecimals([a, b], 0, true) : m.d ? smartDecimals([a, b], m.d) : 0
+        const win = shownWinner(a, b, d, !!m.lowerBetter)
+        const text = (v: number) => (m.pct ? `${fmt(v, d)}%` : fmt(v, d))
         return { label: m.label, aText: text(a), bText: text(b), aPct: (a / max) * 100, bPct: (b / max) * 100, win }
     })
 })
-const score = computed(() => ({ a: rows.value.filter((r) => r.win === "a").length, b: rows.value.filter((r) => r.win === "b").length }))
+const score = computed(() => ({ a: rows.value.filter((r) => r.win === "a").length, b: rows.value.filter((r) => r.win === "b").length, ties: rows.value.filter((r) => r.win === null).length }))
 
 // ── Radar ──
 // Ajustada por defecto: aquí lo que importa es ver quién gana en cada eje
@@ -415,11 +419,12 @@ const RADAR = computed(() => [
     { label: "% Victorias", get: val("winRate"), max: 100 },
 ])
 const axisMax = computed(() => radarAxisMax(sides.value.map((s) => RADAR.value.map((m) => m.get(s.stats))), RADAR.value.map((m) => m.max), scale.value))
-const fmtAxis = (m: { max: number }, v: number) => (m.max === 100 || m.max === 30 ? `${fmt(v)}%` : fmt(v, m.max === 10 ? 1 : 2))
 const radarRows = computed(() => sides.value.length < 2 ? [] : RADAR.value.map((m) => {
     const a = m.get(sides.value[0].stats), b = m.get(sides.value[1].stats)
-    const close = Math.abs(a - b) < (m.max === 10 ? 0.05 : m.max === 1.5 ? 0.005 : 0.5)
-    return { label: m.label, a: fmtAxis(m, a), b: fmtAxis(m, b), win: close ? null : a > b ? "a" : "b" }
+    const pctish = m.max === 100 || m.max === 30
+    const d = pctish ? smartDecimals([a, b], 0, true) : m.max === 10 ? 1 : smartDecimals([a, b], 2)
+    const text = (v: number) => (pctish ? `${fmt(v, d)}%` : fmt(v, d))
+    return { label: m.label, a: text(a), b: text(b), win: shownWinner(a, b, d) }
 }))
 const B_COLOR = "#5b8def"
 const radarData = computed(() => ({
@@ -491,7 +496,7 @@ const together = computed(() => {
         t.b.goals += pb.goals; t.b.assists += pb.assists; t.b.rating += pb.rating
         // Partido a partido: la mejor nota (empate si son iguales) y goles / asistencias de cada uno
         const line = (p: { goals: number; assists: number }) => [p.goals ? `${p.goals}G` : "", p.assists ? `${p.assists}A` : ""].filter(Boolean).join(" ")
-        const win = Math.abs(pa.rating - pb.rating) < 0.05 ? null : pa.rating > pb.rating ? "a" : "b"
+        const win = shownWinner(pa.rating, pb.rating, 1)
         if (win) t.better[win]++
         t.list.push({
             matchId: m.matchId, ts: m.timestamp, result: m.result, win,

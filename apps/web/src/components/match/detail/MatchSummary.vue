@@ -14,6 +14,7 @@ import { routes } from "@/lib/query"
 import SectionCard from "@/components/ui/SectionCard.vue"
 import MatchYou from "./MatchYou.vue"
 import MvpIcon from "@/components/ui/MvpIcon.vue"
+import { shownWinner } from "@/lib/statCompare"
 
 const props = defineProps<{ match: ClubMatchEntity; history: ClubMatchEntity[] | null; myId: string | null }>()
 const emit = defineEmits<{ see: [playerId: string] }>()
@@ -81,7 +82,7 @@ const comparison = computed(() => {
         const x = a[r.key], y = b[r.key]
         // Los porcentajes, sobre 100; el resto, sobre el mayor de los dos
         const max = "pct" in r ? 100 : Math.max(x, y, 1)
-        return { ...r, pct: "pct" in r, us: x, them: y, usFrac: fa[r.key], themFrac: fb[r.key], usW: (x / max) * 100, themW: (y / max) * 100, usBetter: x > y, themBetter: y > x }
+        return { ...r, pct: "pct" in r, us: x, them: y, usFrac: fa[r.key], themFrac: fb[r.key], usW: (x / max) * 100, themW: (y / max) * 100, usBetter: shownWinner(x, y, 0) === "a", themBetter: shownWinner(x, y, 0) === "b" }
     })
 })
 // Posesión aproximada: reparto de pases

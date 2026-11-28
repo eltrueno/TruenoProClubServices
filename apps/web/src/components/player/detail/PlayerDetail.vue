@@ -143,7 +143,7 @@
                     dark:[--tabs-bg:color-mix(in_oklab,var(--color-base-200)_92%,var(--color-base-content))]"
                 :class="tabsStuck
                     ? (subBarActive
-                        ? 'rounded-none bg-[color-mix(in_oklab,var(--tabs-bg)_88%,transparent)] backdrop-blur-md'
+                        ? 'rounded-none bg-[color-mix(in_oklab,var(--tabs-bg)_88%,transparent)] backdrop-blur-md shadow-[inset_0_-1px_0_color-mix(in_oklab,var(--color-base-content)_20%,transparent)]'
                         : 'rounded-b-2xl bg-[color-mix(in_oklab,var(--tabs-bg)_88%,transparent)] backdrop-blur-md shadow-lg shadow-black/25')
                     : 'rounded-t-3xl bg-(--tabs-bg)'">
                 <!-- Jugador (solo pegada) -->

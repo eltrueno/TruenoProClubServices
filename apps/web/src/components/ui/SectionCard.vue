@@ -15,10 +15,15 @@ const { target, inView } = useInView({ threshold: 0 })
 <template>
     <section ref="target" class="anim-gate card bg-base-200 shadow-md" :class="inView && 'in-view'">
         <div class="card-body p-4 sm:p-6 gap-4">
+            <!-- #icon: un icono decorativo arriba a la derecha que nunca baja de línea (el título se parte antes).
+                 #actions: controles (selectores…), que sí bajan debajo del título si no caben -->
             <header class="flex flex-wrap items-start justify-between gap-3">
-                <div class="min-w-0">
-                    <h2 class="card-title text-lg sm:text-xl font-black uppercase border-l-4 border-primary pl-3 sm:pl-4">{{ title }}</h2>
-                    <p v-if="hint" class="text-sm text-base-content/60 mt-1 pl-4 sm:pl-5">{{ hint }}</p>
+                <div class="min-w-0 grow flex items-start gap-3">
+                    <div class="min-w-0 flex-1">
+                        <h2 class="card-title text-lg sm:text-xl font-black uppercase border-l-4 border-primary pl-3 sm:pl-4">{{ title }}</h2>
+                        <p v-if="hint" class="text-sm text-base-content/60 mt-1 pl-4 sm:pl-5">{{ hint }}</p>
+                    </div>
+                    <span v-if="$slots.icon" class="shrink-0 mt-0.5" aria-hidden="true"><slot name="icon" /></span>
                 </div>
                 <slot name="actions" />
             </header>
