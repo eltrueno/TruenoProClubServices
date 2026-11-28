@@ -98,8 +98,8 @@
                 <dl class="flex flex-col">
                     <div v-for="(r, i) in g.rows" :key="r.label" class="py-2.5 border-b border-base-content/8 last:border-0">
                         <div class="grid grid-cols-[minmax(0,1fr)_auto_3.25rem] items-baseline gap-x-3">
-                            <dt v-if="r.bar" class="text-sm text-base-content/75 truncate cursor-help select-none" v-bind="tipLabel(`${g.key}-${r.label}`)">{{ r.label }}<InfoDot /></dt>
-                            <dt v-else class="text-sm text-base-content/75 truncate">{{ r.label }}</dt>
+                            <dt v-if="r.bar" class="text-sm text-base-content/75 truncate cursor-help select-none" v-bind="tipLabel(`${g.key}-${r.label}`)"><span class="sm:hidden" aria-hidden="true">{{ SHORT_LABELS[r.label] ?? r.label }}</span><span class="sr-only sm:not-sr-only">{{ r.label }}</span><InfoDot /></dt>
+                            <dt v-else class="text-sm text-base-content/75 truncate"><span class="sm:hidden" aria-hidden="true">{{ SHORT_LABELS[r.label] ?? r.label }}</span><span class="sr-only sm:not-sr-only">{{ r.label }}</span></dt>
                             <dd class="text-base font-black tabular-nums text-right">
                                 {{ r.display }}<span v-if="r.sub" class="ml-1.5 text-xs font-semibold text-base-content/50">{{ r.sub }}</span>
                             </dd>
@@ -229,6 +229,17 @@ const periodLabel = computed(() => PERIODS.find((p) => p.key === period.value)!.
 const controls = ref<HTMLElement | null>(null)
 /** El nombre de cada fila con barra también abre su tooltip */
 const { openKey: openTip, label: tipLabel } = useLinkedTooltip()
+/** Nombres cortos de las filas en el móvil (el largo se corta con "…"); el tooltip y el lector de pantalla llevan el entero */
+const SHORT_LABELS: Record<string, string> = {
+    "Rojas por partido": "Rojas / partido",
+    "Goles + asistencias": "G + A",
+    "% tiros que acaban en gol": "% tiros a gol",
+    "Hat-tricks · pókers": "Hat-tricks · pók.",
+    "% acierto de pase": "% pase",
+    "% entradas ganadas": "% entradas",
+    "% porterías a cero": "% imbatido",
+    "Goles encajados": "Encajados",
+}
 const controlsStuck = ref(false)
 const checkStuck = () => {
     const el = controls.value

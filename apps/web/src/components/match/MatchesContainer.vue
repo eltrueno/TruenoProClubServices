@@ -26,6 +26,8 @@ import { KPI_ICONS } from "@/lib/kpiIcons"
 import { OTHER_CLUBS } from "@/config/club"
 import EmptyState from "@/components/ui/EmptyState.vue"
 import { navTop } from "@/lib/navOffset"
+import MatchCalendar from "./MatchCalendar.vue"
+import OptionToggle, { type ToggleOption } from "@/components/ui/OptionToggle.vue"
 
 const { matches, loading, status, load: loadMatches } = useMatches()
 const { members, load: loadMembers } = useMembers()
@@ -64,6 +66,13 @@ const RESULTS: { value: MatchResult; label: string; short: string; on: string }[
 const results = ref<MatchResult[]>(RESULTS.filter((r) => getQueryParam("resultado").split(",").includes(r.short)).map((r) => r.value))
 const extraTimeOnly = ref(getQueryParam("prorroga") === "1")
 const penaltiesOnly = ref(getQueryParam("penaltis") === "1")
+/** Lista (por meses o por el orden elegido) o calendario de días (?vista=calendario) */
+type View = "list" | "calendar"
+const view = ref<View>(getQueryParam("vista") === "calendario" ? "calendar" : "list")
+const VIEW_OPTIONS: ToggleOption<View>[] = [
+    { value: "list", label: "Lista", svg: '<path fill-rule="evenodd" d="M2.625 6.75a1.125 1.125 0 1 1 2.25 0 1.125 1.125 0 0 1-2.25 0Zm4.875 0A.75.75 0 0 1 8.25 6h12a.75.75 0 0 1 0 1.5h-12a.75.75 0 0 1-.75-.75ZM2.625 12a1.125 1.125 0 1 1 2.25 0 1.125 1.125 0 0 1-2.25 0ZM7.5 12a.75.75 0 0 1 .75-.75h12a.75.75 0 0 1 0 1.5h-12A.75.75 0 0 1 7.5 12Zm-4.875 5.25a1.125 1.125 0 1 1 2.25 0 1.125 1.125 0 0 1-2.25 0Zm4.875 0a.75.75 0 0 1 .75-.75h12a.75.75 0 0 1 0 1.5h-12a.75.75 0 0 1-.75-.75Z" clip-rule="evenodd"/>' },
+    { value: "calendar", label: "Calendario", svg: '<path d="M12.75 12.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM7.5 15.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM8.25 17.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM9.75 15.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM10.5 17.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12 15.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM12.75 17.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM14.25 15.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM15 17.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM16.5 15.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM15 12.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM16.5 13.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"/><path fill-rule="evenodd" d="M6.75 2.25A.75.75 0 0 1 7.5 3v1.5h9V3A.75.75 0 0 1 18 3v1.5h.75a3 3 0 0 1 3 3v11.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V7.5a3 3 0 0 1 3-3H6V3a.75.75 0 0 1 .75-.75Zm13.5 9a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5Z" clip-rule="evenodd"/>' },
+]
 const sort = ref<MatchSort>(MATCH_SORTS.some((o) => o.key === getQueryParam("orden")) ? (getQueryParam("orden") as MatchSort) : "recent")
 const toggleResult = (r: MatchResult) => { results.value = results.value.includes(r) ? results.value.filter((x) => x !== r) : [...results.value, r] }
 /** Lo que va en "+" (para el puntito del botón) */
@@ -77,7 +86,8 @@ function clearFilters() {
 }
 
 watch([query, types, players, dates, minPlayers, derby, results, extraTimeOnly, penaltiesOnly, sort], () => { page.value = 1 })
-watch([query, types, players, dates, minPlayers, derby, results, extraTimeOnly, penaltiesOnly, sort, page], () => setQueryParams({
+watch([query, types, players, dates, minPlayers, derby, results, extraTimeOnly, penaltiesOnly, sort, page, view], () => setQueryParams({
+    vista: view.value === "calendar" ? "calendario" : null,
     derbi: derby.value ? "1" : null,
     resultado: results.value.length ? RESULTS.filter((r) => results.value.includes(r.value)).map((r) => r.short).join(",") : null,
     prorroga: extraTimeOnly.value ? "1" : null,
@@ -261,9 +271,12 @@ const hasError = computed(() => !loading.value && status.value !== 200)
         <template v-else>
             <!-- Resumen de lo que se está viendo -->
             <section class="summary rounded-2xl bg-base-100 dark:bg-base-200 ring-1 ring-base-content/10 dark:ring-base-content/5 shadow-sm dark:shadow-none p-4 sm:p-5" aria-label="Resumen de los partidos filtrados">
-                <p class="text-xs text-base-content/60 mb-3">
-                    <b class="text-base-content">{{ filtered.length }}</b> {{ filtered.length === 1 ? "partido" : "partidos" }}<template v-if="withPlayers"> {{ withPlayers }}</template><template v-if="filtered.length !== record.games"> · {{ filtered.length - record.games }} nulos, que no cuentan</template>
-                </p>
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <p class="text-xs text-base-content/60">
+                        <b class="text-base-content">{{ filtered.length }}</b> {{ filtered.length === 1 ? "partido" : "partidos" }}<template v-if="withPlayers"> {{ withPlayers }}</template><template v-if="filtered.length !== record.games"> · {{ filtered.length - record.games }} nulos, que no cuentan</template>
+                    </p>
+                    <OptionToggle v-model="view" :options="VIEW_OPTIONS" size="xs" label="Vista" />
+                </div>
                 <div v-if="record.games" class="grid grid-cols-2 sm:grid-cols-4 gap-4 items-end">
                     <div class="col-span-2">
                         <p class="flex items-center gap-1.5 text-[0.65rem] uppercase tracking-widest font-black text-base-content/50 mb-1">
@@ -301,8 +314,11 @@ const hasError = computed(() => !loading.value && status.value !== 200)
 
             <div ref="listTop" class="scroll-mt-36 -mb-2" aria-hidden="true"></div>
 
+            <!-- Calendario de días (con todos los filtrados, sin páginas) -->
+            <MatchCalendar v-if="view === 'calendar' && filtered.length" :matches="filtered" :my-id="myPlayerId" />
+
             <!-- Por meses -->
-            <div v-if="groups.length" class="flex flex-col gap-5">
+            <div v-else-if="groups.length" class="flex flex-col gap-5">
                 <section v-for="g in groups" :key="g.key" :aria-label="g.label">
                     <!-- Separador del mes: el título, una raya y su balance (no se pega: el mes actual va en la barra) -->
                     <header class="month-head flex items-center gap-3 mb-3" :data-month="g.key">
@@ -329,7 +345,7 @@ const hasError = computed(() => !loading.value && status.value !== 200)
                 <button type="button" class="btn btn-sm btn-primary" @click="clearFilters">Quitar los filtros</button>
             </EmptyState>
 
-            <Paginator :items-count="filtered.length" :items-per-page="PAGE_SIZE" :current-page="paged.page" label="Páginas de partidos" @pagechange="goToPage" />
+            <Paginator v-if="view === 'list'" :items-count="filtered.length" :items-per-page="PAGE_SIZE" :current-page="paged.page" label="Páginas de partidos" @pagechange="goToPage" />
         </template>
 
         <!-- Filtros en móvil -->
