@@ -4,8 +4,8 @@
  * ya con EA o recalcular stats, y el registro de acciones de admin (lo de los clubes y lo del
  * servicio de cuentas, juntos y por fecha).
  */
-import { computed, onMounted, ref } from "vue"
-import type { IAdminAuditEntry, IAdminStatus } from "@trueno-proclub-services/shared"
+import { computed, onBeforeUnmount, onMounted, ref } from "vue"
+import type { IAdminAuditEntry, IAdminStatus, IAdminWorkerHealth } from "@trueno-proclub-services/shared"
 import { ApiError, authApi, clubApi } from "@/lib/api"
 import { CLUBS, type ClubLink } from "@/config/site"
 import { relativeTime, roleLabel } from "@/lib/format"
@@ -30,6 +30,42 @@ async function loadStatus() {
     loadingStatus.value = false
 }
 
+// ── Worker en directo: ping por RPC cada 10 s mientras la pestaña se ve ──
+const workers = ref<Record<string, IAdminWorkerHealth | null>>({})
+async function loadWorkers() {
+    await Promise.all(CLUBS.map(async (c) => {
+        try {
+            workers.value[c.id] = await clubApi(c).admin.worker()
+        } catch {
+            // El api no responde: eso ya lo dice el estado del club
+            workers.value[c.id] = null
+        }
+    }))
+}
+let workerTimer: ReturnType<typeof setInterval> | null = null
+const tick = () => { if (document.visibilityState === "visible") void loadWorkers() }
+onMounted(() => { void loadWorkers(); workerTimer = setInterval(tick, 10_000) })
+onBeforeUnmount(() => { if (workerTimer) clearInterval(workerTimer) })
+
+const TASK_LABEL: Record<string, string> = { sync: "sincronizando con EA", recalculate: "recalculando stats", totw: "calculando el TOTW", startup: "arrancando" }
+/** "sincronizando con EA (12 s) · 1 esperando" o "Libre" */
+function queueText(h: WorkerUp): string {
+    const q = h.queue
+    const secs = q.runningSince ? Math.max(0, Math.round((Date.now() - new Date(q.runningSince).getTime()) / 1000)) : 0
+    const running = q.running ? `${TASK_LABEL[q.running] ?? q.running} (${secs < 90 ? `${secs} s` : `${Math.round(secs / 60)} min`})` : "Libre"
+    return q.waiting ? `${running} · ${q.waiting} esperando` : running
+}
+type WorkerUp = Extract<IAdminWorkerHealth, { alive: true }>
+type WorkerDown = Extract<IAdminWorkerHealth, { alive: false }>
+const workerUp = (id: string): WorkerUp | null => { const h = workers.value[id]; return h?.alive ? h : null }
+const workerDown = (id: string): WorkerDown | null => { const h = workers.value[id]; return h && !h.alive ? h : null }
+const WORKER_DOWN: Record<WorkerDown["reason"], string> = {
+    disabled: "Sin RabbitMQ en el api: no se le puede preguntar",
+    unavailable: "No está escuchando (parado o sin conexión con RabbitMQ)",
+    timeout: "No contesta (puede estar colgado)",
+    error: "Error al preguntarle",
+}
+
 // ── Sincronizar / recalcular ──
 const busy = ref<Record<string, boolean>>({})
 const confirmRecalc = ref<ClubLink | null>(null)
@@ -41,8 +77,9 @@ async function run(c: ClubLink, what: "sync" | "recalculate") {
         const { queued } = await (what === "sync" ? clubApi(c).admin.syncNow() : clubApi(c).admin.recalculate())
         if (queued) toast(what === "sync" ? `${c.name}: sincronizando con EA…` : `${c.name}: recalculando stats, logros y medias…`, "success")
         else toast(`${c.name}: el worker no se ha enterado (RabbitMQ no está configurado o no responde)`, "error")
-        // El estado cambia cuando el worker termina: se vuelve a mirar en un rato
+        // El estado cambia cuando el worker termina: se vuelve a mirar en un rato (y la cola, ya)
         setTimeout(loadStatus, what === "sync" ? 15000 : 45000)
+        setTimeout(loadWorkers, 1000)
     } catch (e) {
         toast(`${c.name}: no se ha podido (${e instanceof ApiError ? e.code : "ERROR"})`, "error")
     } finally {
@@ -135,6 +172,23 @@ onMounted(() => { loadStatus(); loadAudit() })
                         <span v-else-if="statusError[c.id]" class="badge badge-error">Api caído</span>
                         <span v-else class="badge" :class="syncHealth(statuses[c.id] ?? null).tone">{{ syncHealth(statuses[c.id] ?? null).text }}</span>
                     </header>
+
+                    <!-- Worker en directo (ping por RPC) -->
+                    <div v-if="!statusError[c.id] && workers[c.id]" class="flex items-start gap-2.5 rounded-xl px-3 py-2.5 text-sm"
+                        :class="workers[c.id]!.alive ? 'bg-success/10' : 'bg-error/10'" aria-live="polite">
+                        <span class="relative mt-1.5 flex size-2.5 shrink-0" aria-hidden="true">
+                            <span v-if="workers[c.id]!.alive" class="absolute inline-flex size-full rounded-full bg-success opacity-60 motion-safe:animate-ping"></span>
+                            <span class="relative inline-flex size-2.5 rounded-full" :class="workers[c.id]!.alive ? 'bg-success' : 'bg-error'"></span>
+                        </span>
+                        <div v-if="workerUp(c.id)" class="min-w-0">
+                            <p class="font-bold">Worker activo <span class="font-normal text-base-content/70">· v{{ workerUp(c.id)!.version }} · arrancó {{ relativeTime(workerUp(c.id)!.startedAt) }} · {{ workerUp(c.id)!.latencyMs }} ms</span></p>
+                            <p class="text-xs text-base-content/70">Ahora: {{ queueText(workerUp(c.id)!) }}</p>
+                        </div>
+                        <div v-else-if="workerDown(c.id)" class="min-w-0">
+                            <p class="font-bold text-error">El worker no responde</p>
+                            <p class="text-xs text-base-content/70" :title="workerDown(c.id)!.message">{{ WORKER_DOWN[workerDown(c.id)!.reason] }}</p>
+                        </div>
+                    </div>
 
                     <p v-if="statusError[c.id]" class="text-sm text-error">El api no responde ({{ statusError[c.id] }}).</p>
                     <dl v-else-if="statuses[c.id]" class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">

@@ -64,17 +64,17 @@ export const scheduleTOTWJob = () => {
     if (FORCE_RECALCULATE) {
         console.info("[TOTW] Force recalculate enabled, checking latest finished week...")
         // Como la sincronización y el recálculo: escribe logros, así que va por la misma cola
-        runExclusive(() => checkMissedTOTW(true)).catch((err) => console.error("[TOTW] Error:", err))
+        runExclusive(() => checkMissedTOTW(true), "totw").catch((err) => console.error("[TOTW] Error:", err))
     } else {
         console.log("[TOTW] Force recalculate disabled, running standard startup check...")
-        runExclusive(() => checkMissedTOTW(false)).catch((err) => console.error("[TOTW] Error:", err))
+        runExclusive(() => checkMissedTOTW(false), "totw").catch((err) => console.error("[TOTW] Error:", err))
     }
 
     console.log(`[TOTW] Cron schedule set to: ${TOTW_CRON_SCHEDULE} in ${TIMEZONE}`);
     cron.schedule(TOTW_CRON_SCHEDULE, async () => {
         console.info("[TOTW] Calculating team of the week...")
         const week = getCurrentWeekKey()
-        await runExclusive(() => calculateAndSaveTOTW(week))
+        await runExclusive(() => calculateAndSaveTOTW(week), "totw")
         console.info("[TOTW] Done")
     }, {
         timezone: TIMEZONE

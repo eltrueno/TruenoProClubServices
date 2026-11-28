@@ -1,10 +1,10 @@
-import { RabbitMQManager } from "../config/rabbitmq.config.js";
+import type { MqConnection } from "@trueno-proclub-services/mq";
 import type { IAchievementUnlocked, IAchievementDefinition } from "@trueno-proclub-services/shared"
 
 export interface IMilestonePublishPayload extends IAchievementUnlocked, Omit<IAchievementDefinition, "_id"> { }
 
 export class MilestoneEvent {
-    constructor(private mqManager: RabbitMQManager) { }
+    constructor(private mqManager: MqConnection) { }
 
     async publish(payload: IMilestonePublishPayload) {
         /*await this.mqManager.publish('player.achievement.unlock.milestone', payload);

@@ -1,4 +1,6 @@
-import { RabbitMQManager } from "../config/rabbitmq.config.js";
+import type { MqConnection } from "@trueno-proclub-services/mq";
+import { createMqConnection } from "../config/rabbitmq.config.js";
+import { setupRpc } from "./rpc.js";
 import { NewMatchEvent } from "./newMatchEvent.producer.js";
 import { MilestoneEvent } from "./milestoneEvent.producer.js";
 import { UniqueAchievementEvent } from "./achievementEvent.producer.js";
@@ -8,15 +10,15 @@ import { handleStatsRecalculate } from "../services/voidMatches.service.js";
 import { runExclusive } from "../utils/exclusive.js";
 import { runSync } from "../utils/NewMatchesFinder.js";
 
-let mqManager: RabbitMQManager
+let mqManager: MqConnection
 let matchProducer: NewMatchEvent
 let milestoneProducer: MilestoneEvent
 let uniqueAchievementProducer: UniqueAchievementEvent
 let totwProducer: TOTWEvent
 
 export async function setupRabbitmqProducers() {
-    mqManager = new RabbitMQManager()
-    await mqManager.connect()
+    mqManager = createMqConnection()
+    await mqManager.start()
 
     matchProducer = new NewMatchEvent(mqManager)
     milestoneProducer = new MilestoneEvent(mqManager)
@@ -30,8 +32,10 @@ export async function setupRabbitmqProducers() {
  */
 export async function setupRabbitmqConsumers(clubId: number) {
     if (!mqManager) throw new Error('RabbitMQ not initialized');
+    // RPC con el api (ping del panel admin…): cola propia, aparte de los avisos
+    await setupRpc(mqManager, clubId)
     await mqManager.consume('worker.stats-recalculate', STATS_RECALCULATE_ROUTING_KEY, (content) =>
-        runExclusive(() => handleStatsRecalculate(clubId, content as IStatsRecalculatePayload)))
+        runExclusive(() => handleStatsRecalculate(clubId, content as IStatsRecalculatePayload), "recalculate"))
     // "Sincronizar ahora" desde el panel admin (runSync ya va por la cola de runExclusive)
     await mqManager.consume('worker.sync-now', SYNC_NOW_ROUTING_KEY, async (content) => {
         const p = content as ISyncNowPayload

@@ -1,7 +1,8 @@
 import type { NextFunction, Request, Response } from "express"
-import type { IAdminStatus, IWorkerStatus } from "@trueno-proclub-services/shared"
+import type { IAdminStatus, IAdminWorkerHealth, IWorkerStatus } from "@trueno-proclub-services/shared"
+import { RpcError } from "@trueno-proclub-services/mq"
 import { ClubMemberModel, LinkRequestModel, MatchModel, WorkerStatusModel, WORKER_STATUS_ID } from "@trueno-proclub-services/shared/models"
-import { eventsEnabled, requestStatsRecalculation, requestSyncNow } from "../services/events.service.js"
+import { eventsEnabled, requestStatsRecalculation, requestSyncNow, rpc } from "../services/events.service.js"
 import { listAdminActions, logAdminAction } from "../services/adminAudit.service.js"
 
 const ok = (res: Response, response: unknown) => res.json({ status: { code: 200, message: "Ok" }, response })
@@ -27,6 +28,28 @@ async function getStatus(_req: Request, res: Response, next: NextFunction) {
             serverTime: new Date().toISOString(),
         }
         ok(res, status)
+    } catch (err) {
+        next(err)
+    }
+}
+
+/**
+ * GET /admin/worker: ping al worker por RPC (5 s como mucho). Siempre 200: `alive: false` con el
+ * motivo si no contesta (sin RabbitMQ, worker parado, no responde a tiempo).
+ */
+async function getWorkerHealth(_req: Request, res: Response, next: NextFunction) {
+    try {
+        const started = Date.now()
+        let health: IAdminWorkerHealth
+        try {
+            const ping = await rpc.call("worker.ping", undefined, { timeoutMs: 5000 })
+            health = { alive: true, latencyMs: Date.now() - started, ...ping }
+        } catch (err) {
+            const code = err instanceof RpcError ? err.code : "error"
+            const reason = !eventsEnabled() ? "disabled" : code === "timeout" ? "timeout" : code === "unavailable" ? "unavailable" : "error"
+            health = { alive: false, reason, message: err instanceof Error ? err.message : String(err) }
+        }
+        ok(res, health)
     } catch (err) {
         next(err)
     }
@@ -77,4 +100,4 @@ async function getLinkRequestHistory(req: Request, res: Response, next: NextFunc
     }
 }
 
-export { getStatus, syncNow, recalculate, getAudit, getLinkRequestHistory }
+export { getStatus, getWorkerHealth, syncNow, recalculate, getAudit, getLinkRequestHistory }

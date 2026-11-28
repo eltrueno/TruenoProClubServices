@@ -1,94 +1,42 @@
-import { connect, type ChannelModel, type ConfirmChannel } from "amqplib"
-import { STATS_RECALCULATE_ROUTING_KEY, SYNC_NOW_ROUTING_KEY, type IStatsRecalculatePayload, type ISyncNowPayload } from "@trueno-proclub-services/shared"
+import { MqConnection, RpcClient } from "@trueno-proclub-services/mq"
+import { STATS_RECALCULATE_ROUTING_KEY, SYNC_NOW_ROUTING_KEY, type IStatsRecalculatePayload, type ISyncNowPayload, type WorkerRpc } from "@trueno-proclub-services/shared"
 import dotenv from "dotenv"
 dotenv.config()
 
 /**
- * Avisos del api al worker por RabbitMQ (mismo exchange `events` y mismo vhost que el worker
- * del club). El api solo publica; la conexión se abre al arrancar (`initEvents`) y, si se cae,
- * se rehace con el siguiente aviso.
- * Sin `RABBITMQ_URL` no se publica nada (y quien llame lo sabe por el `false`).
+ * El api y el worker del club por RabbitMQ (conexión común de packages/mq, mismo vhost que el
+ * worker):
+ * - avisos (exchange `events`, colas durables): recalcular stats, sincronizar ya. Si el worker
+ *   está parado, esperan a que vuelva;
+ * - RPC (`rpc.call(...)`): preguntas con respuesta y tiempo máximo, como el ping del panel admin.
+ * Sin `RABBITMQ_URL` no se publica nada (quien llame lo sabe por el `false`) y el RPC dice que no
+ * está disponible.
  */
-const EXCHANGE_NAME = "events"
-const RABBITMQ_URL = process.env.RABBITMQ_URL || ""
+const mq = new MqConnection({ url: process.env.RABBITMQ_URL || "", name: "api" })
 
-let connection: ChannelModel | null = null
-let channel: ConfirmChannel | null = null
-let connecting: Promise<ConfirmChannel | null> | null = null
-
-const reset = () => {
-    connection = null
-    channel = null
-}
-
-async function getChannel(): Promise<ConfirmChannel | null> {
-    if (!RABBITMQ_URL) return null
-    if (channel) return channel
-    if (connecting) return connecting
-
-    connecting = (async () => {
-        try {
-            const conn = await connect(RABBITMQ_URL)
-            conn.on("error", (err) => console.error("[RabbitMQ] Connection error", err))
-            conn.on("close", () => {
-                if (connection === conn) console.warn("[RabbitMQ] Connection closed: it will reconnect on the next event")
-                reset()
-            })
-            const ch = await conn.createConfirmChannel()
-            ch.on("error", (err) => console.error("[RabbitMQ] Channel error", err))
-            ch.on("close", () => { channel = null })
-            await ch.assertExchange(EXCHANGE_NAME, "topic", { durable: true })
-            connection = conn
-            channel = ch
-            console.log("Connection to RabbitMQ: OK")
-            return ch
-        } catch (err) {
-            console.error("[RabbitMQ] Connection failed:", err instanceof Error ? err.message : err)
-            reset()
-            return null
-        } finally {
-            connecting = null
-        }
-    })()
-    return connecting
-}
-
-/** Publica y espera la confirmación del broker. true = el aviso está en RabbitMQ */
-async function publish(routingKey: string, payload: unknown): Promise<boolean> {
-    const ch = await getChannel()
-    if (!ch) return false
-    try {
-        ch.publish(EXCHANGE_NAME, routingKey, Buffer.from(JSON.stringify(payload)), { persistent: true, contentType: "application/json" })
-        await ch.waitForConfirms()
-        return true
-    } catch (err) {
-        console.error(`[RabbitMQ] Publish error on ${routingKey}:`, err)
-        return false
-    }
-}
+/** RPC con el worker del club (tipos de los métodos en shared `WorkerRpc`) */
+export const rpc = new RpcClient<WorkerRpc>(mq)
 
 /** Pide al worker que recalcule stats, logros y medias (p. ej. tras marcar un partido como nulo) */
 export const requestStatsRecalculation = (payload: Omit<IStatsRecalculatePayload, "requestedAt">) =>
-    publish(STATS_RECALCULATE_ROUTING_KEY, { ...payload, requestedAt: new Date().toISOString() } satisfies IStatsRecalculatePayload)
+    mq.publish(STATS_RECALCULATE_ROUTING_KEY, { ...payload, requestedAt: new Date().toISOString() } satisfies IStatsRecalculatePayload)
 
 /** Pide al worker que sincronice ya con EA (botón del panel admin) */
 export const requestSyncNow = (requestedBy: string | null) =>
-    publish(SYNC_NOW_ROUTING_KEY, { requestedAt: new Date().toISOString(), requestedBy } satisfies ISyncNowPayload)
+    mq.publish(SYNC_NOW_ROUTING_KEY, { requestedAt: new Date().toISOString(), requestedBy } satisfies ISyncNowPayload)
 
 /** Hay RabbitMQ configurado (sin él, los avisos al worker no salen) */
-export const eventsEnabled = () => !!RABBITMQ_URL
+export const eventsEnabled = () => mq.enabled
 
-/** Al arrancar el api: abre la conexión y deja dicho en el log si hay RabbitMQ o no */
+/** Al arrancar el api: abre la conexión, monta el RPC y deja dicho en el log si hay RabbitMQ o no */
 export async function initEvents(): Promise<void> {
-    if (!RABBITMQ_URL) {
+    if (!mq.enabled) {
         console.warn("Connection to RabbitMQ: disabled (RABBITMQ_URL not set). Marking a match as void will not trigger the stats recalculation")
         return
     }
-    await getChannel()
+    await rpc.init()
+    await mq.start()
 }
 
 /** Para los tests y el apagado */
-export async function closeEvents(): Promise<void> {
-    await connection?.close().catch(() => undefined)
-    reset()
-}
+export const closeEvents = () => mq.close()

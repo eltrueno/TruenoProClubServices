@@ -2,7 +2,7 @@ import { Router, json } from "express"
 import { requireAdmin, requireAuth } from "../middleware/requireAdmin.js"
 import { patchMember, uploadMemberImage, imageProxy, setMatchVoided } from "../controllers/admin.controller.js"
 import { getPendingLinkRequests, approveLinkRequest, rejectLinkRequest } from "../controllers/linkRequest.controller.js"
-import { getStatus, syncNow, recalculate, getAudit, getLinkRequestHistory } from "../controllers/adminSystem.controller.js"
+import { getStatus, getWorkerHealth, syncNow, recalculate, getAudit, getLinkRequestHistory } from "../controllers/adminSystem.controller.js"
 
 const router = Router()
 
@@ -27,6 +27,8 @@ router.post("/link-requests/:id/reject", rejectLinkRequest)
 
 // Sistema: estado del club, sincronizar / recalcular ya y registro de acciones de admin
 router.get("/status", getStatus)
+// Ping al worker por RPC: vivo, versión, qué tiene en la cola (alive: false si no contesta)
+router.get("/worker", getWorkerHealth)
 router.post("/sync", syncNow)
 router.post("/recalculate", recalculate)
 router.get("/audit", getAudit)

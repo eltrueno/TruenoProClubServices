@@ -24,6 +24,9 @@ COPY packages/eafcapi/src ./packages/eafcapi/src
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/shared/tsconfig.json ./packages/shared/
 COPY packages/shared/src ./packages/shared/src
+COPY packages/mq/package.json ./packages/mq/
+COPY packages/mq/tsconfig.json ./packages/mq/
+COPY packages/mq/src ./packages/mq/src
 
 # El postinstall de puppeteer descarga Chrome for Testing, que no existe para linux/arm64 (y aquí sobra:
 # el runtime usa el chromium del sistema). Sin esto el build arm64 falla.
@@ -36,6 +39,7 @@ RUN pnpm install --frozen-lockfile
 # Build de los packages compartidos y la app
 RUN pnpm --filter @trueno-proclub-services/eafcapi build
 RUN pnpm --filter @trueno-proclub-services/shared build
+RUN pnpm --filter @trueno-proclub-services/mq build
 RUN pnpm --filter @trueno-proclub-services/worker build
 
 # ===========================

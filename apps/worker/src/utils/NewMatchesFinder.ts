@@ -29,7 +29,7 @@ export async function runSync(trigger: string): Promise<void> {
             await syncMembersFromEA(CLUBID, PLATFORM);
             // También sin partidos nuevos: alguien puede haberse vinculado, conectado Discord o hecho sub
             await syncAccountAchievements(CLUBID);
-        });
+        }, "sync");
     } catch (e) {
         result = { ...result, error: e instanceof Error ? e.message : String(e) }
         console.error("[Match Finder Worker] Error during sync:", e);
@@ -77,7 +77,7 @@ function startWorker() {
 
         // Resumen de este club a la base compartida y logros de cuenta (no falla: avisa y sigue)
         await syncAccountAchievements(CLUBID)
-    }).catch((err: unknown) => {
+    }, "startup").catch((err: unknown) => {
         console.error("[Member Worker] Startup error:", err)
     })
 

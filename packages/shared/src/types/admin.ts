@@ -32,6 +32,32 @@ export interface IAdminStatus {
     serverTime: string
 }
 
+/** Respuesta del worker a `worker.ping` (RPC api → worker): está vivo y qué está haciendo */
+export interface IWorkerPing {
+    clubId: number
+    /** versión del worker (su package.json) */
+    version: string
+    node: string
+    /** cuándo arrancó y cuánto lleva (s) */
+    startedAt: string
+    uptimeSec: number
+    /** la cola de lo que toca stats (sincronizar, recalcular, TOTW): lo que corre ahora y cuántas esperan */
+    queue: { running: string | null; runningSince: string | null; waiting: number }
+}
+
+/** Lo que devuelve el api en GET /admin/worker: el ping, o por qué no hay respuesta */
+export type IAdminWorkerHealth =
+    | ({ alive: true; latencyMs: number } & IWorkerPing)
+    | { alive: false; reason: "disabled" | "unavailable" | "timeout" | "error"; message: string }
+
+/**
+ * Métodos del RPC api → worker (packages/mq): { método: { params, result } }. El api llama con
+ * `rpc.call("worker.ping")` y el worker responde con `rpc.handle("worker.ping", …)`.
+ */
+export type WorkerRpc = {
+    "worker.ping": { params: void; result: IWorkerPing }
+}
+
 /** Qué hizo un admin */
 export type AdminAction =
     | "member.link" | "member.unlink" | "member.photo" | "member.photo.upload"

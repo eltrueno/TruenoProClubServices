@@ -1,4 +1,4 @@
-import type { ApiResponse, IPlayerProfile, IAccountAchievements, IAchievementDefinitionWithStats, IAdminAuditEntry, IAdminStatus, IClubMember, IClubMemberAdminPatch, ILinkRequest, IMatch, IPublicUser, ImageScope, UserRole } from "@trueno-proclub-services/shared"
+import type { ApiResponse, IPlayerProfile, IAccountAchievements, IAchievementDefinitionWithStats, IAdminAuditEntry, IAdminStatus, IAdminWorkerHealth, IClubMember, IClubMemberAdminPatch, ILinkRequest, IMatch, IPublicUser, ImageScope, UserRole } from "@trueno-proclub-services/shared"
 import { AUTH_URL, type ClubLink } from "@/config/site"
 
 /** Error de cualquier llamada: `code` estable (TWITCH_TOKEN_EXPIRED, ALREADY_LINKED…) + `httpStatus` */
@@ -176,6 +176,8 @@ export const clubApi = (club: ClubLink) => {
                 api<{ match: IMatch; recalculation: "queued" | "unavailable" }>(`/admin/matches/${matchId}/voided`, { method: "PUT", body: { voided } }),
             /** Estado del club: worker, partidos, miembros, RabbitMQ */
             status: () => api<IAdminStatus>("/admin/status"),
+            /** Ping al worker por RPC: vivo, versión y qué tiene en la cola (alive: false si no contesta) */
+            worker: () => api<IAdminWorkerHealth>("/admin/worker"),
             /** El worker sincroniza ya con EA / recalcula stats. `queued: false` = no ha llegado (sin RabbitMQ) */
             syncNow: () => api<{ queued: boolean }>("/admin/sync", { method: "POST" }),
             recalculate: () => api<{ queued: boolean }>("/admin/recalculate", { method: "POST" }),
