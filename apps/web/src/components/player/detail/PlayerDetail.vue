@@ -119,7 +119,7 @@
                             <svg v-else class="size-5 sm:size-6 shrink-0 text-base-content/45" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" v-html="KPI_ICONS[kpi.icon]"></svg>
                             <span class="min-w-0 leading-tight flex flex-col-reverse sm:flex-col">
                                 <span class="block text-base-content/50 uppercase text-[0.6rem] sm:text-[0.65rem] font-black tracking-wider sm:tracking-widest truncate">
-                                    <span class="sm:hidden" :aria-label="kpi.label">{{ kpi.short ?? kpi.label }}</span><span class="hidden sm:inline">{{ kpi.label }}</span>
+                                    <span class="sm:hidden" aria-hidden="true">{{ kpi.short ?? kpi.label }}</span><span class="sr-only sm:not-sr-only">{{ kpi.label }}</span>
                                 </span>
                                 <AnimatedNumber class="block text-lg sm:text-xl font-black" :value="kpi.value" />
                                 <span v-if="kpi.sub" class="hidden sm:block text-[0.65rem] text-base-content/45 font-medium tabular-nums">{{ kpi.sub }}</span>
