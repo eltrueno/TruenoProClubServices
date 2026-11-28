@@ -66,6 +66,9 @@ importers:
       '@trueno-proclub-services/eafcapi':
         specifier: workspace:*
         version: link:../../packages/eafcapi
+      '@trueno-proclub-services/mq':
+        specifier: workspace:*
+        version: link:../../packages/mq
       '@trueno-proclub-services/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -289,6 +292,9 @@ importers:
       '@trueno-proclub-services/eafcapi':
         specifier: workspace:*
         version: link:../../packages/eafcapi
+      '@trueno-proclub-services/mq':
+        specifier: workspace:*
+        version: link:../../packages/mq
       '@trueno-proclub-services/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -456,6 +462,19 @@ importers:
         version: 20.19.37
       typescript:
         specifier: ^5.0.0
+        version: 5.9.3
+
+  packages/mq:
+    dependencies:
+      amqplib:
+        specifier: ^0.10.9
+        version: 0.10.9
+    devDependencies:
+      '@types/amqplib':
+        specifier: ^0.10.8
+        version: 0.10.8
+      typescript:
+        specifier: ^5.5.0
         version: 5.9.3
 
   packages/shared:

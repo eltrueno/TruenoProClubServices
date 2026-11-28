@@ -91,7 +91,7 @@ export const migrateVoidMatches = async (clubId: number): Promise<boolean> => {
 /** Cuándo empezó el último recálculo completo: los avisos anteriores ya están cubiertos */
 let lastRecalcStartedAt = 0
 
-const recalculateEverything = async (clubId: number) => {
+export const recalculateEverything = async (clubId: number) => {
     lastRecalcStartedAt = Date.now()
     await recalculateAllPlayerStats(clubId)
     await computePlayerStatsAverages()

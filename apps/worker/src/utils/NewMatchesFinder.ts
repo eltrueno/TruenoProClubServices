@@ -18,23 +18,26 @@ const FORCE_RECALCULATE = process.env.FORCE_RECALCULATE === 'true';
 
 /**
  * Una sincronización con EA (la del intervalo o la que pide un admin desde el panel): partidos,
- * miembros y logros de cuenta. Deja el resultado en el estado del worker.
+ * miembros y logros de cuenta. Deja el resultado en el estado del worker y lo devuelve.
+ * `onStart`: cuando de verdad empieza (antes puede esperar en la cola, detrás de un recálculo).
  */
-export async function runSync(trigger: string): Promise<void> {
+export async function runSync(trigger: string, onStart?: () => void): Promise<{ inserted: number; error?: string }> {
     console.log(`[Match Finder Worker] Running sync (${trigger})...`)
     let result: { inserted: number; error?: string } = { inserted: 0 }
     try {
         await runExclusive(async () => {
+            onStart?.();
             result = await syncRecentMatches(CLUBID, PLATFORM);
             await syncMembersFromEA(CLUBID, PLATFORM);
             // También sin partidos nuevos: alguien puede haberse vinculado, conectado Discord o hecho sub
             await syncAccountAchievements(CLUBID);
-        });
+        }, "sync");
     } catch (e) {
         result = { ...result, error: e instanceof Error ? e.message : String(e) }
         console.error("[Match Finder Worker] Error during sync:", e);
     }
     await setWorkerStatus({ lastSyncAt: new Date(), lastSyncOk: !result.error, lastSyncError: result.error ?? null, lastSyncInserted: result.inserted })
+    return result
 }
 
 function startWorker() {
@@ -77,7 +80,7 @@ function startWorker() {
 
         // Resumen de este club a la base compartida y logros de cuenta (no falla: avisa y sigue)
         await syncAccountAchievements(CLUBID)
-    }).catch((err: unknown) => {
+    }, "startup").catch((err: unknown) => {
         console.error("[Member Worker] Startup error:", err)
     })
 

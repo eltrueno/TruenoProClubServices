@@ -1,8 +1,8 @@
-import { RabbitMQManager } from "../config/rabbitmq.config.js";
+import type { MqConnection } from "@trueno-proclub-services/mq";
 import type { ITOTW } from "@trueno-proclub-services/shared"
 
 export class TOTWEvent {
-    constructor(private mqManager: RabbitMQManager) { }
+    constructor(private mqManager: MqConnection) { }
 
     async publish(totw: ITOTW) {
         try {
