@@ -1,22 +1,23 @@
-import { RabbitMQManager } from "../config/rabbitmq.config.js";
+import type { MqConnection } from "@trueno-proclub-services/mq";
+import { createMqConnection } from "../config/rabbitmq.config.js";
+import { setupRpc } from "./rpc.js";
 import { NewMatchEvent } from "./newMatchEvent.producer.js";
 import { MilestoneEvent } from "./milestoneEvent.producer.js";
 import { UniqueAchievementEvent } from "./achievementEvent.producer.js";
 import { TOTWEvent } from "./totwEvent.producer.js";
-import { STATS_RECALCULATE_ROUTING_KEY, SYNC_NOW_ROUTING_KEY, type IStatsRecalculatePayload, type ISyncNowPayload } from "@trueno-proclub-services/shared";
+import { STATS_RECALCULATE_ROUTING_KEY, type IStatsRecalculatePayload } from "@trueno-proclub-services/shared";
 import { handleStatsRecalculate } from "../services/voidMatches.service.js";
 import { runExclusive } from "../utils/exclusive.js";
-import { runSync } from "../utils/NewMatchesFinder.js";
 
-let mqManager: RabbitMQManager
+let mqManager: MqConnection
 let matchProducer: NewMatchEvent
 let milestoneProducer: MilestoneEvent
 let uniqueAchievementProducer: UniqueAchievementEvent
 let totwProducer: TOTWEvent
 
 export async function setupRabbitmqProducers() {
-    mqManager = new RabbitMQManager()
-    await mqManager.connect()
+    mqManager = createMqConnection()
+    await mqManager.start()
 
     matchProducer = new NewMatchEvent(mqManager)
     milestoneProducer = new MilestoneEvent(mqManager)
@@ -30,14 +31,10 @@ export async function setupRabbitmqProducers() {
  */
 export async function setupRabbitmqConsumers(clubId: number) {
     if (!mqManager) throw new Error('RabbitMQ not initialized');
+    // RPC con el api (ping, sincronizar / recalcular desde el panel, mantenimientos): cola propia, aparte de los avisos
+    await setupRpc(mqManager, clubId)
     await mqManager.consume('worker.stats-recalculate', STATS_RECALCULATE_ROUTING_KEY, (content) =>
-        runExclusive(() => handleStatsRecalculate(clubId, content as IStatsRecalculatePayload)))
-    // "Sincronizar ahora" desde el panel admin (runSync ya va por la cola de runExclusive)
-    await mqManager.consume('worker.sync-now', SYNC_NOW_ROUTING_KEY, async (content) => {
-        const p = content as ISyncNowPayload
-        console.info(`[Sync] Sincronización pedida desde el panel${p?.requestedBy ? ` por ${p.requestedBy}` : ""}`)
-        await runSync("panel")
-    })
+        runExclusive(() => handleStatsRecalculate(clubId, content as IStatsRecalculatePayload), "recalculate"))
 }
 
 export function getMatchProducer() {

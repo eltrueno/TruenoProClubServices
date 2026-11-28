@@ -16,6 +16,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1136.0",
     "@trueno-proclub-services/eafcapi": "workspace:*",
+    "@trueno-proclub-services/mq": "workspace:*",
     "@trueno-proclub-services/shared": "workspace:*",
     "amqplib": "^0.10.9",
     "body-parser": "^1.20.2",

@@ -138,15 +138,11 @@ export const EVENT_KEYS = {
     totwNew: "totw.new",
     /** api → worker: recalcular stats, logros y medias (IStatsRecalculatePayload) */
     statsRecalculate: "stats.recalculate",
-    /** api → worker: sincronizar ya con EA (ISyncNowPayload) */
-    syncNow: "sync.now",
 } as const
 export type EventKey = typeof EVENT_KEYS[keyof typeof EVENT_KEYS]
 
 /** Routing key del aviso api → worker para recalcular stats */
 export const STATS_RECALCULATE_ROUTING_KEY = EVENT_KEYS.statsRecalculate
-/** Routing key del aviso api → worker para sincronizar ya */
-export const SYNC_NOW_ROUTING_KEY = EVENT_KEYS.syncNow
 
 /** Roles de usuario (Better Auth `user.role`) */
 export enum UserRole {
