@@ -23,6 +23,8 @@ import AssistIcon from "@/components/ui/AssistIcon.vue"
 import GoalIcon from "@/components/ui/GoalIcon.vue"
 import OptionToggle, { type ToggleOption } from "@/components/ui/OptionToggle.vue"
 import InfoDot from "@/components/ui/InfoDot.vue"
+import { shownDiff, signedText, smartDecimals } from "@/lib/statCompare"
+import { useLinkedTooltip } from "@/composables/useLinkedTooltip"
 
 const props = defineProps<{
     match: ClubMatchEntity
@@ -40,6 +42,8 @@ const signed = (n: number, d = 1) => `${n > 0 ? "+" : n < 0 ? "−" : "±"}${fmt
 
 // ── Equipo y jugador elegidos ──
 /** Nuestro club o el rival (el selector común de la web) */
+/** El nombre de cada fila de la comparación también abre su tooltip */
+const { openKey: openTip, label: tipLabel } = useLinkedTooltip()
 const sideOptions = computed<ToggleOption<"us" | "them">[]>(() => [{ value: "us", label: props.match.ourClub.name }, { value: "them", label: "Rival" }])
 const side = ref<"us" | "them">(props.match.opponentClub.players.some((p) => p.playerId === props.initialPlayer) ? "them" : "us")
 const players = computed(() => (side.value === "us" ? props.match.ourClub.players : props.match.opponentClub.players)
@@ -66,7 +70,8 @@ const phrase = computed(() => {
 
 // ── Forma y medias ──
 const form = computed(() => (ours.value && props.history && player.value ? playerForm(props.history, props.match.matchId, player.value.playerId) : null))
-const ratingDelta = computed(() => (form.value && player.value && form.value.games > 1 ? player.value.rating - form.value.ratingAve : null))
+/** Su nota frente a su media, con las dos como se ven (1 decimal): 7,0 frente a 7,0 es ±0,0, no "−0,0" */
+const ratingDelta = computed(() => (form.value && player.value && form.value.games > 1 ? shownDiff(player.value.rating, form.value.ratingAve, 1) : null))
 
 /** Rachas que lleva vivas tras este partido (solo de los nuestros: del rival no hay historial) */
 const streaks = computed(() => (ours.value && props.history && player.value ? playerStreaks(props.history, props.match.matchId, player.value.playerId) : []))
@@ -190,13 +195,16 @@ const ranks = computed(() => {
 })
 
 const scale = (r: Row) => (r.pct ? 100 : Math.max(r.value, r.ref ?? 0, 1) * 1.25)
-const fmtRow = (r: Row, n: number) => `${fmt(n, r.pct ? 0 : n % 1 ? 1 : 0)}${r.pct ? "%" : ""}`
+/** Decimales de la fila (más si la media es pequeña: 0,34 goles, no 0,3) y diferencia de lo que se ve */
+const rowDec = (r: Row) => smartDecimals([r.value, r.ref ?? 0], r.pct ? 0 : r.decimals ?? 1, !!r.pct)
+const rowDiff = (r: Row) => (r.ref === null ? 0 : shownDiff(r.value, r.ref, rowDec(r)))
+const fmtRow = (r: Row, n: number) => (r.pct ? `${fmt(n, rowDec(r))}%` : fmt(n, Number.isInteger(n) ? 0 : rowDec(r)))
 /** La referencia, dicha entera para el tooltip */
 const refLong = computed(() => (reference.value === "self" ? "Su media por partido" : reference.value === "position" ? `Media de un ${translatePosition(player.value?.position ?? "midfielder").toLowerCase()}` : "Media del equipo hoy"))
 function diffText(r: Row) {
-    const d = r.value - (r.ref ?? 0)
-    if (Math.abs(d) < 0.05) return "Justo en la media"
-    const abs = r.pct ? `${fmt(Math.abs(d))} puntos` : fmt(Math.abs(d), Math.abs(d) % 1 ? 1 : 0)
+    const d = rowDiff(r)
+    if (d === 0) return "Justo en la media"
+    const abs = r.pct ? `${fmt(Math.abs(d), rowDec(r))} puntos` : fmt(Math.abs(d), Number.isInteger(d) ? 0 : rowDec(r))
     const rel = !r.pct && r.ref ? ` (un ${Math.round((Math.abs(d) / r.ref) * 100)}% ${d > 0 ? "más" : "menos"})` : ""
     return `${abs} ${d > 0 ? "por encima" : "por debajo"}${rel}`
 }
@@ -241,7 +249,7 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
                         </div>
                         <div class="shrink-0 flex flex-col items-center gap-1">
                             <span class="rating-pop rounded-xl px-2 py-1 sm:px-3 sm:py-1.5 text-xl sm:text-4xl font-black tabular-nums leading-none shadow" :class="RATING_TONE(player.rating)">{{ fmt(player.rating, 1) }}</span>
-                            <span v-if="ratingDelta !== null" class="text-[0.6rem] sm:text-xs font-bold tabular-nums whitespace-nowrap" :class="ratingDelta >= 0 ? 'text-success' : 'text-error'" :title="`${signed(ratingDelta)} sobre su media`">{{ signed(ratingDelta) }}</span>
+                            <span v-if="ratingDelta !== null" class="text-[0.6rem] sm:text-xs font-bold tabular-nums whitespace-nowrap" :class="ratingDelta === 0 ? 'text-base-content/50' : ratingDelta > 0 ? 'text-success' : 'text-error'" :title="`${signed(ratingDelta)} sobre su media`">{{ signed(ratingDelta) }}</span>
                         </div>
                     </header>
 
@@ -325,15 +333,15 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
                         <dl class="flex flex-col gap-3 sm:gap-2.5">
                             <!-- Móvil: nombre, valor y diferencia arriba y la barra debajo. Desde sm, todo en una fila -->
                             <div v-for="(r, i) in rows" :key="r.label" class="grid grid-cols-[minmax(0,1fr)_auto_3rem] sm:grid-cols-[8rem_minmax(0,1fr)_3rem_3rem] items-center gap-x-2 gap-y-1 text-sm">
-                                <dt class="text-base-content/70 truncate">{{ r.label }}<InfoDot /></dt>
+                                <dt class="text-base-content/70 truncate cursor-help select-none" v-bind="tipLabel(r.label)">{{ r.label }}<InfoDot /></dt>
                                 <!-- Al pasar por encima (o tocar): el valor de hoy, la referencia y la diferencia -->
-                                <div tabindex="0" class="tooltip tooltip-top col-span-3 row-start-2 sm:col-span-1 sm:row-start-auto py-1.5 -my-1.5 cursor-help focus-visible:outline-2 focus-visible:outline-primary rounded-full">
+                                <div tabindex="0" :class="openTip === r.label && 'tooltip-open'" class="tooltip tooltip-top col-span-3 row-start-2 sm:col-span-1 sm:row-start-auto py-1.5 -my-1.5 cursor-help focus-visible:outline-2 focus-visible:outline-primary rounded-full">
                                 <div class="tooltip-content text-left text-xs leading-snug px-3 py-2">
                                     <p class="font-black mb-0.5">{{ r.label }}</p>
                                     <p>Este partido: <b class="tabular-nums">{{ fmtRow(r, r.value) }}</b></p>
                                     <template v-if="r.ref !== null">
                                         <p>{{ refLong }}: <b class="tabular-nums">{{ fmtRow(r, r.ref) }}</b></p>
-                                        <p :class="r.value - r.ref >= 0 ? 'text-success' : 'text-error'">{{ diffText(r) }}</p>
+                                        <p :class="rowDiff(r) === 0 ? 'opacity-70' : rowDiff(r) > 0 ? 'text-success' : 'text-error'">{{ diffText(r) }}</p>
                                     </template>
                                     <p v-else class="opacity-70">Sin referencia para comparar.</p>
                                 </div>
@@ -342,10 +350,10 @@ const RATING_TONE = (r: number) => (r >= 8 ? "bg-success text-success-content" :
                                     <span v-if="r.ref !== null" class="ref-mark absolute -top-1 -bottom-1 w-1 -ml-0.5 rounded-full bg-base-content/80" :style="{ left: `${Math.min(100, (r.ref / scale(r)) * 100)}%` }" ></span>
                                 </div>
                                 </div>
-                                <dd class="text-right font-black tabular-nums">{{ fmt(r.value) }}{{ r.pct ? "%" : "" }}</dd>
+                                <dd class="text-right font-black tabular-nums">{{ fmtRow(r, r.value) }}</dd>
                                 <dd class="text-right text-xs tabular-nums font-bold">
-                                    <span :key="reference" class="delta inline-block" :class="r.ref === null ? 'text-base-content/30' : r.value - r.ref >= 0 ? 'text-success' : 'text-error'">
-                                        {{ r.ref === null ? "—" : signed(r.value - r.ref, r.pct ? 0 : 1) }}
+                                    <span :key="reference" class="delta inline-block" :class="r.ref === null ? 'text-base-content/30' : rowDiff(r) === 0 ? 'text-base-content/50' : rowDiff(r) > 0 ? 'text-success' : 'text-error'">
+                                        {{ r.ref === null ? "—" : signedText(rowDiff(r), rowDec(r)) }}
                                     </span>
                                 </dd>
                             </div>

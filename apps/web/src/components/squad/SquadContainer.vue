@@ -137,7 +137,7 @@ const toolbarStuck = ref(false)
 const updateStuck = () => {
     const el = toolbarSentinel.value
     const navH = navTop()
-    toolbarStuck.value = !!el && el.getBoundingClientRect().top < navH + 4
+    toolbarStuck.value = !!el && el.getBoundingClientRect().top < navH + 1
 }
 onMounted(() => {
     addEventListener("scroll", updateStuck, { passive: true })
@@ -198,7 +198,7 @@ const AURA = ["aura-gold", "aura-silver", "aura-bronze"]
         <!-- Barra de filtros (fija al bajar). Sin pegar: parte del bloque. Pegada: lámina medio translúcida que se
              solapa sobre las cartas. En móvil: orden, buscador y "Filtros" (el resto en un panel) -->
         <div role="toolbar" aria-label="Filtrar y ordenar la plantilla"
-            class="sticky top-[calc(var(--nav-top,4rem)+0.25rem)] z-30 -mx-3 lg:-mx-5 px-3 lg:px-5 py-3 flex flex-wrap items-center gap-2 transition-[top,border-radius,background-color,box-shadow] duration-300"
+            class="sticky top-(--nav-top) z-30 -mx-3 lg:-mx-5 px-3 lg:px-5 py-3 flex flex-wrap items-center gap-2 transition-[top,border-radius,background-color,box-shadow] duration-300"
             :class="toolbarStuck
                 ? 'rounded-b-2xl bg-[color-mix(in_oklab,var(--toolbar-bg)_88%,transparent)] backdrop-blur-md shadow-lg shadow-black/25'
                 : 'rounded-t-3xl bg-(--toolbar-bg)'">
@@ -262,7 +262,7 @@ const AURA = ["aura-gold", "aura-silver", "aura-bronze"]
             <li v-for="n in 10" :key="n" class="skeleton aspect-[3/4] rounded-2xl"></li>
         </ul>
 
-        <EmptyState v-else-if="hasError" icon="error" tone="error" title="La plantilla no está disponible ahora mismo" text="Vuelve a intentarlo en unos minutos." />
+        <EmptyState v-else-if="hasError" illustration="/illustrations/serverdown.svg" title="La plantilla no está disponible ahora mismo" text="Vuelve a intentarlo en unos minutos." />
 
         <template v-else>
             <!-- TransitionGroup: al reordenar o filtrar, las cartas se deslizan a su nuevo sitio -->
@@ -283,7 +283,7 @@ const AURA = ["aura-gold", "aura-silver", "aura-bronze"]
                 </li>
             </TransitionGroup>
 
-            <EmptyState v-else icon="search" title="No hay nadie con esos filtros" text="Revisa el nombre o quita alguna posición.">
+            <EmptyState v-else illustration="/illustrations/noresults.svg" title="No hay nadie con esos filtros" text="Revisa el nombre o quita alguna posición.">
                 <button type="button" class="btn btn-sm btn-primary" @click="search = ''; positions = []; onlyRegulars = false">Quitar los filtros</button>
             </EmptyState>
 

@@ -102,7 +102,7 @@
         </div>
     </div>
 
-    <EmptyState v-else icon="error" tone="error" title="Los datos del club no están disponibles ahora mismo" text="EA no responde y aún no hay datos en caché. Vuelve a intentarlo en unos minutos." />
+    <EmptyState v-else illustration="/illustrations/serverdown.svg" title="Los datos del club no están disponibles ahora mismo" text="EA no responde y aún no hay datos en caché. Vuelve a intentarlo en unos minutos." />
     </div>
 </template>
 

@@ -139,7 +139,7 @@ const currentKey = ref<string | null>(null)
 const currentMonth = computed(() => groups.value.find((g) => g.key === currentKey.value) ?? null)
 const updateStuck = () => {
     const navH = navTop()
-    stuck.value = !!sentinel.value && sentinel.value.getBoundingClientRect().top < navH + 4
+    stuck.value = !!sentinel.value && sentinel.value.getBoundingClientRect().top < navH + 1
     const limit = navH + 90
     let key: string | null = null
     for (const el of document.querySelectorAll<HTMLElement>(".month-head")) {
@@ -173,7 +173,7 @@ const hasError = computed(() => !loading.value && status.value !== 200)
         <div ref="sentinel" aria-hidden="true" class="h-0 -mb-5"></div>
         <!-- Barra de filtros (pegada al bajar). En móvil: buscador y "Filtros" (el resto en un panel) -->
         <div role="toolbar" aria-label="Filtrar partidos"
-            class="sticky top-[calc(var(--nav-top,4rem)+0.25rem)] z-30 -mx-3 lg:-mx-5 px-3 lg:px-5 py-3 flex flex-wrap items-center gap-2 transition-[top,border-radius,background-color,box-shadow] duration-300"
+            class="sticky top-(--nav-top) z-30 -mx-3 lg:-mx-5 px-3 lg:px-5 py-3 flex flex-wrap items-center gap-2 transition-[top,border-radius,background-color,box-shadow] duration-300"
             :class="stuck
                 ? (currentMonth ? 'rounded-none' : 'rounded-b-2xl shadow-lg shadow-black/25') + ' bg-[color-mix(in_oklab,var(--toolbar-bg)_95%,transparent)] backdrop-blur-md'
                 : 'rounded-t-3xl bg-(--toolbar-bg)'">
@@ -254,7 +254,7 @@ const hasError = computed(() => !loading.value && status.value !== 200)
             <div v-for="n in 6" :key="n" class="skeleton h-20 w-full rounded-2xl"></div>
         </div>
 
-        <EmptyState v-else-if="hasError" icon="error" tone="error" title="Los partidos no están disponibles ahora mismo" text="Vuelve a intentarlo en unos minutos." />
+        <EmptyState v-else-if="hasError" illustration="/illustrations/serverdown.svg" title="Los partidos no están disponibles ahora mismo" text="Vuelve a intentarlo en unos minutos." />
 
         <EmptyState v-else-if="!matches.length" illustration="/illustrations/soccer1.svg" title="Todavía no hay partidos" text="Se añaden solos en cuanto el club juega. ¡Vuelve pronto!" />
 
@@ -325,7 +325,7 @@ const hasError = computed(() => !loading.value && status.value !== 200)
                     <MatchRow :match="m" :my-id="myPlayerId" />
                 </li>
             </ul>
-            <EmptyState v-else icon="search" title="Ningún partido con esos filtros" text="Prueba con otras fechas, otro rival o menos filtros a la vez.">
+            <EmptyState v-else illustration="/illustrations/noresults.svg" title="Ningún partido con esos filtros" text="Prueba con otras fechas, otro rival o menos filtros a la vez.">
                 <button type="button" class="btn btn-sm btn-primary" @click="clearFilters">Quitar los filtros</button>
             </EmptyState>
 
